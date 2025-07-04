@@ -119,6 +119,26 @@
 - **Color Palette**: Teal-to-cyan gradients, emerald accents
 - **Visual Direction**: Clean, modern with Mediterranean feel
 
+**Challenge**: Advanced word features and conjugation system
+- **Image Support**: Optional word images with responsive sizing for visual learning
+- **Individual Word Mastery**: Per-user "known" status tracking (WaniKani/Anki style)
+- **Conjugation Modal**: Interactive popup with mood-based organization (Indicativo, Congiuntivo, etc.)
+- **Audio Integration**: Individual audio for words, conjugations, and example sentences
+
+**Challenge**: Comprehensive tag system integration
+- **Background**: Extensive two-layer tag system from Anki template
+- **Layer 1 Tags**: Required grammatical properties (conjugation groups, gender, transitivity)
+- **Layer 2 Tags**: Optional semantic categorization (topics, CEFR levels, frequency)
+- **Visual System**: Front-card essential indicators (♂♀⚥, ⚠️ IRREG, -ISC), back-card detailed properties
+- **Search Integration**: Tag-based filtering with PostgreSQL arrays and GIN indexes
+
+**Challenge**: Context sentences as separate entities
+- **Architecture**: Independent sentences table with word/conjugation references
+- **CEFR Integration**: Sentences tagged with difficulty levels (A1-C2, Native, Business, etc.)
+- **Smart Search**: Find sentences containing specific words or conjugations
+- **Progressive Difficulty**: Display sentences ordered by user's proficiency level
+- **Audio Support**: Individual sentence audio following naming convention
+
 **Implementation Decisions**:
 - **Panel Position**: Slide from right (384px width)
 - **Navigation Integration**: Dictionary button in top nav
@@ -127,9 +147,14 @@
   - Actions: Emerald 600
   - Background: Cyan 50 → Blue 50 gradient
   - Text: Teal 900 for readability
-- **Sample Data**: Italian words (parlare, casa, bello) for testing
+- **Database Architecture**: 
+  - Words table with image_url, mastery tracking
+  - Extended tags array with two-layer structure
+  - Conjugations table with mood/tense organization
+  - Sentences table with difficulty levels and word references
+  - Audio file management with systematic naming
 
-**Current Status**: UI designed, awaiting implementation test
+**Current Status**: UI designed, comprehensive requirements documented, ready for implementation
 
 ---
 
@@ -151,17 +176,27 @@
 - **Storage**: Individual word progress per deck
 - **Fields**: ease_factor, interval_days, next_review_at
 
-### Audio Integration Strategy
+**Enhanced Database Schema Decisions**:
 
-**File Naming Convention**:
-- Main word: `italian_parlare.mp3`
-- Context: `italian_parlare_sentence_1.mp3`
-- Conjugations: `italian_parlare_conj_presente_io.mp3`
+**Core Dictionary Architecture**:
+- **Words Table**: Enhanced with image_url, user mastery tracking, comprehensive tag arrays
+- **Conjugations Table**: Mood-based organization (Indicativo, Congiuntivo, Condizionale, Imperativo)
+- **Sentences Table**: Independent entity with word references, CEFR levels, audio paths
+- **User Progress**: Individual word mastery status, proficiency level settings
 
-**Storage Strategy**:
-- **Generation**: Azure TTS (cost-effective)
-- **Storage**: Cheap cloud storage (Backblaze B2, GitHub, or Netlify)
-- **Delivery**: CDN for fast global access
+**Advanced Tag System Implementation**:
+- **PostgreSQL Arrays**: Layer 1 (required grammatical) + Layer 2 (semantic) tags
+- **GIN Indexes**: Optimized tag-based search performance
+- **Visual Mapping**: Front-card essential indicators, back-card detailed properties
+- **Search Integration**: Tag combinations for precise vocabulary filtering
+
+**Audio File Architecture**:
+- **Naming Convention**: 
+  - Words: `italian_parlare.mp3`
+  - Conjugations: `italian_parlare_conj_presente_io.mp3`
+  - Sentences: `italian_sentence_[id].mp3`
+- **Storage Strategy**: CDN delivery with Azure TTS generation
+- **Integration**: Playback controls in dictionary, conjugation modal, and sentence examples
 
 ### Frontend Architecture
 
@@ -206,17 +241,26 @@
 
 ### 📋 Next Phase
 1. **Dictionary Implementation**:
-   - Replace `app/layout.js` with sea-themed navigation
-   - Test slide-out panel functionality
-   - Connect to Supabase dictionary table
-2. **Data Integration**:
-   - Import Italian vocabulary to dictionary table
-   - Real search functionality
-   - Add-to-deck system
-3. **Visual Design**:
+   - Replace `app/layout.js` with sea-themed navigation and slide-out panel
+   - Test slide-out panel functionality and animations
+   - Connect to Supabase dictionary table with comprehensive schema
+2. **Advanced Features Integration**:
+   - Implement conjugation modal with mood-based organization
+   - Add image support with responsive sizing for visual learning
+   - Build user mastery tracking system (known/unknown status)
+   - Create context sentences as separate searchable entities
+3. **Tag System Implementation**:
+   - PostgreSQL arrays with two-layer tag architecture
+   - Visual tag display system (front-card indicators, back-card details)
+   - GIN indexes for optimized tag-based search performance
+4. **Audio Integration**:
+   - Systematic audio file management and playback controls
+   - Azure TTS integration for comprehensive pronunciation support
+   - Dynamic audio loading for words, conjugations, and sentences
+5. **Visual Design**:
    - Custom Misti logo (sun/sea theme)
-   - Italian typography
-   - Audio playback controls
+   - Italian typography and responsive design refinements
+   - Progressive difficulty indicators and user proficiency integration
 
 ---
 
