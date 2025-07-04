@@ -69,52 +69,14 @@ export default function RootLayout({ children }) {
             {/* Dictionary Content */}
             <div className="flex-1 overflow-y-auto p-4 bg-white">
               <div id="dictionary-results">
-                {/* Sample words - will be replaced with real data */}
-                <div className="space-y-3">
-                  <div className="border-2 border-teal-100 rounded-lg p-3 hover:bg-teal-50 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-teal-900">parlare</h3>
-                        <p className="text-sm text-teal-700">to speak, to talk</p>
-                        <span className="inline-block bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full mt-1">
-                          verb
-                        </span>
-                      </div>
-                      <button className="bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700 transition-colors">
-                        + Add
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="border-2 border-teal-100 rounded-lg p-3 hover:bg-teal-50 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-teal-900">casa</h3>
-                        <p className="text-sm text-teal-700">house, home</p>
-                        <span className="inline-block bg-cyan-100 text-cyan-800 text-xs px-2 py-1 rounded-full mt-1">
-                          noun
-                        </span>
-                      </div>
-                      <button className="bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700 transition-colors">
-                        + Add
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="border-2 border-teal-100 rounded-lg p-3 hover:bg-teal-50 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-teal-900">bello</h3>
-                        <p className="text-sm text-teal-700">beautiful, handsome</p>
-                        <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mt-1">
-                          adjective
-                        </span>
-                      </div>
-                      <button className="bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700 transition-colors">
-                        + Add
-                      </button>
-                    </div>
-                  </div>
+                <div id="words-container" className="space-y-3">
+                  <!-- Words will be loaded here -->
+                </div>
+                <div id="loading" className="text-center py-4 text-teal-600">
+                  Loading words...
+                </div>
+                <div id="no-results" className="text-center py-4 text-gray-500 hidden">
+                  No words found
                 </div>
               </div>
             </div>
@@ -141,11 +103,19 @@ export default function RootLayout({ children }) {
               const closeDictionary = document.getElementById('close-dictionary');
               const overlay = document.getElementById('dictionary-overlay');
               const searchInput = document.getElementById('dictionary-search');
+              const wordsContainer = document.getElementById('words-container');
+              const loading = document.getElementById('loading');
+              const noResults = document.getElementById('no-results');
+
+              // Supabase client
+              const SUPABASE_URL = '${process.env.NEXT_PUBLIC_SUPABASE_URL}';
+              const SUPABASE_ANON_KEY = '${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}';
 
               function openDictionary() {
                 dictionaryPanel.classList.remove('translate-x-full');
                 overlay.classList.remove('opacity-0', 'pointer-events-none');
                 searchInput.focus();
+                loadWords(); // Load words when opening
               }
 
               function closeDictionaryPanel() {
@@ -153,16 +123,87 @@ export default function RootLayout({ children }) {
                 overlay.classList.add('opacity-0', 'pointer-events-none');
               }
 
+              async function loadWords(searchTerm = '') {
+                loading.classList.remove('hidden');
+                wordsContainer.innerHTML = '';
+                noResults.classList.add('hidden');
+
+                try {
+                  let url = SUPABASE_URL + '/rest/v1/dictionary?select=*';
+                  if (searchTerm) {
+                    url += '&or=(italian.ilike.*' + searchTerm + '*,english.ilike.*' + searchTerm + '*)';
+                  }
+                  url += '&limit=20';
+
+                  const response = await fetch(url, {
+                    headers: {
+                      'apikey': SUPABASE_ANON_KEY,
+                      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+                    }
+                  });
+
+                  const words = await response.json();
+                  
+                  loading.classList.add('hidden');
+
+                  if (words.length === 0) {
+                    noResults.classList.remove('hidden');
+                    return;
+                  }
+
+                  words.forEach(word => {
+                    const wordElement = createWordElement(word);
+                    wordsContainer.appendChild(wordElement);
+                  });
+
+                } catch (error) {
+                  console.error('Error loading words:', error);
+                  loading.classList.add('hidden');
+                  noResults.textContent = 'Error loading words';
+                  noResults.classList.remove('hidden');
+                }
+              }
+
+              function createWordElement(word) {
+                const div = document.createElement('div');
+                div.className = 'border-2 border-teal-100 rounded-lg p-3 hover:bg-teal-50 transition-colors';
+                
+                const wordTypeColor = {
+                  'VERB': 'bg-teal-100 text-teal-800',
+                  'NOUN': 'bg-cyan-100 text-cyan-800', 
+                  'ADJECTIVE': 'bg-blue-100 text-blue-800',
+                  'ADVERB': 'bg-purple-100 text-purple-800'
+                }[word.word_type] || 'bg-gray-100 text-gray-800';
+
+                div.innerHTML = \`
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <h3 class="font-medium text-teal-900">\${word.italian}</h3>
+                      <p class="text-sm text-teal-700">\${word.english}</p>
+                      <span class="inline-block \${wordTypeColor} text-xs px-2 py-1 rounded-full mt-1">
+                        \${word.word_type.toLowerCase()}
+                      </span>
+                    </div>
+                    <button class="bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700 transition-colors">
+                      + Add
+                    </button>
+                  </div>
+                \`;
+                
+                return div;
+              }
+
+              let searchTimeout;
+              searchInput.addEventListener('input', function(e) {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                  loadWords(e.target.value);
+                }, 300);
+              });
+
               dictionaryBtn.addEventListener('click', openDictionary);
               closeDictionary.addEventListener('click', closeDictionaryPanel);
               overlay.addEventListener('click', closeDictionaryPanel);
-
-              // Sample search functionality
-              searchInput.addEventListener('input', function(e) {
-                const searchTerm = e.target.value.toLowerCase();
-                console.log('Searching for:', searchTerm);
-                // TODO: Implement real search with Supabase
-              });
             });
           `
         }} />
