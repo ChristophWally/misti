@@ -13,7 +13,7 @@ export default function RootLayout({ children }) {
             <div className="flex justify-between items-center h-16">
               {/* Logo */}
               <div className="flex items-center">
-                <h1 className="text-xl font-bold text-white">🌊 Misti</h1>
+                <h1 className="text-xl font-bold text-white">Misti</h1>
               </div>
               
               {/* Navigation */}
@@ -43,7 +43,7 @@ export default function RootLayout({ children }) {
           <div className="flex flex-col h-full">
             {/* Panel Header */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
-              <h2 className="text-lg font-semibold text-white">🌊 Dictionary</h2>
+              <h2 className="text-lg font-semibold text-white">Dictionary</h2>
               <button 
                 id="close-dictionary"
                 className="text-white hover:text-cyan-200"
