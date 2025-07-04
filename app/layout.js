@@ -70,7 +70,7 @@ export default function RootLayout({ children }) {
             <div className="flex-1 overflow-y-auto p-4 bg-white">
               <div id="dictionary-results">
                 <div id="words-container" className="space-y-3">
-                  <!-- Words will be loaded here -->
+                  {/* Words will be loaded here */}
                 </div>
                 <div id="loading" className="text-center py-4 text-teal-600">
                   Loading words...
