@@ -8,7 +8,24 @@ export default function RootLayout({ children }) {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet" />
         <style dangerouslySetInnerHTML={{
-          __html: `body { font-family: 'Comic Neue', cursive; }`
+          __html: `
+            body { font-family: 'Comic Neue', cursive; }
+            .tag-essential, .tag-detailed {
+              display: inline-block;
+              font-size: 10px;
+              font-weight: 600;
+              padding: 2px 6px;
+              border-radius: 9999px;
+              margin: 1px;
+              cursor: help;
+            }
+            .tag-essential {
+              border: 1px solid rgba(0,0,0,0.1);
+            }
+            .tag-detailed {
+              border: 1px solid rgba(0,0,0,0.1);
+            }
+          `
         }} />
       </head>
       <body className="bg-gradient-to-br from-cyan-50 to-blue-50">
@@ -175,14 +192,24 @@ export default function RootLayout({ children }) {
                   'ADVERB': 'bg-purple-100 text-purple-800'
                 }[word.word_type] || 'bg-gray-100 text-gray-800';
 
+                // Process tags
+                const tags = word.tags || [];
+                const tagElements = processTagsForDisplay(tags, word.word_type);
+
                 div.innerHTML = \`
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
-                      <h3 class="font-medium text-teal-900">\${word.italian}</h3>
+                      <div class="flex items-center gap-2 mb-1">
+                        <h3 class="font-medium text-teal-900">\${word.italian}</h3>
+                        \${tagElements.essential}
+                      </div>
                       <p class="text-sm text-teal-700">\${word.english}</p>
-                      <span class="inline-block \${wordTypeColor} text-xs px-2 py-1 rounded-full mt-1">
-                        \${word.word_type.toLowerCase()}
-                      </span>
+                      <div class="flex flex-wrap gap-1 mt-2">
+                        <span class="inline-block \${wordTypeColor} text-xs px-2 py-1 rounded-full">
+                          \${word.word_type.toLowerCase()}
+                        </span>
+                        \${tagElements.detailed}
+                      </div>
                     </div>
                     <button class="bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700 transition-colors">
                       + Add
@@ -191,6 +218,88 @@ export default function RootLayout({ children }) {
                 \`;
                 
                 return div;
+              }
+
+              function processTagsForDisplay(tags, wordType) {
+                const essential = [];
+                const detailed = [];
+
+                tags.forEach(tag => {
+                  const tagInfo = getTagDisplayInfo(tag, wordType);
+                  if (tagInfo) {
+                    if (tagInfo.essential) {
+                      essential.push(\`<span class="tag-essential \${tagInfo.class}" title="\${tagInfo.description}">\${tagInfo.display}</span>\`);
+                    } else {
+                      detailed.push(\`<span class="tag-detailed \${tagInfo.class}" title="\${tagInfo.description}">\${tagInfo.display}</span>\`);
+                    }
+                  }
+                });
+
+                return {
+                  essential: essential.join(' '),
+                  detailed: detailed.join(' ')
+                };
+              }
+
+              function getTagDisplayInfo(tag, wordType) {
+                const tagMap = {
+                  // Gender (essential for nouns)
+                  'masculine': { display: '♂', class: 'bg-blue-100 text-blue-800', essential: wordType === 'NOUN', description: 'Masculine gender requiring masculine articles (il, un)' },
+                  'feminine': { display: '♀', class: 'bg-pink-100 text-pink-800', essential: wordType === 'NOUN', description: 'Feminine gender requiring feminine articles (la, una)' },
+                  'common-gender': { display: '⚥', class: 'bg-purple-100 text-purple-800', essential: wordType === 'NOUN', description: 'Same form for both genders, determined by article' },
+                  
+                  // Irregularity (essential when present)
+                  'irregular-pattern': { display: '⚠️ IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Does not follow standard patterns' },
+                  
+                  // ISC Conjugation (essential for verbs)
+                  'ire-isc-conjugation': { display: '-ISC', class: 'bg-yellow-100 text-yellow-800', essential: wordType === 'VERB', description: 'Uses -isc- infix in present forms' },
+                  
+                  // CEFR Levels (essential)
+                  'CEFR-A1': { display: '📚 A1', class: 'bg-green-100 text-green-800', essential: true, description: 'Beginner level vocabulary' },
+                  'CEFR-A2': { display: '📚 A2', class: 'bg-green-100 text-green-800', essential: true, description: 'Elementary level vocabulary' },
+                  'CEFR-B1': { display: '📚 B1', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Intermediate level vocabulary' },
+                  'CEFR-B2': { display: '📚 B2', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Upper intermediate vocabulary' },
+                  'CEFR-C1': { display: '📚 C1', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Advanced level vocabulary' },
+                  'CEFR-C2': { display: '📚 C2', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Proficiency level vocabulary' },
+                  
+                  // Frequency (essential)
+                  'freq-top100': { display: '⭐ 100', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 100 most frequent words' },
+                  'freq-top500': { display: '⭐ 500', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 500 most frequent words' },
+                  'freq-top1000': { display: '⭐ 1K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 1000 most frequent words' },
+                  'freq-top5000': { display: '⭐ 5K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 5000 most frequent words' },
+                  
+                  // Advanced Fluency (essential)
+                  'native': { display: '🗣️ NAT', class: 'bg-indigo-100 text-indigo-800', essential: true, description: 'Natural native-speaker vocabulary' },
+                  'business': { display: '💼 BIZ', class: 'bg-gray-100 text-gray-800', essential: true, description: 'Professional/commercial terminology' },
+                  'academic': { display: '🎓 ACAD', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Scholarly and technical vocabulary' },
+                  'literary': { display: '📜 LIT', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Literary and artistic language' },
+                  'regional': { display: '🗺️ REG', class: 'bg-green-100 text-green-800', essential: true, description: 'Regional dialects and variants' },
+                  
+                  // Conjugation Groups (detailed)
+                  'are-conjugation': { display: '🔸 -are', class: 'bg-teal-100 text-teal-800', essential: false, description: 'First conjugation group' },
+                  'ere-conjugation': { display: '🔹 -ere', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Second conjugation group' },
+                  'ire-conjugation': { display: '🔶 -ire', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Third conjugation group' },
+                  
+                  // Auxiliary Verbs (detailed)
+                  'avere-auxiliary': { display: '🤝 avere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses avere in compound tenses' },
+                  'essere-auxiliary': { display: '🫱 essere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses essere in compound tenses' },
+                  'both-auxiliary': { display: '🤜🤛 both', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Can use either auxiliary' },
+                  
+                  // Transitivity (detailed)
+                  'transitive-verb': { display: '➡️ trans', class: 'bg-green-100 text-green-800', essential: false, description: 'Takes a direct object' },
+                  'intransitive-verb': { display: '↩️ intrans', class: 'bg-green-100 text-green-800', essential: false, description: 'Does not take direct object' },
+                  'both-transitivity': { display: '↔️ both', class: 'bg-green-100 text-green-800', essential: false, description: 'Can be both transitive and intransitive' },
+                  
+                  // Topics (detailed)
+                  'topic-place': { display: '🌍 place', class: 'bg-emerald-100 text-emerald-800', essential: false, description: 'Geographical locations or spaces' },
+                  'topic-food': { display: '🍕 food', class: 'bg-orange-100 text-orange-800', essential: false, description: 'Food and drink vocabulary' },
+                  'topic-bodypart': { display: '👁️ body', class: 'bg-pink-100 text-pink-800', essential: false, description: 'Parts of the body' },
+                  'topic-profession': { display: '👩‍💼 job', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Jobs and professional roles' },
+                  'topic-abstract': { display: '💭 abstract', class: 'bg-purple-100 text-purple-800', essential: false, description: 'Concepts, ideas, and feelings' },
+                  'topic-daily-life': { display: '🏡 daily', class: 'bg-green-100 text-green-800', essential: false, description: 'Everyday activities and household' }
+                };
+
+                return tagMap[tag] || null;
               }
 
               let searchTimeout;
