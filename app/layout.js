@@ -7,27 +7,27 @@ export default function RootLayout({ children }) {
         <title>Misti - Italian Learning</title>
         <script src="https://cdn.tailwindcss.com"></script>
       </head>
-      <body className="bg-gray-50">
-        <nav className="bg-white shadow-sm border-b">
+      <body className="bg-gradient-to-br from-cyan-50 to-blue-50">
+        <nav className="bg-gradient-to-r from-teal-600 to-cyan-600 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               {/* Logo */}
               <div className="flex items-center">
-                <h1 className="text-xl font-bold text-blue-600">Misti</h1>
+                <h1 className="text-xl font-bold text-white">🌊 Misti</h1>
               </div>
               
               {/* Navigation */}
               <div className="flex items-center space-x-4">
                 <button
                   id="dictionary-btn"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                  className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors shadow-md"
                 >
                   📚 Dictionary
                 </button>
-                <button className="text-gray-700 hover:text-gray-900">
+                <button className="text-white hover:text-cyan-200 transition-colors">
                   My Decks
                 </button>
-                <button className="text-gray-700 hover:text-gray-900">
+                <button className="text-white hover:text-cyan-200 transition-colors">
                   Profile
                 </button>
               </div>
@@ -42,71 +42,71 @@ export default function RootLayout({ children }) {
         >
           <div className="flex flex-col h-full">
             {/* Panel Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">Dictionary</h2>
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
+              <h2 className="text-lg font-semibold text-white">🌊 Dictionary</h2>
               <button 
                 id="close-dictionary"
-                className="text-gray-400 hover:text-gray-600"
+                className="text-white hover:text-cyan-200"
               >
                 ✕
               </button>
             </div>
 
             {/* Search Bar */}
-            <div className="p-4 border-b">
+            <div className="p-4 border-b bg-cyan-50">
               <input
                 type="text"
                 id="dictionary-search"
                 placeholder="Search Italian words..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
               />
             </div>
 
             {/* Dictionary Content */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 bg-white">
               <div id="dictionary-results">
                 {/* Sample words - will be replaced with real data */}
                 <div className="space-y-3">
-                  <div className="border rounded-lg p-3 hover:bg-gray-50">
+                  <div className="border-2 border-teal-100 rounded-lg p-3 hover:bg-teal-50 transition-colors">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">parlare</h3>
-                        <p className="text-sm text-gray-600">to speak, to talk</p>
-                        <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mt-1">
+                        <h3 className="font-medium text-teal-900">parlare</h3>
+                        <p className="text-sm text-teal-700">to speak, to talk</p>
+                        <span className="inline-block bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full mt-1">
                           verb
                         </span>
                       </div>
-                      <button className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                      <button className="bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700 transition-colors">
                         + Add
                       </button>
                     </div>
                   </div>
                   
-                  <div className="border rounded-lg p-3 hover:bg-gray-50">
+                  <div className="border-2 border-teal-100 rounded-lg p-3 hover:bg-teal-50 transition-colors">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">casa</h3>
-                        <p className="text-sm text-gray-600">house, home</p>
-                        <span className="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full mt-1">
+                        <h3 className="font-medium text-teal-900">casa</h3>
+                        <p className="text-sm text-teal-700">house, home</p>
+                        <span className="inline-block bg-cyan-100 text-cyan-800 text-xs px-2 py-1 rounded-full mt-1">
                           noun
                         </span>
                       </div>
-                      <button className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                      <button className="bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700 transition-colors">
                         + Add
                       </button>
                     </div>
                   </div>
                   
-                  <div className="border rounded-lg p-3 hover:bg-gray-50">
+                  <div className="border-2 border-teal-100 rounded-lg p-3 hover:bg-teal-50 transition-colors">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">bello</h3>
-                        <p className="text-sm text-gray-600">beautiful, handsome</p>
-                        <span className="inline-block bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full mt-1">
+                        <h3 className="font-medium text-teal-900">bello</h3>
+                        <p className="text-sm text-teal-700">beautiful, handsome</p>
+                        <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mt-1">
                           adjective
                         </span>
                       </div>
-                      <button className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                      <button className="bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700 transition-colors">
                         + Add
                       </button>
                     </div>
