@@ -6,6 +6,7 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Misti - Italian Learning</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet" />
         <style dangerouslySetInnerHTML={{
           __html: `
@@ -134,6 +135,10 @@ export default function RootLayout({ children }) {
               // Supabase client
               const SUPABASE_URL = '${process.env.NEXT_PUBLIC_SUPABASE_URL}';
               const SUPABASE_ANON_KEY = '${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}';
+              
+              // Create Supabase client for audio functions
+              const { createClient } = supabase;
+              const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
               // Resize functionality
               let isResizing = false;
@@ -269,11 +274,25 @@ export default function RootLayout({ children }) {
                 const tags = word.tags || [];
                 const tagElements = processTagsForDisplay(tags, word.word_type);
 
+                const audioButtonColor = {
+                  'VERB': 'bg-teal-600 hover:bg-teal-700',
+                  'NOUN': 'bg-cyan-600 hover:bg-cyan-700', 
+                  'ADJECTIVE': 'bg-blue-600 hover:bg-blue-700',
+                  'ADVERB': 'bg-purple-600 hover:bg-purple-700'
+                }[word.word_type] || 'bg-gray-600 hover:bg-gray-700';
+
                 div.innerHTML = \`
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
                       <div class="flex items-center gap-2 mb-2">
                         <h3 class="text-xl font-semibold \${colors.text}">\${word.italian}</h3>
+                        <button 
+                          class="audio-btn w-8 h-8 \${audioButtonColor} text-white rounded-full flex items-center justify-center transition-colors text-xs"
+                          onclick="playAudio('\${word.id}', '\${word.italian}')"
+                          title="Play pronunciation"
+                        >
+                          ▶
+                        </button>
                         \${tagElements.essential}
                       </div>
                       <p class="text-base \${colors.text} opacity-80 mb-3">\${word.english}</p>
@@ -386,6 +405,54 @@ export default function RootLayout({ children }) {
               dictionaryBtn.addEventListener('click', openDictionary);
               closeDictionary.addEventListener('click', closeDictionaryPanel);
               overlay.addEventListener('click', closeDictionaryPanel);
+
+              // Audio playback function
+              async function playAudio(wordId, italianText) {
+                const audioBtn = event.target;
+                const originalText = audioBtn.innerHTML;
+                
+                // Show loading state
+                audioBtn.innerHTML = '⏸';
+                audioBtn.disabled = true;
+
+                try {
+                  // For now, we'll use TTS fallback since we don't have pregenerated audio yet
+                  // TODO: Add pregenerated audio check later
+                  fallbackToTTS(italianText, audioBtn, originalText);
+                } catch (error) {
+                  console.error('Audio error:', error);
+                  fallbackToTTS(italianText, audioBtn, originalText);
+                }
+              }
+
+              // TTS fallback function
+              function fallbackToTTS(text, audioBtn, originalText) {
+                console.log('Using TTS fallback for:', text);
+                
+                // Use Web Speech API for TTS fallback
+                if ('speechSynthesis' in window) {
+                  const utterance = new SpeechSynthesisUtterance(text);
+                  utterance.lang = 'it-IT';
+                  utterance.rate = 0.8;
+                  
+                  utterance.onend = () => {
+                    audioBtn.innerHTML = originalText;
+                    audioBtn.disabled = false;
+                  };
+                  
+                  speechSynthesis.speak(utterance);
+                } else {
+                  // No TTS available
+                  audioBtn.innerHTML = '❌';
+                  setTimeout(() => {
+                    audioBtn.innerHTML = originalText;
+                    audioBtn.disabled = false;
+                  }, 1000);
+                }
+              }
+
+              // Make functions global for onclick handlers
+              window.playAudio = playAudio;
             });
           `
         }} />
