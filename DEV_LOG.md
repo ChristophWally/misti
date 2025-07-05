@@ -154,7 +154,88 @@
   - Sentences table with difficulty levels and word references
   - Audio file management with systematic naming
 
-**Current Status**: UI designed, comprehensive requirements documented, ready for implementation
+### Phase 6: Audio Storage Architecture
+
+**Challenge**: Securing premium audio content while maintaining performance
+- **Requirements**: 
+  - Support thousands of audio files (words, conjugations, variations)
+  - Prevent scraping of premium pregenerated content
+  - Dual-source system (premium + TTS fallback)
+  - Cost-effective for development and scale
+
+**Challenge**: Audio file naming and organization
+- **Background**: Comprehensive Italian grammar requires individual files for all variations
+- **Decision**: UUID-based naming with systematic variation identifiers
+- **Pattern**: `audio_[base_word_uuid]_[form_identifier].mp3`
+- **Coverage**: Multiple noun plurals, all verb conjugations, adjective forms, irregular variations
+
+**Challenge**: Storage platform selection
+- **Analysis**:
+  - **Supabase Storage**: $0.021/GB storage, $0.09/GB bandwidth, operations included, 1GB free
+  - **Cloudflare R2**: $0.015/GB storage, $0.00 bandwidth, per-operation fees, 10GB free
+  - **Backblaze B2**: $0.005/GB storage, $0.01/GB bandwidth, 10GB free
+- **Decision**: Start with Supabase Storage for development simplicity
+- **Rationale**: Integrated authentication, signed URLs, no operation tracking needed
+- **Migration Path**: Move to R2 at scale for zero bandwidth costs
+
+**Implementation Decisions**:
+- **Security**: Signed URLs with authentication requirements
+- **Database Schema**: `word_forms` table linking all audio variations
+- **Fallback Strategy**: Live TTS when pregenerated files unavailable
+- **Protection**: UUID obfuscation + referrer checking + auth requirements
+
+### Phase 7: Intelligent Audio Generation Strategy
+
+**Challenge**: Cost-effective premium audio generation with strategic prioritization
+- **Requirements**: 
+  - Automatic generation for core vocabulary words
+  - Manual control for conjugations and variations
+  - Integration with Azure premium neural voices
+  - Supabase Edge Function automation
+  - Scalable from free tier to commercial usage
+
+**Challenge**: Learning hierarchy and content prioritization
+- **Background**: Language acquisition follows frequency-based patterns where core words provide maximum educational impact
+- **Priority Strategy**: 
+  1. Core words (automatic generation via Edge Functions)
+  2. Essential conjugations (manual trigger system)
+  3. Example sentences (targeted manual expansion)
+- **Rationale**: Foundation-first approach maximizes user value per audio investment dollar
+
+**Challenge**: Dual automation system design
+- **Automatic System**: Edge Function triggered on dictionary table inserts
+  - Monitors base word additions only
+  - Calls Azure TTS with premium Italian neural voices
+  - Generates UUID-named files: `audio_[word_uuid].mp3`
+  - Uploads to Supabase Storage with signed URL security
+  - Updates database with audio file paths
+- **Manual System**: Administrative interface for selective generation
+  - Batch processing capabilities for conjugations
+  - Surgical precision for high-value variations
+  - Cost visibility and usage tracking
+  - User feedback-driven prioritization
+
+**Implementation Decisions**:
+- **Database Architecture**: Dictionary table triggers automatic generation, word_forms table stores manual variations
+- **Cost Management**: Azure free tier supports ~4,000-5,000 words monthly within 5 hours of neural voice synthesis
+- **Content Strategy**: Begin with 500-1,000 most frequent Italian words for solid foundation
+- **Expansion Logic**: Data-driven decisions based on user engagement patterns and learning analytics
+- **Quality Control**: Premium neural voices ensure professional pronunciation standards
+
+**Technical Architecture**:
+- **Edge Function Logic**: Conditional triggers that distinguish base words from variations
+- **Storage Integration**: Seamless Supabase Storage uploads with proper UUID naming
+- **Security Framework**: Signed URLs prevent unauthorized access to premium audio content
+- **Monitoring Systems**: Usage tracking for both automatic and manual generation workflows
+- **Scalability Planning**: Clear migration path from free tiers to paid services as user base grows
+
+**Commercial Viability Analysis**:
+- **Free Tier Capacity**: Supabase allows commercial use with 50K MAU, 1GB storage, 2GB bandwidth
+- **Azure Economics**: $16 per million characters enables extensive vocabulary coverage within budget
+- **Revenue Alignment**: Costs scale proportionally with content expansion and user growth
+- **Asset Building**: Generated audio files become permanent assets serving users indefinitely
+
+**Current Status**: Strategy defined, ready for Edge Function implementation and Supabase Storage configuration
 
 ---
 
@@ -234,7 +315,10 @@
    - Ocean-themed navigation with Comic Neue font
    - Real-time search functionality with 300ms debounce
    - Live word loading from database with proper error handling
-   - Color-coded word types (VERB: teal, NOUN: cyan, ADJECTIVE: blue, ADVERB: purple)
+   - Color-coded word types with cohesive theming (VERB: teal, NOUN: cyan, ADJECTIVE: blue, ADVERB: purple)
+   - Responsive sizing: Mobile (384px), Medium (75%), Large (66%), XL (50% screen width)
+   - User-resizable panel with drag handle (min 384px, max 80% viewport)
+   - Enhanced word prominence with larger text (text-xl) and improved spacing
 2. **Advanced Tag System Design**: Comprehensive categorization system
    - Critical tags inline with word name (gender ♂♀⚥, irregularity ⚠️, ISC -ISC, CEFR levels, frequency)
    - Categorized detailed tags (Grammar | Topics) for reduced clutter
