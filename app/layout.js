@@ -274,24 +274,19 @@ export default function RootLayout({ children }) {
                 const tags = word.tags || [];
                 const tagElements = processTagsForDisplay(tags, word.word_type);
 
-                const audioButtonColor = {
-                  'VERB': 'bg-teal-600 hover:bg-teal-700',
-                  'NOUN': 'bg-cyan-600 hover:bg-cyan-700', 
-                  'ADJECTIVE': 'bg-blue-600 hover:bg-blue-700',
-                  'ADVERB': 'bg-purple-600 hover:bg-purple-700'
-                }[word.word_type] || 'bg-gray-600 hover:bg-gray-700';
-
                 div.innerHTML = \`
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
                       <div class="flex items-center gap-2 mb-2">
                         <h3 class="text-xl font-semibold \${colors.text}">\${word.italian}</h3>
                         <button 
-                          class="audio-btn w-8 h-8 \${audioButtonColor} text-white rounded-full flex items-center justify-center transition-colors text-xs"
+                          class="audio-btn w-8 h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex items-center justify-center transition-colors"
                           onclick="playAudio('\${word.id}', '\${word.italian}')"
                           title="Play pronunciation"
                         >
-                          ▶
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
                         </button>
                         \${tagElements.essential}
                       </div>
@@ -408,25 +403,29 @@ export default function RootLayout({ children }) {
 
               // Audio playback function
               async function playAudio(wordId, italianText) {
-                const audioBtn = event.target;
-                const originalText = audioBtn.innerHTML;
+                const audioBtn = event.target.closest('button');
+                const originalHTML = audioBtn.innerHTML;
                 
-                // Show loading state
-                audioBtn.innerHTML = '⏸';
+                // Show loading state with pause icon
+                audioBtn.innerHTML = \`
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                  </svg>
+                \`;
                 audioBtn.disabled = true;
 
                 try {
                   // For now, we'll use TTS fallback since we don't have pregenerated audio yet
                   // TODO: Add pregenerated audio check later
-                  fallbackToTTS(italianText, audioBtn, originalText);
+                  fallbackToTTS(italianText, audioBtn, originalHTML);
                 } catch (error) {
                   console.error('Audio error:', error);
-                  fallbackToTTS(italianText, audioBtn, originalText);
+                  fallbackToTTS(italianText, audioBtn, originalHTML);
                 }
               }
 
               // TTS fallback function
-              function fallbackToTTS(text, audioBtn, originalText) {
+              function fallbackToTTS(text, audioBtn, originalHTML) {
                 console.log('Using TTS fallback for:', text);
                 
                 // Use Web Speech API for TTS fallback
@@ -436,16 +435,20 @@ export default function RootLayout({ children }) {
                   utterance.rate = 0.8;
                   
                   utterance.onend = () => {
-                    audioBtn.innerHTML = originalText;
+                    audioBtn.innerHTML = originalHTML;
                     audioBtn.disabled = false;
                   };
                   
                   speechSynthesis.speak(utterance);
                 } else {
-                  // No TTS available
-                  audioBtn.innerHTML = '❌';
+                  // No TTS available - show error icon briefly
+                  audioBtn.innerHTML = \`
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                  \`;
                   setTimeout(() => {
-                    audioBtn.innerHTML = originalText;
+                    audioBtn.innerHTML = originalHTML;
                     audioBtn.disabled = false;
                   }, 1000);
                 }
