@@ -59,8 +59,14 @@ export default function RootLayout({ children }) {
         {/* Dictionary Slide-out Panel */}
         <div 
           id="dictionary-panel"
-          className="fixed inset-y-0 right-0 w-96 md:w-1/2 lg:w-2/5 xl:w-1/3 bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out z-50"
+          className="fixed inset-y-0 right-0 w-96 md:w-3/4 lg:w-2/3 xl:w-1/2 bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out z-50"
+          style={{ minWidth: '384px', maxWidth: '80vw' }}
         >
+          {/* Resize Handle */}
+          <div 
+            id="resize-handle"
+            className="absolute left-0 top-0 w-1 h-full bg-teal-300 cursor-ew-resize hover:bg-teal-400 transition-colors opacity-0 hover:opacity-100"
+          ></div>
           <div className="flex flex-col h-full">
             {/* Panel Header */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
@@ -123,10 +129,44 @@ export default function RootLayout({ children }) {
               const wordsContainer = document.getElementById('words-container');
               const loading = document.getElementById('loading');
               const noResults = document.getElementById('no-results');
+              const resizeHandle = document.getElementById('resize-handle');
 
               // Supabase client
               const SUPABASE_URL = '${process.env.NEXT_PUBLIC_SUPABASE_URL}';
               const SUPABASE_ANON_KEY = '${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}';
+
+              // Resize functionality
+              let isResizing = false;
+              let startX = 0;
+              let startWidth = 0;
+
+              resizeHandle.addEventListener('mousedown', function(e) {
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = parseInt(window.getComputedStyle(dictionaryPanel, null).getPropertyValue('width'));
+                document.addEventListener('mousemove', handleResize);
+                document.addEventListener('mouseup', stopResize);
+                dictionaryPanel.style.transition = 'none'; // Disable transition during resize
+              });
+
+              function handleResize(e) {
+                if (!isResizing) return;
+                const deltaX = startX - e.clientX; // Reverse direction since we're resizing from left
+                const newWidth = startWidth + deltaX;
+                const minWidth = 384; // Minimum width
+                const maxWidth = window.innerWidth * 0.8; // Maximum 80% of viewport
+                
+                if (newWidth >= minWidth && newWidth <= maxWidth) {
+                  dictionaryPanel.style.width = newWidth + 'px';
+                }
+              }
+
+              function stopResize() {
+                isResizing = false;
+                document.removeEventListener('mousemove', handleResize);
+                document.removeEventListener('mouseup', stopResize);
+                dictionaryPanel.style.transition = ''; // Re-enable transition
+              }
 
               function openDictionary() {
                 dictionaryPanel.classList.remove('translate-x-full');
