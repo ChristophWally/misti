@@ -235,7 +235,55 @@
 - **Revenue Alignment**: Costs scale proportionally with content expansion and user growth
 - **Asset Building**: Generated audio files become permanent assets serving users indefinitely
 
-**Current Status**: Strategy defined, ready for Edge Function implementation and Supabase Storage configuration
+### Phase 8: Azure Cost Protection Architecture
+
+**Challenge**: Implementing bulletproof $0 spending protection with Azure premium voices
+- **Requirements**: 
+  - Hard stop at $1 spending limit (minimum Azure budget)
+  - Automatic denial of new resource creation when exceeded
+  - Automatic suspension of existing Speech Services when exceeded
+  - Monthly auto-reset when free tier renewals (500K characters)
+  - Complete system automation with zero manual intervention
+
+**Challenge**: Azure's lack of service-level spending controls
+- **Problem**: Azure cannot natively stop specific services at free tier limits
+- **Solution**: Advanced Policy + Logic App architecture for true enforcement
+- **Components**: Budget webhooks + Denial policies + Suspension policies + Monthly reset automation
+
+**Advanced Policy Implementation**:
+- **Denial Policy**: Prevents creation of new Cognitive Services when budget exceeded
+- **Suspension Policy**: Disables network access to existing Speech Services when budget exceeded
+- **Logic App Automation**: Dual-trigger system (budget webhooks + monthly schedule)
+- **Webhook Integration**: Budget alerts automatically trigger policy parameter updates
+- **Monthly Reset**: First day of month at 12:01 AM automatically re-enables all services
+
+**Cost Protection Flow**:
+1. **Normal Operation**: 500K characters/month free tier available
+2. **Budget Exceeded**: Webhook fires → Logic App updates policies → Services suspended
+3. **Monthly Reset**: Scheduled trigger → Logic App resets policies → Services re-enabled
+4. **Email Notifications**: Alerts for both suspension and reset events
+
+**Economic Analysis**:
+- **Protection System Cost**: $0.00/month (Logic App within 4,000 free actions)
+- **Speech Service Usage**: ~1,000 words = 1.4% of 500K character free tier
+- **Risk Assessment**: Extremely low probability of hitting limits with normal vocabulary building
+- **Overage Protection**: True hard stop prevents any charges beyond $1
+
+**Technical Architecture**:
+- **Budget**: $1 minimum with 50%, 80%, 100% alerts
+- **Azure Policies**: JSON-based resource denial and network suspension rules
+- **Logic App**: Consumption tier with HTTP webhook + recurrence triggers
+- **Voice Selection**: Random choice from 4 premium Italian neural voices
+- **Voice Consistency**: Metadata tracking ensures same voice across word variations
+
+**Implementation Benefits**:
+- **Zero Cost**: Entire protection system operates within free tiers
+- **Bulletproof Protection**: True spending enforcement, not just alerts
+- **Full Automation**: No manual intervention required for monthly resets
+- **Premium Quality**: Access to high-quality Azure neural voices with complete cost safety
+- **Scalable Foundation**: System supports growth while maintaining cost controls
+
+**Current Status**: Architecture designed, ready for step-by-step implementation with Budget + Policies + Logic App
 
 ---
 
