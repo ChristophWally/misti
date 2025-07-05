@@ -59,7 +59,7 @@ export default function RootLayout({ children }) {
         {/* Dictionary Slide-out Panel */}
         <div 
           id="dictionary-panel"
-          className="fixed inset-y-0 right-0 w-96 bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out z-50"
+          className="fixed inset-y-0 right-0 w-96 md:w-1/2 lg:w-2/5 xl:w-1/3 bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out z-50"
         >
           <div className="flex flex-col h-full">
             {/* Panel Header */}
@@ -183,14 +183,47 @@ export default function RootLayout({ children }) {
 
               function createWordElement(word) {
                 const div = document.createElement('div');
-                div.className = 'border-2 border-teal-100 rounded-lg p-3 hover:bg-teal-50 transition-colors';
                 
-                const wordTypeColor = {
-                  'VERB': 'bg-teal-100 text-teal-800',
-                  'NOUN': 'bg-cyan-100 text-cyan-800', 
-                  'ADJECTIVE': 'bg-blue-100 text-blue-800',
-                  'ADVERB': 'bg-purple-100 text-purple-800'
-                }[word.word_type] || 'bg-gray-100 text-gray-800';
+                const wordTypeColors = {
+                  'VERB': {
+                    border: 'border-teal-200',
+                    bg: 'bg-teal-50',
+                    hover: 'hover:bg-teal-100',
+                    tag: 'bg-teal-100 text-teal-800',
+                    text: 'text-teal-900'
+                  },
+                  'NOUN': {
+                    border: 'border-cyan-200',
+                    bg: 'bg-cyan-50',
+                    hover: 'hover:bg-cyan-100',
+                    tag: 'bg-cyan-100 text-cyan-800',
+                    text: 'text-cyan-900'
+                  },
+                  'ADJECTIVE': {
+                    border: 'border-blue-200',
+                    bg: 'bg-blue-50',
+                    hover: 'hover:bg-blue-100',
+                    tag: 'bg-blue-100 text-blue-800',
+                    text: 'text-blue-900'
+                  },
+                  'ADVERB': {
+                    border: 'border-purple-200',
+                    bg: 'bg-purple-50',
+                    hover: 'hover:bg-purple-100',
+                    tag: 'bg-purple-100 text-purple-800',
+                    text: 'text-purple-900'
+                  }
+                };
+
+                const colors = wordTypeColors[word.word_type] || {
+                  border: 'border-gray-200',
+                  bg: 'bg-gray-50',
+                  hover: 'hover:bg-gray-100',
+                  tag: 'bg-gray-100 text-gray-800',
+                  text: 'text-gray-900'
+                };
+
+                div.className = \`border-2 \${colors.border} \${colors.bg} \${colors.hover} rounded-lg p-4 transition-colors\`;
 
                 // Process tags
                 const tags = word.tags || [];
@@ -199,19 +232,19 @@ export default function RootLayout({ children }) {
                 div.innerHTML = \`
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
-                      <div class="flex items-center gap-2 mb-1">
-                        <h3 class="font-medium text-teal-900">\${word.italian}</h3>
+                      <div class="flex items-center gap-2 mb-2">
+                        <h3 class="text-xl font-semibold \${colors.text}">\${word.italian}</h3>
                         \${tagElements.essential}
                       </div>
-                      <p class="text-sm text-teal-700">\${word.english}</p>
-                      <div class="flex flex-wrap gap-1 mt-2">
-                        <span class="inline-block \${wordTypeColor} text-xs px-2 py-1 rounded-full">
+                      <p class="text-base \${colors.text} opacity-80 mb-3">\${word.english}</p>
+                      <div class="flex flex-wrap gap-1">
+                        <span class="inline-block \${colors.tag} text-xs px-2 py-1 rounded-full">
                           \${word.word_type.toLowerCase()}
                         </span>
                         \${tagElements.detailed}
                       </div>
                     </div>
-                    <button class="bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700 transition-colors">
+                    <button class="bg-emerald-600 text-white px-4 py-2 rounded text-sm hover:bg-emerald-700 transition-colors ml-4">
                       + Add
                     </button>
                   </div>
