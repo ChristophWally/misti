@@ -68,16 +68,16 @@ export default function RootLayout({ children }) {
               background-color: #f3f4f6;
             }
             .filter-chip.active {
-              background-color: #3b82f6;
+              background-color: #0d9488;
               color: white;
-              border-color: #3b82f6;
+              border-color: #0d9488;
             }
           `
         }} />
       </head>
       <body className="bg-gradient-to-br from-cyan-50 to-blue-50">
         <nav className="bg-gradient-to-r from-teal-600 to-cyan-600 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               {/* Logo */}
               <div className="flex items-center">
@@ -117,7 +117,7 @@ export default function RootLayout({ children }) {
           <div className="flex flex-col h-full">
             {/* Panel Header */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
-              <h2 className="text-lg font-semibold text-white">Enhanced Dictionary</h2>
+              <h2 className="text-lg font-semibold text-white">Dictionary</h2>
               <button 
                 id="close-dictionary"
                 className="text-white hover:text-cyan-200"
@@ -171,16 +171,14 @@ export default function RootLayout({ children }) {
                     </div>
                   </div>
                   
-                  {/* Grammar Filter */}
-                  <div>
+                  {/* Dynamic Grammar Filter */}
+                  <div id="grammar-filter-section">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Grammar</label>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="filter-chip" data-filter="tags" data-value="masculine">Masculine</span>
-                      <span className="filter-chip" data-filter="tags" data-value="feminine">Feminine</span>
+                    <div id="grammar-filters" className="flex flex-wrap gap-2 transition-all duration-300 ease-in-out">
+                      {/* Universal grammar filters */}
                       <span className="filter-chip" data-filter="tags" data-value="irregular-pattern">Irregular</span>
-                      <span className="filter-chip" data-filter="tags" data-value="are-conjugation">-are verbs</span>
-                      <span className="filter-chip" data-filter="tags" data-value="ere-conjugation">-ere verbs</span>
-                      <span className="filter-chip" data-filter="tags" data-value="ire-conjugation">-ire verbs</span>
+                      <span className="filter-chip" data-filter="tags" data-value="CEFR-A1">A1 Level</span>
+                      <span className="filter-chip" data-filter="tags" data-value="freq-top100">Top 100</span>
                     </div>
                   </div>
                 </div>
@@ -252,9 +250,9 @@ export default function RootLayout({ children }) {
                     query = query.or(\`italian.ilike.%\${searchTerm}%,english.ilike.%\${searchTerm}%\`);
                   }
 
-                  // Apply word type filter
-                  if (filters.wordType) {
-                    query = query.eq('word_type', filters.wordType);
+                  // Apply word type filter (now supports multiple types)
+                  if (filters.wordType && filters.wordType.length > 0) {
+                    query = query.in('word_type', filters.wordType);
                   }
 
                   // Apply tag filters
@@ -587,10 +585,92 @@ export default function RootLayout({ children }) {
 
               // Current filters state
               let currentFilters = {
-                wordType: '',
+                wordType: [],
                 cefrLevel: '',
                 tags: []
               };
+
+              // Grammar filter options by word type
+              const grammarFiltersByType = {
+                'NOUN': [
+                  { value: 'masculine', label: 'Masculine ♂' },
+                  { value: 'feminine', label: 'Feminine ♀' },
+                  { value: 'common-gender', label: 'Common ⚥' },
+                  { value: 'plural-i', label: 'Plural -i' },
+                  { value: 'plural-e', label: 'Plural -e' },
+                  { value: 'plural-invariable', label: 'Invariable' }
+                ],
+                'VERB': [
+                  { value: 'are-conjugation', label: '-are verbs' },
+                  { value: 'ere-conjugation', label: '-ere verbs' },
+                  { value: 'ire-conjugation', label: '-ire verbs' },
+                  { value: 'ire-isc-conjugation', label: '-isc verbs' },
+                  { value: 'avere-auxiliary', label: 'Uses avere' },
+                  { value: 'essere-auxiliary', label: 'Uses essere' },
+                  { value: 'transitive-verb', label: 'Transitive' },
+                  { value: 'intransitive-verb', label: 'Intransitive' }
+                ],
+                'ADJECTIVE': [
+                  { value: 'form-4', label: '4 forms' },
+                  { value: 'form-2', label: '2 forms' },
+                  { value: 'form-invariable', label: 'Invariable' },
+                  { value: 'type-gradable', label: 'Gradable' }
+                ],
+                'ADVERB': [
+                  { value: 'type-manner', label: 'Manner' },
+                  { value: 'type-time', label: 'Time' },
+                  { value: 'type-place', label: 'Place' },
+                  { value: 'type-quantity', label: 'Quantity' }
+                ],
+                'ALL': [
+                  { value: 'irregular-pattern', label: 'Irregular ⚠️' },
+                  { value: 'freq-top100', label: 'Top 100 ⭐' },
+                  { value: 'freq-top500', label: 'Top 500 ⭐' },
+                  { value: 'native', label: 'Native 🗣️' },
+                  { value: 'business', label: 'Business 💼' }
+                ]
+              };
+
+              // Update grammar filters based on selected word types
+              function updateGrammarFilters() {
+                const grammarContainer = document.getElementById('grammar-filters');
+                const selectedTypes = currentFilters.wordType.length === 0 ? ['ALL'] : currentFilters.wordType;
+                
+                // Collect all applicable filters
+                let applicableFilters = [];
+                selectedTypes.forEach(type => {
+                  if (grammarFiltersByType[type]) {
+                    applicableFilters = applicableFilters.concat(grammarFiltersByType[type]);
+                  }
+                });
+                
+                // Always include universal filters
+                applicableFilters = applicableFilters.concat(grammarFiltersByType['ALL']);
+                
+                // Remove duplicates
+                const uniqueFilters = applicableFilters.filter((filter, index, self) => 
+                  index === self.findIndex(f => f.value === filter.value)
+                );
+                
+                // Animate transition
+                grammarContainer.style.opacity = '0.5';
+                grammarContainer.style.transform = 'translateY(-10px)';
+                
+                setTimeout(() => {
+                  grammarContainer.innerHTML = uniqueFilters
+                    .map(filter => \`
+                      <span class="filter-chip \${currentFilters.tags.includes(filter.value) ? 'active' : ''}" 
+                            data-filter="tags" 
+                            data-value="\${filter.value}">
+                        \${filter.label}
+                      </span>
+                    \`)
+                    .join('');
+                  
+                  grammarContainer.style.opacity = '1';
+                  grammarContainer.style.transform = 'translateY(0)';
+                }, 150);
+              }
 
               // Resize functionality
               let isResizing = false;
@@ -655,23 +735,52 @@ export default function RootLayout({ children }) {
                   const filterType = e.target.dataset.filter;
                   const filterValue = e.target.dataset.value;
                   
-                  // Remove active class from siblings
-                  const siblings = e.target.parentElement.querySelectorAll('.filter-chip');
-                  siblings.forEach(chip => chip.classList.remove('active'));
-                  
-                  // Add active class to clicked chip
-                  e.target.classList.add('active');
-                  
-                  // Update filters
-                  if (filterType === 'tags') {
-                    // Toggle tag filters (can select multiple)
+                  if (filterType === 'wordType') {
+                    // Handle multi-select for word types
+                    if (filterValue === '') {
+                      // "All" selected - clear all others
+                      const siblings = e.target.parentElement.querySelectorAll('.filter-chip');
+                      siblings.forEach(chip => chip.classList.remove('active'));
+                      e.target.classList.add('active');
+                      currentFilters.wordType = [];
+                    } else {
+                      // Specific type selected
+                      const allChip = e.target.parentElement.querySelector('[data-value=""]');
+                      allChip.classList.remove('active');
+                      
+                      // Toggle this chip
+                      if (currentFilters.wordType.includes(filterValue)) {
+                        currentFilters.wordType = currentFilters.wordType.filter(type => type !== filterValue);
+                        e.target.classList.remove('active');
+                      } else {
+                        currentFilters.wordType.push(filterValue);
+                        e.target.classList.add('active');
+                      }
+                      
+                      // If no types selected, activate "All"
+                      if (currentFilters.wordType.length === 0) {
+                        allChip.classList.add('active');
+                      }
+                    }
+                    
+                    // Update grammar filters based on word type selection
+                    updateGrammarFilters();
+                    
+                  } else if (filterType === 'tags') {
+                    // Handle multi-select for tags
                     if (currentFilters.tags.includes(filterValue)) {
                       currentFilters.tags = currentFilters.tags.filter(tag => tag !== filterValue);
                       e.target.classList.remove('active');
                     } else {
                       currentFilters.tags.push(filterValue);
+                      e.target.classList.add('active');
                     }
+                    
                   } else {
+                    // Handle single-select for CEFR level
+                    const siblings = e.target.parentElement.querySelectorAll('.filter-chip');
+                    siblings.forEach(chip => chip.classList.remove('active'));
+                    e.target.classList.add('active');
                     currentFilters[filterType] = filterValue;
                   }
                   
@@ -852,6 +961,9 @@ export default function RootLayout({ children }) {
               dictionaryBtn.addEventListener('click', openDictionary);
               closeDictionary.addEventListener('click', closeDictionaryPanel);
               overlay.addEventListener('click', closeDictionaryPanel);
+
+              // Initialize grammar filters on page load
+              updateGrammarFilters();
 
               // Audio playback function (enhanced)
               async function playAudio(wordId, italianText) {
