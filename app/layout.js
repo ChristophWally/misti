@@ -26,6 +26,52 @@ export default function RootLayout({ children }) {
             .tag-detailed {
               border: 1px solid rgba(0,0,0,0.1);
             }
+            .word-card {
+              transition: all 0.2s ease;
+            }
+            .word-card:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+            .article-display {
+              font-weight: 600;
+              font-size: 14px;
+              color: #059669;
+              margin-right: 4px;
+            }
+            .word-forms-container {
+              max-height: 0;
+              overflow: hidden;
+              transition: max-height 0.3s ease;
+            }
+            .word-forms-container.expanded {
+              max-height: 300px;
+            }
+            .relationships-container {
+              max-height: 0;
+              overflow: hidden;
+              transition: max-height 0.3s ease;
+            }
+            .relationships-container.expanded {
+              max-height: 200px;
+            }
+            .filter-chip {
+              padding: 4px 12px;
+              border-radius: 20px;
+              font-size: 12px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              border: 1px solid #d1d5db;
+            }
+            .filter-chip:hover {
+              background-color: #f3f4f6;
+            }
+            .filter-chip.active {
+              background-color: #3b82f6;
+              color: white;
+              border-color: #3b82f6;
+            }
           `
         }} />
       </head>
@@ -57,7 +103,7 @@ export default function RootLayout({ children }) {
           </div>
         </nav>
 
-        {/* Dictionary Slide-out Panel */}
+        {/* Enhanced Dictionary Slide-out Panel */}
         <div 
           id="dictionary-panel"
           className="fixed inset-y-0 right-0 w-96 md:w-3/4 lg:w-2/3 xl:w-1/2 bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out z-50"
@@ -71,7 +117,7 @@ export default function RootLayout({ children }) {
           <div className="flex flex-col h-full">
             {/* Panel Header */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
-              <h2 className="text-lg font-semibold text-white">Dictionary</h2>
+              <h2 className="text-lg font-semibold text-white">Enhanced Dictionary</h2>
               <button 
                 id="close-dictionary"
                 className="text-white hover:text-cyan-200"
@@ -80,21 +126,72 @@ export default function RootLayout({ children }) {
               </button>
             </div>
 
-            {/* Search Bar */}
+            {/* Enhanced Search Bar */}
             <div className="p-4 border-b bg-cyan-50">
-              <input
-                type="text"
-                id="dictionary-search"
-                placeholder="Search Italian words..."
-                className="w-full px-3 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-              />
+              <div className="space-y-3">
+                {/* Search Input */}
+                <input
+                  type="text"
+                  id="dictionary-search"
+                  placeholder="Search Italian words..."
+                  className="w-full px-3 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+                
+                {/* Filter Toggle */}
+                <button id="toggle-filters" className="text-sm text-teal-600 hover:text-teal-800 flex items-center">
+                  <span className="mr-1">🔍</span> Advanced Filters
+                  <span id="filter-arrow" className="ml-1 transform transition-transform">▼</span>
+                </button>
+                
+                {/* Advanced Filters (initially hidden) */}
+                <div id="advanced-filters" className="hidden space-y-3 pt-2 border-t border-teal-200">
+                  {/* Word Type Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Word Type</label>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="filter-chip active" data-filter="wordType" data-value="">All</span>
+                      <span className="filter-chip" data-filter="wordType" data-value="NOUN">Noun</span>
+                      <span className="filter-chip" data-filter="wordType" data-value="VERB">Verb</span>
+                      <span className="filter-chip" data-filter="wordType" data-value="ADJECTIVE">Adjective</span>
+                      <span className="filter-chip" data-filter="wordType" data-value="ADVERB">Adverb</span>
+                    </div>
+                  </div>
+                  
+                  {/* CEFR Level Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">CEFR Level</label>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="filter-chip active" data-filter="cefrLevel" data-value="">All Levels</span>
+                      <span className="filter-chip" data-filter="cefrLevel" data-value="A1">A1</span>
+                      <span className="filter-chip" data-filter="cefrLevel" data-value="A2">A2</span>
+                      <span className="filter-chip" data-filter="cefrLevel" data-value="B1">B1</span>
+                      <span className="filter-chip" data-filter="cefrLevel" data-value="B2">B2</span>
+                      <span className="filter-chip" data-filter="cefrLevel" data-value="C1">C1</span>
+                      <span className="filter-chip" data-filter="cefrLevel" data-value="C2">C2</span>
+                    </div>
+                  </div>
+                  
+                  {/* Grammar Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Grammar</label>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="filter-chip" data-filter="tags" data-value="masculine">Masculine</span>
+                      <span className="filter-chip" data-filter="tags" data-value="feminine">Feminine</span>
+                      <span className="filter-chip" data-filter="tags" data-value="irregular-pattern">Irregular</span>
+                      <span className="filter-chip" data-filter="tags" data-value="are-conjugation">-are verbs</span>
+                      <span className="filter-chip" data-filter="tags" data-value="ere-conjugation">-ere verbs</span>
+                      <span className="filter-chip" data-filter="tags" data-value="ire-conjugation">-ire verbs</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Dictionary Content */}
             <div className="flex-1 overflow-y-auto p-4 bg-white">
               <div id="dictionary-results">
                 <div id="words-container" className="space-y-3">
-                  {/* Words will be loaded here */}
+                  {/* Enhanced words will be loaded here */}
                 </div>
                 <div id="loading" className="text-center py-4 text-teal-600">
                   Loading words...
@@ -118,10 +215,363 @@ export default function RootLayout({ children }) {
           {children}
         </main>
 
-        {/* JavaScript for Dictionary Panel */}
+        {/* Enhanced Dictionary System JavaScript */}
         <script dangerouslySetInnerHTML={{
           __html: `
+            // Enhanced Dictionary System Class
+            class EnhancedDictionarySystem {
+              constructor(supabaseClient) {
+                this.supabase = supabaseClient;
+                this.cache = new Map();
+                this.searchTimeout = null;
+              }
+
+              // Enhanced word loading with article generation and comprehensive tags
+              async loadWords(searchTerm = '', filters = {}) {
+                try {
+                  let query = this.supabase
+                    .from('dictionary')
+                    .select(\`
+                      id,
+                      italian,
+                      english,
+                      word_type,
+                      tags,
+                      created_at,
+                      word_audio_metadata(
+                        id,
+                        audio_filename,
+                        azure_voice_name,
+                        duration_seconds
+                      )
+                    \`)
+                    .order('italian', { ascending: true });
+
+                  // Apply search filter
+                  if (searchTerm) {
+                    query = query.or(\`italian.ilike.%\${searchTerm}%,english.ilike.%\${searchTerm}%\`);
+                  }
+
+                  // Apply word type filter
+                  if (filters.wordType) {
+                    query = query.eq('word_type', filters.wordType);
+                  }
+
+                  // Apply tag filters
+                  if (filters.tags && filters.tags.length > 0) {
+                    query = query.overlaps('tags', filters.tags);
+                  }
+
+                  // Apply CEFR level filter
+                  if (filters.cefrLevel) {
+                    query = query.overlaps('tags', [\`CEFR-\${filters.cefrLevel}\`]);
+                  }
+
+                  const { data: words, error } = await query.limit(20);
+
+                  if (error) throw error;
+
+                  // Enhance words with article generation and processed tags
+                  const enhancedWords = await Promise.all(
+                    words.map(word => this.enhanceWordData(word))
+                  );
+
+                  return enhancedWords;
+                } catch (error) {
+                  console.error('Error loading words:', error);
+                  throw error;
+                }
+              }
+
+              // Enhance individual word with articles, processed tags, and related data
+              async enhanceWordData(word) {
+                const enhanced = { ...word };
+
+                // Generate articles for nouns
+                if (word.word_type === 'NOUN') {
+                  enhanced.articles = this.generateArticles(word);
+                }
+
+                // Process tags into categories
+                enhanced.processedTags = this.processTagsForDisplay(word.tags, word.word_type);
+
+                // Get word forms if available
+                enhanced.forms = await this.getWordForms(word.id);
+
+                // Get related words
+                enhanced.relationships = await this.getRelatedWords(word.id);
+
+                return enhanced;
+              }
+
+              // Generate Italian articles based on tags and phonetic rules
+              generateArticles(word) {
+                const tags = word.tags || [];
+                const italian = word.italian.toLowerCase();
+                
+                // Determine gender
+                let gender = 'masculine'; // default
+                if (tags.includes('feminine')) gender = 'feminine';
+                if (tags.includes('masculine')) gender = 'masculine';
+                if (tags.includes('common-gender')) gender = 'common';
+
+                // Generate articles using the same logic as our SQL function
+                const articles = {
+                  singular: this.calculateArticle(italian, gender, false),
+                  plural: this.calculateArticle(italian, gender, true)
+                };
+
+                // Add indefinite articles
+                articles.indefinite = {
+                  singular: this.calculateIndefiniteArticle(italian, gender),
+                  plural: null // Italian doesn't have indefinite plural articles
+                };
+
+                return articles;
+              }
+
+              // Calculate definite article (matches SQL function logic)
+              calculateArticle(word, gender, isPlural) {
+                const firstChar = word.charAt(0);
+                const firstTwo = word.substring(0, 2);
+                const consonantAfterS = word.length > 1 && /[bcdfghjklmnpqrstvwxyz]/.test(word.charAt(1));
+
+                if (isPlural) {
+                  if (gender === 'masculine') {
+                    // Plural masculine: gli or i
+                    if (/[aeiou]/.test(firstChar) || 
+                        ['gn','ps','sc','sp','st','x','z'].includes(firstTwo) ||
+                        (firstChar === 's' && consonantAfterS)) {
+                      return 'gli';
+                    }
+                    return 'i';
+                  } else {
+                    // Plural feminine: always le
+                    return 'le';
+                  }
+                } else {
+                  // Singular
+                  if (gender === 'masculine') {
+                    // Singular masculine: lo or il
+                    if (/[aeiou]/.test(firstChar) || 
+                        ['gn','ps','sc','sp','st','x','z'].includes(firstTwo) ||
+                        (firstChar === 's' && consonantAfterS)) {
+                      return 'lo';
+                    }
+                    return 'il';
+                  } else {
+                    // Singular feminine: la or l'
+                    if (/[aeiou]/.test(firstChar)) {
+                      return "l'";
+                    }
+                    return 'la';
+                  }
+                }
+              }
+
+              // Calculate indefinite article
+              calculateIndefiniteArticle(word, gender) {
+                const firstChar = word.charAt(0);
+                const firstTwo = word.substring(0, 2);
+                const consonantAfterS = word.length > 1 && /[bcdfghjklmnpqrstvwxyz]/.test(word.charAt(1));
+
+                if (gender === 'masculine') {
+                  if (/[aeiou]/.test(firstChar) || 
+                      ['gn','ps','sc','sp','st','x','z'].includes(firstTwo) ||
+                      (firstChar === 's' && consonantAfterS)) {
+                    return 'uno';
+                  }
+                  return 'un';
+                } else {
+                  if (/[aeiou]/.test(firstChar)) {
+                    return "un'";
+                  }
+                  return 'una';
+                }
+              }
+
+              // Process tags for visual display with comprehensive tag system
+              processTagsForDisplay(tags, wordType) {
+                const essential = [];
+                const detailed = [];
+
+                const tagMap = {
+                  // Gender (essential for nouns)
+                  'masculine': { display: '♂', class: 'bg-blue-100 text-blue-800', essential: wordType === 'NOUN', description: 'Masculine gender requiring masculine articles (il, un)' },
+                  'feminine': { display: '♀', class: 'bg-pink-100 text-pink-800', essential: wordType === 'NOUN', description: 'Feminine gender requiring feminine articles (la, una)' },
+                  'common-gender': { display: '⚥', class: 'bg-purple-100 text-purple-800', essential: wordType === 'NOUN', description: 'Same form for both genders, determined by article' },
+                  
+                  // Irregularity (essential when present)
+                  'irregular-pattern': { display: '⚠️ IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Does not follow standard patterns' },
+                  'form-irregular': { display: '⚠️ IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Special rules or position-dependent forms' },
+                  
+                  // ISC Conjugation (essential for verbs)
+                  'ire-isc-conjugation': { display: '-ISC', class: 'bg-yellow-100 text-yellow-800', essential: wordType === 'VERB', description: 'Uses -isc- infix in present forms' },
+                  
+                  // CEFR Levels (essential)
+                  'CEFR-A1': { display: '📚 A1', class: 'bg-green-100 text-green-800', essential: true, description: 'Beginner level vocabulary' },
+                  'CEFR-A2': { display: '📚 A2', class: 'bg-green-100 text-green-800', essential: true, description: 'Elementary level vocabulary' },
+                  'CEFR-B1': { display: '📚 B1', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Intermediate level vocabulary' },
+                  'CEFR-B2': { display: '📚 B2', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Upper intermediate vocabulary' },
+                  'CEFR-C1': { display: '📚 C1', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Advanced level vocabulary' },
+                  'CEFR-C2': { display: '📚 C2', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Proficiency level vocabulary' },
+                  
+                  // Frequency (essential)
+                  'freq-top100': { display: '⭐ 100', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 100 most frequent words' },
+                  'freq-top200': { display: '⭐ 200', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 200 most frequent words' },
+                  'freq-top300': { display: '⭐ 300', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 300 most frequent words' },
+                  'freq-top500': { display: '⭐ 500', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 500 most frequent words' },
+                  'freq-top1000': { display: '⭐ 1K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 1000 most frequent words' },
+                  'freq-top5000': { display: '⭐ 5K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 5000 most frequent words' },
+                  
+                  // Advanced Fluency (essential)
+                  'native': { display: '🗣️ NAT', class: 'bg-indigo-100 text-indigo-800', essential: true, description: 'Natural native-speaker vocabulary' },
+                  'business': { display: '💼 BIZ', class: 'bg-gray-100 text-gray-800', essential: true, description: 'Professional/commercial terminology' },
+                  'academic': { display: '🎓 ACAD', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Scholarly and technical vocabulary' },
+                  'literary': { display: '📜 LIT', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Literary and artistic language' },
+                  'regional': { display: '🗺️ REG', class: 'bg-green-100 text-green-800', essential: true, description: 'Regional dialects and variants' },
+                  
+                  // Conjugation Groups (detailed)
+                  'are-conjugation': { display: '🔸 -are', class: 'bg-teal-100 text-teal-800', essential: false, description: 'First conjugation group' },
+                  'ere-conjugation': { display: '🔹 -ere', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Second conjugation group' },
+                  'ire-conjugation': { display: '🔶 -ire', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Third conjugation group' },
+                  
+                  // Auxiliary Verbs (detailed)
+                  'avere-auxiliary': { display: '🤝 avere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses avere in compound tenses' },
+                  'essere-auxiliary': { display: '🫱 essere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses essere in compound tenses' },
+                  'both-auxiliary': { display: '🤜🤛 both', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Can use either auxiliary' },
+                  
+                  // Transitivity (detailed)
+                  'transitive-verb': { display: '➡️ trans', class: 'bg-green-100 text-green-800', essential: false, description: 'Takes a direct object' },
+                  'intransitive-verb': { display: '↩️ intrans', class: 'bg-green-100 text-green-800', essential: false, description: 'Does not take direct object' },
+                  'both-transitivity': { display: '↔️ both', class: 'bg-green-100 text-green-800', essential: false, description: 'Can be both transitive and intransitive' },
+
+                  // Plural patterns (detailed)
+                  'plural-i': { display: '📝 plural-i', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Forms plural by changing ending to -i' },
+                  'plural-e': { display: '📄 plural-e', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Forms plural by changing ending to -e' },
+                  'plural-invariable': { display: '🔒 invariable', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Identical singular and plural forms' },
+                  
+                  // Topics (detailed)
+                  'topic-place': { display: '🌍 place', class: 'bg-emerald-100 text-emerald-800', essential: false, description: 'Geographical locations or spaces' },
+                  'topic-food': { display: '🍕 food', class: 'bg-orange-100 text-orange-800', essential: false, description: 'Food and drink vocabulary' },
+                  'topic-bodypart': { display: '👁️ body', class: 'bg-pink-100 text-pink-800', essential: false, description: 'Parts of the body' },
+                  'topic-profession': { display: '👩‍💼 job', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Jobs and professional roles' },
+                  'topic-abstract': { display: '💭 abstract', class: 'bg-purple-100 text-purple-800', essential: false, description: 'Concepts, ideas, and feelings' },
+                  'topic-daily-life': { display: '🏡 daily', class: 'bg-green-100 text-green-800', essential: false, description: 'Everyday activities and household' }
+                };
+
+                tags.forEach(tag => {
+                  const tagInfo = tagMap[tag];
+                  if (tagInfo) {
+                    if (tagInfo.essential) {
+                      essential.push({
+                        tag,
+                        display: tagInfo.display,
+                        class: tagInfo.class,
+                        description: tagInfo.description
+                      });
+                    } else {
+                      detailed.push({
+                        tag,
+                        display: tagInfo.display,
+                        class: tagInfo.class,
+                        description: tagInfo.description
+                      });
+                    }
+                  }
+                });
+
+                return { essential, detailed };
+              }
+
+              // Get word forms (conjugations, plurals, etc.)
+              async getWordForms(wordId) {
+                try {
+                  const { data: forms, error } = await this.supabase
+                    .from('word_forms')
+                    .select('*')
+                    .eq('word_id', wordId)
+                    .order('form_type');
+
+                  if (error) throw error;
+                  return forms || [];
+                } catch (error) {
+                  console.error('Error loading word forms:', error);
+                  return [];
+                }
+              }
+
+              // Get related words (morphological relationships)
+              async getRelatedWords(wordId) {
+                try {
+                  const { data: relationships, error } = await this.supabase
+                    .rpc('get_related_words', { word_id: wordId });
+
+                  if (error) throw error;
+                  return relationships || [];
+                } catch (error) {
+                  console.error('Error loading related words:', error);
+                  return [];
+                }
+              }
+
+              // Get word type color scheme
+              getWordTypeColors(wordType) {
+                const colors = {
+                  'VERB': {
+                    border: 'border-teal-200',
+                    bg: 'bg-teal-50',
+                    hover: 'hover:bg-teal-100',
+                    tag: 'bg-teal-100 text-teal-800',
+                    text: 'text-teal-900'
+                  },
+                  'NOUN': {
+                    border: 'border-cyan-200',
+                    bg: 'bg-cyan-50',
+                    hover: 'hover:bg-cyan-100',
+                    tag: 'bg-cyan-100 text-cyan-800',
+                    text: 'text-cyan-900'
+                  },
+                  'ADJECTIVE': {
+                    border: 'border-blue-200',
+                    bg: 'bg-blue-50',
+                    hover: 'hover:bg-blue-100',
+                    tag: 'bg-blue-100 text-blue-800',
+                    text: 'text-blue-900'
+                  },
+                  'ADVERB': {
+                    border: 'border-purple-200',
+                    bg: 'bg-purple-50',
+                    hover: 'hover:bg-purple-100',
+                    tag: 'bg-purple-100 text-purple-800',
+                    text: 'text-purple-900'
+                  }
+                };
+
+                return colors[wordType] || {
+                  border: 'border-gray-200',
+                  bg: 'bg-gray-50',
+                  hover: 'hover:bg-gray-100',
+                  tag: 'bg-gray-100 text-gray-800',
+                  text: 'text-gray-900'
+                };
+              }
+            }
+
+            // Initialize Enhanced Dictionary System
             document.addEventListener('DOMContentLoaded', function() {
+              // Supabase client
+              const SUPABASE_URL = '${process.env.NEXT_PUBLIC_SUPABASE_URL}';
+              const SUPABASE_ANON_KEY = '${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}';
+              
+              // Create Supabase client for audio functions
+              const { createClient } = supabase;
+              const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+              // Initialize enhanced dictionary system
+              const dictionarySystem = new EnhancedDictionarySystem(supabaseClient);
+
+              // DOM elements
               const dictionaryBtn = document.getElementById('dictionary-btn');
               const dictionaryPanel = document.getElementById('dictionary-panel');
               const closeDictionary = document.getElementById('close-dictionary');
@@ -130,15 +580,17 @@ export default function RootLayout({ children }) {
               const wordsContainer = document.getElementById('words-container');
               const loading = document.getElementById('loading');
               const noResults = document.getElementById('no-results');
+              const toggleFilters = document.getElementById('toggle-filters');
+              const advancedFilters = document.getElementById('advanced-filters');
+              const filterArrow = document.getElementById('filter-arrow');
               const resizeHandle = document.getElementById('resize-handle');
 
-              // Supabase client
-              const SUPABASE_URL = '${process.env.NEXT_PUBLIC_SUPABASE_URL}';
-              const SUPABASE_ANON_KEY = '${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}';
-              
-              // Create Supabase client for audio functions
-              const { createClient } = supabase;
-              const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+              // Current filters state
+              let currentFilters = {
+                wordType: '',
+                cefrLevel: '',
+                tags: []
+              };
 
               // Resize functionality
               let isResizing = false;
@@ -185,27 +637,57 @@ export default function RootLayout({ children }) {
                 overlay.classList.add('opacity-0', 'pointer-events-none');
               }
 
+              // Filter toggle
+              toggleFilters.addEventListener('click', function() {
+                const isHidden = advancedFilters.classList.contains('hidden');
+                if (isHidden) {
+                  advancedFilters.classList.remove('hidden');
+                  filterArrow.style.transform = 'rotate(180deg)';
+                } else {
+                  advancedFilters.classList.add('hidden');
+                  filterArrow.style.transform = 'rotate(0deg)';
+                }
+              });
+
+              // Filter chips handling
+              document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('filter-chip')) {
+                  const filterType = e.target.dataset.filter;
+                  const filterValue = e.target.dataset.value;
+                  
+                  // Remove active class from siblings
+                  const siblings = e.target.parentElement.querySelectorAll('.filter-chip');
+                  siblings.forEach(chip => chip.classList.remove('active'));
+                  
+                  // Add active class to clicked chip
+                  e.target.classList.add('active');
+                  
+                  // Update filters
+                  if (filterType === 'tags') {
+                    // Toggle tag filters (can select multiple)
+                    if (currentFilters.tags.includes(filterValue)) {
+                      currentFilters.tags = currentFilters.tags.filter(tag => tag !== filterValue);
+                      e.target.classList.remove('active');
+                    } else {
+                      currentFilters.tags.push(filterValue);
+                    }
+                  } else {
+                    currentFilters[filterType] = filterValue;
+                  }
+                  
+                  // Reload words with new filters
+                  loadWords(searchInput.value);
+                }
+              });
+
+              // Load and display words
               async function loadWords(searchTerm = '') {
                 loading.classList.remove('hidden');
                 wordsContainer.innerHTML = '';
                 noResults.classList.add('hidden');
 
                 try {
-                  let url = SUPABASE_URL + '/rest/v1/dictionary?select=*';
-                  if (searchTerm) {
-                    url += '&or=(italian.ilike.*' + searchTerm + '*,english.ilike.*' + searchTerm + '*)';
-                  }
-                  url += '&limit=20';
-
-                  const response = await fetch(url, {
-                    headers: {
-                      'apikey': SUPABASE_ANON_KEY,
-                      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
-                    }
-                  });
-
-                  const words = await response.json();
-                  
+                  const words = await dictionarySystem.loadWords(searchTerm, currentFilters);
                   loading.classList.add('hidden');
 
                   if (words.length === 0) {
@@ -214,7 +696,7 @@ export default function RootLayout({ children }) {
                   }
 
                   words.forEach(word => {
-                    const wordElement = createWordElement(word);
+                    const wordElement = createEnhancedWordElement(word);
                     wordsContainer.appendChild(wordElement);
                   });
 
@@ -226,57 +708,92 @@ export default function RootLayout({ children }) {
                 }
               }
 
-              function createWordElement(word) {
+              // Create enhanced word element with all new features
+              function createEnhancedWordElement(word) {
                 const div = document.createElement('div');
+                const colors = dictionarySystem.getWordTypeColors(word.word_type);
                 
-                const wordTypeColors = {
-                  'VERB': {
-                    border: 'border-teal-200',
-                    bg: 'bg-teal-50',
-                    hover: 'hover:bg-teal-100',
-                    tag: 'bg-teal-100 text-teal-800',
-                    text: 'text-teal-900'
-                  },
-                  'NOUN': {
-                    border: 'border-cyan-200',
-                    bg: 'bg-cyan-50',
-                    hover: 'hover:bg-cyan-100',
-                    tag: 'bg-cyan-100 text-cyan-800',
-                    text: 'text-cyan-900'
-                  },
-                  'ADJECTIVE': {
-                    border: 'border-blue-200',
-                    bg: 'bg-blue-50',
-                    hover: 'hover:bg-blue-100',
-                    tag: 'bg-blue-100 text-blue-800',
-                    text: 'text-blue-900'
-                  },
-                  'ADVERB': {
-                    border: 'border-purple-200',
-                    bg: 'bg-purple-50',
-                    hover: 'hover:bg-purple-100',
-                    tag: 'bg-purple-100 text-purple-800',
-                    text: 'text-purple-900'
-                  }
-                };
-
-                const colors = wordTypeColors[word.word_type] || {
-                  border: 'border-gray-200',
-                  bg: 'bg-gray-50',
-                  hover: 'hover:bg-gray-100',
-                  tag: 'bg-gray-100 text-gray-800',
-                  text: 'text-gray-900'
-                };
-
-                div.className = \`border-2 \${colors.border} \${colors.bg} \${colors.hover} rounded-lg p-4 transition-colors\`;
-
-                // Process tags
-                const tags = word.tags || [];
-                const tagElements = processTagsForDisplay(tags, word.word_type);
-
+                div.className = \`word-card border-2 \${colors.border} \${colors.bg} \${colors.hover} rounded-lg p-4 transition-colors\`;
+                
+                // Build article display for nouns
+                let articleDisplay = '';
+                if (word.word_type === 'NOUN' && word.articles) {
+                  articleDisplay = \`
+                    <div class="flex items-center gap-2 mb-2 text-sm">
+                      <span class="article-display">\${word.articles.singular}</span>
+                      <span class="text-gray-400">/</span>
+                      <span class="article-display">\${word.articles.plural}</span>
+                      <span class="text-gray-500">(definite)</span>
+                      <span class="article-display ml-2">\${word.articles.indefinite.singular}</span>
+                      <span class="text-gray-500">(indefinite)</span>
+                    </div>
+                  \`;
+                }
+                
+                // Build essential tags
+                const essentialTags = word.processedTags.essential
+                  .map(tag => \`<span class="tag-essential \${tag.class}" title="\${tag.description}">\${tag.display}</span>\`)
+                  .join(' ');
+                
+                // Build detailed tags
+                const detailedTags = word.processedTags.detailed
+                  .map(tag => \`<span class="tag-detailed \${tag.class}" title="\${tag.description}">\${tag.display}</span>\`)
+                  .join(' ');
+                
+                // Build word forms section
+                let formsSection = '';
+                if (word.forms && word.forms.length > 0) {
+                  const formsPreview = word.forms.slice(0, 3)
+                    .map(form => \`<span class="text-xs bg-gray-100 px-2 py-1 rounded">\${form.form_text}</span>\`)
+                    .join(' ');
+                  
+                  formsSection = \`
+                    <div class="mt-2">
+                      <button class="text-xs text-blue-600 hover:text-blue-800 toggle-forms" data-word-id="\${word.id}">
+                        📝 \${word.forms.length} forms \${formsPreview}
+                      </button>
+                      <div class="word-forms-container mt-2" id="forms-\${word.id}">
+                        <div class="grid grid-cols-2 gap-2 p-3 bg-gray-50 rounded">
+                          \${word.forms.map(form => \`
+                            <div class="text-xs">
+                              <strong>\${form.form_text}</strong>
+                              \${form.translation ? \`<br><span class="text-gray-600">\${form.translation}</span>\` : ''}
+                              \${form.form_mood || form.form_tense ? \`<br><span class="text-gray-500">\${[form.form_mood, form.form_tense, form.form_person, form.form_number].filter(Boolean).join(' ')}</span>\` : ''}
+                            </div>
+                          \`).join('')}
+                        </div>
+                      </div>
+                    </div>
+                  \`;
+                }
+                
+                // Build relationships section
+                let relationshipsSection = '';
+                if (word.relationships && word.relationships.length > 0) {
+                  relationshipsSection = \`
+                    <div class="mt-2">
+                      <button class="text-xs text-purple-600 hover:text-purple-800 toggle-relationships" data-word-id="\${word.id}">
+                        🔗 \${word.relationships.length} related words
+                      </button>
+                      <div class="relationships-container mt-2" id="relationships-\${word.id}">
+                        <div class="p-3 bg-purple-50 rounded">
+                          \${word.relationships.map(rel => \`
+                            <div class="text-xs mb-1">
+                              <strong>\${rel.italian}</strong> 
+                              <span class="text-gray-600">(\${rel.english})</span>
+                              <br><span class="text-purple-600">\${rel.relationship_type.replace('-', ' ')}</span>
+                            </div>
+                          \`).join('')}
+                        </div>
+                      </div>
+                    </div>
+                  \`;
+                }
+                
                 div.innerHTML = \`
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
+                      \${articleDisplay}
                       <div class="flex items-center gap-2 mb-2">
                         <h3 class="text-xl font-semibold \${colors.text}">\${word.italian}</h3>
                         <button 
@@ -288,15 +805,17 @@ export default function RootLayout({ children }) {
                             <path d="M8 5v14l11-7z"/>
                           </svg>
                         </button>
-                        \${tagElements.essential}
+                        \${essentialTags}
                       </div>
                       <p class="text-base \${colors.text} opacity-80 mb-3">\${word.english}</p>
-                      <div class="flex flex-wrap gap-1">
+                      <div class="flex flex-wrap gap-1 mb-2">
                         <span class="inline-block \${colors.tag} text-xs px-2 py-1 rounded-full">
                           \${word.word_type.toLowerCase()}
                         </span>
-                        \${tagElements.detailed}
+                        \${detailedTags}
                       </div>
+                      \${formsSection}
+                      \${relationshipsSection}
                     </div>
                     <button class="bg-emerald-600 text-white px-4 py-2 rounded text-sm hover:bg-emerald-700 transition-colors ml-4">
                       + Add
@@ -307,87 +826,20 @@ export default function RootLayout({ children }) {
                 return div;
               }
 
-              function processTagsForDisplay(tags, wordType) {
-                const essential = [];
-                const detailed = [];
-
-                tags.forEach(tag => {
-                  const tagInfo = getTagDisplayInfo(tag, wordType);
-                  if (tagInfo) {
-                    if (tagInfo.essential) {
-                      essential.push(\`<span class="tag-essential \${tagInfo.class}" title="\${tagInfo.description}">\${tagInfo.display}</span>\`);
-                    } else {
-                      detailed.push(\`<span class="tag-detailed \${tagInfo.class}" title="\${tagInfo.description}">\${tagInfo.display}</span>\`);
-                    }
-                  }
-                });
-
-                return {
-                  essential: essential.join(' '),
-                  detailed: detailed.join(' ')
-                };
-              }
-
-              function getTagDisplayInfo(tag, wordType) {
-                const tagMap = {
-                  // Gender (essential for nouns)
-                  'masculine': { display: '♂', class: 'bg-blue-100 text-blue-800', essential: wordType === 'NOUN', description: 'Masculine gender requiring masculine articles (il, un)' },
-                  'feminine': { display: '♀', class: 'bg-pink-100 text-pink-800', essential: wordType === 'NOUN', description: 'Feminine gender requiring feminine articles (la, una)' },
-                  'common-gender': { display: '⚥', class: 'bg-purple-100 text-purple-800', essential: wordType === 'NOUN', description: 'Same form for both genders, determined by article' },
-                  
-                  // Irregularity (essential when present)
-                  'irregular-pattern': { display: '⚠️ IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Does not follow standard patterns' },
-                  
-                  // ISC Conjugation (essential for verbs)
-                  'ire-isc-conjugation': { display: '-ISC', class: 'bg-yellow-100 text-yellow-800', essential: wordType === 'VERB', description: 'Uses -isc- infix in present forms' },
-                  
-                  // CEFR Levels (essential)
-                  'CEFR-A1': { display: '📚 A1', class: 'bg-green-100 text-green-800', essential: true, description: 'Beginner level vocabulary' },
-                  'CEFR-A2': { display: '📚 A2', class: 'bg-green-100 text-green-800', essential: true, description: 'Elementary level vocabulary' },
-                  'CEFR-B1': { display: '📚 B1', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Intermediate level vocabulary' },
-                  'CEFR-B2': { display: '📚 B2', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Upper intermediate vocabulary' },
-                  'CEFR-C1': { display: '📚 C1', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Advanced level vocabulary' },
-                  'CEFR-C2': { display: '📚 C2', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Proficiency level vocabulary' },
-                  
-                  // Frequency (essential)
-                  'freq-top100': { display: '⭐ 100', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 100 most frequent words' },
-                  'freq-top500': { display: '⭐ 500', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 500 most frequent words' },
-                  'freq-top1000': { display: '⭐ 1K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 1000 most frequent words' },
-                  'freq-top5000': { display: '⭐ 5K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 5000 most frequent words' },
-                  
-                  // Advanced Fluency (essential)
-                  'native': { display: '🗣️ NAT', class: 'bg-indigo-100 text-indigo-800', essential: true, description: 'Natural native-speaker vocabulary' },
-                  'business': { display: '💼 BIZ', class: 'bg-gray-100 text-gray-800', essential: true, description: 'Professional/commercial terminology' },
-                  'academic': { display: '🎓 ACAD', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Scholarly and technical vocabulary' },
-                  'literary': { display: '📜 LIT', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Literary and artistic language' },
-                  'regional': { display: '🗺️ REG', class: 'bg-green-100 text-green-800', essential: true, description: 'Regional dialects and variants' },
-                  
-                  // Conjugation Groups (detailed)
-                  'are-conjugation': { display: '🔸 -are', class: 'bg-teal-100 text-teal-800', essential: false, description: 'First conjugation group' },
-                  'ere-conjugation': { display: '🔹 -ere', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Second conjugation group' },
-                  'ire-conjugation': { display: '🔶 -ire', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Third conjugation group' },
-                  
-                  // Auxiliary Verbs (detailed)
-                  'avere-auxiliary': { display: '🤝 avere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses avere in compound tenses' },
-                  'essere-auxiliary': { display: '🫱 essere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses essere in compound tenses' },
-                  'both-auxiliary': { display: '🤜🤛 both', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Can use either auxiliary' },
-                  
-                  // Transitivity (detailed)
-                  'transitive-verb': { display: '➡️ trans', class: 'bg-green-100 text-green-800', essential: false, description: 'Takes a direct object' },
-                  'intransitive-verb': { display: '↩️ intrans', class: 'bg-green-100 text-green-800', essential: false, description: 'Does not take direct object' },
-                  'both-transitivity': { display: '↔️ both', class: 'bg-green-100 text-green-800', essential: false, description: 'Can be both transitive and intransitive' },
-                  
-                  // Topics (detailed)
-                  'topic-place': { display: '🌍 place', class: 'bg-emerald-100 text-emerald-800', essential: false, description: 'Geographical locations or spaces' },
-                  'topic-food': { display: '🍕 food', class: 'bg-orange-100 text-orange-800', essential: false, description: 'Food and drink vocabulary' },
-                  'topic-bodypart': { display: '👁️ body', class: 'bg-pink-100 text-pink-800', essential: false, description: 'Parts of the body' },
-                  'topic-profession': { display: '👩‍💼 job', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Jobs and professional roles' },
-                  'topic-abstract': { display: '💭 abstract', class: 'bg-purple-100 text-purple-800', essential: false, description: 'Concepts, ideas, and feelings' },
-                  'topic-daily-life': { display: '🏡 daily', class: 'bg-green-100 text-green-800', essential: false, description: 'Everyday activities and household' }
-                };
-
-                return tagMap[tag] || null;
-              }
+              // Toggle word forms display
+              document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('toggle-forms')) {
+                  const wordId = e.target.dataset.wordId;
+                  const container = document.getElementById(\`forms-\${wordId}\`);
+                  container.classList.toggle('expanded');
+                }
+                
+                if (e.target.classList.contains('toggle-relationships')) {
+                  const wordId = e.target.dataset.wordId;
+                  const container = document.getElementById(\`relationships-\${wordId}\`);
+                  container.classList.toggle('expanded');
+                }
+              });
 
               let searchTimeout;
               searchInput.addEventListener('input', function(e) {
@@ -401,12 +853,11 @@ export default function RootLayout({ children }) {
               closeDictionary.addEventListener('click', closeDictionaryPanel);
               overlay.addEventListener('click', closeDictionaryPanel);
 
-              // Audio playback function
+              // Audio playback function (enhanced)
               async function playAudio(wordId, italianText) {
                 const audioBtn = event.target.closest('button');
                 const originalHTML = audioBtn.innerHTML;
                 
-                // Show loading state with pause icon
                 audioBtn.innerHTML = \`
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
@@ -415,8 +866,31 @@ export default function RootLayout({ children }) {
                 audioBtn.disabled = true;
 
                 try {
-                  // For now, we'll use TTS fallback since we don't have pregenerated audio yet
-                  // TODO: Add pregenerated audio check later
+                  // Try to use pregenerated audio first
+                  const { data: audioData } = await supabaseClient
+                    .from('word_audio_metadata')
+                    .select('audio_filename')
+                    .eq('word_id', wordId)
+                    .single();
+                  
+                  if (audioData && audioData.audio_filename) {
+                    // Use pregenerated audio
+                    const { data: audioUrl } = await supabaseClient.storage
+                      .from('audio-files')
+                      .createSignedUrl(audioData.audio_filename, 60);
+                    
+                    if (audioUrl) {
+                      const audio = new Audio(audioUrl.signedUrl);
+                      audio.onended = () => {
+                        audioBtn.innerHTML = originalHTML;
+                        audioBtn.disabled = false;
+                      };
+                      audio.play();
+                      return;
+                    }
+                  }
+                  
+                  // Fallback to TTS
                   fallbackToTTS(italianText, audioBtn, originalHTML);
                 } catch (error) {
                   console.error('Audio error:', error);
@@ -456,6 +930,7 @@ export default function RootLayout({ children }) {
 
               // Make functions global for onclick handlers
               window.playAudio = playAudio;
+              window.dictionarySystem = dictionarySystem;
             });
           `
         }} />
