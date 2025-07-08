@@ -797,6 +797,8 @@ export default function RootLayout({ children }) {
                   words.forEach(word => {
                     const wordElement = createEnhancedWordElement(word);
                     wordsContainer.appendChild(wordElement);
+                    // After words are loaded, setup mobile tooltips
+                    setupMobileTagTooltips();
                   });
 
                 } catch (error) {
@@ -955,164 +957,152 @@ export default function RootLayout({ children }) {
               // Initialize grammar filters on page load
               updateGrammarFilters();
 
-              // Audio playbook function with mobile-first approach
-              async function playAudio(wordId, italianText) {
-                const audioBtn = event.target.closest('button');
-                const originalHTML = audioBtn.innerHTML;
-                
-                console.log('🔊 Audio request for:', italianText, 'ID:', wordId);
-                
-                // Show loading state
-                audioBtn.innerHTML = \`
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="animate-spin">
-                    <path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8Z"/>
-                  </svg>
-                \`;
-                audioBtn.disabled = true;
+// Audio playback function
+async function playAudio(wordId, italianText) {
+  const audioBtn = event.target.closest('button');
+  const originalHTML = audioBtn.innerHTML;
+  
+  // Show loading state
+  audioBtn.innerHTML = \`
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+    </svg>
+  \`;
+  audioBtn.disabled = true;
 
-                try {
-                  // First, try pregenerated audio
-                  console.log('🔍 Checking for pregenerated audio...');
-                  const { data: audioData, error: audioError } = await supabaseClient
-                    .from('word_audio_metadata')
-                    .select('audio_filename, word_id, source_id, source_table')
-                    .or(\`word_id.eq.\${wordId},source_id.eq.\${wordId}\`)
-                    .limit(1)
-                    .single();
-                  
-                  if (!audioError && audioData?.audio_filename) {
-                    console.log('✅ Found pregenerated audio:', audioData.audio_filename);
-                    
-                    try {
-                      const { data: signedUrl, error: urlError } = await supabaseClient.storage
-                        .from('audio-files')
-                        .createSignedUrl(audioData.audio_filename, 300);
-                      
-                      if (!urlError && signedUrl?.signedUrl) {
-                        console.log('🎵 Playing pregenerated audio');
-                        
-                        const audio = new Audio();
-                        audio.preload = 'auto';
-                        audio.src = signedUrl.signedUrl;
-                        
-                        return new Promise((resolve) => {
-                          audio.oncanplaythrough = async () => {
-                            try {
-                              await audio.play();
-                              console.log('✅ Pregenerated audio playing');
-                            } catch (playError) {
-                              console.log('❌ Pregenerated audio play failed:', playError);
-                              fallbackToTTS(italianText, audioBtn, originalHTML);
-                              resolve();
-                            }
-                          };
-                          
-                          audio.onended = () => {
-                            console.log('✅ Pregenerated audio finished');
-                            audioBtn.innerHTML = originalHTML;
-                            audioBtn.disabled = false;
-                            resolve();
-                          };
-                          
-                          audio.onerror = (e) => {
-                            console.log('❌ Pregenerated audio error:', e);
-                            fallbackToTTS(italianText, audioBtn, originalHTML);
-                            resolve();
-                          };
-                          
-                          setTimeout(() => {
-                            if (audio.readyState < 2) {
-                              console.log('⏰ Audio loading timeout, using TTS');
-                              fallbackToTTS(italianText, audioBtn, originalHTML);
-                              resolve();
-                            }
-                          }, 3000);
-                        });
-                      }
-                    } catch (storageError) {
-                      console.log('❌ Storage URL error:', storageError);
-                    }
-                  }
-                  
-                  console.log('📢 No pregenerated audio, using TTS');
-                  fallbackToTTS(italianText, audioBtn, originalHTML);
-                  
-                } catch (error) {
-                  console.error('💥 Audio system error:', error);
-                  fallbackToTTS(italianText, audioBtn, originalHTML);
-                }
-              }
+  try {
+    // First, check if we have pregenerated audio in Supabase
+    const { data: audioMetadata, error: metadataError } = await supabaseClient
+      .from('word_audio_metadata')
+      .select('audio_filename')
+      .eq('word_id', wordId)
+      .single();
 
-              // Enhanced TTS with better mobile support and Italian voice selection
-              function fallbackToTTS(text, audioBtn, originalHTML) {
-                console.log('🗣️ Using TTS for:', text);
-                
-                if (!('speechSynthesis' in window)) {
-                  console.log('❌ Speech synthesis not supported');
-                  showAudioError(audioBtn, originalHTML);
-                  return;
-                }
-                
-                speechSynthesis.cancel();
-                
-                setTimeout(() => {
-                  const utterance = new SpeechSynthesisUtterance(text);
-                  
-                  utterance.lang = 'it-IT';
-                  utterance.rate = 0.85;
-                  utterance.pitch = 1.0;
-                  utterance.volume = 1.0;
-                  
-                  const voices = speechSynthesis.getVoices();
-                  const italianVoice = voices.find(voice => {
-                    const lang = voice.lang.toLowerCase();
-                    const name = voice.name.toLowerCase();
-                    return lang.startsWith('it-') || 
-                           lang.includes('italian') || 
-                           name.includes('italian') ||
-                           name.includes('italia');
-                  });
-                  
-                  if (italianVoice) {
-                    utterance.voice = italianVoice;
-                    console.log('🇮🇹 Using Italian voice:', italianVoice.name, '(' + italianVoice.lang + ')');
-                  } else {
-                    console.log('⚠️ No Italian voice found, using default with it-IT');
-                  }
-                  
-                  let hasStarted = false;
-                  
-                  utterance.onstart = () => {
-                    hasStarted = true;
-                    console.log('🗣️ TTS started');
-                  };
-                  
-                  utterance.onend = () => {
-                    console.log('✅ TTS finished');
-                    audioBtn.innerHTML = originalHTML;
-                    audioBtn.disabled = false;
-                  };
-                  
-                  utterance.onerror = (e) => {
-                    console.error('❌ TTS error:', e.error);
-                    showAudioError(audioBtn, originalHTML);
-                  };
-                  
-                  setTimeout(() => {
-                    if (!hasStarted) {
-                      console.log('⏰ TTS timeout');
-                      showAudioError(audioBtn, originalHTML);
-                    }
-                  }, 5000);
-                  
-                  try {
-                    speechSynthesis.speak(utterance);
-                  } catch (speakError) {
-                    console.error('❌ TTS speak error:', speakError);
-                    showAudioError(audioBtn, originalHTML);
-                  }
-                }, 100);
-              }
+    if (audioMetadata && audioMetadata.audio_filename) {
+      // Get signed URL for the audio file
+      const { data: urlData, error: urlError } = await supabaseClient
+        .storage
+        .from('audio-files')
+        .createSignedUrl(audioMetadata.audio_filename, 3600); // 1 hour expiry
+
+      if (urlData && urlData.signedUrl) {
+        // Play the pregenerated audio
+        const audio = new Audio(urlData.signedUrl);
+        
+        audio.onended = () => {
+          audioBtn.innerHTML = originalHTML;
+          audioBtn.disabled = false;
+        };
+        
+        audio.onerror = () => {
+          console.log('Pregenerated audio failed, falling back to TTS');
+          fallbackToTTS(italianText, audioBtn, originalHTML);
+        };
+        
+        await audio.play();
+        return;
+      }
+    }
+    
+    // No pregenerated audio found, use TTS fallback
+    fallbackToTTS(italianText, audioBtn, originalHTML);
+    
+  } catch (error) {
+    console.error('Audio playback error:', error);
+    fallbackToTTS(italianText, audioBtn, originalHTML);
+  }
+}
+
+// Improved TTS fallback function with iOS support
+function fallbackToTTS(text, audioBtn, originalHTML) {
+  console.log('Using TTS fallback for:', text);
+  
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Function to set Italian voice
+    const setItalianVoice = (voices) => {
+      // Find Italian voices
+      const italianVoices = voices.filter(voice => 
+        voice.lang.startsWith('it') || 
+        voice.lang.includes('IT') || 
+        voice.name.toLowerCase().includes('ital')
+      );
+      
+      console.log('Available Italian voices:', italianVoices.map(v => v.name));
+      
+      if (italianVoices.length > 0) {
+        // Prefer specific voices known to work well
+        const preferredVoice = italianVoices.find(voice => 
+          voice.name.includes('Luca') || // iOS Italian male voice
+          voice.name.includes('Alice') || // iOS Italian female voice  
+          voice.name.includes('Federica') || // Another Italian voice
+          voice.name.includes('Italia')
+        ) || italianVoices[0];
+        
+        utterance.voice = preferredVoice;
+        console.log('Selected voice:', preferredVoice.name);
+      }
+      
+      // Always set language, even if no Italian voice found
+      utterance.lang = 'it-IT';
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+    };
+    
+    // Function to speak the text
+    const speakText = () => {
+      utterance.onend = () => {
+        audioBtn.innerHTML = originalHTML;
+        audioBtn.disabled = false;
+      };
+      
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event);
+        audioBtn.innerHTML = originalHTML;
+        audioBtn.disabled = false;
+      };
+      
+      // Cancel any ongoing speech
+      speechSynthesis.cancel();
+      
+      // Speak after a small delay (helps with iOS)
+      setTimeout(() => {
+        speechSynthesis.speak(utterance);
+      }, 100);
+    };
+    
+    // Get voices - handle both immediate and delayed loading
+    let voices = speechSynthesis.getVoices();
+    
+    if (voices.length === 0) {
+      // iOS often needs this event to load voices
+      speechSynthesis.onvoiceschanged = () => {
+        voices = speechSynthesis.getVoices();
+        setItalianVoice(voices);
+        speakText();
+      };
+      
+      // Trigger voice loading on iOS
+      speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+      speechSynthesis.cancel();
+    } else {
+      setItalianVoice(voices);
+      speakText();
+    }
+  } else {
+    // No TTS available
+    console.error('Speech synthesis not supported');
+    audioBtn.innerHTML = originalHTML;
+    audioBtn.disabled = false;
+    
+    // Show brief error indication
+    audioBtn.style.backgroundColor = '#ef4444';
+    setTimeout(() => {
+      audioBtn.style.backgroundColor = '';
+    }, 1000);
+  }
+}
               
               function showAudioError(audioBtn, originalHTML) {
                 audioBtn.innerHTML = \`
@@ -1144,6 +1134,51 @@ export default function RootLayout({ children }) {
 
               // Make functions global for onclick handlers
               window.playAudio = playAudio;
+              // Mobile-friendly tag tooltips
+function setupMobileTagTooltips() {
+  // Create tooltip element if it doesn't exist
+  if (!document.getElementById('mobile-tooltip')) {
+    const tooltip = document.createElement('div');
+    tooltip.id = 'mobile-tooltip';
+    tooltip.className = 'fixed hidden bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 max-w-xs';
+    tooltip.style.pointerEvents = 'none';
+    document.body.appendChild(tooltip);
+  }
+  
+  // Add click handlers to all tags
+  document.addEventListener('click', function(e) {
+    const tag = e.target.closest('.tag-essential, .tag-detailed');
+    const tooltip = document.getElementById('mobile-tooltip');
+    
+    if (tag && tag.title) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Position and show tooltip
+      const rect = tag.getBoundingClientRect();
+      tooltip.textContent = tag.title;
+      tooltip.style.left = rect.left + 'px';
+      tooltip.style.top = (rect.top - 30) + 'px';
+      tooltip.classList.remove('hidden');
+      
+      // Hide after 3 seconds or on next click
+      setTimeout(() => {
+        tooltip.classList.add('hidden');
+      }, 3000);
+    } else if (!tag) {
+      // Hide tooltip when clicking elsewhere
+      tooltip.classList.add('hidden');
+    }
+  });
+}
+
+// Call the setup function when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  setupMobileTagTooltips();
+});
+
+// Also call it whenever new words are loaded
+window.setupMobileTagTooltips = setupMobileTagTooltips;
               window.dictionarySystem = dictionarySystem;
             });
           `
