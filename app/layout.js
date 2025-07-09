@@ -73,7 +73,7 @@ export default function RootLayout({ children }) {
               border-color: #0d9488;
             }
             .audio-btn.premium-audio {
-              border: 2px solid #FFD700; /* A gold color */
+              border: 2px solid #FFD700; /* Gold color */
               box-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
             }
           `
@@ -239,7 +239,13 @@ export default function RootLayout({ children }) {
                       english,
                       word_type,
                       tags,
-                      word_audio_metadata(id)
+                      created_at,
+                      word_audio_metadata(
+                        id,
+                        audio_filename,
+                        azure_voice_name,
+                        duration_seconds
+                      )
                     \`)
                     .order('italian', { ascending: true });
 
@@ -812,7 +818,11 @@ export default function RootLayout({ children }) {
                 const div = document.createElement('div');
                 const colors = dictionarySystem.getWordTypeColors(word.word_type);
                 
-                const hasPremiumAudio = word.word_audio_metadata && word.word_audio_metadata.length > 0;
+                div.className = \`word-card border-2 \${colors.border} \${colors.bg} \${colors.hover} rounded-lg p-4 transition-colors\`;
+                
+                const audioMetadata = Array.isArray(word.word_audio_metadata) && word.word_audio_metadata.length > 0 ? word.word_audio_metadata[0] : null;
+                const hasPremiumAudio = !!audioMetadata;
+                const audioFilename = audioMetadata ? audioMetadata.audio_filename : 'null';
 
                 // Build article display for nouns
                 let articleDisplay = '';
@@ -897,7 +907,7 @@ export default function RootLayout({ children }) {
                         <h3 class="text-xl font-semibold \${colors.text}">\${word.italian}</h3>
                         <button 
                           class="audio-btn w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex items-center justify-center transition-colors flex-shrink-0 \${hasPremiumAudio ? 'premium-audio' : ''}"
-                          onclick="playAudio('\${word.id}', '\${word.italian}')"
+                          onclick="playAudio('\${word.id}', '\${word.italian}', '\${audioFilename}')"
                           title="\${hasPremiumAudio ? 'Play premium audio' : 'Play pronunciation'}"
                         >
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="ml-0.5">
@@ -956,35 +966,27 @@ export default function RootLayout({ children }) {
               updateGrammarFilters();
 
 // Audio playback function
-async function playAudio(wordId, italianText) {
+async function playAudio(wordId, italianText, audioFilename) {
   const audioBtn = event.target.closest('button');
   const originalHTML = audioBtn.innerHTML;
   
   // Show loading state
   audioBtn.innerHTML = \`
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+    <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
     </svg>
   \`;
   audioBtn.disabled = true;
 
   try {
-    // First, check if we have pregenerated audio in Supabase
-    const { data: audioMetadata, error: metadataError } = await supabaseClient
-      .from('word_audio_metadata')
-      .select('audio_filename')
-      .eq('word_id', wordId)
-      .single();
-
-    if (audioMetadata && audioMetadata.audio_filename) {
-      // Get signed URL for the audio file
+    if (audioFilename && audioFilename !== 'null') {
       const { data: urlData, error: urlError } = await supabaseClient
         .storage
         .from('audio-files')
-        .createSignedUrl(audioMetadata.audio_filename, 3600); // 1 hour expiry
+        .createSignedUrl(audioFilename, 3600); 
 
       if (urlData && urlData.signedUrl) {
-        // Play the pregenerated audio
         const audio = new Audio(urlData.signedUrl);
         
         audio.onended = () => {
@@ -992,17 +994,19 @@ async function playAudio(wordId, italianText) {
           audioBtn.disabled = false;
         };
         
-        audio.onerror = () => {
-          console.log('Pregenerated audio failed, falling back to TTS');
+        audio.onerror = (e) => {
+          console.error('Error playing pregenerated audio:', e);
           fallbackToTTS(italianText, audioBtn, originalHTML);
         };
         
         await audio.play();
         return;
+      } else {
+         console.error('Error creating signed URL:', urlError);
       }
     }
     
-    // No pregenerated audio found, use TTS fallback
+    // Fallback to TTS
     fallbackToTTS(italianText, audioBtn, originalHTML);
     
   } catch (error) {
@@ -1018,37 +1022,29 @@ function fallbackToTTS(text, audioBtn, originalHTML) {
   if ('speechSynthesis' in window) {
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Function to set Italian voice
     const setItalianVoice = (voices) => {
-      // Find Italian voices
       const italianVoices = voices.filter(voice => 
         voice.lang.startsWith('it') || 
         voice.lang.includes('IT') || 
         voice.name.toLowerCase().includes('ital')
       );
       
-      console.log('Available Italian voices:', italianVoices.map(v => v.name));
-      
       if (italianVoices.length > 0) {
-        // Prefer specific voices known to work well
         const preferredVoice = italianVoices.find(voice => 
-          voice.name.includes('Luca') || // iOS Italian male voice
-          voice.name.includes('Alice') || // iOS Italian female voice  
-          voice.name.includes('Federica') || // Another Italian voice
+          voice.name.includes('Luca') || 
+          voice.name.includes('Alice') ||  
+          voice.name.includes('Federica') || 
           voice.name.includes('Italia')
         ) || italianVoices[0];
         
         utterance.voice = preferredVoice;
-        console.log('Selected voice:', preferredVoice.name);
       }
       
-      // Always set language, even if no Italian voice found
       utterance.lang = 'it-IT';
       utterance.rate = 0.9;
       utterance.pitch = 1.0;
     };
     
-    // Function to speak the text
     const speakText = () => {
       utterance.onend = () => {
         audioBtn.innerHTML = originalHTML;
@@ -1061,27 +1057,18 @@ function fallbackToTTS(text, audioBtn, originalHTML) {
         audioBtn.disabled = false;
       };
       
-      // Cancel any ongoing speech
       speechSynthesis.cancel();
-      
-      // Speak after a small delay (helps with iOS)
-      setTimeout(() => {
-        speechSynthesis.speak(utterance);
-      }, 100);
+      setTimeout(() => speechSynthesis.speak(utterance), 100);
     };
     
-    // Get voices - handle both immediate and delayed loading
     let voices = speechSynthesis.getVoices();
     
     if (voices.length === 0) {
-      // iOS often needs this event to load voices
       speechSynthesis.onvoiceschanged = () => {
         voices = speechSynthesis.getVoices();
         setItalianVoice(voices);
         speakText();
       };
-      
-      // Trigger voice loading on iOS
       speechSynthesis.speak(new SpeechSynthesisUtterance(''));
       speechSynthesis.cancel();
     } else {
@@ -1089,16 +1076,9 @@ function fallbackToTTS(text, audioBtn, originalHTML) {
       speakText();
     }
   } else {
-    // No TTS available
     console.error('Speech synthesis not supported');
     audioBtn.innerHTML = originalHTML;
     audioBtn.disabled = false;
-    
-    // Show brief error indication
-    audioBtn.style.backgroundColor = '#ef4444';
-    setTimeout(() => {
-      audioBtn.style.backgroundColor = '';
-    }, 1000);
   }
 }
               
@@ -1118,12 +1098,8 @@ function fallbackToTTS(text, audioBtn, originalHTML) {
               function initializeVoices() {
                 if ('speechSynthesis' in window) {
                   speechSynthesis.onvoiceschanged = () => {
-                    const voices = speechSynthesis.getVoices();
-                    console.log('🔄 Voices loaded:', voices.length);
-                    const italianVoices = voices.filter(v => v.lang.startsWith('it'));
-                    console.log('🇮🇹 Italian voices:', italianVoices.map(v => \`\${v.name} (\${v.lang})\`));
+                    console.log('🔄 Voices loaded:', speechSynthesis.getVoices().length);
                   };
-                  
                   speechSynthesis.getVoices();
                 }
               }
@@ -1132,51 +1108,42 @@ function fallbackToTTS(text, audioBtn, originalHTML) {
 
               // Make functions global for onclick handlers
               window.playAudio = playAudio;
+
               // Mobile-friendly tag tooltips
-function setupMobileTagTooltips() {
-  // Create tooltip element if it doesn't exist
-  if (!document.getElementById('mobile-tooltip')) {
-    const tooltip = document.createElement('div');
-    tooltip.id = 'mobile-tooltip';
-    tooltip.className = 'fixed hidden bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 max-w-xs';
-    tooltip.style.pointerEvents = 'none';
-    document.body.appendChild(tooltip);
-  }
-  
-  // Add click handlers to all tags
-  document.addEventListener('click', function(e) {
-    const tag = e.target.closest('.tag-essential, .tag-detailed');
-    const tooltip = document.getElementById('mobile-tooltip');
-    
-    if (tag && tag.title) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Position and show tooltip
-      const rect = tag.getBoundingClientRect();
-      tooltip.textContent = tag.title;
-      tooltip.style.left = rect.left + 'px';
-      tooltip.style.top = (rect.top - 30) + 'px';
-      tooltip.classList.remove('hidden');
-      
-      // Hide after 3 seconds or on next click
-      setTimeout(() => {
-        tooltip.classList.add('hidden');
-      }, 3000);
-    } else if (!tag) {
-      // Hide tooltip when clicking elsewhere
-      tooltip.classList.add('hidden');
-    }
-  });
-}
+              function setupMobileTagTooltips() {
+                if (!document.getElementById('mobile-tooltip')) {
+                  const tooltip = document.createElement('div');
+                  tooltip.id = 'mobile-tooltip';
+                  tooltip.className = 'fixed hidden bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 max-w-xs';
+                  tooltip.style.pointerEvents = 'none';
+                  document.body.appendChild(tooltip);
+                }
+                
+                document.addEventListener('click', function(e) {
+                  const tag = e.target.closest('.tag-essential, .tag-detailed');
+                  const tooltip = document.getElementById('mobile-tooltip');
+                  
+                  if (tag && tag.title) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const rect = tag.getBoundingClientRect();
+                    tooltip.textContent = tag.title;
+                    tooltip.style.left = rect.left + 'px';
+                    tooltip.style.top = (rect.top - 30) + 'px';
+                    tooltip.classList.remove('hidden');
+                    
+                    setTimeout(() => {
+                      tooltip.classList.add('hidden');
+                    }, 3000);
+                  } else if (!tag) {
+                    tooltip.classList.add('hidden');
+                  }
+                });
+              }
 
-// Call the setup function when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-  setupMobileTagTooltips();
-});
-
-// Also call it whenever new words are loaded
-window.setupMobileTagTooltips = setupMobileTagTooltips;
+              setupMobileTagTooltips();
+              window.setupMobileTagTooltips = setupMobileTagTooltips;
               window.dictionarySystem = dictionarySystem;
             });
           `
