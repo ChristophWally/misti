@@ -856,6 +856,7 @@ export default function RootLayout({ children }) {
 
               // FIXED: Create enhanced word element with proper audio detection
               function createEnhancedWordElement(word) {
+                console.log('DEBUG: Word structure for', word.italian, ':', word);
                 const div = document.createElement('div');
                 const colors = dictionarySystem.getWordTypeColors(word.word_type);
                 
