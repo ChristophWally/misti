@@ -1,1169 +1,766 @@
+import { Inter } from ‘next/font/google’
+import ‘./globals.css’
+
+const inter = Inter({ subsets: [‘latin’] })
+
+export const metadata = {
+title: ‘Italian Dictionary’,
+description: ‘Your personal Italian learning companion’,
+}
+
 export default function RootLayout({ children }) {
-  return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Misti - Italian Learning</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet" />
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            body { font-family: 'Comic Neue', cursive; }
-            .tag-essential, .tag-detailed {
-              display: inline-block;
-              font-size: 10px;
-              font-weight: 600;
-              padding: 2px 6px;
-              border-radius: 9999px;
-              margin: 1px;
-              cursor: help;
-            }
-            .tag-essential {
-              border: 1px solid rgba(0,0,0,0.1);
-            }
-            .tag-detailed {
-              border: 1px solid rgba(0,0,0,0.1);
-            }
-            .word-card {
-              transition: all 0.2s ease;
-            }
-            .word-card:hover {
-              transform: translateY(-1px);
-              box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            }
-            .article-display {
-              font-weight: 600;
-              font-size: 14px;
-              color: #059669;
-              margin-right: 4px;
-            }
-            .word-forms-container {
-              max-height: 0;
-              overflow: hidden;
-              transition: max-height 0.3s ease;
-            }
-            .word-forms-container.expanded {
-              max-height: 300px;
-            }
-            .relationships-container {
-              max-height: 0;
-              overflow: hidden;
-              transition: max-height 0.3s ease;
-            }
-            .relationships-container.expanded {
-              max-height: 200px;
-            }
-            .filter-chip {
-              padding: 4px 12px;
-              border-radius: 20px;
-              font-size: 12px;
-              font-weight: 500;
-              cursor: pointer;
-              transition: all 0.2s ease;
-              border: 1px solid #d1d5db;
-            }
-            .filter-chip:hover {
-              background-color: #f3f4f6;
-            }
-            .filter-chip.active {
-              background-color: #0d9488;
-              color: white;
-              border-color: #0d9488;
-            }
-            .audio-btn.premium-audio {
-              border: 2px solid #FFD700; /* Gold color */
-              box-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
-            }
-          `
-        }} />
-      </head>
-      <body className="bg-gradient-to-br from-cyan-50 to-blue-50">
-        <nav className="bg-gradient-to-r from-teal-600 to-cyan-600 shadow-lg">
-          <div className="w-full px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              {/* Logo */}
-              <div className="flex items-center">
-                <h1 className="text-xl font-bold text-white">Misti</h1>
-              </div>
+return (
+<html lang="en">
+<body className={inter.className}>
+{/* Inject environment variables safely into client-side */}
+<script dangerouslySetInnerHTML={{
+__html: `window.SUPABASE_URL = '${process.env.NEXT_PUBLIC_SUPABASE_URL}'; window.SUPABASE_ANON_KEY = '${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}';`
+}} />
+
+```
+    {children}
+    
+    {/* Main Dictionary System Script */}
+    <script dangerouslySetInnerHTML={{
+      __html: `
+        // Initialize Supabase with environment variables
+        const SUPABASE_URL = window.SUPABASE_URL;
+        const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
+        
+        if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+          console.error('Missing Supabase environment variables');
+        }
+        
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        class EnhancedDictionarySystem {
+          constructor() {
+            this.supabase = supabaseClient;
+            this.currentSearchTerm = '';
+            this.currentFilters = {};
+            this.isLoading = false;
+          }
+
+          // Main method to load words with proper foreign key join
+          async loadWords(searchTerm = '', filters = {}) {
+            try {
+              this.isLoading = true;
               
-              {/* Navigation */}
-              <div className="flex items-center space-x-4">
-                <button
-                  id="dictionary-btn"
-                  className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors shadow-md"
-                >
-                  📚 Dictionary
-                </button>
-                <button className="text-white hover:text-cyan-200 transition-colors">
-                  My Decks
-                </button>
-                <button className="text-white hover:text-cyan-200 transition-colors">
-                  Profile
-                </button>
-              </div>
-            </div>
-          </div>
-        </nav>
+              let query = this.supabase
+                .from('dictionary')
+                .select(\`
+                  id,
+                  italian,
+                  english,
+                  word_type,
+                  tags,
+                  created_at,
+                  word_audio_metadata(
+                    id,
+                    audio_filename,
+                    azure_voice_name,
+                    duration_seconds
+                  )
+                \`)
+                .order('italian', { ascending: true });
 
-        {/* Enhanced Dictionary Slide-out Panel */}
-        <div 
-          id="dictionary-panel"
-          className="fixed inset-y-0 right-0 w-96 md:w-3/4 lg:w-2/3 xl:w-1/2 bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out z-50"
-          style={{ minWidth: '384px', maxWidth: '80vw' }}
-        >
-          {/* Resize Handle */}
-          <div 
-            id="resize-handle"
-            className="absolute left-0 top-0 w-1 h-full bg-teal-300 cursor-ew-resize hover:bg-teal-400 transition-colors opacity-0 hover:opacity-100"
-          ></div>
-          <div className="flex flex-col h-full">
-            {/* Panel Header */}
-            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
-              <h2 className="text-lg font-semibold text-white">Dictionary</h2>
-              <button 
-                id="close-dictionary"
-                className="text-white hover:text-cyan-200"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Enhanced Search Bar */}
-            <div className="p-4 border-b bg-cyan-50">
-              <div className="space-y-3">
-                {/* Search Input */}
-                <input
-                  type="text"
-                  id="dictionary-search"
-                  placeholder="Search Italian words..."
-                  className="w-full px-3 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                />
-                
-                {/* Filter Toggle */}
-                <button id="toggle-filters" className="text-sm text-teal-600 hover:text-teal-800 flex items-center">
-                  <span className="mr-1">🔍</span> Advanced Filters
-                  <span id="filter-arrow" className="ml-1 transform transition-transform">▼</span>
-                </button>
-                
-                {/* Advanced Filters (initially hidden) */}
-                <div id="advanced-filters" className="hidden space-y-3 pt-2 border-t border-teal-200">
-                  {/* Word Type Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Word Type</label>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="filter-chip active" data-filter="wordType" data-value="">All</span>
-                      <span className="filter-chip" data-filter="wordType" data-value="NOUN">Noun</span>
-                      <span className="filter-chip" data-filter="wordType" data-value="VERB">Verb</span>
-                      <span className="filter-chip" data-filter="wordType" data-value="ADJECTIVE">Adjective</span>
-                      <span className="filter-chip" data-filter="wordType" data-value="ADVERB">Adverb</span>
-                    </div>
-                  </div>
-                  
-                  {/* CEFR Level Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">CEFR Level</label>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="filter-chip active" data-filter="cefrLevel" data-value="">All Levels</span>
-                      <span className="filter-chip" data-filter="cefrLevel" data-value="A1">A1</span>
-                      <span className="filter-chip" data-filter="cefrLevel" data-value="A2">A2</span>
-                      <span className="filter-chip" data-filter="cefrLevel" data-value="B1">B1</span>
-                      <span className="filter-chip" data-filter="cefrLevel" data-value="B2">B2</span>
-                      <span className="filter-chip" data-filter="cefrLevel" data-value="C1">C1</span>
-                      <span className="filter-chip" data-filter="cefrLevel" data-value="C2">C2</span>
-                    </div>
-                  </div>
-                  
-                  {/* Dynamic Grammar Filter */}
-                  <div id="grammar-filter-section">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Grammar</label>
-                    <div id="grammar-filters" className="flex flex-wrap gap-2 transition-all duration-300 ease-in-out">
-                      {/* Universal grammar filters */}
-                      <span className="filter-chip" data-filter="tags" data-value="irregular-pattern">Irregular</span>
-                      <span className="filter-chip" data-filter="tags" data-value="CEFR-A1">A1 Level</span>
-                      <span className="filter-chip" data-filter="tags" data-value="freq-top100">Top 100</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Dictionary Content */}
-            <div className="flex-1 overflow-y-auto p-4 bg-white">
-              <div id="dictionary-results">
-                <div id="words-container" className="space-y-3">
-                  {/* Enhanced words will be loaded here */}
-                </div>
-                <div id="loading" className="text-center py-4 text-teal-600">
-                  Loading words...
-                </div>
-                <div id="no-results" className="text-center py-4 text-gray-500 hidden">
-                  No words found
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Overlay */}
-        <div 
-          id="dictionary-overlay"
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 opacity-0 pointer-events-none transition-opacity duration-300"
-        ></div>
-
-        {/* Main Content */}
-        <main className="min-h-screen">
-          {children}
-        </main>
-
-        {/* Enhanced Dictionary System JavaScript */}
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            // Enhanced Dictionary System Class
-            class EnhancedDictionarySystem {
-              constructor(supabaseClient) {
-                this.supabase = supabaseClient;
-                this.cache = new Map();
-                this.searchTimeout = null;
-                this.allWords = []; // Cache all words from the RPC call
-              }
-              
-              // New method to fetch all words once
-              async fetchAllWords() {
-                if (this.allWords.length > 0) {
-                  return; // Already fetched
-                }
-                try {
-                  const { data, error } = await this.supabase.rpc('get_dictionary_with_audio_status');
-                  if (error) {
-                    console.error('Error calling RPC function get_dictionary_with_audio_status:', error);
-                    throw error;
-                  }
-                  this.allWords = data;
-                  console.log('Successfully fetched all words from RPC:', this.allWords.length);
-                } catch (e) {
-                  console.error('Failed to fetch all words:', e);
-                  this.allWords = []; // Reset on failure
-                }
+              // Apply search filter
+              if (searchTerm) {
+                query = query.or(\`italian.ilike.%\${searchTerm}%,english.ilike.%\${searchTerm}%\`);
               }
 
-              // Enhanced word loading now filters the cached list
-              async loadWords(searchTerm = '', filters = {}) {
-                // Ensure all words are fetched before proceeding
-                if (this.allWords.length === 0) {
-                    await this.fetchAllWords();
-                }
-
-                let filteredWords = this.allWords;
-
-                if (searchTerm) {
-                    const lowerSearchTerm = searchTerm.toLowerCase();
-                    filteredWords = filteredWords.filter(word =>
-                        (word.italian || '').toLowerCase().includes(lowerSearchTerm) ||
-                        (word.english || '').toLowerCase().includes(lowerSearchTerm)
-                    );
-                }
-
-                if (filters.wordType && filters.wordType.length > 0) {
-                    filteredWords = filteredWords.filter(word => filters.wordType.includes(word.word_type));
-                }
-
-                if (filters.tags && filters.tags.length > 0) {
-                    filteredWords = filteredWords.filter(word =>
-                        filters.tags.every(tag => (word.tags || []).includes(tag))
-                    );
-                }
-
-                if (filters.cefrLevel) {
-                    filteredWords = filteredWords.filter(word =>
-                        (word.tags || []).includes(\`CEFR-\${filters.cefrLevel}\`)
-                    );
-                }
-                
-                const finalWords = filteredWords.slice(0, 20);
-
-                const wordsWithCorrectShape = finalWords.map(word => ({
-                    ...word,
-                    word_audio_metadata: word.audio_filename ? [{ audio_filename: word.audio_filename }] : []
-                }));
-
-                const enhancedWords = await Promise.all(
-                    wordsWithCorrectShape.map(word => this.enhanceWordData(word))
-                );
-
-                return enhancedWords;
+              // Apply word type filter
+              if (filters.wordType && filters.wordType.length > 0) {
+                query = query.in('word_type', filters.wordType);
               }
 
-              // Enhance individual word with articles, processed tags, and related data
-              async enhanceWordData(word) {
-                const enhanced = { ...word };
-
-                // Generate articles for nouns
-                if (word.word_type === 'NOUN') {
-                  enhanced.articles = this.generateArticles(word);
-                }
-
-                // Process tags into categories
-                enhanced.processedTags = this.processTagsForDisplay(word.tags, word.word_type);
-
-                // Get word forms if available
-                enhanced.forms = await this.getWordForms(word.id);
-
-                // Get related words
-                enhanced.relationships = await this.getRelatedWords(word.id);
-
-                return enhanced;
-              }
-
-              // Generate Italian articles based on tags and phonetic rules
-              generateArticles(word) {
-                const tags = word.tags || [];
-                const italian = word.italian.toLowerCase();
-                
-                // Determine gender
-                let gender = 'masculine'; // default
-                if (tags.includes('feminine')) gender = 'feminine';
-                if (tags.includes('masculine')) gender = 'masculine';
-                if (tags.includes('common-gender')) gender = 'common';
-
-                // Generate articles using the same logic as our SQL function
-                const articles = {
-                  singular: this.calculateArticle(italian, gender, false),
-                  plural: this.calculateArticle(italian, gender, true)
-                };
-
-                // Add indefinite articles
-                articles.indefinite = {
-                  singular: this.calculateIndefiniteArticle(italian, gender),
-                  plural: null // Italian doesn't have indefinite plural articles
-                };
-
-                return articles;
-              }
-
-              // Calculate definite article (matches SQL function logic)
-              calculateArticle(word, gender, isPlural) {
-                const firstChar = word.charAt(0);
-                const firstTwo = word.substring(0, 2);
-                const consonantAfterS = word.length > 1 && /[bcdfghjklmnpqrstvwxyz]/.test(word.charAt(1));
-
-                if (isPlural) {
-                  if (gender === 'masculine') {
-                    // Plural masculine: gli or i
-                    if (/[aeiou]/.test(firstChar) || 
-                        ['gn','ps','sc','sp','st','x','z'].includes(firstTwo) ||
-                        (firstChar === 's' && consonantAfterS)) {
-                      return 'gli';
-                    }
-                    return 'i';
-                  } else {
-                    // Plural feminine: always le
-                    return 'le';
-                  }
-                } else {
-                  // Singular
-                  if (gender === 'masculine') {
-                    // Singular masculine: lo or il
-                    if (/[aeiou]/.test(firstChar) || 
-                        ['gn','ps','sc','sp','st','x','z'].includes(firstTwo) ||
-                        (firstChar === 's' && consonantAfterS)) {
-                      return 'lo';
-                    }
-                    return 'il';
-                  } else {
-                    // Singular feminine: la or l'
-                    if (/[aeiou]/.test(firstChar)) {
-                      return "l'";
-                    }
-                    return 'la';
-                  }
-                }
-              }
-
-              // Calculate indefinite article
-              calculateIndefiniteArticle(word, gender) {
-                const firstChar = word.charAt(0);
-                const firstTwo = word.substring(0, 2);
-                const consonantAfterS = word.length > 1 && /[bcdfghjklmnpqrstvwxyz]/.test(word.charAt(1));
-
-                if (gender === 'masculine') {
-                  if (/[aeiou]/.test(firstChar) || 
-                      ['gn','ps','sc','sp','st','x','z'].includes(firstTwo) ||
-                      (firstChar === 's' && consonantAfterS)) {
-                    return 'uno';
-                  }
-                  return 'un';
-                } else {
-                  if (/[aeiou]/.test(firstChar)) {
-                    return "un'";
-                  }
-                  return 'una';
-                }
-              }
-
-              // Process tags for visual display with proper SVG icons and mobile support
-              processTagsForDisplay(tags, wordType) {
-                const essential = [];
-                const detailed = [];
-
-                const tagMap = {
-                  // Gender (essential for nouns)
-                  'masculine': { display: '♂', class: 'bg-blue-100 text-blue-800', essential: wordType === 'NOUN', description: 'Masculine gender' },
-                  'feminine': { display: '♀', class: 'bg-pink-100 text-pink-800', essential: wordType === 'NOUN', description: 'Feminine gender' },
-                  'common-gender': { display: '⚥', class: 'bg-purple-100 text-purple-800', essential: wordType === 'NOUN', description: 'Common gender' },
-                  
-                  // Irregularity (essential when present)
-                  'irregular-pattern': { display: 'IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Irregular pattern' },
-                  'form-irregular': { display: 'IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Irregular forms' },
-                  
-                  // ISC Conjugation (essential for verbs)
-                  'ire-isc-conjugation': { display: '-ISC', class: 'bg-yellow-100 text-yellow-800', essential: wordType === 'VERB', description: 'Uses -isc- infix' },
-                  
-                  // CEFR Levels (essential)
-                  'CEFR-A1': { display: 'A1', class: 'bg-green-100 text-green-800', essential: true, description: 'Beginner level' },
-                  'CEFR-A2': { display: 'A2', class: 'bg-green-100 text-green-800', essential: true, description: 'Elementary level' },
-                  'CEFR-B1': { display: 'B1', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Intermediate level' },
-                  'CEFR-B2': { display: 'B2', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Upper intermediate' },
-                  'CEFR-C1': { display: 'C1', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Advanced level' },
-                  'CEFR-C2': { display: 'C2', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Proficiency level' },
-                  
-                  // Frequency (essential)
-                  'freq-top100': { display: '★100', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 100 words' },
-                  'freq-top200': { display: '★200', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 200 words' },
-                  'freq-top300': { display: '★300', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 300 words' },
-                  'freq-top500': { display: '★500', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 500 words' },
-                  'freq-top1000': { display: '★1K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 1000 words' },
-                  'freq-top5000': { display: '★5K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 5000 words' },
-                  
-                  // Conjugation Groups (detailed)
-                  'are-conjugation': { display: '-are', class: 'bg-teal-100 text-teal-800', essential: false, description: 'First conjugation' },
-                  'ere-conjugation': { display: '-ere', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Second conjugation' },
-                  'ire-conjugation': { display: '-ire', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Third conjugation' },
-                  
-                  // Auxiliary Verbs (detailed)
-                  'avere-auxiliary': { display: 'avere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses avere' },
-                  'essere-auxiliary': { display: 'essere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses essere' },
-                  'both-auxiliary': { display: 'both', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses both auxiliaries' },
-                  
-                  // Transitivity (detailed)
-                  'transitive-verb': { display: 'trans', class: 'bg-green-100 text-green-800', essential: false, description: 'Transitive verb' },
-                  'intransitive-verb': { display: 'intrans', class: 'bg-green-100 text-green-800', essential: false, description: 'Intransitive verb' },
-                  'both-transitivity': { display: 'both', class: 'bg-green-100 text-green-800', essential: false, description: 'Both transitive/intransitive' },
-
-                  // Plural patterns (detailed)
-                  'plural-i': { display: 'plural-i', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Plural with -i' },
-                  'plural-e': { display: 'plural-e', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Plural with -e' },
-                  'plural-invariable': { display: 'invariable', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Invariable plural' },
-                  
-                  // Topics (detailed)
-                  'topic-place': { display: 'place', class: 'bg-emerald-100 text-emerald-800', essential: false, description: 'Places and locations' },
-                  'topic-food': { display: 'food', class: 'bg-orange-100 text-orange-800', essential: false, description: 'Food and drink' },
-                  'topic-daily-life': { display: 'daily', class: 'bg-green-100 text-green-800', essential: false, description: 'Daily life' }
-                };
-
-                (tags || []).forEach(tag => {
-                  const tagInfo = tagMap[tag];
-                  if (tagInfo) {
-                    if (tagInfo.essential) {
-                      essential.push({
-                        tag,
-                        display: tagInfo.display,
-                        class: tagInfo.class,
-                        description: tagInfo.description
-                      });
-                    } else {
-                      detailed.push({
-                        tag,
-                        display: tagInfo.display,
-                        class: tagInfo.class,
-                        description: tagInfo.description
-                      });
-                    }
-                  }
+              // Apply tag filters
+              if (filters.tags && filters.tags.length > 0) {
+                // For multiple tags, we want words that have ALL the tags
+                filters.tags.forEach(tag => {
+                  query = query.contains('tags', [tag]);
                 });
-
-                return { essential, detailed };
               }
 
-              // Get word forms (conjugations, plurals, etc.)
-              async getWordForms(wordId) {
-                try {
-                  const { data: forms, error } = await this.supabase
-                    .from('word_forms')
-                    .select('*')
-                    .eq('word_id', wordId)
-                    .order('form_type');
-
-                  if (error) throw error;
-                  return forms || [];
-                } catch (error) {
-                  console.error('Error loading word forms:', error);
-                  return [];
-                }
+              // Apply CEFR level filter
+              if (filters.cefrLevel) {
+                query = query.contains('tags', [\`CEFR-\${filters.cefrLevel}\`]);
               }
 
-              // Get related words (morphological relationships)
-              async getRelatedWords(wordId) {
-                try {
-                  const { data: relationships, error } = await this.supabase
-                    .rpc('get_related_words', { word_id: wordId });
+              const { data: words, error } = await query.limit(20);
 
-                  if (error) throw error;
-                  return relationships || [];
-                } catch (error) {
-                  console.error('Error loading related words:', error);
-                  return [];
-                }
+              if (error) {
+                console.error('Supabase query error:', error);
+                throw error;
               }
 
-              // Get word type color scheme
-              getWordTypeColors(wordType) {
-                const colors = {
-                  'VERB': {
-                    border: 'border-teal-200',
-                    bg: 'bg-teal-50',
-                    hover: 'hover:bg-teal-100',
-                    tag: 'bg-teal-100 text-teal-800',
-                    text: 'text-teal-900'
-                  },
-                  'NOUN': {
-                    border: 'border-cyan-200',
-                    bg: 'bg-cyan-50',
-                    hover: 'hover:bg-cyan-100',
-                    tag: 'bg-cyan-100 text-cyan-800',
-                    text: 'text-cyan-900'
-                  },
-                  'ADJECTIVE': {
-                    border: 'border-blue-200',
-                    bg: 'bg-blue-50',
-                    hover: 'hover:bg-blue-100',
-                    tag: 'bg-blue-100 text-blue-800',
-                    text: 'text-blue-900'
-                  },
-                  'ADVERB': {
-                    border: 'border-purple-200',
-                    bg: 'bg-purple-50',
-                    hover: 'hover:bg-purple-100',
-                    tag: 'bg-purple-100 text-purple-800',
-                    text: 'text-purple-900'
-                  }
-                };
+              // Transform the data to ensure proper structure
+              const enhancedWords = await Promise.all(
+                words.map(word => this.enhanceWordData(word))
+              );
 
-                return colors[wordType] || {
-                  border: 'border-gray-200',
-                  bg: 'bg-gray-50',
-                  hover: 'hover:bg-gray-100',
-                  tag: 'bg-gray-100 text-gray-800',
-                  text: 'text-gray-900'
-                };
+              return enhancedWords;
+            } catch (error) {
+              console.error('Error loading words:', error);
+              throw error;
+            } finally {
+              this.isLoading = false;
+            }
+          }
+
+          async enhanceWordData(word) {
+            try {
+              // Ensure proper audio metadata structure
+              const audioMetadata = word.word_audio_metadata && word.word_audio_metadata.length > 0 
+                ? word.word_audio_metadata[0] 
+                : null;
+              
+              return {
+                ...word,
+                audioMetadata,
+                hasPremiumAudio: !!audioMetadata && !!audioMetadata.audio_filename,
+                audioFilename: audioMetadata && audioMetadata.audio_filename 
+                  ? audioMetadata.audio_filename 
+                  : null
+              };
+            } catch (error) {
+              console.error('Error enhancing word data for word:', word.id, error);
+              return {
+                ...word,
+                audioMetadata: null,
+                hasPremiumAudio: false,
+                audioFilename: null
+              };
+            }
+          }
+
+          createEnhancedWordElement(word) {
+            // Extract audio information with proper null checking
+            const audioMetadata = word.word_audio_metadata && word.word_audio_metadata.length > 0 
+              ? word.word_audio_metadata[0] 
+              : null;
+            const hasPremiumAudio = !!audioMetadata && !!audioMetadata.audio_filename;
+            const audioFilename = audioMetadata && audioMetadata.audio_filename 
+              ? audioMetadata.audio_filename 
+              : null;
+
+            // Create enhanced display with proper audio button
+            const audioButtonHtml = hasPremiumAudio 
+              ? \`<button class="audio-btn premium-audio" onclick="playAudio('\${word.id}', '\${word.italian}', \${audioFilename ? \`'\${audioFilename}'\` : 'null'})" title="Play premium audio">
+                  <span class="audio-icon">🔊</span>
+                  <span class="premium-badge">Premium</span>
+                </button>\`
+              : \`<button class="audio-btn basic-audio" onclick="playAudio('\${word.id}', '\${word.italian}', null)" title="Play basic audio">
+                  <span class="audio-icon">🔊</span>
+                </button>\`;
+
+            // Format tags for display
+            const tagsHtml = word.tags && word.tags.length > 0 
+              ? word.tags.map(tag => \`<span class="tag">\${tag}</span>\`).join(' ')
+              : '';
+
+            return \`
+              <div class="word-item" data-word-id="\${word.id}">
+                <div class="word-header">
+                  <div class="word-main">
+                    <span class="italian-word">\${word.italian}</span>
+                    <span class="word-type">(\${word.word_type || 'N/A'})</span>
+                  </div>
+                  \${audioButtonHtml}
+                </div>
+                <div class="word-content">
+                  <div class="english-translation">\${word.english}</div>
+                  \${tagsHtml ? \`<div class="word-tags">\${tagsHtml}</div>\` : ''}
+                </div>
+              </div>
+            \`;
+          }
+
+          async performSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const resultsContainer = document.getElementById('searchResults');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            if (!searchInput || !resultsContainer) return;
+
+            const searchTerm = searchInput.value.trim();
+            this.currentSearchTerm = searchTerm;
+
+            try {
+              // Show loading state
+              if (loadingIndicator) loadingIndicator.style.display = 'block';
+              resultsContainer.innerHTML = '';
+
+              // Load words with current filters
+              const words = await this.loadWords(searchTerm, this.currentFilters);
+              
+              // Display results
+              if (words && words.length > 0) {
+                const wordsHtml = words.map(word => this.createEnhancedWordElement(word)).join('');
+                resultsContainer.innerHTML = \`
+                  <div class="results-count">Found \${words.length} word\${words.length !== 1 ? 's' : ''}</div>
+                  <div class="words-list">\${wordsHtml}</div>
+                \`;
+              } else {
+                resultsContainer.innerHTML = \`
+                  <div class="no-results">
+                    <p>No words found\${searchTerm ? \` for "\${searchTerm}"\` : ''}.</p>
+                    <p>Try a different search term or check your filters.</p>
+                  </div>
+                \`;
+              }
+            } catch (error) {
+              console.error('Search error:', error);
+              resultsContainer.innerHTML = \`
+                <div class="error-message">
+                  <p>Error loading words. Please try again.</p>
+                  <p class="error-detail">\${error.message}</p>
+                </div>
+              \`;
+            } finally {
+              // Hide loading state
+              if (loadingIndicator) loadingIndicator.style.display = 'none';
+            }
+          }
+
+          updateFilters(newFilters) {
+            this.currentFilters = { ...this.currentFilters, ...newFilters };
+            // Trigger search with updated filters
+            this.performSearch();
+          }
+
+          clearFilters() {
+            this.currentFilters = {};
+            // Trigger search without filters
+            this.performSearch();
+          }
+        }
+
+        // Audio playback functionality
+        let currentAudio = null;
+
+        async function playAudio(wordId, italianWord, audioFilename) {
+          try {
+            // Stop any currently playing audio
+            if (currentAudio) {
+              currentAudio.pause();
+              currentAudio = null;
+            }
+
+            // Check if we have a premium audio file
+            if (audioFilename && audioFilename !== 'null' && audioFilename !== null) {
+              // Play premium audio from Supabase storage
+              const { data: audioData, error } = await supabaseClient.storage
+                .from('word-audio')
+                .createSignedUrl(audioFilename, 60); // 60 seconds expiry
+
+              if (error) {
+                console.error('Error getting audio URL:', error);
+                throw error;
+              }
+
+              if (audioData && audioData.signedUrl) {
+                currentAudio = new Audio(audioData.signedUrl);
+                currentAudio.play().catch(e => {
+                  console.error('Error playing premium audio:', e);
+                  // Fallback to basic audio
+                  playBasicAudio(italianWord);
+                });
+                return;
               }
             }
 
-            // Initialize Enhanced Dictionary System
-            document.addEventListener('DOMContentLoaded', function() {
-              // Supabase client
-              const SUPABASE_URL = '${process.env.NEXT_PUBLIC_SUPABASE_URL}';
-              const SUPABASE_ANON_KEY = '${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}';
+            // Fallback to basic text-to-speech
+            playBasicAudio(italianWord);
+          } catch (error) {
+            console.error('Audio playback error:', error);
+            // Fallback to basic audio
+            playBasicAudio(italianWord);
+          }
+        }
+
+        function playBasicAudio(text) {
+          try {
+            // Use Web Speech API for basic text-to-speech
+            if ('speechSynthesis' in window) {
+              const utterance = new SpeechSynthesisUtterance(text);
+              utterance.lang = 'it-IT'; // Italian language
+              utterance.rate = 0.8; // Slightly slower for learning
+              speechSynthesis.speak(utterance);
+            } else {
+              console.warn('Speech synthesis not supported in this browser');
+              alert('Audio not supported in this browser');
+            }
+          } catch (error) {
+            console.error('Basic audio error:', error);
+            alert('Error playing audio');
+          }
+        }
+
+        // Global dictionary system instance
+        let dictionarySystem = null;
+
+        // Dictionary modal functionality
+        async function openDictionary() {
+          try {
+            // Initialize dictionary system if not already done
+            if (!dictionarySystem) {
+              dictionarySystem = new EnhancedDictionarySystem();
+            }
+
+            // Show the modal
+            const modal = document.getElementById('dictionaryModal');
+            if (modal) {
+              modal.style.display = 'block';
+              document.body.style.overflow = 'hidden';
               
-              // Create Supabase client for audio functions
-              const { createClient } = supabase;
-              const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-              // Initialize enhanced dictionary system
-              const dictionarySystem = new EnhancedDictionarySystem(supabaseClient);
-
-              // DOM elements
-              const dictionaryBtn = document.getElementById('dictionary-btn');
-              const dictionaryPanel = document.getElementById('dictionary-panel');
-              const closeDictionary = document.getElementById('close-dictionary');
-              const overlay = document.getElementById('dictionary-overlay');
-              const searchInput = document.getElementById('dictionary-search');
-              const wordsContainer = document.getElementById('words-container');
-              const loading = document.getElementById('loading');
-              const noResults = document.getElementById('no-results');
-              const toggleFilters = document.getElementById('toggle-filters');
-              const advancedFilters = document.getElementById('advanced-filters');
-              const filterArrow = document.getElementById('filter-arrow');
-              const resizeHandle = document.getElementById('resize-handle');
-
-              // Current filters state
-              let currentFilters = {
-                wordType: [],
-                cefrLevel: '',
-                tags: []
-              };
-
-              // Grammar filter options by word type
-              const grammarFiltersByType = {
-                'NOUN': [
-                  { value: 'masculine', label: 'Masculine ♂' },
-                  { value: 'feminine', label: 'Feminine ♀' },
-                  { value: 'common-gender', label: 'Common ⚥' },
-                  { value: 'plural-i', label: 'Plural -i' },
-                  { value: 'plural-e', label: 'Plural -e' },
-                  { value: 'plural-invariable', label: 'Invariable' }
-                ],
-                'VERB': [
-                  { value: 'are-conjugation', label: '-are verbs' },
-                  { value: 'ere-conjugation', label: '-ere verbs' },
-                  { value: 'ire-conjugation', label: '-ire verbs' },
-                  { value: 'ire-isc-conjugation', label: '-isc verbs' },
-                  { value: 'avere-auxiliary', label: 'Uses avere' },
-                  { value: 'essere-auxiliary', label: 'Uses essere' },
-                  { value: 'transitive-verb', label: 'Transitive' },
-                  { value: 'intransitive-verb', label: 'Intransitive' }
-                ],
-                'ADJECTIVE': [
-                  { value: 'form-4', label: '4 forms' },
-                  { value: 'form-2', label: '2 forms' },
-                  { value: 'form-invariable', label: 'Invariable' },
-                  { value: 'type-gradable', label: 'Gradable' }
-                ],
-                'ADVERB': [
-                  { value: 'type-manner', label: 'Manner' },
-                  { value: 'type-time', label: 'Time' },
-                  { value: 'type-place', label: 'Place' },
-                  { value: 'type-quantity', label: 'Quantity' }
-                ],
-                'ALL': [
-                  { value: 'irregular-pattern', label: 'Irregular ⚠️' },
-                  { value: 'freq-top100', label: 'Top 100 ⭐' },
-                  { value: 'freq-top500', label: 'Top 500 ⭐' },
-                  { value: 'native', label: 'Native 🗣️' },
-                  { value: 'business', label: 'Business 💼' }
-                ]
-              };
-
-              // Update grammar filters based on selected word types
-              function updateGrammarFilters() {
-                const grammarContainer = document.getElementById('grammar-filters');
-                const selectedTypes = currentFilters.wordType.length === 0 ? ['ALL'] : currentFilters.wordType;
-                
-                // Collect all applicable filters
-                let applicableFilters = [];
-                selectedTypes.forEach(type => {
-                  if (grammarFiltersByType[type]) {
-                    applicableFilters = applicableFilters.concat(grammarFiltersByType[type]);
-                  }
-                });
-                
-                // Always include universal filters
-                applicableFilters = applicableFilters.concat(grammarFiltersByType['ALL']);
-                
-                // Remove duplicates
-                const uniqueFilters = applicableFilters.filter((filter, index, self) => 
-                  index === self.findIndex(f => f.value === filter.value)
-                );
-                
-                // Animate transition
-                grammarContainer.style.opacity = '0.5';
-                grammarContainer.style.transform = 'translateY(-10px)';
-                
-                setTimeout(() => {
-                  grammarContainer.innerHTML = uniqueFilters
-                    .map(filter => \`
-                      <span class="filter-chip \${currentFilters.tags.includes(filter.value) ? 'active' : ''}" 
-                            data-filter="tags" 
-                            data-value="\${filter.value}">
-                        \${filter.label}
-                      </span>
-                    \`)
-                    .join('');
-                  
-                  grammarContainer.style.opacity = '1';
-                  grammarContainer.style.transform = 'translateY(0)';
-                }, 150);
-              }
-
-              // Resize functionality
-              let isResizing = false;
-              let startX = 0;
-              let startWidth = 0;
-
-              resizeHandle.addEventListener('mousedown', function(e) {
-                isResizing = true;
-                startX = e.clientX;
-                startWidth = parseInt(window.getComputedStyle(dictionaryPanel, null).getPropertyValue('width'));
-                document.addEventListener('mousemove', handleResize);
-                document.addEventListener('mouseup', stopResize);
-                dictionaryPanel.style.transition = 'none';
-              });
-
-              function handleResize(e) {
-                if (!isResizing) return;
-                const deltaX = startX - e.clientX;
-                const newWidth = startWidth + deltaX;
-                const minWidth = 384;
-                const maxWidth = window.innerWidth * 0.8;
-                
-                if (newWidth >= minWidth && newWidth <= maxWidth) {
-                  dictionaryPanel.style.width = newWidth + 'px';
-                }
-              }
-
-              function stopResize() {
-                isResizing = false;
-                document.removeEventListener('mousemove', handleResize);
-                document.removeEventListener('mouseup', stopResize);
-                dictionaryPanel.style.transition = '';
-              }
-
-              async function openDictionary() {
-                dictionaryPanel.classList.remove('translate-x-full');
-                overlay.classList.remove('opacity-0', 'pointer-events-none');
+              // Focus on search input
+              const searchInput = document.getElementById('searchInput');
+              if (searchInput) {
                 searchInput.focus();
-                // Pre-fetch all words when the dictionary is first opened
-                await dictionarySystem.fetchAllWords();
-                loadWords();
               }
 
-              function closeDictionaryPanel() {
-                dictionaryPanel.classList.add('translate-x-full');
-                overlay.classList.add('opacity-0', 'pointer-events-none');
-              }
+              // Load initial words (empty search to show all)
+              await dictionarySystem.performSearch();
+            }
+          } catch (error) {
+            console.error('Error opening dictionary:', error);
+            alert('Error opening dictionary. Please try again.');
+          }
+        }
 
-              // Filter toggle
-              toggleFilters.addEventListener('click', function() {
-                const isHidden = advancedFilters.classList.contains('hidden');
-                if (isHidden) {
-                  advancedFilters.classList.remove('hidden');
-                  filterArrow.style.transform = 'rotate(180deg)';
-                } else {
-                  advancedFilters.classList.add('hidden');
-                  filterArrow.style.transform = 'rotate(0deg)';
+        function closeDictionary() {
+          const modal = document.getElementById('dictionaryModal');
+          if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+          }
+          
+          // Stop any playing audio
+          if (currentAudio) {
+            currentAudio.pause();
+            currentAudio = null;
+          }
+        }
+
+        // Event listeners setup
+        document.addEventListener('DOMContentLoaded', function() {
+          // Search input event listener
+          const searchInput = document.getElementById('searchInput');
+          if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+              clearTimeout(searchTimeout);
+              searchTimeout = setTimeout(() => {
+                if (dictionarySystem) {
+                  dictionarySystem.performSearch();
                 }
-              });
-
-              // Filter chips handling
-              document.addEventListener('click', function(e) {
-                if (e.target.classList.contains('filter-chip')) {
-                  const filterType = e.target.dataset.filter;
-                  const filterValue = e.target.dataset.value;
-                  
-                  if (filterType === 'wordType') {
-                    // Handle multi-select for word types
-                    if (filterValue === '') {
-                      // "All" selected - clear all others
-                      const siblings = e.target.parentElement.querySelectorAll('.filter-chip');
-                      siblings.forEach(chip => chip.classList.remove('active'));
-                      e.target.classList.add('active');
-                      currentFilters.wordType = [];
-                    } else {
-                      // Specific type selected
-                      const allChip = e.target.parentElement.querySelector('[data-value=""]');
-                      allChip.classList.remove('active');
-                      
-                      // Toggle this chip
-                      if (currentFilters.wordType.includes(filterValue)) {
-                        currentFilters.wordType = currentFilters.wordType.filter(type => type !== filterValue);
-                        e.target.classList.remove('active');
-                      } else {
-                        currentFilters.wordType.push(filterValue);
-                        e.target.classList.add('active');
-                      }
-                      
-                      // If no types selected, activate "All"
-                      if (currentFilters.wordType.length === 0) {
-                        allChip.classList.add('active');
-                      }
-                    }
-                    
-                    // Update grammar filters based on word type selection
-                    updateGrammarFilters();
-                    
-                  } else if (filterType === 'tags') {
-                    // Handle multi-select for tags
-                    if (currentFilters.tags.includes(filterValue)) {
-                      currentFilters.tags = currentFilters.tags.filter(tag => tag !== filterValue);
-                      e.target.classList.remove('active');
-                    } else {
-                      currentFilters.tags.push(filterValue);
-                      e.target.classList.add('active');
-                    }
-                    
-                  } else {
-                    // Handle single-select for CEFR level
-                    const siblings = e.target.parentElement.querySelectorAll('.filter-chip');
-                    siblings.forEach(chip => chip.classList.remove('active'));
-                    e.target.classList.add('active');
-                    currentFilters[filterType] = filterValue;
-                  }
-                  
-                  // Reload words with new filters
-                  loadWords(searchInput.value);
-                }
-              });
-
-              // Load and display words
-              async function loadWords(searchTerm = '') {
-                loading.classList.remove('hidden');
-                wordsContainer.innerHTML = '';
-                noResults.classList.add('hidden');
-
-                try {
-                  const words = await dictionarySystem.loadWords(searchTerm, currentFilters);
-                  loading.classList.add('hidden');
-
-                  if (words.length === 0) {
-                    noResults.classList.remove('hidden');
-                    return;
-                  }
-
-                  words.forEach(word => {
-                    const wordElement = createEnhancedWordElement(word);
-                    wordsContainer.appendChild(wordElement);
-                  });
-                  setupMobileTagTooltips();
-
-                } catch (error) {
-                  console.error('Error loading words:', error);
-                  loading.classList.add('hidden');
-                  noResults.textContent = 'Error loading words';
-                  noResults.classList.remove('hidden');
-                }
-              }
-
-              // Create enhanced word element with all new features
-              function createEnhancedWordElement(word) {
-                const div = document.createElement('div');
-                const colors = dictionarySystem.getWordTypeColors(word.word_type);
-                
-                div.className = \`word-card border-2 \${colors.border} \${colors.bg} \${colors.hover} rounded-lg p-4 transition-colors\`;
-                
-                const audioMetadata = Array.isArray(word.word_audio_metadata) && word.word_audio_metadata.length > 0 ? word.word_audio_metadata[0] : null;
-                const hasPremiumAudio = !!audioMetadata;
-                const audioFilename = audioMetadata ? audioMetadata.audio_filename : 'null';
-
-                // Build article display for nouns
-                let articleDisplay = '';
-                if (word.word_type === 'NOUN' && word.articles) {
-                  articleDisplay = \`
-                    <div class="flex items-center gap-2 mb-2 text-sm">
-                      <span class="article-display">\${word.articles.singular}</span>
-                      <span class="text-gray-400">/</span>
-                      <span class="article-display">\${word.articles.plural}</span>
-                      <span class="text-gray-500">(definite)</span>
-                      <span class="article-display ml-2">\${word.articles.indefinite.singular}</span>
-                      <span class="text-gray-500">(indefinite)</span>
-                    </div>
-                  \`;
-                }
-                
-                // Build essential tags
-                const essentialTags = word.processedTags.essential
-                  .map(tag => \`<span class="tag-essential \${tag.class}" title="\${tag.description}">\${tag.display}</span>\`)
-                  .join(' ');
-                
-                // Build detailed tags
-                const detailedTags = word.processedTags.detailed
-                  .map(tag => \`<span class="tag-detailed \${tag.class}" title="\${tag.description}">\${tag.display}</span>\`)
-                  .join(' ');
-                
-                // Build word forms section
-                let formsSection = '';
-                if (word.forms && word.forms.length > 0) {
-                  const formsPreview = word.forms.slice(0, 3)
-                    .map(form => \`<span class="text-xs bg-gray-100 px-2 py-1 rounded">\${form.form_text}</span>\`)
-                    .join(' ');
-                  
-                  formsSection = \`
-                    <div class="mt-2">
-                      <button class="text-xs text-blue-600 hover:text-blue-800 toggle-forms" data-word-id="\${word.id}">
-                        📝 \${word.forms.length} forms \${formsPreview}
-                      </button>
-                      <div class="word-forms-container mt-2" id="forms-\${word.id}">
-                        <div class="grid grid-cols-2 gap-2 p-3 bg-gray-50 rounded">
-                          \${word.forms.map(form => \`
-                            <div class="text-xs">
-                              <strong>\${form.form_text}</strong>
-                              \${form.translation ? \`<br><span class="text-gray-600">\${form.translation}</span>\` : ''}
-                              \${form.form_mood || form.form_tense ? \`<br><span class="text-gray-500">\${[form.form_mood, form.form_tense, form.form_person, form.form_number].filter(Boolean).join(' ')}</span>\` : ''}
-                            </div>
-                          \`).join('')}
-                        </div>
-                      </div>
-                    </div>
-                  \`;
-                }
-                
-                // Build relationships section
-                let relationshipsSection = '';
-                if (word.relationships && word.relationships.length > 0) {
-                  relationshipsSection = \`
-                    <div class="mt-2">
-                      <button class="text-xs text-purple-600 hover:text-purple-800 toggle-relationships" data-word-id="\${word.id}">
-                        🔗 \${word.relationships.length} related words
-                      </button>
-                      <div class="relationships-container mt-2" id="relationships-\${word.id}">
-                        <div class="p-3 bg-purple-50 rounded">
-                          \${word.relationships.map(rel => \`
-                            <div class="text-xs mb-1">
-                              <strong>\${rel.italian}</strong> 
-                              <span class="text-gray-600">(\${rel.english})</span>
-                              <br><span class="text-purple-600">\${rel.relationship_type.replace('-', ' ')}</span>
-                            </div>
-                          \`).join('')}
-                        </div>
-                      </div>
-                    </div>
-                  \`;
-                }
-                
-                div.innerHTML = \`
-                  <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                      \${articleDisplay}
-                      <div class="flex items-center gap-2 mb-2">
-                        <h3 class="text-xl font-semibold \${colors.text}">\${word.italian}</h3>
-                        <button 
-                          class="audio-btn w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex items-center justify-center transition-colors flex-shrink-0 \${hasPremiumAudio ? 'premium-audio' : ''}"
-                          onclick="playAudio('\${word.id}', '\${word.italian}', '\${audioFilename}')"
-                          title="\${hasPremiumAudio ? 'Play premium audio' : 'Play pronunciation'}"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="ml-0.5">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                        </button>
-                        \${essentialTags}
-                      </div>
-                      <p class="text-base \${colors.text} opacity-80 mb-3">\${word.english}</p>
-                      <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="inline-block \${colors.tag} text-xs px-2 py-1 rounded-full">
-                          \${word.word_type.toLowerCase()}
-                        </span>
-                        \${detailedTags}
-                      </div>
-                      \${formsSection}
-                      \${relationshipsSection}
-                    </div>
-                    <button class="bg-emerald-600 text-white px-4 py-2 rounded text-sm hover:bg-emerald-700 transition-colors ml-4">
-                      + Add
-                    </button>
-                  </div>
-                \`;
-                
-                return div;
-              }
-
-              // Toggle word forms display
-              document.addEventListener('click', function(e) {
-                if (e.target.classList.contains('toggle-forms')) {
-                  const wordId = e.target.dataset.wordId;
-                  const container = document.getElementById(\`forms-\${wordId}\`);
-                  container.classList.toggle('expanded');
-                }
-                
-                if (e.target.classList.contains('toggle-relationships')) {
-                  const wordId = e.target.dataset.wordId;
-                  const container = document.getElementById(\`relationships-\${wordId}\`);
-                  container.classList.toggle('expanded');
-                }
-              });
-
-              let searchTimeout;
-              searchInput.addEventListener('input', function(e) {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                  loadWords(e.target.value);
-                }, 300);
-              });
-
-              dictionaryBtn.addEventListener('click', openDictionary);
-              closeDictionary.addEventListener('click', closeDictionaryPanel);
-              overlay.addEventListener('click', closeDictionaryPanel);
-
-              // Initialize grammar filters on page load
-              updateGrammarFilters();
-
-// Audio playback function
-async function playAudio(wordId, italianText, audioFilename) {
-  const audioBtn = event.target.closest('button');
-  const originalHTML = audioBtn.innerHTML;
-  
-  // Show loading state
-  audioBtn.innerHTML = \`
-    <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-    </svg>
-  \`;
-  audioBtn.disabled = true;
-
-  try {
-    console.log(\`DEBUG: playAudio called for '\${italianText}'. Filename received: \${audioFilename}\`);
-    if (audioFilename && audioFilename !== 'null') {
-      console.log(\`DEBUG: Attempting to create signed URL for: \${audioFilename}\`);
-      const { data: urlData, error: urlError } = await supabaseClient
-        .storage
-        .from('audio-files')
-        .createSignedUrl(audioFilename, 3600); 
-
-      if (urlData && urlData.signedUrl) {
-        console.log('DEBUG: Successfully created signed URL. Playing audio.');
-        const audio = new Audio(urlData.signedUrl);
-        
-        audio.onended = () => {
-          audioBtn.innerHTML = originalHTML;
-          audioBtn.disabled = false;
-        };
-        
-        audio.onerror = (e) => {
-          console.error('DEBUG: Error playing pregenerated audio from URL:', e);
-          fallbackToTTS(italianText, audioBtn, originalHTML);
-        };
-        
-        await audio.play();
-        return;
-      } else {
-         console.error('DEBUG: Error creating signed URL:', urlError);
-      }
-    }
-    
-    // Fallback to TTS
-    console.log('DEBUG: No valid audioFilename. Falling back to TTS.');
-    fallbackToTTS(italianText, audioBtn, originalHTML);
-    
-  } catch (error) {
-    console.error('DEBUG: General error in playAudio function:', error);
-    fallbackToTTS(italianText, audioBtn, originalHTML);
-  }
-}
-
-// Improved TTS fallback function with iOS support
-function fallbackToTTS(text, audioBtn, originalHTML) {
-  console.log('DEBUG: Using TTS fallback for:', text);
-  
-  if ('speechSynthesis' in window) {
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    const setItalianVoice = (voices) => {
-      const italianVoices = voices.filter(voice => 
-        voice.lang.startsWith('it') || 
-        voice.lang.includes('IT') || 
-        voice.name.toLowerCase().includes('ital')
-      );
-      
-      if (italianVoices.length > 0) {
-        const preferredVoice = italianVoices.find(voice => 
-          voice.name.includes('Luca') || 
-          voice.name.includes('Alice') ||  
-          voice.name.includes('Federica') || 
-          voice.name.includes('Italia')
-        ) || italianVoices[0];
-        
-        utterance.voice = preferredVoice;
-      }
-      
-      utterance.lang = 'it-IT';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.0;
-    };
-    
-    const speakText = () => {
-      utterance.onend = () => {
-        audioBtn.innerHTML = originalHTML;
-        audioBtn.disabled = false;
-      };
-      
-      utterance.onerror = (event) => {
-        console.error('DEBUG: Speech synthesis error:', event);
-        audioBtn.innerHTML = originalHTML;
-        audioBtn.disabled = false;
-      };
-      
-      speechSynthesis.cancel();
-      setTimeout(() => speechSynthesis.speak(utterance), 100);
-    };
-    
-    let voices = speechSynthesis.getVoices();
-    
-    if (voices.length === 0) {
-      speechSynthesis.onvoiceschanged = () => {
-        voices = speechSynthesis.getVoices();
-        setItalianVoice(voices);
-        speakText();
-      };
-      speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-      speechSynthesis.cancel();
-    } else {
-      setItalianVoice(voices);
-      speakText();
-    }
-  } else {
-    console.error('DEBUG: Speech synthesis not supported');
-    audioBtn.innerHTML = originalHTML;
-    audioBtn.disabled = false;
-  }
-}
-              
-              function showAudioError(audioBtn, originalHTML) {
-                audioBtn.innerHTML = \`
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="text-red-500">
-                    <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>
-                  </svg>
-                \`;
-                setTimeout(() => {
-                  audioBtn.innerHTML = originalHTML;
-                  audioBtn.disabled = false;
-                }, 2000);
-              }
-
-              // Initialize voices for mobile
-              function initializeVoices() {
-                if ('speechSynthesis' in window) {
-                  speechSynthesis.onvoiceschanged = () => {
-                    console.log('🔄 Voices loaded:', speechSynthesis.getVoices().length);
-                  };
-                  speechSynthesis.getVoices();
-                }
-              }
-              
-              initializeVoices();
-
-              // Make functions global for onclick handlers
-              window.playAudio = playAudio;
-
-              // Mobile-friendly tag tooltips
-              function setupMobileTagTooltips() {
-                if (!document.getElementById('mobile-tooltip')) {
-                  const tooltip = document.createElement('div');
-                  tooltip.id = 'mobile-tooltip';
-                  tooltip.className = 'fixed hidden bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 max-w-xs';
-                  tooltip.style.pointerEvents = 'none';
-                  document.body.appendChild(tooltip);
-                }
-                
-                document.addEventListener('click', function(e) {
-                  const tag = e.target.closest('.tag-essential, .tag-detailed');
-                  const tooltip = document.getElementById('mobile-tooltip');
-                  
-                  if (tag && tag.title) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const rect = tag.getBoundingClientRect();
-                    tooltip.textContent = tag.title;
-                    tooltip.style.left = rect.left + 'px';
-                    tooltip.style.top = (rect.top - 30) + 'px';
-                    tooltip.classList.remove('hidden');
-                    
-                    setTimeout(() => {
-                      tooltip.classList.add('hidden');
-                    }, 3000);
-                  } else if (!tag) {
-                    tooltip.classList.add('hidden');
-                  }
-                });
-              }
-
-              setupMobileTagTooltips();
-              window.setupMobileTagTooltips = setupMobileTagTooltips;
-              window.dictionarySystem = dictionarySystem;
+              }, 300); // Debounce search for 300ms
             });
-          `
-        }} />
-      </body>
-    </html>
-  )
+
+            // Enter key to search
+            searchInput.addEventListener('keypress', function(e) {
+              if (e.key === 'Enter' && dictionarySystem) {
+                dictionarySystem.performSearch();
+              }
+            });
+          }
+
+          // Close modal when clicking outside
+          const modal = document.getElementById('dictionaryModal');
+          if (modal) {
+            modal.addEventListener('click', function(e) {
+              if (e.target === modal) {
+                closeDictionary();
+              }
+            });
+          }
+
+          // Close modal with Escape key
+          document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+              closeDictionary();
+            }
+          });
+        });
+
+        // Make functions globally available
+        window.openDictionary = openDictionary;
+        window.closeDictionary = closeDictionary;
+        window.playAudio = playAudio;
+        window.playBasicAudio = playBasicAudio;
+      `
+    }} />
+
+    {/* Supabase Client Library */}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.39.3/supabase.min.js"></script>
+    
+    {/* Enhanced Styles */}
+    <style dangerouslySetInnerHTML={{
+      __html: `
+        /* Dictionary Modal Styles */
+        #dictionaryModal {
+          display: none;
+          position: fixed;
+          z-index: 1000;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+          background-color: #ffffff;
+          margin: 2% auto;
+          padding: 0;
+          border-radius: 12px;
+          width: 90%;
+          max-width: 800px;
+          height: 90vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
+        }
+
+        .modal-header {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 20px;
+          border-radius: 12px 12px 0 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .modal-header h2 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: 600;
+        }
+
+        .close {
+          color: white;
+          font-size: 32px;
+          font-weight: bold;
+          cursor: pointer;
+          border: none;
+          background: none;
+          padding: 0;
+          line-height: 1;
+          opacity: 0.8;
+          transition: opacity 0.2s;
+        }
+
+        .close:hover {
+          opacity: 1;
+        }
+
+        .search-container {
+          padding: 20px;
+          border-bottom: 1px solid #e0e0e0;
+          background-color: #f8f9fa;
+        }
+
+        .search-box {
+          position: relative;
+          width: 100%;
+        }
+
+        #searchInput {
+          width: 100%;
+          padding: 15px 20px 15px 50px;
+          border: 2px solid #e0e0e0;
+          border-radius: 25px;
+          font-size: 16px;
+          outline: none;
+          transition: all 0.3s ease;
+          box-sizing: border-box;
+        }
+
+        #searchInput:focus {
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 18px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #666;
+          font-size: 18px;
+        }
+
+        .results-container {
+          flex: 1;
+          overflow-y: auto;
+          padding: 20px;
+        }
+
+        #loadingIndicator {
+          display: none;
+          text-align: center;
+          padding: 40px;
+          color: #666;
+        }
+
+        .loading-spinner {
+          display: inline-block;
+          width: 20px;
+          height: 20px;
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #667eea;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-right: 10px;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .results-count {
+          margin-bottom: 20px;
+          color: #666;
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .words-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .word-item {
+          background: white;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 16px;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
+
+        .word-item:hover {
+          border-color: #667eea;
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+          transform: translateY(-1px);
+        }
+
+        .word-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+        }
+
+        .word-main {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .italian-word {
+          font-size: 20px;
+          font-weight: 600;
+          color: #2c3e50;
+        }
+
+        .word-type {
+          font-size: 12px;
+          color: #7f8c8d;
+          background: #ecf0f1;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-weight: 500;
+        }
+
+        .audio-btn {
+          background: none;
+          border: 1px solid #ddd;
+          border-radius: 6px;
+          padding: 8px 12px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.2s ease;
+          font-size: 12px;
+        }
+
+        .audio-btn:hover {
+          background-color: #f8f9fa;
+          border-color: #667eea;
+        }
+
+        .premium-audio {
+          border-color: #e74c3c;
+          color: #e74c3c;
+        }
+
+        .premium-audio:hover {
+          background-color: #e74c3c;
+          color: white;
+        }
+
+        .basic-audio {
+          border-color: #95a5a6;
+          color: #95a5a6;
+        }
+
+        .basic-audio:hover {
+          background-color: #95a5a6;
+          color: white;
+        }
+
+        .premium-badge {
+          font-size: 10px;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+
+        .audio-icon {
+          font-size: 14px;
+        }
+
+        .word-content {
+          padding-left: 0;
+        }
+
+        .english-translation {
+          font-size: 16px;
+          color: #34495e;
+          margin-bottom: 8px;
+          line-height: 1.4;
+        }
+
+        .word-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .tag {
+          background: linear-gradient(135deg, #667eea, #764ba2);
+          color: white;
+          padding: 3px 10px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .no-results {
+          text-align: center;
+          padding: 60px 20px;
+          color: #7f8c8d;
+        }
+
+        .no-results p {
+          margin: 10px 0;
+          font-size: 16px;
+        }
+
+        .error-message {
+          text-align: center;
+          padding: 40px 20px;
+          color: #e74c3c;
+          background-color: #fdf2f2;
+          border-radius: 8px;
+          border: 1px solid #f5c6cb;
+        }
+
+        .error-detail {
+          font-size: 14px;
+          color: #721c24;
+          margin-top: 10px;
+          font-family: monospace;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+          .modal-content {
+            width: 95%;
+            height: 95vh;
+            margin: 2.5% auto;
+          }
+
+          .modal-header {
+            padding: 15px;
+          }
+
+          .modal-header h2 {
+            font-size: 20px;
+          }
+
+          .search-container {
+            padding: 15px;
+          }
+
+          #searchInput {
+            padding: 12px 15px 12px 45px;
+            font-size: 16px;
+          }
+
+          .results-container {
+            padding: 15px;
+          }
+
+          .word-item {
+            padding: 12px;
+          }
+
+          .italian-word {
+            font-size: 18px;
+          }
+
+          .english-translation {
+            font-size: 15px;
+          }
+
+          .word-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+
+          .audio-btn {
+            align-self: flex-end;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .modal-content {
+            width: 100%;
+            height: 100vh;
+            margin: 0;
+            border-radius: 0;
+          }
+
+          .modal-header {
+            border-radius: 0;
+            padding: 12px 15px;
+          }
+
+          .search-container {
+            padding: 12px 15px;
+          }
+
+          .results-container {
+            padding: 12px 15px;
+          }
+        }
+      `
+    }} />
+  </body>
+</html>
+```
+
+)
 }
