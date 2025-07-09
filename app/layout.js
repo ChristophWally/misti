@@ -862,13 +862,18 @@ export default function RootLayout({ children }) {
                 div.className = \`word-card border-2 \${colors.border} \${colors.bg} \${colors.hover} rounded-lg p-4 transition-colors\`;
                 
                 // FIXED: Audio detection with proper null checking
+                console.log('DEBUG: createEnhancedWordElement - word.word_audio_metadata:', word.word_audio_metadata);
+                
                 const audioMetadata = word.word_audio_metadata && word.word_audio_metadata.length > 0 
                   ? word.word_audio_metadata[0] 
                   : null;
-                const hasPremiumAudio = !!audioMetadata && !!audioMetadata.audio_filename;
-                const audioFilename = audioMetadata && audioMetadata.audio_filename 
-                  ? audioMetadata.audio_filename 
-                  : null;
+                  
+                console.log('DEBUG: createEnhancedWordElement - audioMetadata:', audioMetadata);
+                
+                const hasPremiumAudio = audioMetadata && audioMetadata.audio_filename && audioMetadata.audio_filename.trim() !== '';
+                const audioFilename = hasPremiumAudio ? audioMetadata.audio_filename : null;
+                
+                console.log('DEBUG: createEnhancedWordElement - hasPremiumAudio:', hasPremiumAudio, 'audioFilename:', audioFilename);
 
                 // Build article display for nouns
                 let articleDisplay = '';
@@ -1016,6 +1021,9 @@ export default function RootLayout({ children }) {
                 const audioBtn = event.target.closest('button');
                 const originalHTML = audioBtn.innerHTML;
                 
+                console.log('DEBUG: playAudio called - wordId:', wordId, 'italianText:', italianText, 'audioFilename:', audioFilename);
+                console.log('DEBUG: audioFilename type:', typeof audioFilename, 'value:', audioFilename);
+                
                 // Show loading state
                 audioBtn.innerHTML = \`
                   <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1026,15 +1034,40 @@ export default function RootLayout({ children }) {
                 audioBtn.disabled = true;
 
                 try {
-                  console.log(\`DEBUG: playAudio called for '\${italianText}'. Filename received: \${audioFilename}\`);
+                  // FIXED: More robust check for premium audio file
+                  const hasValidAudioFile = audioFilename && 
+                                          audioFilename !== 'null' && 
+                                          audioFilename !== null && 
+                                          audioFilename.trim() !== '' &&
+                                          typeof audioFilename === 'string';
                   
-                  // FIXED: Check if we have a premium audio file
-                  if (audioFilename && audioFilename !== 'null' && audioFilename !== null) {
+                  console.log('DEBUG: hasValidAudioFile:', hasValidAudioFile);
+                  
+                  if (hasValidAudioFile) {
                     console.log(\`DEBUG: Attempting to create signed URL for: \${audioFilename}\`);
-                    const { data: urlData, error: urlError } = await supabaseClient
+                    
+                    // Try both possible bucket names to be safe
+                    let urlData, urlError;
+                    
+                    // First try 'word-audio'
+                    const result1 = await supabaseClient
                       .storage
                       .from('word-audio')
-                      .createSignedUrl(audioFilename, 60); // 60 seconds expiry
+                      .createSignedUrl(audioFilename, 60);
+                    
+                    if (result1.data && result1.data.signedUrl) {
+                      urlData = result1.data;
+                      urlError = null;
+                    } else {
+                      // Try 'audio-files' as fallback
+                      const result2 = await supabaseClient
+                        .storage
+                        .from('audio-files')
+                        .createSignedUrl(audioFilename, 60);
+                      
+                      urlData = result2.data;
+                      urlError = result2.error;
+                    }
 
                     if (urlData && urlData.signedUrl) {
                       console.log('DEBUG: Successfully created signed URL. Playing audio.');
