@@ -226,63 +226,73 @@ export default function RootLayout({ children }) {
                 this.supabase = supabaseClient;
                 this.cache = new Map();
                 this.searchTimeout = null;
+                this.allWords = []; // Cache all words from the RPC call
+              }
+              
+              // New method to fetch all words once
+              async fetchAllWords() {
+                if (this.allWords.length > 0) {
+                  return; // Already fetched
+                }
+                try {
+                  const { data, error } = await this.supabase.rpc('get_dictionary_with_audio_status');
+                  if (error) {
+                    console.error('Error calling RPC function get_dictionary_with_audio_status:', error);
+                    throw error;
+                  }
+                  this.allWords = data;
+                  console.log('Successfully fetched all words from RPC:', this.allWords.length);
+                } catch (e) {
+                  console.error('Failed to fetch all words:', e);
+                  this.allWords = []; // Reset on failure
+                }
               }
 
-              // Enhanced word loading with article generation and comprehensive tags
+              // Enhanced word loading now filters the cached list
               async loadWords(searchTerm = '', filters = {}) {
-                try {
-                  let query = this.supabase
-                    .from('dictionary')
-                    .select(\`
-                      id,
-                      italian,
-                      english,
-                      word_type,
-                      tags,
-                      created_at,
-                      word_audio_metadata(
-                        id,
-                        audio_filename,
-                        azure_voice_name,
-                        duration_seconds
-                      )
-                    \`)
-                    .order('italian', { ascending: true });
-
-                  // Apply search filter
-                  if (searchTerm) {
-                    query = query.or(\`italian.ilike.%\${searchTerm}%,english.ilike.%\${searchTerm}%\`);
-                  }
-
-                  // Apply word type filter (now supports multiple types)
-                  if (filters.wordType && filters.wordType.length > 0) {
-                    query = query.in('word_type', filters.wordType);
-                  }
-
-                  // Apply tag filters
-                  if (filters.tags && filters.tags.length > 0) {
-                    query = query.overlaps('tags', filters.tags);
-                  }
-
-                  // Apply CEFR level filter
-                  if (filters.cefrLevel) {
-                    query = query.overlaps('tags', [\`CEFR-\${filters.cefrLevel}\`]);
-                  }
-
-                  const { data: words, error } = await query.limit(20);
-
-                  if (error) throw error;
-
-                  // Enhance words with article generation and processed tags
-                  const enhancedWords = await Promise.all(
-                    words.map(word => this.enhanceWordData(word))
-                  );
-
-                  return enhancedWords;
-                } catch (error) {
-                  console.error('Error loading words:', error);
-                  throw error;
+                // Ensure all words are fetched before proceeding
+                if (this.allWords.length === 0) {
+                    await this.fetchAllWords();
                 }
+
+                let filteredWords = this.allWords;
+
+                if (searchTerm) {
+                    const lowerSearchTerm = searchTerm.toLowerCase();
+                    filteredWords = filteredWords.filter(word =>
+                        (word.italian || '').toLowerCase().includes(lowerSearchTerm) ||
+                        (word.english || '').toLowerCase().includes(lowerSearchTerm)
+                    );
+                }
+
+                if (filters.wordType && filters.wordType.length > 0) {
+                    filteredWords = filteredWords.filter(word => filters.wordType.includes(word.word_type));
+                }
+
+                if (filters.tags && filters.tags.length > 0) {
+                    filteredWords = filteredWords.filter(word =>
+                        filters.tags.every(tag => (word.tags || []).includes(tag))
+                    );
+                }
+
+                if (filters.cefrLevel) {
+                    filteredWords = filteredWords.filter(word =>
+                        (word.tags || []).includes(\`CEFR-\${filters.cefrLevel}\`)
+                    );
+                }
+                
+                const finalWords = filteredWords.slice(0, 20);
+
+                const wordsWithCorrectShape = finalWords.map(word => ({
+                    ...word,
+                    word_audio_metadata: word.audio_filename ? [{ audio_filename: word.audio_filename }] : []
+                }));
+
+                const enhancedWords = await Promise.all(
+                    wordsWithCorrectShape.map(word => this.enhanceWordData(word))
+                );
+
+                return enhancedWords;
               }
 
               // Enhance individual word with articles, processed tags, and related data
@@ -699,10 +709,12 @@ export default function RootLayout({ children }) {
                 dictionaryPanel.style.transition = '';
               }
 
-              function openDictionary() {
+              async function openDictionary() {
                 dictionaryPanel.classList.remove('translate-x-full');
                 overlay.classList.remove('opacity-0', 'pointer-events-none');
                 searchInput.focus();
+                // Pre-fetch all words when the dictionary is first opened
+                await dictionarySystem.fetchAllWords();
                 loadWords();
               }
 
@@ -801,9 +813,8 @@ export default function RootLayout({ children }) {
                   words.forEach(word => {
                     const wordElement = createEnhancedWordElement(word);
                     wordsContainer.appendChild(wordElement);
-                    // After words are loaded, setup mobile tooltips
-                    setupMobileTagTooltips();
                   });
+                  setupMobileTagTooltips();
 
                 } catch (error) {
                   console.error('Error loading words:', error);
@@ -980,13 +991,16 @@ async function playAudio(wordId, italianText, audioFilename) {
   audioBtn.disabled = true;
 
   try {
+    console.log(\`DEBUG: playAudio called for '\${italianText}'. Filename received: \${audioFilename}\`);
     if (audioFilename && audioFilename !== 'null') {
+      console.log(\`DEBUG: Attempting to create signed URL for: \${audioFilename}\`);
       const { data: urlData, error: urlError } = await supabaseClient
         .storage
         .from('audio-files')
         .createSignedUrl(audioFilename, 3600); 
 
       if (urlData && urlData.signedUrl) {
+        console.log('DEBUG: Successfully created signed URL. Playing audio.');
         const audio = new Audio(urlData.signedUrl);
         
         audio.onended = () => {
@@ -995,29 +1009,30 @@ async function playAudio(wordId, italianText, audioFilename) {
         };
         
         audio.onerror = (e) => {
-          console.error('Error playing pregenerated audio:', e);
+          console.error('DEBUG: Error playing pregenerated audio from URL:', e);
           fallbackToTTS(italianText, audioBtn, originalHTML);
         };
         
         await audio.play();
         return;
       } else {
-         console.error('Error creating signed URL:', urlError);
+         console.error('DEBUG: Error creating signed URL:', urlError);
       }
     }
     
     // Fallback to TTS
+    console.log('DEBUG: No valid audioFilename. Falling back to TTS.');
     fallbackToTTS(italianText, audioBtn, originalHTML);
     
   } catch (error) {
-    console.error('Audio playback error:', error);
+    console.error('DEBUG: General error in playAudio function:', error);
     fallbackToTTS(italianText, audioBtn, originalHTML);
   }
 }
 
 // Improved TTS fallback function with iOS support
 function fallbackToTTS(text, audioBtn, originalHTML) {
-  console.log('Using TTS fallback for:', text);
+  console.log('DEBUG: Using TTS fallback for:', text);
   
   if ('speechSynthesis' in window) {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -1052,7 +1067,7 @@ function fallbackToTTS(text, audioBtn, originalHTML) {
       };
       
       utterance.onerror = (event) => {
-        console.error('Speech synthesis error:', event);
+        console.error('DEBUG: Speech synthesis error:', event);
         audioBtn.innerHTML = originalHTML;
         audioBtn.disabled = false;
       };
@@ -1076,7 +1091,7 @@ function fallbackToTTS(text, audioBtn, originalHTML) {
       speakText();
     }
   } else {
-    console.error('Speech synthesis not supported');
+    console.error('DEBUG: Speech synthesis not supported');
     audioBtn.innerHTML = originalHTML;
     audioBtn.disabled = false;
   }
