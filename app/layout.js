@@ -72,6 +72,10 @@ export default function RootLayout({ children }) {
               color: white;
               border-color: #0d9488;
             }
+            .audio-btn.premium-audio {
+              border: 2px solid #FFD700; /* A gold color */
+              box-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+            }
           `
         }} />
       </head>
@@ -235,13 +239,7 @@ export default function RootLayout({ children }) {
                       english,
                       word_type,
                       tags,
-                      created_at,
-                      word_audio_metadata(
-                        id,
-                        audio_filename,
-                        azure_voice_name,
-                        duration_seconds
-                      )
+                      word_audio_metadata(id)
                     \`)
                     .order('italian', { ascending: true });
 
@@ -448,7 +446,7 @@ export default function RootLayout({ children }) {
                   'topic-daily-life': { display: 'daily', class: 'bg-green-100 text-green-800', essential: false, description: 'Daily life' }
                 };
 
-                tags.forEach(tag => {
+                (tags || []).forEach(tag => {
                   const tagInfo = tagMap[tag];
                   if (tagInfo) {
                     if (tagInfo.essential) {
@@ -814,8 +812,8 @@ export default function RootLayout({ children }) {
                 const div = document.createElement('div');
                 const colors = dictionarySystem.getWordTypeColors(word.word_type);
                 
-                div.className = \`word-card border-2 \${colors.border} \${colors.bg} \${colors.hover} rounded-lg p-4 transition-colors\`;
-                
+                const hasPremiumAudio = word.word_audio_metadata && word.word_audio_metadata.length > 0;
+
                 // Build article display for nouns
                 let articleDisplay = '';
                 if (word.word_type === 'NOUN' && word.articles) {
@@ -898,9 +896,9 @@ export default function RootLayout({ children }) {
                       <div class="flex items-center gap-2 mb-2">
                         <h3 class="text-xl font-semibold \${colors.text}">\${word.italian}</h3>
                         <button 
-                          class="audio-btn w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex items-center justify-center transition-colors flex-shrink-0"
+                          class="audio-btn w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex items-center justify-center transition-colors flex-shrink-0 \${hasPremiumAudio ? 'premium-audio' : ''}"
                           onclick="playAudio('\${word.id}', '\${word.italian}')"
-                          title="Play pronunciation"
+                          title="\${hasPremiumAudio ? 'Play premium audio' : 'Play pronunciation'}"
                         >
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="ml-0.5">
                             <path d="M8 5v14l11-7z"/>
