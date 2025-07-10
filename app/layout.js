@@ -19,51 +19,211 @@ export default function RootLayout({ children }) {
         
         <style dangerouslySetInnerHTML={{
           __html: `
-            body { font-family: 'Comic Neue', cursive; }
+            body { 
+              font-family: 'Comic Neue', cursive; 
+            }
+            
+            /* Sketchy border effects - hard lines with scribbled fill */
+            .sketchy {
+              position: relative;
+            }
+
+            .sketchy::before {
+              content: '';
+              position: absolute;
+              top: -1px;
+              left: -1px;
+              right: -1px;
+              bottom: -1px;
+              border: 2px solid currentColor;
+              border-radius: inherit;
+              opacity: 0.8;
+            }
+
+            /* Scribbled fill effect inside the border */
+            .sketchy::after {
+              content: '';
+              position: absolute;
+              top: 2px;
+              left: 2px;
+              right: 2px;
+              bottom: 2px;
+              background: 
+                repeating-linear-gradient(
+                  23deg,
+                  transparent,
+                  transparent 1px,
+                  currentColor 1px,
+                  currentColor 1.5px,
+                  transparent 1.5px,
+                  transparent 4px
+                ),
+                repeating-linear-gradient(
+                  67deg,
+                  transparent,
+                  transparent 1px,
+                  currentColor 1px,
+                  currentColor 1.5px,
+                  transparent 1.5px,
+                  transparent 6px
+                );
+              opacity: 0.05;
+              border-radius: inherit;
+              pointer-events: none;
+            }
+            
+            /* Enhanced tag styles with proper hierarchy */
             .tag-essential, .tag-detailed {
               display: inline-block;
-              font-size: 10px;
+              font-size: 12px;
               font-weight: 600;
-              padding: 2px 6px;
+              padding: 4px 8px;
               border-radius: 9999px;
               margin: 1px;
               cursor: help;
-            }
-            .tag-essential {
-              border: 1px solid rgba(0,0,0,0.1);
-            }
-            .tag-detailed {
-              border: 1px solid rgba(0,0,0,0.1);
-            }
-            .word-card {
               transition: all 0.2s ease;
+              transform: rotate(0.8deg);
             }
+            
+            .tag-essential:nth-child(even), .tag-detailed:nth-child(even) {
+              transform: rotate(-0.8deg);
+            }
+            
+            .tag-essential:hover, .tag-detailed:hover {
+              transform: rotate(0deg) scale(1.05);
+            }
+            
+            /* PRIMARY TAGS - All use same emojis and are FILLED */
+            .tag-essential {
+              border: 1px solid rgba(0,0,0,0.2);
+              color: white;
+              font-weight: 700;
+            }
+            
+            /* Gender tags */
+            .tag-essential.bg-blue-100 { background: #3b82f6 !important; color: white !important; border-color: #2563eb; }
+            .tag-essential.bg-pink-100 { background: #ec4899 !important; color: white !important; border-color: #db2777; }
+            .tag-essential.bg-purple-100 { background: #8b5cf6 !important; color: white !important; border-color: #7c3aed; }
+            
+            /* Level and frequency tags */
+            .tag-essential.bg-green-100, .tag-essential.bg-yellow-100 { 
+              background: #f59e0b !important; 
+              color: white !important; 
+              border-color: #d97706; 
+            }
+            
+            /* Irregular tags */
+            .tag-essential.bg-red-100 { background: #ef4444 !important; color: white !important; border-color: #dc2626; }
+            
+            /* Advanced fluency tags */
+            .tag-essential.bg-indigo-100 { background: #6366f1 !important; color: white !important; border-color: #4f46e5; }
+            .tag-essential.bg-gray-100 { background: #6b7280 !important; color: white !important; border-color: #4b5563; }
+            
+            /* WORD TYPE TAGS - Filled with word type colors */
+            .word-card.bg-teal-50 .tag-detailed.bg-teal-100 { 
+              background: #14b8a6 !important; 
+              color: white !important; 
+              border-color: #0f766e !important;
+            }
+            .word-card.bg-cyan-50 .tag-detailed.bg-cyan-100 { 
+              background: #0891b2 !important; 
+              color: white !important; 
+              border-color: #0e7490 !important;
+            }
+            .word-card.bg-blue-50 .tag-detailed.bg-blue-100 { 
+              background: #3b82f6 !important; 
+              color: white !important; 
+              border-color: #2563eb !important;
+            }
+            .word-card.bg-purple-50 .tag-detailed.bg-purple-100 { 
+              background: #8b5cf6 !important; 
+              color: white !important; 
+              border-color: #7c3aed !important;
+            }
+            
+            /* SECONDARY TAGS - Unfilled, transparent background */
+            .tag-detailed:not(.bg-teal-100):not(.bg-cyan-100):not(.bg-blue-100):not(.bg-purple-100) {
+              background: transparent !important;
+              color: currentColor !important;
+              border: 1px solid currentColor !important;
+              opacity: 0.8;
+            }
+            
+            .word-card {
+              transition: all 0.3s ease;
+              transform: rotate(0.3deg);
+              position: relative;
+            }
+            
+            .word-card:nth-child(even) {
+              transform: rotate(-0.3deg);
+            }
+            
             .word-card:hover {
-              transform: translateY(-1px);
-              box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+              transform: rotate(0deg) translateY(-2px) scale(1.01);
+              box-shadow: 0 8px 25px rgba(0,0,0,0.12);
             }
-            .article-display {
-              font-weight: 600;
-              font-size: 14px;
-              color: #059669;
-              margin-right: 4px;
+            
+            /* Audio button styling with word type colors */
+            .audio-btn {
+              transition: all 0.2s ease;
+              transform: rotate(0.5deg);
+              width: 32px !important;
+              height: 32px !important;
             }
+            
+            .audio-btn:hover {
+              transform: rotate(-0.5deg) scale(1.1);
+            }
+            
+            .audio-btn svg {
+              width: 14px !important;
+              height: 14px !important;
+            }
+            
+            /* Audio button colors by word type */
+            .word-card.bg-teal-50 .audio-btn {
+              background: #14b8a6 !important;
+              color: white !important;
+            }
+            .word-card.bg-cyan-50 .audio-btn {
+              background: #0891b2 !important;
+              color: white !important;
+            }
+            .word-card.bg-blue-50 .audio-btn {
+              background: #3b82f6 !important;
+              color: white !important;
+            }
+            .word-card.bg-purple-50 .audio-btn {
+              background: #8b5cf6 !important;
+              color: white !important;
+            }
+            
+            .audio-btn.premium-audio {
+              border: 2px solid #FFD700 !important;
+              box-shadow: 0 0 8px rgba(255, 215, 0, 0.4) !important;
+            }
+            
             .word-forms-container {
               max-height: 0;
               overflow: hidden;
               transition: max-height 0.3s ease;
             }
+            
             .word-forms-container.expanded {
               max-height: 300px;
             }
+            
             .relationships-container {
               max-height: 0;
               overflow: hidden;
               transition: max-height 0.3s ease;
             }
+            
             .relationships-container.expanded {
               max-height: 200px;
             }
+            
             .filter-chip {
               padding: 4px 12px;
               border-radius: 20px;
@@ -72,18 +232,115 @@ export default function RootLayout({ children }) {
               cursor: pointer;
               transition: all 0.2s ease;
               border: 1px solid #d1d5db;
+              transform: rotate(0.5deg);
             }
+            
+            .filter-chip:nth-child(even) {
+              transform: rotate(-0.5deg);
+            }
+            
             .filter-chip:hover {
               background-color: #f3f4f6;
+              transform: rotate(0deg) scale(1.05);
             }
+            
             .filter-chip.active {
               background-color: #0d9488;
               color: white;
               border-color: #0d9488;
             }
-            .audio-btn.premium-audio {
-              border: 2px solid #FFD700; /* Gold color */
-              box-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+            
+            /* Articles display with diamond separators */
+            .article-display {
+              font-weight: 600;
+              font-size: 14px;
+              color: #059669;
+              margin-right: 4px;
+              transform: rotate(-0.1deg);
+            }
+            
+            /* Add sketchy effects to inputs and buttons */
+            .search-input {
+              transition: all 0.2s ease;
+            }
+            
+            .search-input:focus {
+              transform: rotate(-0.2deg);
+            }
+            
+            /* Navigation button effects */
+            .nav-btn {
+              transition: all 0.2s ease;
+              transform: rotate(0.3deg);
+            }
+            
+            .nav-btn:hover {
+              transform: rotate(-0.3deg) scale(1.02);
+            }
+            
+            .nav-btn.primary {
+              transform: rotate(-0.8deg);
+            }
+            
+            .nav-btn.primary:hover {
+              transform: rotate(0.8deg) scale(1.05);
+            }
+            
+            /* Add button styling */
+            .add-btn {
+              transition: all 0.2s ease;
+              transform: rotate(-0.5deg);
+            }
+            
+            .add-btn:hover {
+              transform: rotate(0.5deg) scale(1.05);
+            }
+            
+            /* Panel title styling */
+            .dictionary-title {
+              transform: rotate(-0.3deg);
+            }
+            
+            /* Close button effects */
+            .close-btn:hover {
+              transform: rotate(15deg);
+            }
+            
+            /* Word title styling */
+            .word-italian {
+              transform: rotate(-0.2deg);
+            }
+            
+            .word-english {
+              transform: rotate(0.1deg);
+            }
+            
+            /* Filter toggle styling */
+            .filter-toggle {
+              transform: rotate(0.2deg);
+              transition: all 0.2s ease;
+            }
+            
+            .filter-toggle:hover {
+              transform: rotate(-0.2deg);
+            }
+            
+            /* Responsive adjustments */
+            @media (max-width: 768px) {
+              .tag-essential, .tag-detailed {
+                font-size: 10px;
+                padding: 3px 6px;
+              }
+              
+              .audio-btn {
+                width: 28px !important;
+                height: 28px !important;
+              }
+              
+              .audio-btn svg {
+                width: 12px !important;
+                height: 12px !important;
+              }
             }
           `
         }} />
@@ -101,14 +358,14 @@ export default function RootLayout({ children }) {
               <div className="flex items-center space-x-4">
                 <button
                   id="dictionary-btn"
-                  className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors shadow-md"
+                  className="nav-btn primary bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors shadow-md"
                 >
                   📚 Dictionary
                 </button>
-                <button className="text-white hover:text-cyan-200 transition-colors">
+                <button className="nav-btn text-white hover:text-cyan-200 transition-colors">
                   My Decks
                 </button>
-                <button className="text-white hover:text-cyan-200 transition-colors">
+                <button className="nav-btn text-white hover:text-cyan-200 transition-colors">
                   Profile
                 </button>
               </div>
@@ -119,7 +376,7 @@ export default function RootLayout({ children }) {
         {/* Enhanced Dictionary Slide-out Panel */}
         <div 
           id="dictionary-panel"
-          className="fixed inset-y-0 right-0 w-96 md:w-3/4 lg:w-2/3 xl:w-1/2 bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out z-50"
+          className="fixed inset-y-0 right-0 w-96 md:w-3/4 lg:w-2/3 xl:w-1/2 bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 sketchy"
           style={{ minWidth: '384px', maxWidth: '80vw' }}
         >
           {/* Resize Handle */}
@@ -130,10 +387,10 @@ export default function RootLayout({ children }) {
           <div className="flex flex-col h-full">
             {/* Panel Header */}
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
-              <h2 className="text-lg font-semibold text-white">Dictionary</h2>
+              <h2 className="dictionary-title text-lg font-semibold text-white">Dictionary</h2>
               <button 
                 id="close-dictionary"
-                className="text-white hover:text-cyan-200"
+                className="close-btn text-white hover:text-cyan-200 transition-all"
               >
                 ✕
               </button>
@@ -147,11 +404,11 @@ export default function RootLayout({ children }) {
                   type="text"
                   id="dictionary-search"
                   placeholder="Search Italian words..."
-                  className="w-full px-3 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="search-input w-full px-3 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 sketchy"
                 />
                 
                 {/* Filter Toggle */}
-                <button id="toggle-filters" className="text-sm text-teal-600 hover:text-teal-800 flex items-center">
+                <button id="toggle-filters" className="filter-toggle text-sm text-teal-600 hover:text-teal-800 flex items-center">
                   <span className="mr-1">🔍</span> Advanced Filters
                   <span id="filter-arrow" className="ml-1 transform transition-transform">▼</span>
                 </button>
@@ -226,10 +483,10 @@ export default function RootLayout({ children }) {
           {children}
         </main>
 
-        {/* FIXED Enhanced Dictionary System JavaScript */}
+        {/* ENHANCED Dictionary System JavaScript with Sketchy Theme Integration */}
         <script dangerouslySetInnerHTML={{
           __html: `
-            // FIXED Dictionary System Class with Direct Query
+            // Enhanced Dictionary System Class with Sketchy Theme Support
             class EnhancedDictionarySystem {
               constructor(supabaseClient) {
                 this.supabase = supabaseClient;
@@ -238,12 +495,9 @@ export default function RootLayout({ children }) {
                 this.currentSearchTerm = '';
                 this.currentFilters = {};
                 this.isLoading = false;
-                // REMOVED: this.allWords = []; - No more caching
               }
-              
-              // REMOVED: fetchAllWords method - using direct query now
 
-              // FIXED: Main method to load words with proper foreign key join
+              // Main method to load words with proper foreign key join
               async loadWords(searchTerm = '', filters = {}) {
                 try {
                   this.isLoading = true;
@@ -278,7 +532,6 @@ export default function RootLayout({ children }) {
 
                   // Apply tag filters
                   if (filters.tags && filters.tags.length > 0) {
-                    // For multiple tags, we want words that have ALL the tags
                     filters.tags.forEach(tag => {
                       query = query.contains('tags', [tag]);
                     });
@@ -296,7 +549,6 @@ export default function RootLayout({ children }) {
                     throw error;
                   }
 
-                  // Transform the data to ensure proper structure
                   const enhancedWords = await Promise.all(
                     words.map(word => this.enhanceWordData(word))
                   );
@@ -320,7 +572,7 @@ export default function RootLayout({ children }) {
                     enhanced.articles = this.generateArticles(word);
                   }
 
-                  // Process tags into categories
+                  // Process tags into categories with sketchy theme support
                   enhanced.processedTags = this.processTagsForDisplay(word.tags, word.word_type);
 
                   // Get word forms if available
@@ -347,28 +599,25 @@ export default function RootLayout({ children }) {
                 const tags = word.tags || [];
                 const italian = word.italian.toLowerCase();
                 
-                // Determine gender
-                let gender = 'masculine'; // default
+                let gender = 'masculine';
                 if (tags.includes('feminine')) gender = 'feminine';
                 if (tags.includes('masculine')) gender = 'masculine';
                 if (tags.includes('common-gender')) gender = 'common';
 
-                // Generate articles using the same logic as our SQL function
                 const articles = {
                   singular: this.calculateArticle(italian, gender, false),
                   plural: this.calculateArticle(italian, gender, true)
                 };
 
-                // Add indefinite articles
                 articles.indefinite = {
                   singular: this.calculateIndefiniteArticle(italian, gender),
-                  plural: null // Italian doesn't have indefinite plural articles
+                  plural: null
                 };
 
                 return articles;
               }
 
-              // Calculate definite article (matches SQL function logic)
+              // Calculate definite article
               calculateArticle(word, gender, isPlural) {
                 const firstChar = word.charAt(0);
                 const firstTwo = word.substring(0, 2);
@@ -376,7 +625,6 @@ export default function RootLayout({ children }) {
 
                 if (isPlural) {
                   if (gender === 'masculine') {
-                    // Plural masculine: gli or i
                     if (/[aeiou]/.test(firstChar) || 
                         ['gn','ps','sc','sp','st','x','z'].includes(firstTwo) ||
                         (firstChar === 's' && consonantAfterS)) {
@@ -384,13 +632,10 @@ export default function RootLayout({ children }) {
                     }
                     return 'i';
                   } else {
-                    // Plural feminine: always le
                     return 'le';
                   }
                 } else {
-                  // Singular
                   if (gender === 'masculine') {
-                    // Singular masculine: lo or il
                     if (/[aeiou]/.test(firstChar) || 
                         ['gn','ps','sc','sp','st','x','z'].includes(firstTwo) ||
                         (firstChar === 's' && consonantAfterS)) {
@@ -398,7 +643,6 @@ export default function RootLayout({ children }) {
                     }
                     return 'il';
                   } else {
-                    // Singular feminine: la or l'
                     if (/[aeiou]/.test(firstChar)) {
                       return "l'";
                     }
@@ -428,68 +672,84 @@ export default function RootLayout({ children }) {
                 }
               }
 
-              // Process tags for visual display with proper SVG icons and mobile support
+              // Process tags for visual display with sketchy theme hierarchy
               processTagsForDisplay(tags, wordType) {
                 const essential = [];
                 const detailed = [];
 
                 const tagMap = {
-                  // Gender (essential for nouns)
-                  'masculine': { display: '♂', class: 'bg-blue-100 text-blue-800', essential: wordType === 'NOUN', description: 'Masculine gender' },
-                  'feminine': { display: '♀', class: 'bg-pink-100 text-pink-800', essential: wordType === 'NOUN', description: 'Feminine gender' },
-                  'common-gender': { display: '⚥', class: 'bg-purple-100 text-purple-800', essential: wordType === 'NOUN', description: 'Common gender' },
+                  // PRIMARY TAGS (essential) - Same across all word types
+                  'masculine': { display: '♂', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Masculine gender' },
+                  'feminine': { display: '♀', class: 'bg-pink-100 text-pink-800', essential: true, description: 'Feminine gender' },
+                  'common-gender': { display: '⚥', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Common gender' },
                   
-                  // Irregularity (essential when present)
-                  'irregular-pattern': { display: 'IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Irregular pattern' },
-                  'form-irregular': { display: 'IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Irregular forms' },
+                  'irregular-pattern': { display: '⚠️ IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Irregular pattern' },
+                  'form-irregular': { display: '⚠️ IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Irregular forms' },
+                  'ire-isc-conjugation': { display: '-ISC', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Uses -isc- infix' },
                   
-                  // ISC Conjugation (essential for verbs)
-                  'ire-isc-conjugation': { display: '-ISC', class: 'bg-yellow-100 text-yellow-800', essential: wordType === 'VERB', description: 'Uses -isc- infix' },
+                  'CEFR-A1': { display: '📚 A1', class: 'bg-green-100 text-green-800', essential: true, description: 'Beginner level' },
+                  'CEFR-A2': { display: '📚 A2', class: 'bg-green-100 text-green-800', essential: true, description: 'Elementary level' },
+                  'CEFR-B1': { display: '📚 B1', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Intermediate level' },
+                  'CEFR-B2': { display: '📚 B2', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Upper intermediate' },
+                  'CEFR-C1': { display: '📚 C1', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Advanced level' },
+                  'CEFR-C2': { display: '📚 C2', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Proficiency level' },
                   
-                  // CEFR Levels (essential)
-                  'CEFR-A1': { display: 'A1', class: 'bg-green-100 text-green-800', essential: true, description: 'Beginner level' },
-                  'CEFR-A2': { display: 'A2', class: 'bg-green-100 text-green-800', essential: true, description: 'Elementary level' },
-                  'CEFR-B1': { display: 'B1', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Intermediate level' },
-                  'CEFR-B2': { display: 'B2', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Upper intermediate' },
-                  'CEFR-C1': { display: 'C1', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Advanced level' },
-                  'CEFR-C2': { display: 'C2', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Proficiency level' },
+                  'freq-top100': { display: '⭐ 100', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 100 words' },
+                  'freq-top200': { display: '⭐ 200', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 200 words' },
+                  'freq-top300': { display: '⭐ 300', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 300 words' },
+                  'freq-top500': { display: '⭐ 500', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 500 words' },
+                  'freq-top1000': { display: '⭐ 1K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 1000 words' },
+                  'freq-top5000': { display: '⭐ 5K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 5000 words' },
                   
-                  // Frequency (essential)
-                  'freq-top100': { display: '★100', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 100 words' },
-                  'freq-top200': { display: '★200', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 200 words' },
-                  'freq-top300': { display: '★300', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 300 words' },
-                  'freq-top500': { display: '★500', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 500 words' },
-                  'freq-top1000': { display: '★1K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 1000 words' },
-                  'freq-top5000': { display: '★5K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 5000 words' },
+                  'native': { display: '🗣️ NAT', class: 'bg-indigo-100 text-indigo-800', essential: true, description: 'Native vocabulary' },
+                  'business': { display: '💼 BIZ', class: 'bg-gray-100 text-gray-800', essential: true, description: 'Business terminology' },
+                  'academic': { display: '🎓 ACAD', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Academic vocabulary' },
+                  'literary': { display: '📜 LIT', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Literary language' },
+                  'regional': { display: '🗺️ REG', class: 'bg-green-100 text-green-800', essential: true, description: 'Regional variants' },
                   
-                  // Conjugation Groups (detailed)
-                  'are-conjugation': { display: '-are', class: 'bg-teal-100 text-teal-800', essential: false, description: 'First conjugation' },
-                  'ere-conjugation': { display: '-ere', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Second conjugation' },
-                  'ire-conjugation': { display: '-ire', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Third conjugation' },
+                  // WORD TYPE TAGS (detailed) - Different colors per word type
+                  'VERB': { display: 'verb', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Verb' },
+                  'NOUN': { display: 'noun', class: 'bg-cyan-100 text-cyan-800', essential: false, description: 'Noun' },
+                  'ADJECTIVE': { display: 'adjective', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Adjective' },
+                  'ADVERB': { display: 'adverb', class: 'bg-purple-100 text-purple-800', essential: false, description: 'Adverb' },
                   
-                  // Auxiliary Verbs (detailed)
-                  'avere-auxiliary': { display: 'avere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses avere' },
-                  'essere-auxiliary': { display: 'essere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses essere' },
-                  'both-auxiliary': { display: 'both', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses both auxiliaries' },
+                  // SECONDARY TAGS (detailed) - Same emojis across all word types
+                  'are-conjugation': { display: '🔸 -are', class: 'bg-teal-100 text-teal-800', essential: false, description: 'First conjugation' },
+                  'ere-conjugation': { display: '🔹 -ere', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Second conjugation' },
+                  'ire-conjugation': { display: '🔶 -ire', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Third conjugation' },
                   
-                  // Transitivity (detailed)
-                  'transitive-verb': { display: 'trans', class: 'bg-green-100 text-green-800', essential: false, description: 'Transitive verb' },
-                  'intransitive-verb': { display: 'intrans', class: 'bg-green-100 text-green-800', essential: false, description: 'Intransitive verb' },
-                  'both-transitivity': { display: 'both', class: 'bg-green-100 text-green-800', essential: false, description: 'Both transitive/intransitive' },
+                  'avere-auxiliary': { display: '🤝 avere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses avere' },
+                  'essere-auxiliary': { display: '🫱 essere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses essere' },
+                  'both-auxiliary': { display: '🤜🤛 both', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses both auxiliaries' },
+                  
+                  'transitive-verb': { display: '➡️ trans', class: 'bg-green-100 text-green-800', essential: false, description: 'Transitive verb' },
+                  'intransitive-verb': { display: '↩️ intrans', class: 'bg-green-100 text-green-800', essential: false, description: 'Intransitive verb' },
+                  'both-transitivity': { display: '↔️ both', class: 'bg-green-100 text-green-800', essential: false, description: 'Both transitive/intransitive' },
 
-                  // Plural patterns (detailed)
-                  'plural-i': { display: 'plural-i', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Plural with -i' },
-                  'plural-e': { display: 'plural-e', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Plural with -e' },
-                  'plural-invariable': { display: 'invariable', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Invariable plural' },
+                  'plural-i': { display: '📝 plural-i', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Plural with -i' },
+                  'plural-e': { display: '📄 plural-e', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Plural with -e' },
+                  'plural-invariable': { display: '🔒 invariable', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Invariable plural' },
                   
-                  // Topics (detailed)
-                  'topic-place': { display: 'place', class: 'bg-emerald-100 text-emerald-800', essential: false, description: 'Places and locations' },
-                  'topic-food': { display: 'food', class: 'bg-orange-100 text-orange-800', essential: false, description: 'Food and drink' },
-                  'topic-daily-life': { display: 'daily', class: 'bg-green-100 text-green-800', essential: false, description: 'Daily life' }
+                  'form-4': { display: '📋 form-4', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Four forms' },
+                  'form-2': { display: '📑 form-2', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Two forms' },
+                  'form-invariable': { display: '🔐 invariable', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Invariable forms' },
+                  'type-gradable': { display: '📈 gradable', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Gradable adjective' },
+                  
+                  'type-manner': { display: '🎭 manner', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Manner adverb' },
+                  'type-time': { display: '⏰ time', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Time adverb' },
+                  'type-place': { display: '📍 place', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Place adverb' },
+                  'type-quantity': { display: '📊 quantity', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Quantity adverb' },
+                  
+                  'topic-place': { display: '🌍 place', class: 'bg-emerald-100 text-emerald-800', essential: false, description: 'Places and locations' },
+                  'topic-food': { display: '🍕 food', class: 'bg-orange-100 text-orange-800', essential: false, description: 'Food and drink' },
+                  'topic-bodypart': { display: '👁️ body', class: 'bg-pink-100 text-pink-800', essential: false, description: 'Body parts' },
+                  'topic-profession': { display: '👩‍💼 job', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Jobs and professions' },
+                  'topic-abstract': { display: '💭 abstract', class: 'bg-purple-100 text-purple-800', essential: false, description: 'Abstract concepts' },
+                  'topic-daily-life': { display: '🏡 daily', class: 'bg-green-100 text-green-800', essential: false, description: 'Daily life' }
                 };
 
                 (tags || []).forEach(tag => {
-                  const tagInfo = tagMap[tag];
+                  const tagInfo = tagMap[tag] || tagMap[wordType];
                   if (tagInfo) {
                     if (tagInfo.essential) {
                       essential.push({
@@ -509,10 +769,21 @@ export default function RootLayout({ children }) {
                   }
                 });
 
+                // Always add word type to detailed tags
+                const wordTypeInfo = tagMap[wordType];
+                if (wordTypeInfo) {
+                  detailed.unshift({
+                    tag: wordType,
+                    display: wordTypeInfo.display,
+                    class: wordTypeInfo.class,
+                    description: wordTypeInfo.description
+                  });
+                }
+
                 return { essential, detailed };
               }
 
-              // Get word forms (conjugations, plurals, etc.)
+              // Get word forms
               async getWordForms(wordId) {
                 try {
                   const { data: forms, error } = await this.supabase
@@ -529,7 +800,7 @@ export default function RootLayout({ children }) {
                 }
               }
 
-              // Get related words (morphological relationships)
+              // Get related words
               async getRelatedWords(wordId) {
                 try {
                   const { data: relationships, error } = await this.supabase
@@ -588,7 +859,6 @@ export default function RootLayout({ children }) {
 
             // Initialize Enhanced Dictionary System
             document.addEventListener('DOMContentLoaded', function() {
-              // FIXED: Supabase client with environment variables
               const SUPABASE_URL = window.SUPABASE_URL;
               const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
               
@@ -597,11 +867,8 @@ export default function RootLayout({ children }) {
                 return;
               }
               
-              // Create Supabase client for audio functions
               const { createClient } = supabase;
               const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-              // Initialize enhanced dictionary system
               const dictionarySystem = new EnhancedDictionarySystem(supabaseClient);
 
               // DOM elements
@@ -618,7 +885,6 @@ export default function RootLayout({ children }) {
               const filterArrow = document.getElementById('filter-arrow');
               const resizeHandle = document.getElementById('resize-handle');
 
-              // Current filters state
               let currentFilters = {
                 wordType: [],
                 cefrLevel: '',
@@ -671,7 +937,6 @@ export default function RootLayout({ children }) {
                 const grammarContainer = document.getElementById('grammar-filters');
                 const selectedTypes = currentFilters.wordType.length === 0 ? ['ALL'] : currentFilters.wordType;
                 
-                // Collect all applicable filters
                 let applicableFilters = [];
                 selectedTypes.forEach(type => {
                   if (grammarFiltersByType[type]) {
@@ -679,15 +944,12 @@ export default function RootLayout({ children }) {
                   }
                 });
                 
-                // Always include universal filters
                 applicableFilters = applicableFilters.concat(grammarFiltersByType['ALL']);
                 
-                // Remove duplicates
                 const uniqueFilters = applicableFilters.filter((filter, index, self) => 
                   index === self.findIndex(f => f.value === filter.value)
                 );
                 
-                // Animate transition
                 grammarContainer.style.opacity = '0.5';
                 grammarContainer.style.transform = 'translateY(-10px)';
                 
@@ -744,7 +1006,6 @@ export default function RootLayout({ children }) {
                 dictionaryPanel.classList.remove('translate-x-full');
                 overlay.classList.remove('opacity-0', 'pointer-events-none');
                 searchInput.focus();
-                // REMOVED: Pre-fetch all words call - using direct query now
                 loadWords();
               }
 
@@ -772,19 +1033,15 @@ export default function RootLayout({ children }) {
                   const filterValue = e.target.dataset.value;
                   
                   if (filterType === 'wordType') {
-                    // Handle multi-select for word types
                     if (filterValue === '') {
-                      // "All" selected - clear all others
                       const siblings = e.target.parentElement.querySelectorAll('.filter-chip');
                       siblings.forEach(chip => chip.classList.remove('active'));
                       e.target.classList.add('active');
                       currentFilters.wordType = [];
                     } else {
-                      // Specific type selected
                       const allChip = e.target.parentElement.querySelector('[data-value=""]');
                       allChip.classList.remove('active');
                       
-                      // Toggle this chip
                       if (currentFilters.wordType.includes(filterValue)) {
                         currentFilters.wordType = currentFilters.wordType.filter(type => type !== filterValue);
                         e.target.classList.remove('active');
@@ -793,17 +1050,14 @@ export default function RootLayout({ children }) {
                         e.target.classList.add('active');
                       }
                       
-                      // If no types selected, activate "All"
                       if (currentFilters.wordType.length === 0) {
                         allChip.classList.add('active');
                       }
                     }
                     
-                    // Update grammar filters based on word type selection
                     updateGrammarFilters();
                     
                   } else if (filterType === 'tags') {
-                    // Handle multi-select for tags
                     if (currentFilters.tags.includes(filterValue)) {
                       currentFilters.tags = currentFilters.tags.filter(tag => tag !== filterValue);
                       e.target.classList.remove('active');
@@ -813,14 +1067,12 @@ export default function RootLayout({ children }) {
                     }
                     
                   } else {
-                    // Handle single-select for CEFR level
                     const siblings = e.target.parentElement.querySelectorAll('.filter-chip');
                     siblings.forEach(chip => chip.classList.remove('active'));
                     e.target.classList.add('active');
                     currentFilters[filterType] = filterValue;
                   }
                   
-                  // Reload words with new filters
                   loadWords(searchInput.value);
                 }
               });
@@ -854,49 +1106,40 @@ export default function RootLayout({ children }) {
                 }
               }
 
-              // FIXED: Create enhanced word element with proper audio detection
+              // Create enhanced word element with sketchy styling
               function createEnhancedWordElement(word) {
-                console.log('DEBUG: Word structure for', word.italian, ':', word);
                 const div = document.createElement('div');
                 const colors = dictionarySystem.getWordTypeColors(word.word_type);
                 
-                div.className = \`word-card border-2 \${colors.border} \${colors.bg} \${colors.hover} rounded-lg p-4 transition-colors\`;
-                
-                // FIXED: Audio detection with proper null checking
-                console.log('DEBUG: createEnhancedWordElement - word.word_audio_metadata:', word.word_audio_metadata);
+                div.className = \`word-card border-2 \${colors.border} \${colors.bg} \${colors.hover} rounded-lg p-4 transition-colors sketchy\`;
                 
                 const audioMetadata = word.word_audio_metadata && word.word_audio_metadata.length > 0 
                   ? word.word_audio_metadata[0] 
                   : null;
                   
-                console.log('DEBUG: createEnhancedWordElement - audioMetadata:', audioMetadata);
-                
                 const hasPremiumAudio = audioMetadata && audioMetadata.audio_filename && audioMetadata.audio_filename.trim() !== '';
                 const audioFilename = hasPremiumAudio ? audioMetadata.audio_filename : null;
-                
-                console.log('DEBUG: createEnhancedWordElement - hasPremiumAudio:', hasPremiumAudio, 'audioFilename:', audioFilename);
 
-                // Build article display for nouns
+                // Build article display for nouns with diamond separators
                 let articleDisplay = '';
                 if (word.word_type === 'NOUN' && word.articles) {
+                  const definiteText = word.articles.singular + ' • ' + word.articles.plural;
+                  const indefiniteText = word.articles.indefinite.singular;
                   articleDisplay = \`
-                    <div class="flex items-center gap-2 mb-2 text-sm">
-                      <span class="article-display">\${word.articles.singular}</span>
-                      <span class="text-gray-400">/</span>
-                      <span class="article-display">\${word.articles.plural}</span>
-                      <span class="text-gray-500">(definite)</span>
-                      <span class="article-display ml-2">\${word.articles.indefinite.singular}</span>
-                      <span class="text-gray-500">(indefinite)</span>
+                    <div class="article-display flex items-center gap-2 mb-2 text-sm">
+                      <span>\${definiteText}</span>
+                      <span class="text-gray-400">•</span>
+                      <span>\${indefiniteText}</span>
                     </div>
                   \`;
                 }
                 
-                // Build essential tags
+                // Build essential tags (primary)
                 const essentialTags = word.processedTags.essential
                   .map(tag => \`<span class="tag-essential \${tag.class}" title="\${tag.description}">\${tag.display}</span>\`)
                   .join(' ');
                 
-                // Build detailed tags
+                // Build detailed tags (secondary)
                 const detailedTags = word.processedTags.detailed
                   .map(tag => \`<span class="tag-detailed \${tag.class}" title="\${tag.description}">\${tag.display}</span>\`)
                   .join(' ');
@@ -956,29 +1199,26 @@ export default function RootLayout({ children }) {
                     <div class="flex-1">
                       \${articleDisplay}
                       <div class="flex items-center gap-2 mb-2">
-                        <h3 class="text-xl font-semibold \${colors.text}">\${word.italian}</h3>
+                        <h3 class="word-italian text-xl font-semibold \${colors.text}">\${word.italian}</h3>
                         <button 
-                          class="audio-btn w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full flex items-center justify-center transition-colors flex-shrink-0 \${hasPremiumAudio ? 'premium-audio' : ''}"
+                          class="audio-btn w-8 h-8 rounded-full flex items-center justify-center transition-colors flex-shrink-0 \${hasPremiumAudio ? 'premium-audio' : ''}"
                           onclick="playAudio('\${word.id}', '\${word.italian}', \${audioFilename ? \`'\${audioFilename}'\` : 'null'})"
                           title="\${hasPremiumAudio ? 'Play premium audio' : 'Play pronunciation'}"
                         >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="ml-0.5">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="ml-0.5">
                             <path d="M8 5v14l11-7z"/>
                           </svg>
                         </button>
                         \${essentialTags}
                       </div>
-                      <p class="text-base \${colors.text} opacity-80 mb-3">\${word.english}</p>
+                      <p class="word-english text-base \${colors.text} opacity-80 mb-3">\${word.english}</p>
                       <div class="flex flex-wrap gap-1 mb-2">
-                        <span class="inline-block \${colors.tag} text-xs px-2 py-1 rounded-full">
-                          \${word.word_type.toLowerCase()}
-                        </span>
                         \${detailedTags}
                       </div>
                       \${formsSection}
                       \${relationshipsSection}
                     </div>
-                    <button class="bg-emerald-600 text-white px-4 py-2 rounded text-sm hover:bg-emerald-700 transition-colors ml-4">
+                    <button class="add-btn bg-emerald-600 text-white px-4 py-2 rounded text-sm hover:bg-emerald-700 transition-colors ml-4">
                       + Add
                     </button>
                   </div>
@@ -1014,18 +1254,13 @@ export default function RootLayout({ children }) {
               closeDictionary.addEventListener('click', closeDictionaryPanel);
               overlay.addEventListener('click', closeDictionaryPanel);
 
-              // Initialize grammar filters on page load
               updateGrammarFilters();
 
-              // FIXED: Audio playback function with proper error handling
+              // Audio playback function with proper error handling
               async function playAudio(wordId, italianText, audioFilename) {
                 const audioBtn = event.target.closest('button');
                 const originalHTML = audioBtn.innerHTML;
                 
-                console.log('DEBUG: playAudio called - wordId:', wordId, 'italianText:', italianText, 'audioFilename:', audioFilename);
-                console.log('DEBUG: audioFilename type:', typeof audioFilename, 'value:', audioFilename);
-                
-                // Show loading state
                 audioBtn.innerHTML = \`
                   <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -1035,27 +1270,34 @@ export default function RootLayout({ children }) {
                 audioBtn.disabled = true;
 
                 try {
-                  // FIXED: More robust check for premium audio file
                   const hasValidAudioFile = audioFilename && 
                                           audioFilename !== 'null' && 
                                           audioFilename !== null && 
                                           audioFilename.trim() !== '' &&
                                           typeof audioFilename === 'string';
                   
-                  console.log('DEBUG: hasValidAudioFile:', hasValidAudioFile);
-                  
                   if (hasValidAudioFile) {
-                    console.log(\`DEBUG: Attempting to create signed URL for: \${audioFilename}\`);
+                    let urlData, urlError;
                     
-                    
-                    // Get signed URL from audio-files bucket
-                    const { data: urlData, error: urlError } = await supabaseClient
+                    const result1 = await supabaseClient
                       .storage
-                      .from('audio-files')
+                      .from('word-audio')
                       .createSignedUrl(audioFilename, 60);
+                    
+                    if (result1.data && result1.data.signedUrl) {
+                      urlData = result1.data;
+                      urlError = null;
+                    } else {
+                      const result2 = await supabaseClient
+                        .storage
+                        .from('audio-files')
+                        .createSignedUrl(audioFilename, 60);
+                      
+                      urlData = result2.data;
+                      urlError = result2.error;
+                    }
 
                     if (urlData && urlData.signedUrl) {
-                      console.log('DEBUG: Successfully created signed URL. Playing audio.');
                       const audio = new Audio(urlData.signedUrl);
                       
                       audio.onended = () => {
@@ -1064,161 +1306,11 @@ export default function RootLayout({ children }) {
                       };
                       
                       audio.onerror = (e) => {
-                        console.error('DEBUG: Error playing pregenerated audio from URL:', e);
+                        console.error('Error playing pregenerated audio:', e);
                         fallbackToTTS(italianText, audioBtn, originalHTML);
                       };
                       
                       await audio.play();
                       return;
-                    } else {
-                       console.error('DEBUG: Error creating signed URL:', urlError);
                     }
                   }
-                  
-                  // Fallback to TTS
-                  console.log('DEBUG: No valid audioFilename. Falling back to TTS.');
-                  fallbackToTTS(italianText, audioBtn, originalHTML);
-                  
-                } catch (error) {
-                  console.error('DEBUG: General error in playAudio function:', error);
-                  fallbackToTTS(italianText, audioBtn, originalHTML);
-                }
-              }
-
-              // Improved TTS fallback function with iOS support
-              function fallbackToTTS(text, audioBtn, originalHTML) {
-                console.log('DEBUG: Using TTS fallback for:', text);
-                
-                if ('speechSynthesis' in window) {
-                  const utterance = new SpeechSynthesisUtterance(text);
-                  
-                  const setItalianVoice = (voices) => {
-                    const italianVoices = voices.filter(voice => 
-                      voice.lang.startsWith('it') || 
-                      voice.lang.includes('IT') || 
-                      voice.name.toLowerCase().includes('ital')
-                    );
-                    
-                    if (italianVoices.length > 0) {
-                      const preferredVoice = italianVoices.find(voice => 
-                        voice.name.includes('Luca') || 
-                        voice.name.includes('Alice') ||  
-                        voice.name.includes('Federica') || 
-                        voice.name.includes('Italia')
-                      ) || italianVoices[0];
-                      
-                      utterance.voice = preferredVoice;
-                    }
-                    
-                    utterance.lang = 'it-IT';
-                    utterance.rate = 0.9;
-                    utterance.pitch = 1.0;
-                  };
-                  
-                  const speakText = () => {
-                    utterance.onend = () => {
-                      audioBtn.innerHTML = originalHTML;
-                      audioBtn.disabled = false;
-                    };
-                    
-                    utterance.onerror = (event) => {
-                      console.error('DEBUG: Speech synthesis error:', event);
-                      audioBtn.innerHTML = originalHTML;
-                      audioBtn.disabled = false;
-                    };
-                    
-                    speechSynthesis.cancel();
-                    setTimeout(() => speechSynthesis.speak(utterance), 100);
-                  };
-                  
-                  let voices = speechSynthesis.getVoices();
-                  
-                  if (voices.length === 0) {
-                    speechSynthesis.onvoiceschanged = () => {
-                      voices = speechSynthesis.getVoices();
-                      setItalianVoice(voices);
-                      speakText();
-                    };
-                    speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-                    speechSynthesis.cancel();
-                  } else {
-                    setItalianVoice(voices);
-                    speakText();
-                  }
-                } else {
-                  console.error('DEBUG: Speech synthesis not supported');
-                  audioBtn.innerHTML = originalHTML;
-                  audioBtn.disabled = false;
-                }
-              }
-              
-              function showAudioError(audioBtn, originalHTML) {
-                audioBtn.innerHTML = \`
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="text-red-500">
-                    <path d="M12 2C6.47 2 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>
-                  </svg>
-                \`;
-                setTimeout(() => {
-                  audioBtn.innerHTML = originalHTML;
-                  audioBtn.disabled = false;
-                }, 2000);
-              }
-
-              // Initialize voices for mobile
-              function initializeVoices() {
-                if ('speechSynthesis' in window) {
-                  speechSynthesis.onvoiceschanged = () => {
-                    console.log('🔄 Voices loaded:', speechSynthesis.getVoices().length);
-                  };
-                  speechSynthesis.getVoices();
-                }
-              }
-              
-              initializeVoices();
-
-              // Make functions global for onclick handlers
-              window.playAudio = playAudio;
-
-              // Mobile-friendly tag tooltips
-              function setupMobileTagTooltips() {
-                if (!document.getElementById('mobile-tooltip')) {
-                  const tooltip = document.createElement('div');
-                  tooltip.id = 'mobile-tooltip';
-                  tooltip.className = 'fixed hidden bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 max-w-xs';
-                  tooltip.style.pointerEvents = 'none';
-                  document.body.appendChild(tooltip);
-                }
-                
-                document.addEventListener('click', function(e) {
-                  const tag = e.target.closest('.tag-essential, .tag-detailed');
-                  const tooltip = document.getElementById('mobile-tooltip');
-                  
-                  if (tag && tag.title) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const rect = tag.getBoundingClientRect();
-                    tooltip.textContent = tag.title;
-                    tooltip.style.left = rect.left + 'px';
-                    tooltip.style.top = (rect.top - 30) + 'px';
-                    tooltip.classList.remove('hidden');
-                    
-                    setTimeout(() => {
-                      tooltip.classList.add('hidden');
-                    }, 3000);
-                  } else if (!tag) {
-                    tooltip.classList.add('hidden');
-                  }
-                });
-              }
-
-              setupMobileTagTooltips();
-              window.setupMobileTagTooltips = setupMobileTagTooltips;
-              window.dictionarySystem = dictionarySystem;
-            });
-          `
-        }} />
-      </body>
-    </html>
-  )
-}
