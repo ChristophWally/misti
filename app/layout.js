@@ -1047,28 +1047,12 @@ export default function RootLayout({ children }) {
                   if (hasValidAudioFile) {
                     console.log(\`DEBUG: Attempting to create signed URL for: \${audioFilename}\`);
                     
-                    // Try both possible bucket names to be safe
-                    let urlData, urlError;
                     
-                    // First try 'word-audio'
-                    const result1 = await supabaseClient
+                    // Get signed URL from audio-files bucket
+                    const { data: urlData, error: urlError } = await supabaseClient
                       .storage
-                      .from('word-audio')
+                      .from('audio-files')
                       .createSignedUrl(audioFilename, 60);
-                    
-                    if (result1.data && result1.data.signedUrl) {
-                      urlData = result1.data;
-                      urlError = null;
-                    } else {
-                      // Try 'audio-files' as fallback
-                      const result2 = await supabaseClient
-                        .storage
-                        .from('audio-files')
-                        .createSignedUrl(audioFilename, 60);
-                      
-                      urlData = result2.data;
-                      urlError = result2.error;
-                    }
 
                     if (urlData && urlData.signedUrl) {
                       console.log('DEBUG: Successfully created signed URL. Playing audio.');
