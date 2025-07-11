@@ -35,14 +35,14 @@ body {
 
   .tag-essential, 
   .tag-detailed {
-    @apply inline-block text-xs font-semibold px-2 py-1 rounded-full;
-    @apply border border-opacity-20 mx-0.5 my-0.5 cursor-help;
-    @apply transition-colors duration-150;
-  }
-
-  .tag-essential:hover,
-  .tag-detailed:hover {
-    @apply opacity-80;
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 9999px;
+    margin: 1px;
+    cursor: help;
+    border: 1px solid rgba(0,0,0,0.1);
   }
 
   .audio-btn {
