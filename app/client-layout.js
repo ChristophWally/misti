@@ -4,7 +4,7 @@
 // Client-side layout component with navigation and dictionary panel
 
 import { useState } from 'react'
-import DictionaryPanel from '@/components/DictionaryPanel'
+// import DictionaryPanel from '@/components/DictionaryPanel'
 
 export default function ClientLayout({ children }) {
   const [isDictionaryOpen, setIsDictionaryOpen] = useState(false)
@@ -47,11 +47,13 @@ export default function ClientLayout({ children }) {
         </div>
       </nav>
 
-      {/* Dictionary Panel */}
+      {/* Dictionary Panel - Temporarily disabled for debugging */}
+      {/* 
       <DictionaryPanel 
         isOpen={isDictionaryOpen}
         onClose={closeDictionary}
       />
+      */}
 
       {/* Main Content */}
       <main className="min-h-screen">
