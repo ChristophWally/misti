@@ -1,7 +1,7 @@
 'use client'
 
 // components/DictionaryPanel.js
-// Main dictionary panel component with search, filters, and word list
+// Fixed version that loads words by default
 
 import { useState, useEffect, useCallback } from 'react'
 import WordCard from './WordCard'
@@ -31,11 +31,20 @@ export default function DictionaryPanel({
   // Debounced search
   const [searchTimeout, setSearchTimeout] = useState(null)
 
-  // Load words with current filters
+  // Load words with current filters - FIXED to handle empty filters
   const loadWords = useCallback(async (term = searchTerm, currentFilters = filters) => {
     setIsLoading(true)
     try {
-      const results = await dictionarySystem.loadWords(term, currentFilters)
+      // IMPORTANT FIX: Convert empty filters to work with your enhanced dictionary system
+      const processedFilters = {
+        ...currentFilters,
+        // If no word types selected, don't filter by word type (show all)
+        wordType: currentFilters.wordType?.length > 0 ? currentFilters.wordType : undefined
+      }
+      
+      console.log('Loading words with filters:', processedFilters)
+      const results = await dictionarySystem.loadWords(term, processedFilters)
+      console.log('Loaded words:', results.length)
       setWords(results)
     } catch (error) {
       console.error('Error loading words:', error)
@@ -74,6 +83,7 @@ export default function DictionaryPanel({
       newFilters = { ...filters, [filterType]: filterValue }
     }
     
+    console.log('Filter changed:', { filterType, filterValue, newFilters })
     setFilters(newFilters)
     loadWords(searchTerm, newFilters)
   }
@@ -98,12 +108,13 @@ export default function DictionaryPanel({
   // Get applicable grammar filters
   const grammarFilters = getApplicableGrammarFilters(filters.wordType)
 
-  // Load initial words
+  // IMPORTANT: Load words immediately when panel opens (fixed default state)
   useEffect(() => {
     if (isOpen) {
-      loadWords()
+      console.log('Panel opened, loading initial words...')
+      loadWords('', createInitialFilters()) // Load with empty search and default filters
     }
-  }, [isOpen, loadWords])
+  }, [isOpen])
 
   // Cleanup timeout on unmount
   useEffect(() => {
