@@ -97,6 +97,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
     return { essential, detailed };
   };
+
+  // Get word type colors (keeping your original function)
+  const getWordTypeColors = (wordType) => {
     const colors = {
       'VERB': {
         border: 'border-teal-200',
