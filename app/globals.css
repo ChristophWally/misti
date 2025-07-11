@@ -1,5 +1,5 @@
 /* app/globals.css */
-/* Proper Tailwind CSS setup for Misti Italian Learning App */
+/* Complete Tailwind CSS setup for Misti Italian Learning App - RESTORED ORIGINAL STYLING */
 
 @tailwind base;
 @tailwind components;
@@ -10,6 +10,266 @@ body {
   font-family: 'Comic Neue', cursive;
 }
 
+/* RESTORED: Original tag styling system with proper sizing and emojis */
+.tag-essential, 
+.tag-detailed {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  margin: 1px;
+  cursor: help;
+  transform: rotate(0.8deg);
+  transition: all 0.2s ease;
+}
+
+.tag-essential:nth-child(even), 
+.tag-detailed:nth-child(even) {
+  transform: rotate(-0.8deg);
+}
+
+.tag-essential:hover, 
+.tag-detailed:hover {
+  transform: rotate(0deg) scale(1.05);
+}
+
+/* PRIMARY TAGS - Filled backgrounds, consistent emojis across word types */
+.tag-primary-gender-masc { 
+  background: #3b82f6; 
+  color: white; 
+  border: 1px solid #2563eb; 
+}
+.tag-primary-gender-fem { 
+  background: #ec4899; 
+  color: white; 
+  border: 1px solid #db2777; 
+}
+.tag-primary-gender-common { 
+  background: #8b5cf6; 
+  color: white; 
+  border: 1px solid #7c3aed; 
+}
+.tag-primary-level { 
+  background: #f59e0b; 
+  color: white; 
+  border: 1px solid #d97706; 
+}
+.tag-primary-freq { 
+  background: #f59e0b; 
+  color: white; 
+  border: 1px solid #d97706; 
+}
+.tag-primary-irregular { 
+  background: #ef4444; 
+  color: white; 
+  border: 1px solid #dc2626; 
+}
+.tag-primary-isc { 
+  background: #fbbf24; 
+  color: #92400e; 
+  border: 1px solid #f59e0b; 
+}
+
+/* WORD TYPE TAGS - Filled with word type colors */
+.word-card-verb .tag-word-type { 
+  background: #14b8a6; 
+  color: white; 
+  border: 1px solid #0f766e;
+}
+.word-card-noun .tag-word-type { 
+  background: #0891b2; 
+  color: white; 
+  border: 1px solid #0e7490;
+}
+.word-card-adjective .tag-word-type { 
+  background: #3b82f6; 
+  color: white; 
+  border: 1px solid #2563eb;
+}
+.word-card-adverb .tag-word-type { 
+  background: #8b5cf6; 
+  color: white; 
+  border: 1px solid #7c3aed;
+}
+
+/* SECONDARY TAGS - Unfilled, transparent background */
+.tag-secondary {
+  background: transparent;
+  color: currentColor;
+  border: 1px solid currentColor;
+  opacity: 0.8;
+}
+
+/* RESTORED: Sketchy Effects and Word Card Styling */
+.sketchy {
+  position: relative;
+}
+
+.sketchy::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border: 2px solid currentColor;
+  border-radius: inherit;
+  opacity: 0.8;
+}
+
+/* Scribbled fill effect inside borders */
+.sketchy-fill::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  background: 
+    repeating-linear-gradient(
+      23deg,
+      transparent,
+      transparent 1px,
+      currentColor 1px,
+      currentColor 1.5px,
+      transparent 1.5px,
+      transparent 4px
+    ),
+    repeating-linear-gradient(
+      67deg,
+      transparent,
+      transparent 1px,
+      currentColor 1px,
+      currentColor 1.5px,
+      transparent 1.5px,
+      transparent 6px
+    );
+  opacity: 0.05;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Enhanced Word Cards with Sketchy Styling */
+.word-card {
+  transition: all 0.2s ease;
+  transform: rotate(0.3deg);
+  position: relative;
+}
+
+.word-card:nth-child(even) {
+  transform: rotate(-0.3deg);
+}
+
+.word-card:hover {
+  transform: rotate(0deg) translateY(-1px) scale(1.01);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Word Type Specific Styling */
+.word-card-verb {
+  background: #f0fdfa !important;
+  border: 2px solid #5eead4 !important;
+  color: #134e4a !important;
+}
+.word-card-noun {
+  background: #ecfeff !important;
+  border: 2px solid #67e8f9 !important;
+  color: #164e63 !important;
+}
+.word-card-adjective {
+  background: #eff6ff !important;
+  border: 2px solid #93c5fd !important;
+  color: #1e3a8a !important;
+}
+.word-card-adverb {
+  background: #faf5ff !important;
+  border: 2px solid #c4b5fd !important;
+  color: #581c87 !important;
+}
+
+/* FIXED: Premium Audio Button Styling - Gold Rim instead of Star */
+.premium-audio {
+  position: relative;
+  border: 2px solid #FFD700 !important;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6) !important;
+}
+
+/* Remove the star - you wanted just gold rim */
+/* .premium-audio::before is removed */
+
+/* Audio Button Enhancements */
+.audio-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  transform: rotate(0.5deg);
+}
+
+.audio-btn:hover {
+  transform: rotate(-0.5deg) scale(1.1);
+}
+
+/* Audio Button Colors by Word Type */
+.word-card-verb .audio-btn {
+  background: #14b8a6 !important;
+  color: white !important;
+  border: none;
+}
+.word-card-noun .audio-btn {
+  background: #0891b2 !important;
+  color: white !important;
+  border: none;
+}
+.word-card-adjective .audio-btn {
+  background: #3b82f6 !important;
+  color: white !important;
+  border: none;
+}
+.word-card-adverb .audio-btn {
+  background: #8b5cf6 !important;
+  color: white !important;
+  border: none;
+}
+
+.audio-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* RESTORED: Article Display with Diamond Separators */
+.article-display {
+  font-weight: 600;
+  font-size: 14px;
+  color: #059669;
+  margin-right: 4px;
+  transform: rotate(-0.1deg);
+}
+
+/* Enhanced Form Elements */
+.search-input-sketchy {
+  transform: rotate(-0.2deg);
+  transition: all 0.2s ease;
+}
+
+.search-input-sketchy:focus {
+  transform: rotate(0.2deg);
+}
+
+/* Button Enhancements */
+.btn-sketchy {
+  transform: rotate(-0.5deg);
+  transition: all 0.2s ease;
+}
+
+.btn-sketchy:hover {
+  transform: rotate(0.5deg) scale(1.05);
+}
+
 /* Custom component styles using @layer for proper Tailwind integration */
 @layer components {
   .filter-chip {
@@ -18,8 +278,18 @@ body {
     @apply transition-all duration-200 ease-in-out;
     @apply hover:bg-gray-50 hover:border-gray-400;
     @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2;
+    transform: rotate(0.5deg);
   }
 
+  .filter-chip:nth-child(even) {
+    transform: rotate(-0.5deg);
+  }
+
+  .filter-chip:hover {
+    background-color: #f3f4f6;
+    transform: rotate(0deg) scale(1.05);
+  }
+  
   .filter-chip.active {
     @apply bg-teal-600 text-white border-teal-600;
     @apply hover:bg-teal-700 hover:border-teal-700;
@@ -46,55 +316,34 @@ body {
   }
 }
 
-/* Original tag styles */
-.tag-essential, 
-.tag-detailed {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 9999px;
-  margin: 1px;
-  cursor: help;
-  border: 1px solid rgba(0,0,0,0.1);
+/* Navigation Enhancements */
+.nav-title-sketchy {
+  transform: rotate(-0.5deg);
 }
 
-/* Custom styles that can't be done with Tailwind */
-.premium-audio {
-  position: relative;
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+.nav-btn-sketchy {
+  transform: rotate(0.3deg);
+  transition: all 0.2s ease;
 }
 
-.premium-audio::before {
-  content: '★';
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  font-size: 10px;
-  color: #FFD700;
-  background: white;
-  border-radius: 50%;
-  width: 14px;
-  height: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #FFD700;
-  font-weight: bold;
+.nav-btn-sketchy:hover {
+  transform: rotate(-0.3deg);
 }
 
-/* Expandable containers */
-.word-forms-container,
-.relationships-container {
+/* Word Forms and Relationships */
+.word-forms-container {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease-in-out;
+  transition: max-height 0.3s ease;
 }
-
 .word-forms-container.expanded {
   max-height: 300px;
 }
-
+.relationships-container {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
 .relationships-container.expanded {
   max-height: 200px;
 }
@@ -156,4 +405,22 @@ body {
 .resizing * {
   user-select: none;
   pointer-events: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tag-essential, .tag-detailed {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  
+  .audio-btn {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .audio-btn svg {
+    width: 12px;
+    height: 12px;
+  }
 }
