@@ -1,10 +1,10 @@
 'use client'
 
 // app/client-layout.js
-// Client-side layout component with navigation and dictionary panel
+// Client-side layout component with fixed dictionary panel
 
 import { useState } from 'react'
-import DictionaryPanel from '@/components/DictionaryPanel'
+import DictionaryPanel from '../components/DictionaryPanel'
 
 export default function ClientLayout({ children }) {
   const [isDictionaryOpen, setIsDictionaryOpen] = useState(false)
