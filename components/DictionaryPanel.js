@@ -1,7 +1,7 @@
 'use client'
 
 // components/DictionaryPanel.js
-// Fixed version that loads words by default
+// FIXED: Restored slide-in/slide-out animations
 
 import { useState, useEffect, useCallback } from 'react'
 import WordCard from './WordCard'
@@ -163,23 +163,26 @@ export default function DictionaryPanel({
     }
   }, [isOpen])
 
-  if (!isOpen) return null
-
   return (
     <>
-      {/* Overlay */}
+      {/* FIXED: Overlay with proper fade animation timing */}
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
+        className={`
+          fixed inset-0 bg-black bg-opacity-50 z-40 
+          transition-opacity duration-300 ease-in-out
+          ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
+        `}
         onClick={onClose}
       />
       
-      {/* Panel */}
+      {/* FIXED: Panel with proper slide animation */}
       <div 
         className={`
-          fixed inset-y-0 right-0 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50
+          fixed inset-y-0 right-0 bg-white shadow-xl z-50
+          transition-transform duration-300 ease-in-out
           ${panelWidth ? '' : 'w-96 md:w-3/4 lg:w-2/3 xl:w-1/2'}
           ${className}
-          ${isResizing ? '' : 'transition-all'}
+          ${isOpen ? 'transform translate-x-0' : 'transform translate-x-full'}
         `}
         style={{ 
           width: panelWidth ? `${panelWidth}px` : undefined,
@@ -190,16 +193,16 @@ export default function DictionaryPanel({
         {/* Resize Handle */}
         <div 
           onMouseDown={startResize}
-          className="absolute left-0 top-0 w-1 h-full bg-teal-300 cursor-ew-resize hover:bg-teal-400 transition-colors opacity-0 hover:opacity-100 z-10"
-          style={{ cursor: 'ew-resize' }}
+          className="resize-handle"
         />
+        
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
-            <h2 className="text-lg font-semibold text-white">Dictionary</h2>
+            <h2 className="text-lg font-semibold text-white nav-title-sketchy">Dictionary</h2>
             <button 
               onClick={onClose}
-              className="text-white hover:text-cyan-200 text-xl"
+              className="text-white hover:text-cyan-200 text-xl nav-btn-sketchy"
             >
               ✕
             </button>
@@ -214,17 +217,17 @@ export default function DictionaryPanel({
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search Italian words..."
-                className="w-full px-3 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-3 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 search-input-sketchy"
               />
               
               {/* Filter Toggle */}
               <button 
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="text-sm text-teal-600 hover:text-teal-800 flex items-center"
+                className="text-sm text-teal-600 hover:text-teal-800 flex items-center btn-sketchy"
               >
                 <span className="mr-1">🔍</span> 
                 Advanced Filters
-                <span className={`ml-1 transform transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`}>
+                <span className={`ml-1 transform transition-transform duration-200 ${showAdvancedFilters ? 'rotate-180' : ''}`}>
                   ▼
                 </span>
               </button>
@@ -297,7 +300,7 @@ export default function DictionaryPanel({
           </div>
 
           {/* Words List */}
-          <div className="flex-1 overflow-y-auto p-4 bg-white">
+          <div className="flex-1 overflow-y-auto p-4 bg-white dictionary-panel">
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="inline-flex items-center">
