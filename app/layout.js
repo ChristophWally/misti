@@ -14,6 +14,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
+        {/* Load Tailwind CSS from CDN */}
+        <script src="https://cdn.tailwindcss.com"></script>
+        
         {/* Load fonts */}
         <link 
           href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap" 
