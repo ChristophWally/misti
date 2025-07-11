@@ -28,6 +28,10 @@ export default function DictionaryPanel({
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [dictionarySystem] = useState(() => new EnhancedDictionarySystem(supabase))
 
+  // Resize functionality state
+  const [isResizing, setIsResizing] = useState(false)
+  const [panelWidth, setPanelWidth] = useState(null) // null = use CSS default
+
   // Debounced search
   const [searchTimeout, setSearchTimeout] = useState(null)
 
@@ -105,6 +109,33 @@ export default function DictionaryPanel({
     console.log('Adding word to deck:', word.italian)
   }
 
+  // Resize functionality
+  const startResize = (e) => {
+    setIsResizing(true)
+    const startX = e.clientX
+    const startWidth = panelWidth || (window.innerWidth * 0.5) // Default to 50% if no custom width
+    
+    const handleMouseMove = (e) => {
+      const deltaX = startX - e.clientX
+      const newWidth = startWidth + deltaX
+      const minWidth = 384
+      const maxWidth = window.innerWidth * 0.8
+      
+      if (newWidth >= minWidth && newWidth <= maxWidth) {
+        setPanelWidth(newWidth)
+      }
+    }
+    
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+    
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
   // Get applicable grammar filters
   const grammarFilters = getApplicableGrammarFilters(filters.wordType)
 
@@ -125,6 +156,13 @@ export default function DictionaryPanel({
     }
   }, [searchTimeout])
 
+  // Cleanup resize listeners when panel closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsResizing(false)
+    }
+  }, [isOpen])
+
   if (!isOpen) return null
 
   return (
@@ -136,13 +174,25 @@ export default function DictionaryPanel({
       />
       
       {/* Panel */}
-      <div className={`
-        fixed inset-y-0 right-0 w-96 md:w-3/4 lg:w-2/3 xl:w-1/2 
-        bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50
-        ${className}
-      `}
-      style={{ minWidth: '384px', maxWidth: '80vw' }}
+      <div 
+        className={`
+          fixed inset-y-0 right-0 bg-white shadow-xl transform transition-transform duration-300 ease-in-out z-50
+          ${panelWidth ? '' : 'w-96 md:w-3/4 lg:w-2/3 xl:w-1/2'}
+          ${className}
+          ${isResizing ? '' : 'transition-all'}
+        `}
+        style={{ 
+          width: panelWidth ? `${panelWidth}px` : undefined,
+          minWidth: '384px', 
+          maxWidth: '80vw'
+        }}
       >
+        {/* Resize Handle */}
+        <div 
+          onMouseDown={startResize}
+          className="absolute left-0 top-0 w-1 h-full bg-teal-300 cursor-ew-resize hover:bg-teal-400 transition-colors opacity-0 hover:opacity-100 z-10"
+          style={{ cursor: 'ew-resize' }}
+        />
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
