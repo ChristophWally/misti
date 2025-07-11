@@ -1,5 +1,5 @@
 // app/layout.js
-// Fixed layout with proper Tailwind CSS loading
+// Clean layout with proper Tailwind CSS
 
 import './globals.css'
 import ClientLayout from './client-layout'
@@ -14,16 +14,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        {/* Load fonts first */}
+        {/* Load fonts */}
         <link 
           href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@300;400;700&display=swap" 
           rel="stylesheet" 
         />
       </head>
-      <body className="bg-gradient-to-br from-cyan-50 to-blue-50" style={{ fontFamily: "'Comic Neue', cursive" }}>
-        {/* Load Tailwind in body to ensure it loads after React hydration */}
-        <script src="https://cdn.tailwindcss.com"></script>
-        
+      <body className="bg-gradient-to-br from-cyan-50 to-blue-50 font-comic">
         <ClientLayout>
           {children}
         </ClientLayout>
