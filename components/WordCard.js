@@ -14,8 +14,89 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   // Get audio information
   const { hasPremiumAudio, audioFilename, voiceName } = checkPremiumAudio(word)
 
-  // Get word type colors
-  const getWordTypeColors = (wordType) => {
+  // Process tags for visual display with original tag system from main branch
+  const processTagsForDisplay = (tags, wordType) => {
+    const essential = [];
+    const detailed = [];
+
+    const tagMap = {
+      // Gender (essential for nouns)
+      'masculine': { display: '♂', class: 'bg-blue-100 text-blue-800', essential: wordType === 'NOUN', description: 'Masculine gender' },
+      'feminine': { display: '♀', class: 'bg-pink-100 text-pink-800', essential: wordType === 'NOUN', description: 'Feminine gender' },
+      'common-gender': { display: '⚥', class: 'bg-purple-100 text-purple-800', essential: wordType === 'NOUN', description: 'Common gender' },
+      
+      // Irregularity (essential when present)
+      'irregular-pattern': { display: 'IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Irregular pattern' },
+      'form-irregular': { display: 'IRREG', class: 'bg-red-100 text-red-800', essential: true, description: 'Irregular forms' },
+      
+      // ISC Conjugation (essential for verbs)
+      'ire-isc-conjugation': { display: '-ISC', class: 'bg-yellow-100 text-yellow-800', essential: wordType === 'VERB', description: 'Uses -isc- infix' },
+      
+      // CEFR Levels (essential)
+      'CEFR-A1': { display: 'A1', class: 'bg-green-100 text-green-800', essential: true, description: 'Beginner level' },
+      'CEFR-A2': { display: 'A2', class: 'bg-green-100 text-green-800', essential: true, description: 'Elementary level' },
+      'CEFR-B1': { display: 'B1', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Intermediate level' },
+      'CEFR-B2': { display: 'B2', class: 'bg-blue-100 text-blue-800', essential: true, description: 'Upper intermediate' },
+      'CEFR-C1': { display: 'C1', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Advanced level' },
+      'CEFR-C2': { display: 'C2', class: 'bg-purple-100 text-purple-800', essential: true, description: 'Proficiency level' },
+      
+      // Frequency (essential)
+      'freq-top100': { display: '★100', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 100 words' },
+      'freq-top200': { display: '★200', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 200 words' },
+      'freq-top300': { display: '★300', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 300 words' },
+      'freq-top500': { display: '★500', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 500 words' },
+      'freq-top1000': { display: '★1K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 1000 words' },
+      'freq-top5000': { display: '★5K', class: 'bg-yellow-100 text-yellow-800', essential: true, description: 'Top 5000 words' },
+      
+      // Conjugation Groups (detailed)
+      'are-conjugation': { display: '-are', class: 'bg-teal-100 text-teal-800', essential: false, description: 'First conjugation' },
+      'ere-conjugation': { display: '-ere', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Second conjugation' },
+      'ire-conjugation': { display: '-ire', class: 'bg-teal-100 text-teal-800', essential: false, description: 'Third conjugation' },
+      
+      // Auxiliary Verbs (detailed)
+      'avere-auxiliary': { display: 'avere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses avere' },
+      'essere-auxiliary': { display: 'essere', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses essere' },
+      'both-auxiliary': { display: 'both', class: 'bg-blue-100 text-blue-800', essential: false, description: 'Uses both auxiliaries' },
+      
+      // Transitivity (detailed)
+      'transitive-verb': { display: 'trans', class: 'bg-green-100 text-green-800', essential: false, description: 'Transitive verb' },
+      'intransitive-verb': { display: 'intrans', class: 'bg-green-100 text-green-800', essential: false, description: 'Intransitive verb' },
+      'both-transitivity': { display: 'both', class: 'bg-green-100 text-green-800', essential: false, description: 'Both transitive/intransitive' },
+
+      // Plural patterns (detailed)
+      'plural-i': { display: 'plural-i', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Plural with -i' },
+      'plural-e': { display: 'plural-e', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Plural with -e' },
+      'plural-invariable': { display: 'invariable', class: 'bg-gray-100 text-gray-800', essential: false, description: 'Invariable plural' },
+      
+      // Topics (detailed)
+      'topic-place': { display: 'place', class: 'bg-emerald-100 text-emerald-800', essential: false, description: 'Places and locations' },
+      'topic-food': { display: 'food', class: 'bg-orange-100 text-orange-800', essential: false, description: 'Food and drink' },
+      'topic-daily-life': { display: 'daily', class: 'bg-green-100 text-green-800', essential: false, description: 'Daily life' }
+    };
+
+    (tags || []).forEach(tag => {
+      const tagInfo = tagMap[tag];
+      if (tagInfo) {
+        if (tagInfo.essential) {
+          essential.push({
+            tag,
+            display: tagInfo.display,
+            class: tagInfo.class,
+            description: tagInfo.description
+          });
+        } else {
+          detailed.push({
+            tag,
+            display: tagInfo.display,
+            class: tagInfo.class,
+            description: tagInfo.description
+          });
+        }
+      }
+    });
+
+    return { essential, detailed };
+  };
     const colors = {
       'VERB': {
         border: 'border-teal-200',
@@ -58,6 +139,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
   const colors = getWordTypeColors(word.word_type)
 
+  // Process tags using original system
+  const processedTags = processTagsForDisplay(word.tags, word.word_type)
+
   // Render article display for nouns
   const renderArticleDisplay = () => {
     if (word.word_type !== 'NOUN' || !word.articles) return null
@@ -74,18 +158,14 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     )
   }
 
-  // Render tags
+  // Render tags with original styling
   const renderTags = (tags, type = 'essential') => {
     if (!tags || tags.length === 0) return null
 
     return tags.map((tag, index) => (
       <span
         key={index}
-        className={`
-          inline-block text-xs font-semibold px-2 py-1 rounded-full mx-0.5 my-0.5
-          ${tag.class} 
-          cursor-help border border-opacity-20
-        `}
+        className={`tag-${type} ${tag.class}`}
         title={tag.description}
       >
         {tag.display}
@@ -195,7 +275,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
               title={hasPremiumAudio ? `Play premium audio (${voiceName})` : 'Play pronunciation'}
             />
             
-            {word.processedTags?.essential && renderTags(word.processedTags.essential, 'essential')}
+            {renderTags(processedTags.essential, 'essential')}
           </div>
           
           <p className={`text-base mb-3 opacity-80 ${colors.text}`}>
@@ -206,7 +286,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             <span className={`inline-block text-xs px-2 py-1 rounded-full ${colors.tag}`}>
               {word.word_type.toLowerCase()}
             </span>
-            {word.processedTags?.detailed && renderTags(word.processedTags.detailed, 'detailed')}
+            {renderTags(processedTags.detailed, 'detailed')}
           </div>
           
           {renderWordForms()}
