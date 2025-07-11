@@ -1,18 +1,59 @@
 'use client'
 
 // components/WordCard.js
-// Individual word card component for dictionary display - FIXED TAG SYSTEM
+// Individual word card component for dictionary display - FIXED TAG SYSTEM + TOOLTIPS
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import AudioButton from './AudioButton'
 import { checkPremiumAudio } from '../lib/audio-utils'
 
 export default function WordCard({ word, onAddToDeck, className = '' }) {
   const [showForms, setShowForms] = useState(false)
   const [showRelationships, setShowRelationships] = useState(false)
+  const [tooltip, setTooltip] = useState({ show: false, content: '', x: 0, y: 0 })
 
   // Get audio information
   const { hasPremiumAudio, audioFilename, voiceName } = checkPremiumAudio(word)
+
+  // RESTORED: Mobile-friendly tag tooltip system
+  const handleTagClick = (event) => {
+    const tag = event.target.closest('.tag-essential, .tag-detailed')
+    if (!tag || !tag.title) return
+    
+    event.preventDefault()
+    event.stopPropagation()
+    
+    const rect = tag.getBoundingClientRect()
+    const tooltipX = Math.min(rect.left, window.innerWidth - 250) // Prevent overflow
+    const tooltipY = rect.top - 35 // Position above the tag
+    
+    setTooltip({
+      show: true,
+      content: tag.title,
+      x: tooltipX,
+      y: tooltipY
+    })
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      setTooltip(prev => ({ ...prev, show: false }))
+    }, 3000)
+  }
+
+  // Hide tooltip when clicking elsewhere
+  const hideTooltip = (event) => {
+    if (!event.target.closest('.tag-essential, .tag-detailed')) {
+      setTooltip(prev => ({ ...prev, show: false }))
+    }
+  }
+
+  // Set up click handlers for tooltips
+  useEffect(() => {
+    document.addEventListener('click', hideTooltip)
+    return () => {
+      document.removeEventListener('click', hideTooltip)
+    }
+  }, [])
 
   // RESTORED: Original tag processing system with proper emojis and three-tier classification
   const processTagsForDisplay = (tags, wordType) => {
@@ -224,7 +265,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     )
   }
 
-  // RESTORED: Original tag rendering with proper classes
+  // RESTORED: Original tag rendering with proper classes and tooltip support
   const renderTags = (tags, type = 'essential') => {
     if (!tags || tags.length === 0) return null
 
@@ -233,6 +274,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         key={index}
         className={`tag-${type} ${tag.class}`}
         title={tag.description}
+        onClick={handleTagClick}
+        style={{ cursor: 'pointer' }}
       >
         {tag.display}
       </span>
@@ -318,54 +361,70 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   }
 
   return (
-    <div className={`
-      word-card border-2 rounded-lg p-4 transition-all duration-200
-      ${colors.border} ${colors.bg} ${colors.hover}
-      word-card-${word.word_type.toLowerCase()} sketchy-fill
-      ${className}
-    `}>
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          {renderArticleDisplay()}
-          
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className={`text-xl font-semibold ${colors.text}`}>
-              {word.italian}
-            </h3>
-            
-            <AudioButton
-              wordId={word.id}
-              italianText={word.italian}
-              audioFilename={audioFilename}
-              size="md"
-              title={hasPremiumAudio ? `Play premium audio (${voiceName})` : 'Play pronunciation'}
-            />
-            
-            {renderTags(processedTags.essential, 'essential')}
-          </div>
-          
-          <p className={`text-base mb-3 opacity-80 ${colors.text}`}>
-            {word.english}
-          </p>
-          
-          <div className="flex flex-wrap gap-1 mb-2">
-            <span className={`tag-essential tag-word-type ${colors.tag}`}>
-              {word.word_type.toLowerCase()}
-            </span>
-            {renderTags(processedTags.detailed, 'detailed')}
-          </div>
-          
-          {renderWordForms()}
-          {renderRelationships()}
-        </div>
-        
-        <button 
-          onClick={() => onAddToDeck && onAddToDeck(word)}
-          className="bg-emerald-600 text-white px-4 py-2 rounded text-sm hover:bg-emerald-700 transition-colors ml-4 flex-shrink-0 btn-sketchy"
+    <>
+      {/* RESTORED: Mobile-friendly tooltip */}
+      {tooltip.show && (
+        <div
+          className="fixed bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 max-w-xs pointer-events-none"
+          style={{
+            left: `${tooltip.x}px`,
+            top: `${tooltip.y}px`,
+            transform: 'translateX(-50%)'
+          }}
         >
-          + Add
-        </button>
+          {tooltip.content}
+        </div>
+      )}
+
+      <div className={`
+        word-card border-2 rounded-lg p-4 transition-all duration-200
+        ${colors.border} ${colors.bg} ${colors.hover}
+        word-card-${word.word_type.toLowerCase()} sketchy-fill
+        ${className}
+      `}>
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            {renderArticleDisplay()}
+            
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className={`text-xl font-semibold ${colors.text}`}>
+                {word.italian}
+              </h3>
+              
+              <AudioButton
+                wordId={word.id}
+                italianText={word.italian}
+                audioFilename={audioFilename}
+                size="md"
+                title={hasPremiumAudio ? `Play premium audio (${voiceName})` : 'Play pronunciation'}
+              />
+              
+              {renderTags(processedTags.essential, 'essential')}
+            </div>
+            
+            <p className={`text-base mb-3 opacity-80 ${colors.text}`}>
+              {word.english}
+            </p>
+            
+            <div className="flex flex-wrap gap-1 mb-2">
+              <span className={`tag-essential tag-word-type ${colors.tag}`}>
+                {word.word_type.toLowerCase()}
+              </span>
+              {renderTags(processedTags.detailed, 'detailed')}
+            </div>
+            
+            {renderWordForms()}
+            {renderRelationships()}
+          </div>
+          
+          <button 
+            onClick={() => onAddToDeck && onAddToDeck(word)}
+            className="bg-emerald-600 text-white px-4 py-2 rounded text-sm hover:bg-emerald-700 transition-colors ml-4 flex-shrink-0 btn-sketchy"
+          >
+            + Add
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
