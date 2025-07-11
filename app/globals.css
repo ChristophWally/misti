@@ -1,9 +1,5 @@
 /* app/globals.css */
-/* Global styles for Misti Italian Learning App */
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Global styles for Misti Italian Learning App - CDN Compatible */
 
 /* Base font family */
 body {
@@ -12,43 +8,69 @@ body {
 
 /* Filter chip component styles */
 .filter-chip {
-  @apply inline-block px-3 py-1 text-xs font-medium rounded-full cursor-pointer;
-  @apply border border-gray-300 bg-white text-gray-700;
-  @apply transition-all duration-200 ease-in-out;
-  @apply hover:bg-gray-50 hover:border-gray-400;
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 9999px;
+  cursor: pointer;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  transition: all 0.2s ease-in-out;
+  margin: 2px;
+}
+
+.filter-chip:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
 }
 
 .filter-chip.active {
-  @apply bg-teal-600 text-white border-teal-600;
-  @apply hover:bg-teal-700 hover:border-teal-700;
+  background-color: #0d9488;
+  color: white;
+  border-color: #0d9488;
+}
+
+.filter-chip.active:hover {
+  background-color: #0f766e;
+  border-color: #0f766e;
 }
 
 /* Word card component styles */
 .word-card {
-  @apply transition-all duration-200 ease-in-out;
+  transition: all 0.2s ease-in-out;
 }
 
 .word-card:hover {
-  @apply transform -translate-y-1 shadow-lg;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
 
 /* Tag component styles */
 .tag-essential, 
 .tag-detailed {
-  @apply inline-block text-xs font-semibold px-2 py-1 rounded-full;
-  @apply border border-opacity-20 mx-0.5 my-0.5 cursor-help;
-  @apply transition-colors duration-150;
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0,0,0,0.1);
+  margin: 1px;
+  cursor: help;
+  transition: opacity 0.15s ease;
 }
 
 .tag-essential:hover,
 .tag-detailed:hover {
-  @apply opacity-80;
+  opacity: 0.8;
 }
 
 /* Premium audio button styles */
 .premium-audio {
   position: relative;
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6) !important;
+  border: 2px solid #FFD700 !important;
 }
 
 .premium-audio::before {
@@ -71,15 +93,15 @@ body {
 
 /* Audio button general styles */
 .audio-btn {
-  @apply transition-all duration-200 ease-in-out;
+  transition: all 0.2s ease-in-out;
 }
 
 .audio-btn:hover {
-  @apply scale-105;
+  transform: scale(1.05);
 }
 
 .audio-btn:active {
-  @apply scale-95;
+  transform: scale(0.95);
 }
 
 /* Word forms expandable containers */
@@ -105,7 +127,8 @@ body {
 
 /* Mobile-friendly tooltip */
 #mobile-tooltip {
-  @apply pointer-events-none z-50;
+  pointer-events: none;
+  z-index: 9999;
   transition: opacity 0.2s ease-in-out;
 }
 
@@ -115,15 +138,16 @@ body {
 }
 
 .dictionary-panel::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background: #f1f5f9;
 }
 
 .dictionary-panel::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded-full;
+  background: #94a3b8;
+  border-radius: 3px;
 }
 
 .dictionary-panel::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+  background: #64748b;
 }
 
 /* Loading animation utilities */
@@ -142,41 +166,46 @@ body {
 
 /* Focus states for accessibility */
 .filter-chip:focus {
-  @apply outline-none ring-2 ring-teal-500 ring-offset-2;
+  outline: none;
+  box-shadow: 0 0 0 2px #0d9488, 0 0 0 4px rgba(13, 148, 136, 0.2);
 }
 
 button:focus {
-  @apply outline-none ring-2 ring-emerald-500 ring-offset-2;
+  outline: none;
+  box-shadow: 0 0 0 2px #059669, 0 0 0 4px rgba(5, 150, 105, 0.2);
 }
 
 input:focus {
-  @apply outline-none ring-2 ring-teal-500 ring-offset-2;
+  outline: none;
+  box-shadow: 0 0 0 2px #0d9488, 0 0 0 4px rgba(13, 148, 136, 0.2);
 }
 
-/* Responsive design utilities */
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .word-card {
-    @apply px-3 py-3;
+    padding: 12px;
   }
   
   .tag-essential,
   .tag-detailed {
-    @apply text-xs px-1.5 py-0.5;
+    font-size: 9px;
+    padding: 1.5px 4px;
   }
   
   .filter-chip {
-    @apply text-xs px-2 py-0.5;
+    font-size: 11px;
+    padding: 3px 8px;
   }
 }
 
 /* Print styles */
 @media print {
   .word-card {
-    @apply break-inside-avoid;
+    break-inside: avoid;
   }
   
   .audio-btn,
   .filter-chip {
-    @apply hidden;
+    display: none;
   }
 }
