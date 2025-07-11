@@ -1,0 +1,182 @@
+/* app/globals.css */
+/* Global styles for Misti Italian Learning App */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base font family */
+body {
+  font-family: 'Comic Neue', cursive;
+}
+
+/* Filter chip component styles */
+.filter-chip {
+  @apply inline-block px-3 py-1 text-xs font-medium rounded-full cursor-pointer;
+  @apply border border-gray-300 bg-white text-gray-700;
+  @apply transition-all duration-200 ease-in-out;
+  @apply hover:bg-gray-50 hover:border-gray-400;
+}
+
+.filter-chip.active {
+  @apply bg-teal-600 text-white border-teal-600;
+  @apply hover:bg-teal-700 hover:border-teal-700;
+}
+
+/* Word card component styles */
+.word-card {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.word-card:hover {
+  @apply transform -translate-y-1 shadow-lg;
+}
+
+/* Tag component styles */
+.tag-essential, 
+.tag-detailed {
+  @apply inline-block text-xs font-semibold px-2 py-1 rounded-full;
+  @apply border border-opacity-20 mx-0.5 my-0.5 cursor-help;
+  @apply transition-colors duration-150;
+}
+
+.tag-essential:hover,
+.tag-detailed:hover {
+  @apply opacity-80;
+}
+
+/* Premium audio button styles */
+.premium-audio {
+  position: relative;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
+.premium-audio::before {
+  content: '★';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 10px;
+  color: #FFD700;
+  background: white;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #FFD700;
+  font-weight: bold;
+}
+
+/* Audio button general styles */
+.audio-btn {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.audio-btn:hover {
+  @apply scale-105;
+}
+
+.audio-btn:active {
+  @apply scale-95;
+}
+
+/* Word forms expandable containers */
+.word-forms-container {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+}
+
+.word-forms-container.expanded {
+  max-height: 300px;
+}
+
+.relationships-container {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+}
+
+.relationships-container.expanded {
+  max-height: 200px;
+}
+
+/* Mobile-friendly tooltip */
+#mobile-tooltip {
+  @apply pointer-events-none z-50;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Scrollbar styling for dictionary panel */
+.dictionary-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dictionary-panel::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+.dictionary-panel::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded-full;
+}
+
+.dictionary-panel::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* Loading animation utilities */
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.pulse-soft {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Focus states for accessibility */
+.filter-chip:focus {
+  @apply outline-none ring-2 ring-teal-500 ring-offset-2;
+}
+
+button:focus {
+  @apply outline-none ring-2 ring-emerald-500 ring-offset-2;
+}
+
+input:focus {
+  @apply outline-none ring-2 ring-teal-500 ring-offset-2;
+}
+
+/* Responsive design utilities */
+@media (max-width: 768px) {
+  .word-card {
+    @apply px-3 py-3;
+  }
+  
+  .tag-essential,
+  .tag-detailed {
+    @apply text-xs px-1.5 py-0.5;
+  }
+  
+  .filter-chip {
+    @apply text-xs px-2 py-0.5;
+  }
+}
+
+/* Print styles */
+@media print {
+  .word-card {
+    @apply break-inside-avoid;
+  }
+  
+  .audio-btn,
+  .filter-chip {
+    @apply hidden;
+  }
+}
