@@ -5,15 +5,15 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import WordCard from './WordCard'
-import { EnhancedDictionarySystem } from '@/lib/enhanced-dictionary-system'
-import { supabase } from '@/lib/supabase'
+import { EnhancedDictionarySystem } from '../lib/enhanced-dictionary-system'
+import { supabase } from '../lib/supabase'
 import { 
   createInitialFilters, 
   getApplicableGrammarFilters, 
   handleFilterChipClick,
   wordTypeFilters,
   cefrLevels 
-} from '@/lib/filter-utils'
+} from '../lib/filter-utils'
 
 export default function DictionaryPanel({ 
   isOpen, 
