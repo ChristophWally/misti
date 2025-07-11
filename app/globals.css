@@ -1,76 +1,67 @@
 /* app/globals.css */
-/* Global styles for Misti Italian Learning App - CDN Compatible */
+/* Proper Tailwind CSS setup for Misti Italian Learning App */
 
-/* Base font family */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
 body {
   font-family: 'Comic Neue', cursive;
 }
 
-/* Filter chip component styles */
-.filter-chip {
-  display: inline-block;
-  padding: 4px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 9999px;
-  cursor: pointer;
-  border: 1px solid #d1d5db;
-  background: white;
-  color: #374151;
-  transition: all 0.2s ease-in-out;
-  margin: 2px;
+/* Custom component styles using @layer for proper Tailwind integration */
+@layer components {
+  .filter-chip {
+    @apply inline-block px-3 py-1 text-xs font-medium rounded-full cursor-pointer;
+    @apply border border-gray-300 bg-white text-gray-700;
+    @apply transition-all duration-200 ease-in-out;
+    @apply hover:bg-gray-50 hover:border-gray-400;
+    @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2;
+  }
+
+  .filter-chip.active {
+    @apply bg-teal-600 text-white border-teal-600;
+    @apply hover:bg-teal-700 hover:border-teal-700;
+  }
+
+  .word-card {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .word-card:hover {
+    @apply transform -translate-y-1 shadow-lg;
+  }
+
+  .tag-essential, 
+  .tag-detailed {
+    @apply inline-block text-xs font-semibold px-2 py-1 rounded-full;
+    @apply border border-opacity-20 mx-0.5 my-0.5 cursor-help;
+    @apply transition-colors duration-150;
+  }
+
+  .tag-essential:hover,
+  .tag-detailed:hover {
+    @apply opacity-80;
+  }
+
+  .audio-btn {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .audio-btn:hover {
+    @apply scale-105;
+  }
+
+  .audio-btn:active {
+    @apply scale-95;
+  }
 }
 
-.filter-chip:hover {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.filter-chip.active {
-  background-color: #0d9488;
-  color: white;
-  border-color: #0d9488;
-}
-
-.filter-chip.active:hover {
-  background-color: #0f766e;
-  border-color: #0f766e;
-}
-
-/* Word card component styles */
-.word-card {
-  transition: all 0.2s ease-in-out;
-}
-
-.word-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
-
-/* Tag component styles */
-.tag-essential, 
-.tag-detailed {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 9999px;
-  border: 1px solid rgba(0,0,0,0.1);
-  margin: 1px;
-  cursor: help;
-  transition: opacity 0.15s ease;
-}
-
-.tag-essential:hover,
-.tag-detailed:hover {
-  opacity: 0.8;
-}
-
-/* Premium audio button styles */
+/* Custom styles that can't be done with Tailwind */
 .premium-audio {
   position: relative;
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6) !important;
-  border: 2px solid #FFD700 !important;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
 }
 
 .premium-audio::before {
@@ -91,21 +82,9 @@ body {
   font-weight: bold;
 }
 
-/* Audio button general styles */
-.audio-btn {
-  transition: all 0.2s ease-in-out;
-}
-
-.audio-btn:hover {
-  transform: scale(1.05);
-}
-
-.audio-btn:active {
-  transform: scale(0.95);
-}
-
-/* Word forms expandable containers */
-.word-forms-container {
+/* Expandable containers */
+.word-forms-container,
+.relationships-container {
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.3s ease-in-out;
@@ -115,97 +94,23 @@ body {
   max-height: 300px;
 }
 
-.relationships-container {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease-in-out;
-}
-
 .relationships-container.expanded {
   max-height: 200px;
 }
 
-/* Mobile-friendly tooltip */
-#mobile-tooltip {
-  pointer-events: none;
-  z-index: 9999;
-  transition: opacity 0.2s ease-in-out;
-}
-
-/* Scrollbar styling for dictionary panel */
+/* Custom scrollbar */
 .dictionary-panel::-webkit-scrollbar {
   width: 6px;
 }
 
 .dictionary-panel::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  @apply bg-gray-100;
 }
 
 .dictionary-panel::-webkit-scrollbar-thumb {
-  background: #94a3b8;
-  border-radius: 3px;
+  @apply bg-gray-400 rounded-full;
 }
 
 .dictionary-panel::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
-}
-
-/* Loading animation utilities */
-@keyframes pulse-soft {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-.pulse-soft {
-  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Focus states for accessibility */
-.filter-chip:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px #0d9488, 0 0 0 4px rgba(13, 148, 136, 0.2);
-}
-
-button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px #059669, 0 0 0 4px rgba(5, 150, 105, 0.2);
-}
-
-input:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px #0d9488, 0 0 0 4px rgba(13, 148, 136, 0.2);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .word-card {
-    padding: 12px;
-  }
-  
-  .tag-essential,
-  .tag-detailed {
-    font-size: 9px;
-    padding: 1.5px 4px;
-  }
-  
-  .filter-chip {
-    font-size: 11px;
-    padding: 3px 8px;
-  }
-}
-
-/* Print styles */
-@media print {
-  .word-card {
-    break-inside: avoid;
-  }
-  
-  .audio-btn,
-  .filter-chip {
-    display: none;
-  }
+  @apply bg-gray-500;
 }
