@@ -5,7 +5,7 @@
 
 import { useState } from 'react'
 import AudioButton from './AudioButton'
-import { checkPremiumAudio } from '@/lib/audio-utils'
+import { checkPremiumAudio } from '../lib/audio-utils'
 
 export default function WordCard({ word, onAddToDeck, className = '' }) {
   const [showForms, setShowForms] = useState(false)
