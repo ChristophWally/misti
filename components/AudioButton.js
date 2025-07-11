@@ -4,7 +4,7 @@
 // Reusable audio button component for Misti Italian Learning App
 
 import { useState } from 'react'
-import { playAudio } from '@/lib/audio-utils'
+import { playAudio } from '../lib/audio-utils'
 
 export default function AudioButton({ 
   wordId, 
