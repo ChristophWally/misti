@@ -31,7 +31,7 @@ export default function ConjugationModal({
         .from('word_forms')
         .select(`
           *,
-          word_audio_metadata!inner(
+          word_audio_metadata(
             id,
             audio_filename,
             azure_voice_name,
