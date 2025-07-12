@@ -29,20 +29,15 @@ export default function ConjugationModal({
     try {
       const { data, error } = await supabase
         .from('word_forms')
-        .select(`
-          *,
-          word_audio_metadata(
-            id,
-            audio_filename,
-            azure_voice_name,
-            variant_type
-          )
-        `)
+        .select('*')
         .eq('word_id', word.id)
         .eq('form_type', 'conjugation')
         .order('tags')
 
       if (error) throw error
+      
+      console.log('Raw conjugation data:', data)
+      console.log('Found', data?.length || 0, 'conjugations for', word.italian)
       
       // Calculate variants for each conjugation
       const conjugationsWithVariants = []
