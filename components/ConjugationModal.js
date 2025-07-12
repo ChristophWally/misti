@@ -60,7 +60,7 @@ export default function ConjugationModal({
               form_text: variant.form_text,
               form_type: conjugation.form_type,
               form_context: `${conjugation.form_context} (${variant.variant_type})`,
-              translation: this.generateVariantTranslation(conjugation.translation, variant.variant_type),
+              translation: generateVariantTranslation(conjugation.translation, variant.variant_type),
               tags: variant.tags,
               isVariant: true,
               baseConjugationId: conjugation.id,
