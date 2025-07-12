@@ -7,6 +7,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { VariantCalculator } from '../lib/variant-calculator'
 
+// Modified components/WordCard.js integration:
+// Add this to existing WordCard component after existing buttons
+
 export default function ConjugationModal({ 
   isOpen, 
   onClose, 
