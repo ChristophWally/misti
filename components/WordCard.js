@@ -1,21 +1,23 @@
 'use client'
 
 // components/WordCard.js
-// Individual word card component for dictionary display - FIXED TAG SYSTEM + TOOLTIPS
+// Complete WordCard component with conjugation integration added
 
 import { useState, useEffect } from 'react'
 import AudioButton from './AudioButton'
+import ConjugationModal from './ConjugationModal' // NEW IMPORT
 import { checkPremiumAudio } from '../lib/audio-utils'
 
 export default function WordCard({ word, onAddToDeck, className = '' }) {
   const [showForms, setShowForms] = useState(false)
   const [showRelationships, setShowRelationships] = useState(false)
+  const [showConjugations, setShowConjugations] = useState(false) // NEW STATE
   const [tooltip, setTooltip] = useState({ show: false, content: '', x: 0, y: 0 })
 
   // Get audio information
   const { hasPremiumAudio, audioFilename, voiceName } = checkPremiumAudio(word)
 
-  // RESTORED: Mobile-friendly tag tooltip system
+  // Mobile-friendly tag tooltip system
   const handleTagClick = (event) => {
     const tag = event.target.closest('.tag-essential, .tag-detailed')
     if (!tag || !tag.title) return
@@ -55,7 +57,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     }
   }, [])
 
-  // RESTORED: Original tag processing system with proper emojis and three-tier classification
+  // Tag processing system with three-tier classification
   const processTagsForDisplay = (tags, wordType) => {
     const essential = [];
     const detailed = [];
@@ -207,7 +209,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     return { essential, detailed };
   };
 
-  // RESTORED: Original word type colors from main branch
+  // Word type colors
   const getWordTypeColors = (wordType) => {
     const colors = {
       'VERB': {
@@ -251,10 +253,10 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
   const colors = getWordTypeColors(word.word_type)
 
-  // Process tags using restored original system
+  // Process tags using original system
   const processedTags = processTagsForDisplay(word.tags, word.word_type)
 
-  // RESTORED: Original article display for nouns with diamond separators
+  // Article display for nouns with diamond separators
   const renderArticleDisplay = () => {
     if (word.word_type !== 'NOUN' || !word.articles) return null
 
@@ -265,7 +267,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     )
   }
 
-  // RESTORED: Original tag rendering with proper classes and tooltip support
+  // Tag rendering with proper classes and tooltip support
   const renderTags = (tags, type = 'essential') => {
     if (!tags || tags.length === 0) return null
 
@@ -360,9 +362,25 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     )
   }
 
+  // NEW: Render verb-specific features
+  const renderVerbFeatures = () => {
+    if (word.word_type !== 'VERB') return null
+
+    return (
+      <div className="mt-2">
+        <button
+          onClick={() => setShowConjugations(true)}
+          className="text-sm bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700 transition-colors mr-2 btn-sketchy"
+        >
+          📝 Conjugations
+        </button>
+      </div>
+    )
+  }
+
   return (
     <>
-      {/* RESTORED: Mobile-friendly tooltip */}
+      {/* Mobile-friendly tooltip */}
       {tooltip.show && (
         <div
           className="fixed bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 max-w-xs pointer-events-none"
@@ -413,6 +431,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
               {renderTags(processedTags.detailed, 'detailed')}
             </div>
             
+            {/* NEW: Add verb features */}
+            {renderVerbFeatures()}
+            
             {renderWordForms()}
             {renderRelationships()}
           </div>
@@ -425,6 +446,16 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           </button>
         </div>
       </div>
+      
+      {/* NEW: Conjugation Modal */}
+      {word.word_type === 'VERB' && (
+        <ConjugationModal
+          isOpen={showConjugations}
+          onClose={() => setShowConjugations(false)}
+          word={word}
+          userAudioPreference="form-only"
+        />
+      )}
     </>
   )
 }
