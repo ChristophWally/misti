@@ -1,0 +1,9 @@
+table_name,column_name,foreign_table_name,foreign_column_name,constraint_sql
+word_forms,word_id,dictionary,id,ALTER TABLE word_forms ADD CONSTRAINT fk_word_forms_word_id FOREIGN KEY (word_id) REFERENCES dictionary(id) ON DELETE CASCADE;
+word_audio_metadata,word_id,dictionary,id,ALTER TABLE word_audio_metadata ADD CONSTRAINT fk_word_audio_metadata_word_id FOREIGN KEY (word_id) REFERENCES dictionary(id) ON DELETE CASCADE;
+deck_words,word_id,dictionary,id,ALTER TABLE deck_words ADD CONSTRAINT fk_deck_words_word_id FOREIGN KEY (word_id) REFERENCES dictionary(id) ON DELETE CASCADE;
+deck_words,deck_id,decks,id,ALTER TABLE deck_words ADD CONSTRAINT fk_deck_words_deck_id FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE;
+word_relationships,source_word_id,dictionary,id,ALTER TABLE word_relationships ADD CONSTRAINT word_relationships_source_word_id_fkey FOREIGN KEY (source_word_id) REFERENCES dictionary(id) ON DELETE CASCADE;
+word_relationships,target_word_id,dictionary,id,ALTER TABLE word_relationships ADD CONSTRAINT word_relationships_target_word_id_fkey FOREIGN KEY (target_word_id) REFERENCES dictionary(id) ON DELETE CASCADE;
+user_word_progress,deck_id,decks,id,ALTER TABLE user_word_progress ADD CONSTRAINT user_word_progress_deck_id_fkey FOREIGN KEY (deck_id) REFERENCES decks(id) ON DELETE CASCADE;
+word_forms,audio_metadata_id,word_audio_metadata,id,ALTER TABLE word_forms ADD CONSTRAINT word_forms_audio_metadata_id_fkey FOREIGN KEY (audio_metadata_id) REFERENCES word_audio_metadata(id) ON DELETE NO ACTION;
