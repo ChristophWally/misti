@@ -424,3 +424,27 @@ body {
     height: 12px;
   }
 }
+/* Conjugation Modal Gender Styling */
+.gender-variant.male {
+  border-color: #3b82f6 !important;
+}
+
+.gender-variant.male .form-text {
+  color: #3b82f6 !important;
+}
+
+.gender-variant.female {
+  border-color: #ec4899 !important;
+}
+
+.gender-variant.female .form-text {
+  color: #ec4899 !important;
+}
+
+.gender-variant.plural.male {
+  border-color: #f59e0b !important;
+}
+
+.gender-variant.plural.male .form-text {
+  color: #f59e0b !important;
+}
