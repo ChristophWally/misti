@@ -363,20 +363,20 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   }
 
   // NEW: Render verb-specific features
-  const renderVerbFeatures = () => {
-    if (word.word_type !== 'VERB') return null
+const renderVerbFeatures = () => {
+  if (word.word_type !== 'VERB') return null
 
-    return (
-      <div className="mt-2">
-        <button
-          onClick={() => setShowConjugations(true)}
-          className="text-sm bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700 transition-colors mr-2 btn-sketchy"
-        >
-          📝 Conjugations
-        </button>
-      </div>
-    )
-  }
+  return (
+    <div className="mt-2">
+      <button
+        onClick={() => setShowConjugations(true)}
+        className="text-sm bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700 transition-colors mr-2 btn-sketchy"
+      >
+        📝 Conjugations
+      </button>
+    </div>
+  )
+}
 
   return (
     <>
