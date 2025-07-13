@@ -1,29 +1,26 @@
 'use client'
 
 // components/ConjugationModal.js
-// Main conjugation display modal for Italian verbs
+// Final implementation with 4-column layout and gender intelligence
 
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { VariantCalculator } from '../lib/variant-calculator'
-
-// Modified components/WordCard.js integration:
-// Add this to existing WordCard component after existing buttons
+import AudioButton from './AudioButton'
 
 export default function ConjugationModal({ 
   isOpen, 
   onClose, 
-  word, // dictionary entry
+  word, 
   userAudioPreference = 'form-only' 
 }) {
   const [conjugations, setConjugations] = useState([])
-  const [allVariants, setAllVariants] = useState([])
   const [selectedMood, setSelectedMood] = useState('indicativo')
   const [selectedTense, setSelectedTense] = useState('presente')
   const [isLoading, setIsLoading] = useState(false)
   const [audioPreference, setAudioPreference] = useState(userAudioPreference)
+  const [genderSelection, setGenderSelection] = useState('male')
 
-  // Load conjugations and calculate variants
+  // Load conjugations and group by mood/tense
   const loadConjugations = async () => {
     setIsLoading(true)
     try {
@@ -39,46 +36,8 @@ export default function ConjugationModal({
       console.log('Raw conjugation data:', data)
       console.log('Found', data?.length || 0, 'conjugations for', word.italian)
       
-      // Calculate variants for each conjugation
-      const conjugationsWithVariants = []
-      const allCalculatedVariants = []
-      
-      data.forEach(conjugation => {
-        // Add original conjugation
-        conjugationsWithVariants.push({
-          ...conjugation,
-          isVariant: false
-        })
-        
-        // Calculate and add variants
-        const variants = VariantCalculator.calculateAllVariants(word, conjugation)
-        if (variants) {
-          variants.forEach(variant => {
-            const variantConjugation = {
-              id: `${conjugation.id}_${variant.variant_type}`, // Unique ID for variant
-              word_id: conjugation.word_id,
-              form_text: variant.form_text,
-              form_type: conjugation.form_type,
-              form_context: `${conjugation.form_context} (${variant.variant_type})`,
-              translation: generateVariantTranslation(conjugation.translation, variant.variant_type),
-              tags: variant.tags,
-              isVariant: true,
-              baseConjugationId: conjugation.id,
-              variantType: variant.variant_type,
-              patternType: variant.pattern_type,
-              word_audio_metadata: [] // Variants don't have audio yet
-            }
-            
-            conjugationsWithVariants.push(variantConjugation)
-            allCalculatedVariants.push(variantConjugation)
-          })
-        }
-      })
-      
-      // Group by mood and tense
-      const groupedConjugations = groupConjugationsByMoodTense(conjugationsWithVariants)
+      const groupedConjugations = groupConjugationsByMoodTense(data || [])
       setConjugations(groupedConjugations)
-      setAllVariants(allCalculatedVariants)
       
     } catch (error) {
       console.error('Error loading conjugations:', error)
@@ -87,21 +46,7 @@ export default function ConjugationModal({
     }
   }
 
-  // Generate variant translations
-  const generateVariantTranslation = (baseTranslation, variantType) => {
-    switch (variantType) {
-      case 'fem-sing':
-        return baseTranslation.replace(/\(he\)/, '(she)')
-      case 'masc-plur':
-        return baseTranslation.replace(/I |he |she /, 'we ').replace(/\(.*\)/, '(masculine)')
-      case 'fem-plur':
-        return baseTranslation.replace(/I |he |she /, 'we ').replace(/\(.*\)/, '(feminine)')
-      default:
-        return baseTranslation
-    }
-  }
-
-  // Group conjugations into organized structure for display
+  // Group conjugations by mood and tense
   const groupConjugationsByMoodTense = (conjugations) => {
     const grouped = {}
     conjugations.forEach(conj => {
@@ -116,40 +61,69 @@ export default function ConjugationModal({
     return grouped
   }
 
-  // Extract specific tag values from tag array
+  // Extract tag values by category
   const extractTagValue = (tags, category) => {
+    if (!tags) return null
     const categoryMap = {
       mood: ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'],
       tense: ['presente', 'imperfetto', 'passato-prossimo', 'passato-remoto', 'futuro-semplice', 'congiuntivo-presente', 'congiuntivo-imperfetto', 'condizionale-presente'],
+      person: ['prima-persona', 'seconda-persona', 'terza-persona'],
+      number: ['singolare', 'plurale'],
+      pronoun: ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro']
     }
-    return tags?.find(tag => categoryMap[category]?.includes(tag))
+    return tags.find(tag => categoryMap[category]?.includes(tag))
   }
 
-  // Get available moods and tenses
-  const getAvailableOptions = () => {
-    const moods = Object.keys(conjugations)
-    const tenses = selectedMood && conjugations[selectedMood] ? Object.keys(conjugations[selectedMood]) : []
-    return { moods, tenses }
+  // Check if current selection needs gender toggle
+  const needsGenderToggle = () => {
+    if (audioPreference === 'form-only') return false
+    
+    const currentForms = conjugations[selectedMood]?.[selectedTense] || []
+    const isCompoundTense = currentForms.some(form => form.tags?.includes('compound'))
+    const usesEssere = word.tags?.includes('essere-auxiliary')
+    
+    return isCompoundTense && usesEssere
   }
 
-  // Check if tense has irregular forms
-  const getTenseRegularity = (mood, tense) => {
+  // Get pronoun for form
+  const getPronounForForm = (form) => {
+    const pronoun = extractTagValue(form.tags, 'pronoun')
+    const person = extractTagValue(form.tags, 'person')
+    const number = extractTagValue(form.tags, 'number')
+    
+    if (pronoun) return pronoun
+    
+    // Fallback based on person/number
+    if (person === 'prima-persona' && number === 'singolare') return 'io'
+    if (person === 'seconda-persona' && number === 'singolare') return 'tu'
+    if (person === 'terza-persona' && number === 'singolare') return audioPreference === 'with-pronoun' ? (genderSelection === 'male' ? 'lui' : 'lei') : 'lui/lei'
+    if (person === 'prima-persona' && number === 'plurale') return 'noi'
+    if (person === 'seconda-persona' && number === 'plurale') return 'voi'
+    if (person === 'terza-persona' && number === 'plurale') return 'loro'
+    
+    return ''
+  }
+
+  // Check if form is gender variant
+  const isGenderVariant = (form) => {
+    if (audioPreference === 'form-only') return false
+    
+    const isCompound = form.tags?.includes('compound')
+    const usesEssere = word.tags?.includes('essere-auxiliary')
+    const isThirdPerson = form.tags?.includes('terza-persona')
+    
+    return (isCompound && usesEssere) || (audioPreference === 'with-pronoun' && isThirdPerson)
+  }
+
+  // Get regularity indicator
+  const getRegularityIndicator = (mood, tense) => {
     const forms = conjugations[mood]?.[tense] || []
     const hasIrregular = forms.some(form => form.tags?.includes('irregular'))
     const hasRegular = forms.some(form => form.tags?.includes('regular'))
     
-    if (hasIrregular && hasRegular) return 'mixed'
-    if (hasIrregular) return 'irregular'
-    return 'regular'
-  }
-
-  const getRegularityIndicator = (regularity) => {
-    switch (regularity) {
-      case 'regular': return '✅'
-      case 'irregular': return '⚠️'
-      case 'mixed': return '🔄'
-      default: return ''
-    }
+    if (hasIrregular && hasRegular) return '🔄'
+    if (hasIrregular) return '⚠️'
+    return '✅'
   }
 
   useEffect(() => {
@@ -158,7 +132,9 @@ export default function ConjugationModal({
     }
   }, [isOpen, word])
 
-  const { moods, tenses } = getAvailableOptions()
+  const moods = Object.keys(conjugations)
+  const tenses = selectedMood && conjugations[selectedMood] ? Object.keys(conjugations[selectedMood]) : []
+  const currentForms = conjugations[selectedMood]?.[selectedTense] || []
 
   return (
     <>
@@ -184,9 +160,32 @@ export default function ConjugationModal({
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
-            <h2 className="text-lg font-semibold text-white">
-              📝 Conjugations: {word?.italian}
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold text-white">
+                📝 Conjugations: {word?.italian}
+              </h2>
+              {/* Word tags */}
+              <div className="flex gap-2">
+                {word?.tags?.includes('are-conjugation') && (
+                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">🔸 -are</span>
+                )}
+                {word?.tags?.includes('ere-conjugation') && (
+                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">🔹 -ere</span>
+                )}
+                {word?.tags?.includes('ire-conjugation') && (
+                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">🔶 -ire</span>
+                )}
+                {word?.tags?.includes('essere-auxiliary') && (
+                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">🫱 essere</span>
+                )}
+                {word?.tags?.includes('avere-auxiliary') && (
+                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">🤝 avere</span>
+                )}
+                {word?.tags?.includes('irregular-pattern') && (
+                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">⚠️ IRREG</span>
+                )}
+              </div>
+            </div>
             <div className="flex items-center gap-4">
               {/* Audio Preference Toggle */}
               <div className="flex items-center gap-2">
@@ -214,7 +213,7 @@ export default function ConjugationModal({
             </div>
           </div>
 
-          {/* Tense Selection */}
+          {/* Controls */}
           <div className="border-b bg-gray-50 p-4">
             {/* Mood Selection */}
             <div className="mb-4">
@@ -222,21 +221,23 @@ export default function ConjugationModal({
                 Mood (Modo)
               </label>
               <div className="flex flex-wrap gap-2">
-                {moods.map(mood => (
-                  <button
-                    key={mood}
-                    onClick={() => setSelectedMood(mood)}
-                    className={`
-                      px-3 py-1 rounded-md text-sm font-medium transition-colors
-                      ${selectedMood === mood 
-                        ? 'bg-teal-600 text-white' 
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                      }
-                    `}
-                  >
-                    {mood.charAt(0).toUpperCase() + mood.slice(1)}
-                  </button>
-                ))}
+                {['indicativo', 'condizionale', 'congiuntivo', 'imperativo', 'infinito', 'participio', 'gerundio'].map(mood => 
+                  moods.includes(mood) && (
+                    <button
+                      key={mood}
+                      onClick={() => setSelectedMood(mood)}
+                      className={`
+                        px-3 py-1 rounded-md text-sm font-medium transition-colors
+                        ${selectedMood === mood 
+                          ? 'bg-teal-600 text-white' 
+                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }
+                      `}
+                    >
+                      {mood.charAt(0).toUpperCase() + mood.slice(1)}
+                    </button>
+                  )
+                )}
               </div>
             </div>
 
@@ -248,8 +249,7 @@ export default function ConjugationModal({
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {tenses.map(tense => {
-                    const regularity = getTenseRegularity(selectedMood, tense)
-                    const indicator = getRegularityIndicator(regularity)
+                    const indicator = getRegularityIndicator(selectedMood, tense)
                     
                     return (
                       <button
@@ -274,19 +274,111 @@ export default function ConjugationModal({
             )}
           </div>
 
-          {/* Conjugation Display */}
+          {/* Content */}
           <div className="flex-1 overflow-y-auto p-4">
+            {/* Gender Toggle */}
+            {needsGenderToggle() && (
+              <div className="flex justify-center gap-2 mb-4">
+                <button
+                  onClick={() => setGenderSelection('male')}
+                  className={`
+                    w-12 h-12 rounded-lg border-2 flex items-center justify-center text-xl transition-colors
+                    ${genderSelection === 'male' 
+                      ? 'bg-blue-500 text-white border-blue-500' 
+                      : 'bg-white text-blue-500 border-blue-500'
+                    }
+                  `}
+                >
+                  ♂
+                </button>
+                <button
+                  onClick={() => setGenderSelection('female')}
+                  className={`
+                    w-12 h-12 rounded-lg border-2 flex items-center justify-center text-xl transition-colors
+                    ${genderSelection === 'female' 
+                      ? 'bg-pink-500 text-white border-pink-500' 
+                      : 'bg-white text-pink-500 border-pink-500'
+                    }
+                  `}
+                >
+                  ♀
+                </button>
+              </div>
+            )}
+
+            {/* Conjugation Grid */}
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin h-8 w-8 border-2 border-teal-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading conjugations...</p>
               </div>
-            ) : conjugations[selectedMood]?.[selectedTense] ? (
-              <ConjugationGrid
-                conjugations={conjugations[selectedMood][selectedTense]}
-                baseWord={word}
-                audioPreference={audioPreference}
-              />
+            ) : currentForms.length > 0 ? (
+              <div className="space-y-3">
+                {currentForms.map(form => {
+                  const pronoun = getPronounForForm(form)
+                  const isVariant = isGenderVariant(form)
+                  const isPlural = form.tags?.includes('plurale')
+                  const isIrregular = form.tags?.includes('irregular')
+                  
+                  return (
+                    <div
+                      key={form.id}
+                      className={`
+                        border-2 rounded-lg p-3 transition-all duration-200 hover:shadow-md
+                        ${isVariant 
+                          ? genderSelection === 'male' 
+                            ? isPlural ? 'border-yellow-500' : 'border-blue-500'
+                            : 'border-pink-500'
+                          : 'border-teal-500'
+                        }
+                        bg-white hover:transform hover:-translate-y-0.5
+                      `}
+                    >
+                      <div className="grid grid-cols-[60px_120px_1fr_auto] items-center gap-4">
+                        <div className="font-bold text-gray-600 text-lg">
+                          {pronoun}
+                        </div>
+                        <div className={`
+                          font-bold text-lg transition-colors
+                          ${isVariant 
+                            ? genderSelection === 'male' 
+                              ? isPlural ? 'text-yellow-600' : 'text-blue-600'
+                              : 'text-pink-600'
+                            : 'text-teal-600'
+                          }
+                        `}>
+                          {form.form_text}
+                        </div>
+                        <div className="text-gray-600 text-lg">
+                          {form.translation}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isIrregular && (
+                            <span 
+                              className="bg-yellow-200 text-yellow-800 px-1 rounded text-xs"
+                              title="Irregular form"
+                            >
+                              ⚠️
+                            </span>
+                          )}
+                          <AudioButton
+                            wordId={form.id}
+                            italianText={audioPreference === 'with-pronoun' ? `${pronoun} ${form.form_text}` : form.form_text}
+                            audioFilename={form.audio_filename}
+                            size="sm"
+                          />
+                          <button
+                            className="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 transition-colors"
+                            title="Add to deck"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             ) : (
               <div className="text-center py-8">
                 <p className="text-gray-500 mb-4">
@@ -301,67 +393,5 @@ export default function ConjugationModal({
         </div>
       </div>
     </>
-  )
-}
-
-// Simple conjugation grid component (placeholder)
-function ConjugationGrid({ conjugations, baseWord, audioPreference }) {
-  return (
-    <div className="space-y-4">
-      <div className="text-sm text-gray-600 mb-4">
-        Showing {conjugations.length} forms 
-        ({conjugations.filter(c => c.isVariant).length} calculated variants)
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {conjugations.map(conjugation => (
-          <div
-            key={conjugation.id}
-            className={`
-              border rounded-lg p-3 transition-all duration-200 hover:shadow-md
-              ${conjugation.isVariant 
-                ? 'border-blue-300 bg-blue-50' 
-                : 'border-gray-200 bg-white'
-              }
-            `}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h5 className="font-semibold text-base">
-                    {conjugation.form_text}
-                  </h5>
-                  {conjugation.isVariant && (
-                    <span className="text-xs bg-blue-200 text-blue-800 px-1 rounded" title="Calculated variant">
-                      📊
-                    </span>
-                  )}
-                  {conjugation.tags?.includes('irregular') && (
-                    <span className="text-xs bg-orange-200 text-orange-800 px-1 rounded" title="Irregular form">
-                      ⚠️
-                    </span>
-                  )}
-                </div>
-                <p className="text-gray-600 text-sm">
-                  {conjugation.translation}
-                </p>
-                {conjugation.isVariant && (
-                  <p className="text-blue-600 text-xs mt-1">
-                    Variant: {conjugation.variantType} ({conjugation.patternType})
-                  </p>
-                )}
-              </div>
-              
-              <button
-                className="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 transition-colors"
-                title="Add to deck"
-              >
-                +
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   )
 }
