@@ -33,10 +33,16 @@ export default function ConjugationModal({
 
       if (error) throw error
       
-      console.log('Raw conjugation data:', data)
-      console.log('Found', data?.length || 0, 'conjugations for', word.italian)
-      
-      const groupedConjugations = groupConjugationsByMoodTense(data || [])
+console.log('Raw conjugation data:', data)
+console.log('Found', data?.length || 0, 'conjugations for', word.italian)
+
+// Log each form's tags for debugging
+data?.forEach((form, index) => {
+  console.log(`Form ${index}: "${form.form_text}" has tags:`, form.tags)
+})
+
+// Group conjugations by mood and tense for organized display
+const groupedConjugations = groupConjugationsByMoodTense(data || [])
       setConjugations(groupedConjugations)
       
     } catch (error) {
@@ -47,32 +53,42 @@ export default function ConjugationModal({
   }
 
   // Group conjugations by mood and tense
-  const groupConjugationsByMoodTense = (conjugations) => {
-    const grouped = {}
-    conjugations.forEach(conj => {
-      const mood = extractTagValue(conj.tags, 'mood') || 'indicativo'
-      const tense = extractTagValue(conj.tags, 'tense') || 'presente'
-      
-      if (!grouped[mood]) grouped[mood] = {}
-      if (!grouped[mood][tense]) grouped[mood][tense] = []
-      
-      grouped[mood][tense].push(conj)
-    })
-    return grouped
-  }
+const groupConjugationsByMoodTense = (conjugations) => {
+  console.log('groupConjugationsByMoodTense input:', conjugations)
+  
+  const grouped = {}
+  conjugations.forEach((conj, index) => {
+    const mood = extractTagValue(conj.tags, 'mood') || 'indicativo'
+    const tense = extractTagValue(conj.tags, 'tense') || 'presente'
+    
+    console.log(`Form ${index}: "${conj.form_text}" tags:`, conj.tags, '→ mood:', mood, 'tense:', tense)
+    
+    if (!grouped[mood]) grouped[mood] = {}
+    if (!grouped[mood][tense]) grouped[mood][tense] = []
+    
+    grouped[mood][tense].push(conj)
+  })
+  
+  console.log('Final grouped structure:', grouped)
+  return grouped
+}
 
   // Extract tag values by category
-  const extractTagValue = (tags, category) => {
-    if (!tags) return null
-    const categoryMap = {
-      mood: ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'],
-      tense: ['presente', 'imperfetto', 'passato-prossimo', 'passato-remoto', 'futuro-semplice', 'congiuntivo-presente', 'congiuntivo-imperfetto', 'condizionale-presente'],
-      person: ['prima-persona', 'seconda-persona', 'terza-persona'],
-      number: ['singolare', 'plurale'],
-      pronoun: ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro']
-    }
-    return tags.find(tag => categoryMap[category]?.includes(tag))
+const extractTagValue = (tags, category) => {
+  const categoryMap = {
+    mood: ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'],
+    tense: ['presente', 'imperfetto', 'passato-prossimo', 'passato-remoto', 'futuro-semplice', 'congiuntivo-presente', 'congiuntivo-imperfetto', 'condizionale-presente']
   }
+  
+  if (!tags || !Array.isArray(tags)) {
+    console.warn('Invalid tags:', tags)
+    return null
+  }
+  
+  const found = tags.find(tag => categoryMap[category]?.includes(tag))
+  console.log(`extractTagValue(${category}):`, tags, '→', found)
+  return found
+}
 
   // Check if current selection needs gender toggle
   const needsGenderToggle = () => {
