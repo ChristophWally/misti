@@ -591,13 +591,13 @@ function ConjugationRow({
       
       {/* Actions */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button 
-          className={`w-9 h-9 rounded-full ${colors.audio} flex items-center justify-center hover:scale-105 transition-transform`}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </button>
+        <AudioButton
+          wordId={form.id}
+          italianText={audioText}
+          audioFilename={form.audio_filename}
+          size="lg"
+          className={`${colors.audio}`}
+        />
         <button className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-colors">
           +
         </button>
