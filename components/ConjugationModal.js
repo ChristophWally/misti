@@ -75,19 +75,31 @@ const groupConjugationsByMoodTense = (conjugations) => {
 
   // Extract tag values by category
 const extractTagValue = (tags, category) => {
-  const categoryMap = {
-    mood: ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'],
-    tense: ['presente', 'imperfetto', 'passato-prossimo', 'passato-remoto', 'futuro-semplice', 'congiuntivo-presente', 'congiuntivo-imperfetto', 'condizionale-presente']
-  }
-  
   if (!tags || !Array.isArray(tags)) {
     console.warn('Invalid tags:', tags)
     return null
   }
   
-  const found = tags.find(tag => categoryMap[category]?.includes(tag))
-  console.log(`extractTagValue(${category}):`, tags, '→', found)
-  return found
+  if (category === 'mood') {
+    const moodTags = ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio']
+    const found = tags.find(tag => moodTags.includes(tag))
+    return found || null
+  }
+  
+  if (category === 'tense') {
+    const tenseTags = [
+      'presente', 'imperfetto', 'passato-prossimo', 'passato-remoto', 
+      'trapassato-prossimo', 'trapassato-remoto', 'futuro-semplice', 'futuro-anteriore',
+      'congiuntivo-presente', 'congiuntivo-imperfetto', 'congiuntivo-passato', 'congiuntivo-trapassato',
+      'condizionale-presente', 'condizionale-passato',
+      'imperativo-presente', 'infinito-presente', 'infinito-passato', 
+      'participio-presente', 'participio-passato', 'gerundio-presente', 'gerundio-passato'
+    ]
+    const found = tags.find(tag => tenseTags.includes(tag))
+    return found || null
+  }
+  
+  return null
 }
 
   // Check if current selection needs gender toggle
