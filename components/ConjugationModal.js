@@ -1,7 +1,7 @@
 'use client'
 
 // components/ConjugationModal.js
-// Final implementation with 4-column layout and gender intelligence
+// REDESIGNED: Complete new layout matching HTML mockup
 
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
@@ -13,14 +13,62 @@ export default function ConjugationModal({
   word, 
   userAudioPreference = 'form-only' 
 }) {
-  const [conjugations, setConjugations] = useState([])
+  const [conjugations, setConjugations] = useState({})
   const [selectedMood, setSelectedMood] = useState('indicativo')
   const [selectedTense, setSelectedTense] = useState('presente')
   const [isLoading, setIsLoading] = useState(false)
   const [audioPreference, setAudioPreference] = useState(userAudioPreference)
-  const [genderSelection, setGenderSelection] = useState('male')
+  const [selectedGender, setSelectedGender] = useState('male')
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
-  // Load conjugations and group by mood/tense
+  // Extract tag values from tag array
+  const extractTagValue = (tags, category) => {
+    if (!tags || !Array.isArray(tags)) return null
+    
+    if (category === 'mood') {
+      const moodTags = ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio']
+      return tags.find(tag => moodTags.includes(tag)) || null
+    }
+    
+    if (category === 'tense') {
+      const tenseTags = [
+        'presente', 'imperfetto', 'passato-prossimo', 'passato-remoto', 
+        'trapassato-prossimo', 'trapassato-remoto', 'futuro-semplice', 'futuro-anteriore',
+        'congiuntivo-presente', 'congiuntivo-imperfetto', 'congiuntivo-passato', 'congiuntivo-trapassato',
+        'condizionale-presente', 'condizionale-passato',
+        'imperativo-presente', 'infinito-presente', 'infinito-passato', 
+        'participio-presente', 'participio-passato', 'gerundio-presente', 'gerundio-passato',
+        'presente-progressivo'
+      ]
+      return tags.find(tag => tenseTags.includes(tag)) || null
+    }
+    
+    if (category === 'pronoun') {
+      const pronounTags = ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro']
+      return tags.find(tag => pronounTags.includes(tag)) || null
+    }
+    
+    return null
+  }
+
+  // Group conjugations by mood and tense
+  const groupConjugationsByMoodTense = (conjugations) => {
+    const grouped = {}
+    
+    conjugations.forEach((conj) => {
+      const mood = extractTagValue(conj.tags, 'mood') || 'indicativo'
+      const tense = extractTagValue(conj.tags, 'tense') || 'presente'
+      
+      if (!grouped[mood]) grouped[mood] = {}
+      if (!grouped[mood][tense]) grouped[mood][tense] = []
+      
+      grouped[mood][tense].push(conj)
+    })
+    
+    return grouped
+  }
+
+  // Load conjugations for the selected word
   const loadConjugations = async () => {
     setIsLoading(true)
     try {
@@ -33,16 +81,7 @@ export default function ConjugationModal({
 
       if (error) throw error
       
-console.log('Raw conjugation data:', data)
-console.log('Found', data?.length || 0, 'conjugations for', word.italian)
-
-// Log each form's tags for debugging
-data?.forEach((form, index) => {
-  console.log(`Form ${index}: "${form.form_text}" has tags:`, form.tags)
-})
-
-// Group conjugations by mood and tense for organized display
-const groupedConjugations = groupConjugationsByMoodTense(data || [])
+      const groupedConjugations = groupConjugationsByMoodTense(data || [])
       setConjugations(groupedConjugations)
       
     } catch (error) {
@@ -52,114 +91,132 @@ const groupedConjugations = groupConjugationsByMoodTense(data || [])
     }
   }
 
-  // Group conjugations by mood and tense
-const groupConjugationsByMoodTense = (conjugations) => {
-  console.log('groupConjugationsByMoodTense input:', conjugations)
-  
-  const grouped = {}
-  conjugations.forEach((conj, index) => {
-    const mood = extractTagValue(conj.tags, 'mood') || 'indicativo'
-    const tense = extractTagValue(conj.tags, 'tense') || 'presente'
-    
-    console.log(`Form ${index}: "${conj.form_text}" tags:`, conj.tags, '→ mood:', mood, 'tense:', tense)
-    
-    if (!grouped[mood]) grouped[mood] = {}
-    if (!grouped[mood][tense]) grouped[mood][tense] = []
-    
-    grouped[mood][tense].push(conj)
-  })
-  
-  console.log('Final grouped structure:', grouped)
-  return grouped
-}
-
-  // Extract tag values by category
-const extractTagValue = (tags, category) => {
-  if (!tags || !Array.isArray(tags)) {
-    console.warn('Invalid tags:', tags)
-    return null
-  }
-  
-  if (category === 'mood') {
-    const moodTags = ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio']
-    const found = tags.find(tag => moodTags.includes(tag))
-    console.log('Mood search in:', tags, 'found:', found) // Debug line
-    return found || null
-  }
-  
-  if (category === 'tense') {
-    const tenseTags = [
-      'presente', 'imperfetto', 'passato-prossimo', 'passato-remoto', 
-      'trapassato-prossimo', 'trapassato-remoto', 'futuro-semplice', 'futuro-anteriore',
-      'congiuntivo-presente', 'congiuntivo-imperfetto', 'congiuntivo-passato', 'congiuntivo-trapassato',
-      'condizionale-presente', 'condizionale-passato',
-      'imperativo-presente', 'infinito-presente', 'infinito-passato', 
-      'participio-presente', 'participio-passato', 'gerundio-presente', 'gerundio-passato'
-    ]
-    const found = tags.find(tag => tenseTags.includes(tag))
-    console.log('Tense search in:', tags, 'found:', found) // Debug line
-    return found || null
-  }
-  
-  if (category === 'pronoun') {
-    const pronounTags = ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro']
-    const found = tags.find(tag => pronounTags.includes(tag))
-    return found || null
-  }
-  
-  return null
-}
-
-  // Check if current selection needs gender toggle
-  const needsGenderToggle = () => {
-    if (audioPreference === 'form-only') return false
-    
-    const currentForms = conjugations[selectedMood]?.[selectedTense] || []
-    const isCompoundTense = currentForms.some(form => form.tags?.includes('compound'))
-    const usesEssere = word.tags?.includes('essere-auxiliary')
-    
-    return isCompoundTense && usesEssere
+  // Get available mood/tense combinations for dropdown
+  const getAvailableOptions = () => {
+    const options = []
+    Object.keys(conjugations).forEach(mood => {
+      Object.keys(conjugations[mood]).forEach(tense => {
+        const forms = conjugations[mood][tense]
+        const hasIrregular = forms.some(form => form.tags?.includes('irregular'))
+        const hasRegular = forms.some(form => form.tags?.includes('regular'))
+        
+        let regularity = '✅'
+        if (hasIrregular && hasRegular) regularity = '🔄'
+        else if (hasIrregular) regularity = '⚠️'
+        
+        options.push({
+          mood,
+          tense,
+          regularity,
+          count: forms.length,
+          displayMood: mood.charAt(0).toUpperCase() + mood.slice(1),
+          displayTense: tense.replace('-', ' ').split(' ').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ')
+        })
+      })
+    })
+    return options
   }
 
-  // Get pronoun for form
-  const getPronounForForm = (form) => {
+  // Get current forms to display
+  const getCurrentForms = () => {
+    return conjugations[selectedMood]?.[selectedTense] || []
+  }
+
+  // Order forms by pronoun sequence
+  const orderFormsByPronoun = (forms) => {
+    const pronounOrder = ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro']
+    
+    return forms.sort((a, b) => {
+      const aPronoun = extractTagValue(a.tags, 'pronoun')
+      const bPronoun = extractTagValue(b.tags, 'pronoun')
+      
+      const aIndex = aPronoun ? pronounOrder.indexOf(aPronoun) : 999
+      const bIndex = bPronoun ? pronounOrder.indexOf(bPronoun) : 999
+      
+      return aIndex - bIndex
+    })
+  }
+
+  // Handle dropdown selection
+  const handleDropdownSelect = (mood, tense) => {
+    setSelectedMood(mood)
+    setSelectedTense(tense)
+    setDropdownOpen(false)
+  }
+
+  // Toggle audio preference
+  const toggleAudioPreference = () => {
+    setAudioPreference(prev => prev === 'form-only' ? 'with-pronoun' : 'form-only')
+  }
+
+  // Get display text for current selection
+  const getCurrentSelectionText = () => {
+    const options = getAvailableOptions()
+    const current = options.find(opt => opt.mood === selectedMood && opt.tense === selectedTense)
+    return current ? `${current.displayMood} → ${current.displayTense}` : 'Select Conjugation'
+  }
+
+  // Check if compound tense
+  const isCompoundTense = () => {
+    const currentForms = getCurrentForms()
+    return currentForms.some(form => form.tags?.includes('compound'))
+  }
+
+  // Get pronoun display text
+  const getPronounDisplay = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
-    const person = extractTagValue(form.tags, 'person')
-    const number = extractTagValue(form.tags, 'number')
     
-    if (pronoun) return pronoun
+    if (audioPreference === 'with-pronoun' && pronoun === 'lui') {
+      return selectedGender === 'male' ? 'lui' : 'lei'
+    }
+    if (audioPreference === 'with-pronoun' && pronoun === 'lei') {
+      return selectedGender === 'male' ? 'lui' : 'lei'
+    }
     
-    // Fallback based on person/number
-    if (person === 'prima-persona' && number === 'singolare') return 'io'
-    if (person === 'seconda-persona' && number === 'singolare') return 'tu'
-    if (person === 'terza-persona' && number === 'singolare') return audioPreference === 'with-pronoun' ? (genderSelection === 'male' ? 'lui' : 'lei') : 'lui/lei'
-    if (person === 'prima-persona' && number === 'plurale') return 'noi'
-    if (person === 'seconda-persona' && number === 'plurale') return 'voi'
-    if (person === 'terza-persona' && number === 'plurale') return 'loro'
+    // Handle lui/lei cases
+    if (pronoun === 'lui' || pronoun === 'lei') {
+      return audioPreference === 'form-only' ? 'lui/lei' : pronoun
+    }
     
-    return ''
+    return pronoun || ''
   }
 
-  // Check if form is gender variant
-  const isGenderVariant = (form) => {
-    if (audioPreference === 'form-only') return false
-    
-    const isCompound = form.tags?.includes('compound')
-    const usesEssere = word.tags?.includes('essere-auxiliary')
-    const isThirdPerson = form.tags?.includes('terza-persona')
-    
-    return (isCompound && usesEssere) || (audioPreference === 'with-pronoun' && isThirdPerson)
+  // Get audio text based on preference
+  const getAudioText = (form) => {
+    if (audioPreference === 'form-only') {
+      return form.form_text
+    } else {
+      const pronoun = getPronounDisplay(form)
+      return `${pronoun} ${form.form_text}`
+    }
   }
 
-  // Get regularity indicator
-  const getRegularityIndicator = (mood, tense) => {
-    const forms = conjugations[mood]?.[tense] || []
-    const hasIrregular = forms.some(form => form.tags?.includes('irregular'))
-    const hasRegular = forms.some(form => form.tags?.includes('regular'))
+  // Group forms into singular/plural
+  const groupFormsBySingularPlural = (forms) => {
+    const orderedForms = orderFormsByPronoun(forms)
     
-    if (hasIrregular && hasRegular) return '🔄'
-    if (hasIrregular) return '⚠️'
-    return '✅'
+    const singular = orderedForms.filter(form => 
+      form.tags?.includes('singolare') || 
+      extractTagValue(form.tags, 'pronoun') === 'io' ||
+      extractTagValue(form.tags, 'pronoun') === 'tu' ||
+      extractTagValue(form.tags, 'pronoun') === 'lui' ||
+      extractTagValue(form.tags, 'pronoun') === 'lei'
+    )
+    
+    const plural = orderedForms.filter(form => 
+      form.tags?.includes('plurale') ||
+      extractTagValue(form.tags, 'pronoun') === 'noi' ||
+      extractTagValue(form.tags, 'pronoun') === 'voi' ||
+      extractTagValue(form.tags, 'pronoun') === 'loro'
+    )
+    
+    const other = orderedForms.filter(form => 
+      !singular.includes(form) && !plural.includes(form)
+    )
+    
+    return { singular, plural, other }
   }
 
   useEffect(() => {
@@ -168,9 +225,20 @@ const extractTagValue = (tags, category) => {
     }
   }, [isOpen, word])
 
-  const moods = Object.keys(conjugations)
-  const tenses = selectedMood && conjugations[selectedMood] ? Object.keys(conjugations[selectedMood]) : []
-  const currentForms = conjugations[selectedMood]?.[selectedTense] || []
+  useEffect(() => {
+    // Set default tense when mood changes
+    if (conjugations[selectedMood]) {
+      const availableTenses = Object.keys(conjugations[selectedMood])
+      if (!availableTenses.includes(selectedTense)) {
+        setSelectedTense(availableTenses[0] || 'presente')
+      }
+    }
+  }, [selectedMood, conjugations])
+
+  const availableOptions = getAvailableOptions()
+  const currentForms = getCurrentForms()
+  const { singular, plural, other } = groupFormsBySingularPlural(currentForms)
+  const compound = isCompoundTense()
 
   return (
     <>
@@ -196,224 +264,215 @@ const extractTagValue = (tags, category) => {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-white">
                 📝 Conjugations: {word?.italian}
               </h2>
-              {/* Word tags */}
-              <div className="flex gap-2">
+              {/* Word Tags */}
+              <div className="flex gap-1 ml-2">
                 {word?.tags?.includes('are-conjugation') && (
-                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">🔸 -are</span>
-                )}
-                {word?.tags?.includes('ere-conjugation') && (
-                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">🔹 -ere</span>
-                )}
-                {word?.tags?.includes('ire-conjugation') && (
-                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">🔶 -ire</span>
-                )}
-                {word?.tags?.includes('essere-auxiliary') && (
-                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">🫱 essere</span>
+                  <span className="text-sm bg-white bg-opacity-20 text-white px-2 py-1 rounded-full font-semibold">
+                    🔸 -are
+                  </span>
                 )}
                 {word?.tags?.includes('avere-auxiliary') && (
-                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">🤝 avere</span>
+                  <span className="text-sm bg-white bg-opacity-20 text-white px-2 py-1 rounded-full font-semibold">
+                    🤝 avere
+                  </span>
                 )}
-                {word?.tags?.includes('irregular-pattern') && (
-                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-xs">⚠️ IRREG</span>
+                {word?.tags?.includes('transitive-verb') && (
+                  <span className="text-sm bg-white bg-opacity-20 text-white px-2 py-1 rounded-full font-semibold">
+                    ➡️ trans
+                  </span>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              {/* Audio Preference Toggle */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-white">Audio:</span>
+            <button 
+              onClick={onClose}
+              className="text-white hover:text-cyan-200 text-xl"
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Controls */}
+          <div className="p-4 border-b bg-gray-50 flex gap-5">
+            {/* Left: Dropdown */}
+            <div className="flex-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Select Conjugation
+              </label>
+              <div className="relative">
+                <div 
+                  className="p-3 border-2 border-teal-600 bg-white rounded-lg font-semibold text-teal-600 cursor-pointer flex items-center justify-between min-h-12"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
+                  <span>{getCurrentSelectionText()}</span>
+                  <span className={`transform transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}>
+                    ▼
+                  </span>
+                </div>
+                
+                {dropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-80 overflow-y-auto">
+                    {/* Group by mood */}
+                    {Object.keys(conjugations).map(mood => (
+                      <div key={mood} className="border-b border-gray-100 last:border-b-0">
+                        <div className="px-4 py-2 bg-gray-50 font-semibold text-sm text-gray-700 border-b border-gray-200">
+                          {mood.charAt(0).toUpperCase() + mood.slice(1)}
+                        </div>
+                        {Object.keys(conjugations[mood]).map(tense => {
+                          const option = availableOptions.find(opt => opt.mood === mood && opt.tense === tense)
+                          const isSelected = mood === selectedMood && tense === selectedTense
+                          
+                          return (
+                            <div
+                              key={`${mood}-${tense}`}
+                              className={`px-5 py-2 cursor-pointer text-sm flex items-center gap-2 hover:bg-gray-50 ${
+                                isSelected ? 'bg-green-50 text-green-700 font-semibold' : 'text-gray-600'
+                              }`}
+                              onClick={() => handleDropdownSelect(mood, tense)}
+                            >
+                              <span>{option?.regularity}</span>
+                              <span>{option?.displayTense}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Audio Controls */}
+            <div className="w-48 flex flex-col gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Audio Type
+                </label>
                 <button
-                  onClick={() => setAudioPreference(audioPreference === 'form-only' ? 'with-pronoun' : 'form-only')}
-                  className={`
-                    px-3 py-1 rounded text-sm transition-colors
-                    ${audioPreference === 'form-only' 
-                      ? 'bg-white text-teal-600' 
-                      : 'bg-teal-700 text-white border border-white'
-                    }
-                  `}
+                  onClick={toggleAudioPreference}
+                  className={`w-full p-2 border border-gray-300 rounded-md text-sm font-medium transition-colors ${
+                    audioPreference === 'form-only' 
+                      ? 'bg-teal-600 text-white' 
+                      : 'bg-teal-600 text-white'
+                  }`}
                 >
                   {audioPreference === 'form-only' ? '📝 Form Only' : '👤 With Pronoun'}
                 </button>
               </div>
-              
-              <button 
-                onClick={onClose}
-                className="text-white hover:text-cyan-200 text-xl"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
 
-          {/* Controls */}
-          <div className="border-b bg-gray-50 p-4">
-            {/* Mood Selection */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mood (Modo)
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {['indicativo', 'condizionale', 'congiuntivo', 'imperativo', 'infinito', 'participio', 'gerundio'].map(mood => 
-                  moods.includes(mood) && (
+              {/* Gender Controls */}
+              {audioPreference === 'with-pronoun' && (compound || currentForms.some(f => ['lui', 'lei'].includes(extractTagValue(f.tags, 'pronoun')))) && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    Gender
+                  </label>
+                  <div className="flex gap-2 justify-center">
                     <button
-                      key={mood}
-                      onClick={() => setSelectedMood(mood)}
-                      className={`
-                        px-3 py-1 rounded-md text-sm font-medium transition-colors
-                        ${selectedMood === mood 
-                          ? 'bg-teal-600 text-white' 
-                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                        }
-                      `}
+                      onClick={() => setSelectedGender('male')}
+                      className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
+                        selectedGender === 'male' 
+                          ? 'border-blue-500 bg-blue-500 text-white' 
+                          : 'border-blue-500 text-blue-500 bg-white'
+                      }`}
                     >
-                      {mood.charAt(0).toUpperCase() + mood.slice(1)}
+                      ♂
                     </button>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Tense Selection */}
-            {selectedMood && tenses.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tense (Tempo)
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {tenses.map(tense => {
-                    const indicator = getRegularityIndicator(selectedMood, tense)
-                    
-                    return (
-                      <button
-                        key={tense}
-                        onClick={() => setSelectedTense(tense)}
-                        className={`
-                          px-3 py-1 rounded-md text-sm font-medium transition-colors
-                          flex items-center gap-1
-                          ${selectedTense === tense 
-                            ? 'bg-teal-600 text-white' 
-                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                          }
-                        `}
-                      >
-                        <span>{indicator}</span>
-                        <span>{tense.replace('-', ' ')}</span>
-                      </button>
-                    )
-                  })}
+                    <button
+                      onClick={() => setSelectedGender('female')}
+                      className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
+                        selectedGender === 'female' 
+                          ? 'border-pink-500 bg-pink-500 text-white' 
+                          : 'border-pink-500 text-pink-500 bg-white'
+                      }`}
+                    >
+                      ♀
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {/* Gender Toggle */}
-            {needsGenderToggle() && (
-              <div className="flex justify-center gap-2 mb-4">
-                <button
-                  onClick={() => setGenderSelection('male')}
-                  className={`
-                    w-12 h-12 rounded-lg border-2 flex items-center justify-center text-xl transition-colors
-                    ${genderSelection === 'male' 
-                      ? 'bg-blue-500 text-white border-blue-500' 
-                      : 'bg-white text-blue-500 border-blue-500'
-                    }
-                  `}
-                >
-                  ♂
-                </button>
-                <button
-                  onClick={() => setGenderSelection('female')}
-                  className={`
-                    w-12 h-12 rounded-lg border-2 flex items-center justify-center text-xl transition-colors
-                    ${genderSelection === 'female' 
-                      ? 'bg-pink-500 text-white border-pink-500' 
-                      : 'bg-white text-pink-500 border-pink-500'
-                    }
-                  `}
-                >
-                  ♀
-                </button>
-              </div>
-            )}
-
-            {/* Conjugation Grid */}
+          <div className="flex-1 overflow-y-auto p-5">
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin h-8 w-8 border-2 border-teal-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading conjugations...</p>
               </div>
             ) : currentForms.length > 0 ? (
-              <div className="space-y-3">
-                {currentForms.map(form => {
-                  const pronoun = getPronounForForm(form)
-                  const isVariant = isGenderVariant(form)
-                  const isPlural = form.tags?.includes('plurale')
-                  const isIrregular = form.tags?.includes('irregular')
-                  
-                  return (
-                    <div
-                      key={form.id}
-                      className={`
-                        border-2 rounded-lg p-3 transition-all duration-200 hover:shadow-md
-                        ${isVariant 
-                          ? genderSelection === 'male' 
-                            ? isPlural ? 'border-yellow-500' : 'border-blue-500'
-                            : 'border-pink-500'
-                          : 'border-teal-500'
-                        }
-                        bg-white hover:transform hover:-translate-y-0.5
-                      `}
-                    >
-                      <div className="grid grid-cols-[60px_120px_1fr_auto] items-center gap-4">
-                        <div className="font-bold text-gray-600 text-lg">
-                          {pronoun}
-                        </div>
-                        <div className={`
-                          font-bold text-lg transition-colors
-                          ${isVariant 
-                            ? genderSelection === 'male' 
-                              ? isPlural ? 'text-yellow-600' : 'text-blue-600'
-                              : 'text-pink-600'
-                            : 'text-teal-600'
-                          }
-                        `}>
-                          {form.form_text}
-                        </div>
-                        <div className="text-gray-600 text-lg">
-                          {form.translation}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isIrregular && (
-                            <span 
-                              className="bg-yellow-200 text-yellow-800 px-1 rounded text-xs"
-                              title="Irregular form"
-                            >
-                              ⚠️
-                            </span>
-                          )}
-                          <AudioButton
-                            wordId={form.id}
-                            italianText={audioPreference === 'with-pronoun' ? `${pronoun} ${form.form_text}` : form.form_text}
-                            audioFilename={form.audio_filename}
-                            size="sm"
-                          />
-                          <button
-                            className="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700 transition-colors"
-                            title="Add to deck"
-                          >
-                            +
-                          </button>
-                        </div>
+              <div className="space-y-1">
+                {/* Singular Section */}
+                {singular.length > 0 && (
+                  <>
+                    <div className="text-center font-semibold text-gray-700 text-base mb-3 relative">
+                      <span className="bg-white px-4">Singular</span>
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
                       </div>
                     </div>
-                  )
-                })}
+                    {singular.map(form => (
+                      <ConjugationRow
+                        key={form.id}
+                        form={form}
+                        audioText={getAudioText(form)}
+                        pronounDisplay={getPronounDisplay(form)}
+                        isCompound={compound}
+                        selectedGender={selectedGender}
+                        audioPreference={audioPreference}
+                      />
+                    ))}
+                  </>
+                )}
+
+                {/* Plural Section */}
+                {plural.length > 0 && (
+                  <>
+                    <div className="text-center font-semibold text-gray-700 text-base mb-3 mt-5 relative">
+                      <span className="bg-white px-4">Plural</span>
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                      </div>
+                    </div>
+                    {plural.map(form => (
+                      <ConjugationRow
+                        key={form.id}
+                        form={form}
+                        audioText={getAudioText(form)}
+                        pronounDisplay={getPronounDisplay(form)}
+                        isCompound={compound}
+                        selectedGender={selectedGender}
+                        audioPreference={audioPreference}
+                      />
+                    ))}
+                  </>
+                )}
+
+                {/* Other Forms */}
+                {other.length > 0 && (
+                  <>
+                    <div className="text-center font-semibold text-gray-700 text-base mb-3 mt-5 relative">
+                      <span className="bg-white px-4">Other Forms</span>
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                      </div>
+                    </div>
+                    {other.map(form => (
+                      <ConjugationRow
+                        key={form.id}
+                        form={form}
+                        audioText={getAudioText(form)}
+                        pronounDisplay={''}
+                        isCompound={compound}
+                        selectedGender={selectedGender}
+                        audioPreference={audioPreference}
+                      />
+                    ))}
+                  </>
+                )}
               </div>
             ) : (
               <div className="text-center py-8">
@@ -429,5 +488,88 @@ const extractTagValue = (tags, category) => {
         </div>
       </div>
     </>
+  )
+}
+
+// Individual conjugation row component
+function ConjugationRow({ 
+  form, 
+  audioText, 
+  pronounDisplay, 
+  isCompound, 
+  selectedGender, 
+  audioPreference 
+}) {
+  const isIrregular = form.tags?.includes('irregular')
+  const isPlural = form.tags?.includes('plurale') || ['noi', 'voi', 'loro'].includes(pronounDisplay)
+  
+  // Determine colors based on compound + gender
+  const getColors = () => {
+    if (audioPreference === 'form-only') {
+      return {
+        form: 'text-teal-600',
+        audio: 'bg-emerald-600'
+      }
+    }
+    
+    if (isCompound) {
+      if (selectedGender === 'male') {
+        return {
+          form: isPlural ? 'text-amber-500' : 'text-blue-500',
+          audio: isPlural ? 'bg-amber-500' : 'bg-blue-500'
+        }
+      } else {
+        return {
+          form: 'text-pink-500',
+          audio: 'bg-pink-500'
+        }
+      }
+    } else if (['lui', 'lei'].includes(pronounDisplay.split('/')[0])) {
+      return {
+        form: selectedGender === 'male' ? 'text-blue-500' : 'text-pink-500',
+        audio: selectedGender === 'male' ? 'bg-blue-500' : 'bg-pink-500'
+      }
+    }
+    
+    return {
+      form: 'text-teal-600',
+      audio: 'bg-emerald-600'
+    }
+  }
+
+  const colors = getColors()
+
+  return (
+    <div className="flex items-center py-2 px-3 rounded-md hover:bg-gray-50 min-h-12">
+      {/* Pronoun */}
+      <div className="w-16 flex-shrink-0 font-bold text-gray-600 text-lg">
+        {pronounDisplay}
+      </div>
+      
+      {/* Form */}
+      <div className={`w-32 flex-shrink-0 font-bold text-lg ${colors.form} flex items-center gap-1`}>
+        {isIrregular && <span className="text-amber-500 text-base">⚠️</span>}
+        {form.form_text}
+      </div>
+      
+      {/* Translation */}
+      <div className="flex-1 text-gray-600 text-lg mr-4">
+        {form.translation}
+      </div>
+      
+      {/* Actions */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button 
+          className={`w-9 h-9 rounded-full ${colors.audio} flex items-center justify-center hover:scale-105 transition-transform`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </button>
+        <button className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-colors">
+          +
+        </button>
+      </div>
+    </div>
   )
 }
