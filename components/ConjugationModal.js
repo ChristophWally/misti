@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import AudioButton from './AudioButton'
+import SectionHeading from './SectionHeading'
 
 export default function ConjugationModal({ 
   isOpen, 
@@ -295,7 +296,7 @@ const loadConjugations = async () => {
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
+          <div className="flex items-center justify-between p-4 border-b bg-gradient-to-br from-teal-500 to-cyan-600">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-white">
                 📝 Conjugations: {word?.italian}
@@ -440,12 +441,7 @@ const loadConjugations = async () => {
                 {/* Singular Section */}
                 {singular.length > 0 && (
                   <>
-                    <div className="text-center font-semibold text-gray-700 text-base mb-3 relative">
-                      <span className="bg-white px-4">Singular</span>
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300"></div>
-                      </div>
-                    </div>
+                    <SectionHeading>Singular</SectionHeading>
                     {singular.map(form => (
                       <ConjugationRow
                         key={form.id}
@@ -463,12 +459,7 @@ const loadConjugations = async () => {
                 {/* Plural Section */}
                 {plural.length > 0 && (
                   <>
-                    <div className="text-center font-semibold text-gray-700 text-base mb-3 mt-5 relative">
-                      <span className="bg-white px-4">Plural</span>
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300"></div>
-                      </div>
-                    </div>
+                    <SectionHeading className="mt-5">Plural</SectionHeading>
                     {plural.map(form => (
                       <ConjugationRow
                         key={form.id}
@@ -486,12 +477,7 @@ const loadConjugations = async () => {
                 {/* Other Forms */}
                 {other.length > 0 && (
                   <>
-                    <div className="text-center font-semibold text-gray-700 text-base mb-3 mt-5 relative">
-                      <span className="bg-white px-4">Other Forms</span>
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300"></div>
-                      </div>
-                    </div>
+                    <SectionHeading className="mt-5">Other Forms</SectionHeading>
                     {other.map(form => (
                       <ConjugationRow
                         key={form.id}
@@ -572,7 +558,7 @@ function ConjugationRow({
   const colors = getColors()
 
   return (
-    <div className="flex items-center py-2 px-3 rounded-md hover:bg-gray-50 min-h-12">
+    <div className="flex items-center py-2 px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-colors min-h-12">
       {/* Pronoun */}
       <div className="w-16 flex-shrink-0 font-bold text-gray-600 text-lg">
         {pronounDisplay}
