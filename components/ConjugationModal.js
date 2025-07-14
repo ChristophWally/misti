@@ -83,6 +83,7 @@ const extractTagValue = (tags, category) => {
   if (category === 'mood') {
     const moodTags = ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio']
     const found = tags.find(tag => moodTags.includes(tag))
+    console.log('Mood search in:', tags, 'found:', found) // Debug line
     return found || null
   }
   
@@ -96,6 +97,13 @@ const extractTagValue = (tags, category) => {
       'participio-presente', 'participio-passato', 'gerundio-presente', 'gerundio-passato'
     ]
     const found = tags.find(tag => tenseTags.includes(tag))
+    console.log('Tense search in:', tags, 'found:', found) // Debug line
+    return found || null
+  }
+  
+  if (category === 'pronoun') {
+    const pronounTags = ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro']
+    const found = tags.find(tag => pronounTags.includes(tag))
     return found || null
   }
   
