@@ -558,25 +558,25 @@ function ConjugationRow({
   const colors = getColors()
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center py-2 px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-colors">
+    <div className="flex flex-wrap items-start sm:items-center py-2 px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-colors">
       {/* Pronoun */}
-      <div className="min-w-[4rem] font-bold text-gray-600 text-lg">
+      <div className="min-w-[4rem] font-bold text-gray-600 text-lg mr-2">
         {pronounDisplay}
       </div>
 
       {/* Form */}
-      <div className={`min-w-[7rem] font-bold text-lg ${colors.form} flex items-center gap-1`}>
+      <div className={`min-w-[7rem] font-bold text-lg ${colors.form} flex items-center gap-1 mr-2`}>
         {form.form_text}
         {isIrregular && <span className="text-amber-500 text-base">⚠️</span>}
       </div>
 
       {/* Translation */}
-      <div className="w-full sm:flex-1 text-gray-600 text-lg mt-1 sm:mt-0 sm:mx-4">
+      <div className="basis-full sm:basis-auto sm:flex-1 text-gray-600 text-lg mt-1 sm:mt-0 sm:mx-4">
         {form.translation}
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 mt-2 sm:mt-0 self-end sm:self-auto">
+      <div className="flex gap-2 mt-2 sm:mt-0 self-end sm:self-auto ml-auto">
         <AudioButton
           wordId={form.id}
           italianText={audioText}
