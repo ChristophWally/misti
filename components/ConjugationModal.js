@@ -72,12 +72,12 @@ export default function ConjugationModal({
 const loadConjugations = async () => {
   setIsLoading(true)
   try {
+    // FIXED QUERY: Get audio data and flatten it
     const { data, error } = await supabase
       .from('word_forms')
       .select(`
         *,
-        word_audio_metadata(
-          id,
+        word_audio_metadata!audio_metadata_id(
           audio_filename,
           azure_voice_name,
           duration_seconds
@@ -87,19 +87,21 @@ const loadConjugations = async () => {
       .eq('form_type', 'conjugation')
       .order('tags')
 
-    // ADD THIS DEBUGGING:
-    console.log('=== CONJUGATION MODAL DEBUG ===')
-    console.log('Raw conjugation data:', data)
-    console.log('Data length:', data?.length)
-    if (data?.length > 0) {
-      console.log('First conjugation:', data[0])
-      console.log('First audio metadata:', data[0].word_audio_metadata)
-    }
-
     if (error) throw error
     
-    const groupedConjugations = groupConjugationsByMoodTense(data)
+    // CRITICAL FIX: Flatten audio data to restore original structure
+    const processedData = (data || []).map(form => ({
+      ...form,
+      // Extract audio_filename for backward compatibility
+      audio_filename: form.word_audio_metadata?.audio_filename || null,
+      azure_voice_name: form.word_audio_metadata?.azure_voice_name || null
+    }))
+    
+    console.log('FIXED: Audio data flattened:', processedData[0])
+    
+    const groupedConjugations = groupConjugationsByMoodTense(processedData)
     setConjugations(groupedConjugations)
+    
   } catch (error) {
     console.error('Error loading conjugations:', error)
   } finally {
