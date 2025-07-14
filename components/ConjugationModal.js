@@ -566,12 +566,12 @@ function ConjugationRow({
       
       {/* Form */}
       <div className={`w-32 flex-shrink-0 font-bold text-lg ${colors.form} flex items-center gap-1`}>
-        {isIrregular && <span className="text-amber-500 text-base">⚠️</span>}
         {form.form_text}
+        {isIrregular && <span className="text-amber-500 text-base">⚠️</span>}
       </div>
-      
+
       {/* Translation */}
-      <div className="flex-1 text-gray-600 text-lg mr-4">
+      <div className="flex-1 text-gray-600 text-lg mr-4 ml-4">
         {form.translation}
       </div>
       
