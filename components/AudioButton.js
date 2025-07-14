@@ -1,7 +1,8 @@
 'use client'
 
 // components/AudioButton.js
-// Reusable audio button component for Misti Italian Learning App
+// Enhanced audio button component for Misti Italian Learning App
+// Supports both dictionary words and conjugation forms with dual audio preferences
 
 import { useState } from 'react'
 import { playAudio } from '../lib/audio-utils'
@@ -10,6 +11,9 @@ export default function AudioButton({
   wordId, 
   italianText, 
   audioFilename = null,
+  audioMetadata = null, // NEW: For conjugation forms with word_audio_metadata array
+  audioPreference = 'form-only', // NEW: 'form-only' or 'with-pronoun'
+  pronounContext = null, // NEW: Pronoun context (io, tu, lui, etc.)
   size = 'md',
   className = '',
   title = null
@@ -17,32 +21,100 @@ export default function AudioButton({
   const [isPlaying, setIsPlaying] = useState(false)
   const [isError, setIsError] = useState(false)
 
-  // Determine if this is premium audio
-  const hasPremiumAudio = audioFilename && 
-                         audioFilename !== 'null' && 
-                         audioFilename !== null && 
-                         audioFilename.trim() !== '' &&
-                         typeof audioFilename === 'string'
-
-  // Size classes
-  const sizeClasses = {
-    sm: 'w-6 h-6',
-    md: 'w-7 h-7', 
-    lg: 'w-8 h-8',
-    xl: 'w-10 h-10'
+  // Enhanced audio detection for both dictionary and conjugation data
+  const getAudioInfo = () => {
+    // Handle conjugation data (word_audio_metadata array from join query)
+    if (audioMetadata && Array.isArray(audioMetadata) && audioMetadata.length > 0) {
+      console.log('🎵 Conjugation audio metadata:', audioMetadata)
+      
+      // Try to find preferred variant (form-only or with-pronoun)
+      const preferredAudio = audioMetadata.find(meta => 
+        meta.variant_type === audioPreference
+      )
+      
+      if (preferredAudio) {
+        console.log(`🎯 Found preferred audio variant: ${audioPreference}`)
+        return {
+          hasPremiumAudio: true,
+          audioFilename: preferredAudio.audio_filename,
+          voiceName: preferredAudio.azure_voice_name,
+          variant: preferredAudio.variant_type
+        }
+      }
+      
+      // Fallback to any available audio variant
+      const fallbackAudio = audioMetadata[0]
+      if (fallbackAudio) {
+        console.log(`🔄 Using fallback audio variant: ${fallbackAudio.variant_type}`)
+        return {
+          hasPremiumAudio: true,
+          audioFilename: fallbackAudio.audio_filename,
+          voiceName: fallbackAudio.azure_voice_name,
+          variant: fallbackAudio.variant_type
+        }
+      }
+    }
+    
+    // Handle dictionary word data (original format - single audio file)
+    if (audioFilename) {
+      console.log('📚 Dictionary word audio:', audioFilename)
+      return {
+        hasPremiumAudio: true,
+        audioFilename: audioFilename,
+        voiceName: 'Premium',
+        variant: 'base-word'
+      }
+    }
+    
+    // No premium audio available
+    console.log('🔊 No premium audio, will use TTS fallback')
+    return {
+      hasPremiumAudio: false,
+      audioFilename: null,
+      voiceName: null,
+      variant: null
+    }
   }
 
-  // Handle audio playback
+  const { hasPremiumAudio, audioFilename: actualAudioFile, voiceName, variant } = getAudioInfo()
+
+  // Generate playback text based on audio preference and available context
+  const getPlaybackText = () => {
+    if (audioPreference === 'with-pronoun' && pronounContext) {
+      // Use pronoun + form for with-pronoun preference
+      return `${pronounContext} ${italianText}`
+    }
+    
+    // Default to form-only text
+    return italianText
+  }
+
+  // Handle audio playback with enhanced logging
   const handlePlay = async () => {
     if (isPlaying) return
+
+    console.log('🎵 AudioButton play clicked:', {
+      wordId,
+      italianText,
+      audioPreference,
+      pronounContext,
+      hasPremiumAudio,
+      actualAudioFile,
+      variant
+    })
 
     setIsPlaying(true)
     setIsError(false)
 
     try {
-      await playAudio(wordId, italianText, audioFilename)
+      const playbackText = getPlaybackText()
+      console.log(`🔊 Playing audio for: "${playbackText}"`)
+      
+      await playAudio(wordId, playbackText, actualAudioFile)
+      
+      console.log('✅ Audio playback completed successfully')
     } catch (error) {
-      console.error('Audio playback failed:', error)
+      console.error('❌ Audio playback failed:', error)
       setIsError(true)
       
       // Show error state briefly, then reset
@@ -57,8 +129,44 @@ export default function AudioButton({
     }
   }
 
-  // Generate title text
-  const buttonTitle = title || (hasPremiumAudio ? 'Play premium audio' : 'Play pronunciation')
+  // Generate enhanced title text with variant information
+  const getButtonTitle = () => {
+    if (title) return title
+    
+    const playbackText = getPlaybackText()
+    
+    if (hasPremiumAudio) {
+      const variantText = variant ? ` (${variant})` : ''
+      return `Play premium audio: "${playbackText}" (${voiceName}${variantText})`
+    }
+    
+    return `Play pronunciation: "${playbackText}" (Text-to-Speech)`
+  }
+
+  const buttonTitle = getButtonTitle()
+
+  // Size classes
+  const sizeClasses = {
+    sm: 'w-6 h-6',
+    md: 'w-7 h-7', 
+    lg: 'w-8 h-8',
+    xl: 'w-10 h-10'
+  }
+
+  // Enhanced premium audio styling
+  const getPremiumStyling = () => {
+    if (!hasPremiumAudio) return ''
+    
+    // Different styling based on variant type
+    switch (variant) {
+      case 'with-pronoun':
+        return 'premium-audio border-2 border-blue-400 shadow-lg' // Blue for with-pronoun
+      case 'form-only':
+        return 'premium-audio border-2 border-yellow-400 shadow-lg' // Gold for form-only
+      default:
+        return 'premium-audio border-2 border-yellow-400 shadow-lg' // Default gold
+    }
+  }
 
   return (
     <button
@@ -71,7 +179,7 @@ export default function AudioButton({
         flex items-center justify-center 
         transition-all duration-200 
         flex-shrink-0
-        ${hasPremiumAudio ? 'premium-audio border-2 border-yellow-400 shadow-lg' : ''}
+        ${getPremiumStyling()}
         ${isPlaying ? 'opacity-75 cursor-not-allowed' : 'hover:scale-105'}
         ${isError ? 'bg-red-500 hover:bg-red-600' : ''}
         ${className}
@@ -112,27 +220,31 @@ export default function AudioButton({
   )
 }
 
-// Premium audio indicator styles (add to globals.css later)
-export const audioButtonStyles = `
+// Enhanced CSS for premium audio variants (add to globals.css)
+export const enhancedAudioButtonStyles = `
+  /* Premium audio base styling */
   .premium-audio {
     position: relative;
     box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
   }
   
-  .premium-audio::before {
-    content: '★';
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    font-size: 10px;
-    color: #FFD700;
-    background: white;
-    border-radius: 50%;
-    width: 14px;
-    height: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #FFD700;
+  /* Form-only variant (gold) */
+  .premium-audio.border-yellow-400 {
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+  }
+  
+  /* With-pronoun variant (blue) */
+  .premium-audio.border-blue-400 {
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+  }
+  
+  /* Hover effects */
+  .premium-audio:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
+  }
+  
+  .premium-audio.border-blue-400:hover {
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.8);
   }
 `
