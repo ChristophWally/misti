@@ -582,7 +582,7 @@ function ConjugationRow({
           italianText={audioText}
           audioFilename={form.audio_filename}
           size="lg"
-          className={`${colors.audio}`}
+          colorClass={colors.audio}
         />
         <button className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-colors">
           +

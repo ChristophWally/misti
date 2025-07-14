@@ -6,13 +6,14 @@
 import { useState } from 'react'
 import { playAudio } from '../lib/audio-utils'
 
-export default function AudioButton({ 
-  wordId, 
-  italianText, 
+export default function AudioButton({
+  wordId,
+  italianText,
   audioFilename = null,
   size = 'md',
   className = '',
-  title = null
+  title = null,
+  colorClass = 'bg-emerald-600 hover:bg-emerald-700'
 }) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isError, setIsError] = useState(false)
@@ -66,13 +67,13 @@ export default function AudioButton({
       disabled={isPlaying}
       className={`
         ${sizeClasses[size]}
-        bg-emerald-600 hover:bg-emerald-700 
-        text-white rounded-full 
-        flex items-center justify-center 
-        transition-all duration-200 
+        text-white rounded-full
+        flex items-center justify-center
+        transition-all duration-200
         flex-shrink-0
         ${hasPremiumAudio ? 'premium-audio border-2 border-yellow-400 shadow-lg' : ''}
         ${isPlaying ? 'opacity-75 cursor-not-allowed' : 'hover:scale-105'}
+        ${colorClass}
         ${isError ? 'bg-red-500 hover:bg-red-600' : ''}
         ${className}
       `}

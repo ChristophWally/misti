@@ -415,6 +415,7 @@ const renderVerbFeatures = () => {
                 audioFilename={audioFilename}
                 size="md"
                 title={hasPremiumAudio ? `Play premium audio (${voiceName})` : 'Play pronunciation'}
+                colorClass="bg-emerald-600 hover:bg-emerald-700"
               />
               
               {renderTags(processedTags.essential, 'essential')}
