@@ -72,7 +72,8 @@ export default function ConjugationModal({
 const loadConjugations = async () => {
   setIsLoading(true)
   try {
-    // FIXED QUERY: Get audio data and flatten it
+    console.log('🔍 DEBUG: Starting conjugation query for word:', word.id)
+    
     const { data, error } = await supabase
       .from('word_forms')
       .select(`
@@ -87,28 +88,41 @@ const loadConjugations = async () => {
       .eq('form_type', 'conjugation')
       .order('tags')
 
+    console.log('🔍 Raw query result:', { data, error })
+
     if (error) throw error
     
-    // CRITICAL FIX: Flatten audio data to restore original structure
-    const processedData = (data || []).map(form => ({
-      ...form,
-      // Extract audio_filename for backward compatibility
-      audio_filename: form.word_audio_metadata?.audio_filename || null,
-      azure_voice_name: form.word_audio_metadata?.azure_voice_name || null
-    }))
+    // Check what we actually got
+    console.log('🔍 First form raw data:', data?.[0])
+    console.log('🔍 First form audio_metadata_id:', data?.[0]?.audio_metadata_id)
+    console.log('🔍 First form word_audio_metadata:', data?.[0]?.word_audio_metadata)
     
-    console.log('FIXED: Audio data flattened:', processedData[0])
+    const processedData = (data || []).map(form => {
+      const result = {
+        ...form,
+        audio_filename: form.word_audio_metadata?.audio_filename || null,
+        azure_voice_name: form.word_audio_metadata?.azure_voice_name || null
+      }
+      
+      console.log('🔍 Processed form:', {
+        form_text: form.form_text,
+        audio_metadata_id: form.audio_metadata_id,
+        word_audio_metadata: form.word_audio_metadata,
+        final_audio_filename: result.audio_filename
+      })
+      
+      return result
+    })
     
     const groupedConjugations = groupConjugationsByMoodTense(processedData)
     setConjugations(groupedConjugations)
     
   } catch (error) {
-    console.error('Error loading conjugations:', error)
+    console.error('❌ Error loading conjugations:', error)
   } finally {
     setIsLoading(false)
   }
 }
-
   // Get available mood/tense combinations for dropdown
   const getAvailableOptions = () => {
     const options = []
