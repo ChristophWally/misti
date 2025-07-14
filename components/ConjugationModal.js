@@ -440,11 +440,10 @@ const loadConjugations = async () => {
                 {/* Singular Section */}
                 {singular.length > 0 && (
                   <>
-                    <div className="text-center font-semibold text-gray-700 text-base mb-3 relative">
-                      <span className="bg-white px-4">Singular</span>
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300"></div>
-                      </div>
+                    <div className="flex items-center font-semibold text-gray-700 text-base mb-3">
+                      <div className="flex-grow border-t border-gray-300" />
+                      <span className="px-4">Singular</span>
+                      <div className="flex-grow border-t border-gray-300" />
                     </div>
                     {singular.map(form => (
                       <ConjugationRow
@@ -463,11 +462,10 @@ const loadConjugations = async () => {
                 {/* Plural Section */}
                 {plural.length > 0 && (
                   <>
-                    <div className="text-center font-semibold text-gray-700 text-base mb-3 mt-5 relative">
-                      <span className="bg-white px-4">Plural</span>
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300"></div>
-                      </div>
+                    <div className="flex items-center font-semibold text-gray-700 text-base mb-3 mt-5">
+                      <div className="flex-grow border-t border-gray-300" />
+                      <span className="px-4">Plural</span>
+                      <div className="flex-grow border-t border-gray-300" />
                     </div>
                     {plural.map(form => (
                       <ConjugationRow
@@ -486,11 +484,10 @@ const loadConjugations = async () => {
                 {/* Other Forms */}
                 {other.length > 0 && (
                   <>
-                    <div className="text-center font-semibold text-gray-700 text-base mb-3 mt-5 relative">
-                      <span className="bg-white px-4">Other Forms</span>
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300"></div>
-                      </div>
+                    <div className="flex items-center font-semibold text-gray-700 text-base mb-3 mt-5">
+                      <div className="flex-grow border-t border-gray-300" />
+                      <span className="px-4">Other Forms</span>
+                      <div className="flex-grow border-t border-gray-300" />
                     </div>
                     {other.map(form => (
                       <ConjugationRow
