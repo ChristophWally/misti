@@ -69,27 +69,43 @@ export default function ConjugationModal({
   }
 
   // Load conjugations for the selected word
-  const loadConjugations = async () => {
-    setIsLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('word_forms')
-        .select('*')
-        .eq('word_id', word.id)
-        .eq('form_type', 'conjugation')
-        .order('tags')
+const loadConjugations = async () => {
+  setIsLoading(true)
+  try {
+    const { data, error } = await supabase
+      .from('word_forms')
+      .select(`
+        *,
+        word_audio_metadata(
+          id,
+          audio_filename,
+          azure_voice_name,
+          duration_seconds
+        )
+      `)
+      .eq('word_id', word.id)
+      .eq('form_type', 'conjugation')
+      .order('tags')
 
-      if (error) throw error
-      
-      const groupedConjugations = groupConjugationsByMoodTense(data || [])
-      setConjugations(groupedConjugations)
-      
-    } catch (error) {
-      console.error('Error loading conjugations:', error)
-    } finally {
-      setIsLoading(false)
+    // ADD THIS DEBUGGING:
+    console.log('=== CONJUGATION MODAL DEBUG ===')
+    console.log('Raw conjugation data:', data)
+    console.log('Data length:', data?.length)
+    if (data?.length > 0) {
+      console.log('First conjugation:', data[0])
+      console.log('First audio metadata:', data[0].word_audio_metadata)
     }
+
+    if (error) throw error
+    
+    const groupedConjugations = groupConjugationsByMoodTense(data)
+    setConjugations(groupedConjugations)
+  } catch (error) {
+    console.error('Error loading conjugations:', error)
+  } finally {
+    setIsLoading(false)
   }
+}
 
   // Get available mood/tense combinations for dropdown
   const getAvailableOptions = () => {
