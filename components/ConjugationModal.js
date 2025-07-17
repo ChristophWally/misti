@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import AudioButton from './AudioButton'
 import SectionHeading from './SectionHeading'
+import { VariantCalculator } from '../lib/variant-calculator'
 
 export default function ConjugationModal({ 
   isOpen, 
@@ -104,18 +105,24 @@ const loadConjugations = async () => {
         audio_filename: form.word_audio_metadata?.audio_filename || null,
         azure_voice_name: form.word_audio_metadata?.azure_voice_name || null
       }
-      
+
       console.log('🔍 Processed form:', {
         form_text: form.form_text,
         audio_metadata_id: form.audio_metadata_id,
         word_audio_metadata: form.word_audio_metadata,
         final_audio_filename: result.audio_filename
       })
-      
+
       return result
     })
-    
-    const groupedConjugations = groupConjugationsByMoodTense(processedData)
+
+    // Generate all forms (stored + calculated variants)
+    const allForms = VariantCalculator.getAllForms(processedData, word.tags || [])
+
+    console.log('🔍 All forms (stored + calculated):', allForms.length, 'total forms')
+    console.log('🔍 Calculated variants:', allForms.filter(f => f.tags?.includes('calculated-variant')))
+
+    const groupedConjugations = groupConjugationsByMoodTense(allForms)
     setConjugations(groupedConjugations)
     
   } catch (error) {
