@@ -236,7 +236,7 @@ const loadConjugations = async () => {
     return pronoun || ''
   }
 
-  // Get translation based on audio preference and gender toggle - SIMPLIFIED
+  // Get translation based on audio preference and gender toggle - FIXED
   const getDynamicTranslation = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
 
@@ -248,29 +248,41 @@ const loadConjugations = async () => {
     // Start from the original translation each time
     let translation = form.translation
 
-    // Check if this form has gender variants
+    // Check if this form has gender variants (compound tenses with ESSERE)
     const hasGenderVariants =
       word?.tags?.includes('essere-auxiliary') && form.tags?.includes('compound')
 
     if (audioPreference === 'form-only' && !hasGenderVariants) {
-      // Form-only + no gender variants: always show "he/she"
-      if (translation.toLowerCase().includes(' he ') || translation.startsWith('he ')) {
+      // Form-only + simple ESSERE verbs: show "he/she"
+      if (
+        translation.toLowerCase().includes('he ') ||
+        translation.toLowerCase().startsWith('he ')
+      ) {
         translation = translation
           .replace(/\bhe\b/gi, 'he/she')
           .replace(/^He\b/, 'He/she')
-      } else if (translation.toLowerCase().includes(' she ') || translation.startsWith('she ')) {
+      } else if (
+        translation.toLowerCase().includes('she ') ||
+        translation.toLowerCase().startsWith('she ')
+      ) {
         translation = translation
           .replace(/\bshe\b/gi, 'he/she')
           .replace(/^She\b/, 'He/she')
       }
-    } else {
-      // Either has gender variants or with-pronoun mode: show selected gender
+    } else if (hasGenderVariants || audioPreference === 'with-pronoun') {
+      // Compound tenses OR with-pronoun mode: show selected gender only
       if (selectedGender === 'male') {
+        // Show "he" - replace any existing "she" or "he/she" 
         translation = translation
+          .replace(/\bhe\/she\b/gi, 'he')
+          .replace(/^He\/she\b/, 'He')
           .replace(/\bshe\b/gi, 'he')
           .replace(/^She\b/, 'He')
       } else {
+        // Show "she" - replace any existing "he" or "he/she"
         translation = translation
+          .replace(/\bhe\/she\b/gi, 'she')
+          .replace(/^He\/she\b/, 'She')
           .replace(/\bhe\b/gi, 'she')
           .replace(/^He\b/, 'She')
       }
