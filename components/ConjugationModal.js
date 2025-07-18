@@ -236,53 +236,43 @@ const loadConjugations = async () => {
     return pronoun || ''
   }
 
-  // Get translation based on audio preference and gender toggle
+  // Get translation based on audio preference and gender toggle - SIMPLIFIED
   const getDynamicTranslation = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
+
+    // Only modify translations for 3rd person
+    if (pronoun !== 'lui' && pronoun !== 'lei') {
+      return form.translation
+    }
+
+    // Start from the original translation each time
     let translation = form.translation
 
-    // For 3rd person pronouns
-    if (pronoun === 'lui' || pronoun === 'lei') {
-      // Check if this form has gender variants
-      const hasGenderVariants = word?.tags?.includes('essere-auxiliary') &&
-                                form.tags?.includes('compound')
+    // Check if this form has gender variants
+    const hasGenderVariants =
+      word?.tags?.includes('essere-auxiliary') && form.tags?.includes('compound')
 
-      if (audioPreference === 'form-only' && !hasGenderVariants) {
-        // Form-only mode for non-gender-variant forms: show "he/she"
-        // First normalize any existing gender-specific text, then replace
+    if (audioPreference === 'form-only' && !hasGenderVariants) {
+      // Form-only + no gender variants: always show "he/she"
+      if (translation.toLowerCase().includes(' he ') || translation.startsWith('he ')) {
         translation = translation
           .replace(/\bhe\b/gi, 'he/she')
+          .replace(/^He\b/, 'He/she')
+      } else if (translation.toLowerCase().includes(' she ') || translation.startsWith('she ')) {
+        translation = translation
           .replace(/\bshe\b/gi, 'he/she')
-          .replace(/\bHe\b/g, 'He/she')
-          .replace(/\bShe\b/g, 'He/she')
-          // Clean up any double replacements
-          .replace(/he\/she\/she/gi, 'he/she')
-          .replace(/He\/she\/she/g, 'He/she')
-      } else if (hasGenderVariants || audioPreference === 'with-pronoun') {
-        // Gender-variant forms OR with-pronoun mode: show selected gender
-        if (selectedGender === 'male') {
-          // First clean up any compound replacements, then set to male
-          translation = translation
-            .replace(/\bhe\/she\b/gi, 'he')
-            .replace(/\bHe\/she\b/g, 'He')
-            .replace(/\bshe\b/gi, 'he')
-            .replace(/\bShe\b/g, 'He')
-            // Clean up double replacements like "sshe" -> "she" -> "he"
-            .replace(/\bsshe\b/gi, 'she')
-            .replace(/\bSShe\b/g, 'She')
-            .replace(/\bshe\b/gi, 'he')
-            .replace(/\bShe\b/g, 'He')
-        } else {
-          // First clean up any compound replacements, then set to female
-          translation = translation
-            .replace(/\bhe\/she\b/gi, 'she')
-            .replace(/\bHe\/she\b/g, 'She')
-            .replace(/\bhe\b/gi, 'she')
-            .replace(/\bHe\b/g, 'She')
-            // Clean up double replacements like "sshe"
-            .replace(/\bsshe\b/gi, 'she')
-            .replace(/\bSShe\b/g, 'She')
-        }
+          .replace(/^She\b/, 'He/she')
+      }
+    } else {
+      // Either has gender variants or with-pronoun mode: show selected gender
+      if (selectedGender === 'male') {
+        translation = translation
+          .replace(/\bshe\b/gi, 'he')
+          .replace(/^She\b/, 'He')
+      } else {
+        translation = translation
+          .replace(/\bhe\b/gi, 'she')
+          .replace(/^He\b/, 'She')
       }
     }
 
@@ -649,30 +639,30 @@ function ConjugationRow({
   
   // Determine colors based on gender variants and toggle state
   const getColors = () => {
-    // Check if this form has gender variants (can change based on gender toggle)
-    const hasGenderVariants =
+    // Check if this is a form that actually changes based on gender
+    const hasActualGenderVariants =
       form.tags?.includes('compound') &&
-      (wordTags.includes('essere-auxiliary') || form.base_form_id)
+      (wordTags?.includes('essere-auxiliary') || form.base_form_id)
 
-    if (!hasGenderVariants) {
-      // No gender variants - always use default color
+    if (audioPreference === 'form-only' && !hasActualGenderVariants) {
+      // Form-only with no gender variants - default color
       return {
         form: 'text-teal-600',
         audio: 'bg-emerald-600'
       }
     }
 
-    // Has gender variants - color based on current display
+    // Either has gender variants or with-pronoun mode - use gender colors
     if (selectedGender === 'male') {
       return {
         form: isPlural ? 'text-amber-500' : 'text-blue-500',
         audio: isPlural ? 'bg-amber-500' : 'bg-blue-500'
       }
-    } else {
-      return {
-        form: 'text-pink-500',
-        audio: 'bg-pink-500'
-      }
+    }
+
+    return {
+      form: 'text-pink-500',
+      audio: 'bg-pink-500'
     }
   }
 
