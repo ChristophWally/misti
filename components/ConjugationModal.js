@@ -249,27 +249,39 @@ const loadConjugations = async () => {
 
       if (audioPreference === 'form-only' && !hasGenderVariants) {
         // Form-only mode for non-gender-variant forms: show "he/she"
+        // First normalize any existing gender-specific text, then replace
         translation = translation
-          .replace(/^he /i, 'he/she ')
-          .replace(/^she /i, 'he/she ')
-          .replace(/^He /g, 'He/she ')
-          .replace(/^She /g, 'He/she ')
+          .replace(/\bhe\b/gi, 'he/she')
+          .replace(/\bshe\b/gi, 'he/she')
+          .replace(/\bHe\b/g, 'He/she')
+          .replace(/\bShe\b/g, 'He/she')
+          // Clean up any double replacements
+          .replace(/he\/she\/she/gi, 'he/she')
+          .replace(/He\/she\/she/g, 'He/she')
       } else if (hasGenderVariants || audioPreference === 'with-pronoun') {
         // Gender-variant forms OR with-pronoun mode: show selected gender
         if (selectedGender === 'male') {
-          // Clean up any existing replacements first, then set to "he"
+          // First clean up any compound replacements, then set to male
           translation = translation
-            .replace(/he\/she /gi, 'he ')
-            .replace(/He\/she /g, 'He ')
-            .replace(/she /gi, 'he ')
-            .replace(/^She /g, 'He ')
+            .replace(/\bhe\/she\b/gi, 'he')
+            .replace(/\bHe\/she\b/g, 'He')
+            .replace(/\bshe\b/gi, 'he')
+            .replace(/\bShe\b/g, 'He')
+            // Clean up double replacements like "sshe" -> "she" -> "he"
+            .replace(/\bsshe\b/gi, 'she')
+            .replace(/\bSShe\b/g, 'She')
+            .replace(/\bshe\b/gi, 'he')
+            .replace(/\bShe\b/g, 'He')
         } else {
-          // Clean up any existing replacements first, then set to "she"
+          // First clean up any compound replacements, then set to female
           translation = translation
-            .replace(/he\/she /gi, 'she ')
-            .replace(/He\/she /g, 'She ')
-            .replace(/he /gi, 'she ')
-            .replace(/^He /g, 'She ')
+            .replace(/\bhe\/she\b/gi, 'she')
+            .replace(/\bHe\/she\b/g, 'She')
+            .replace(/\bhe\b/gi, 'she')
+            .replace(/\bHe\b/g, 'She')
+            // Clean up double replacements like "sshe"
+            .replace(/\bsshe\b/gi, 'she')
+            .replace(/\bSShe\b/g, 'She')
         }
       }
     }
@@ -503,9 +515,9 @@ const loadConjugations = async () => {
                   <div className="flex gap-2 justify-center">
                     <button
                       onClick={() => setSelectedGender('male')}
-                      disabled={!currentForms.some(form => form.tags?.includes('compound'))}
+                      disabled={audioPreference === 'form-only' && !currentForms.some(form => form.tags?.includes('compound'))}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        !currentForms.some(form => form.tags?.includes('compound'))
+                        (audioPreference === 'form-only' && !currentForms.some(form => form.tags?.includes('compound')))
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'male'
                               ? 'border-blue-500 bg-blue-500 text-white'
@@ -516,9 +528,9 @@ const loadConjugations = async () => {
                     </button>
                     <button
                       onClick={() => setSelectedGender('female')}
-                      disabled={!currentForms.some(form => form.tags?.includes('compound'))}
+                      disabled={audioPreference === 'form-only' && !currentForms.some(form => form.tags?.includes('compound'))}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        !currentForms.some(form => form.tags?.includes('compound'))
+                        (audioPreference === 'form-only' && !currentForms.some(form => form.tags?.includes('compound')))
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'female'
                               ? 'border-pink-500 bg-pink-500 text-white'
