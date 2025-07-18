@@ -236,7 +236,7 @@ const loadConjugations = async () => {
     return pronoun || ''
   }
 
-  // Get translation based on audio preference and gender toggle - FIXED
+  // Get translation based on audio preference and gender toggle - BULLETPROOF VERSION
   const getDynamicTranslation = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
 
@@ -245,48 +245,37 @@ const loadConjugations = async () => {
       return form.translation
     }
 
-    // Start from the original translation each time
+    // Get the original translation
     let translation = form.translation
 
     // Check if this form has gender variants (compound tenses with ESSERE)
     const hasGenderVariants =
       word?.tags?.includes('essere-auxiliary') && form.tags?.includes('compound')
 
+    // Determine final pronoun
+    let targetPronoun
     if (audioPreference === 'form-only' && !hasGenderVariants) {
-      // Form-only + simple ESSERE verbs: show "he/she"
-      if (
-        translation.toLowerCase().includes('he ') ||
-        translation.toLowerCase().startsWith('he ')
-      ) {
-        translation = translation
-          .replace(/\bhe\b/gi, 'he/she')
-          .replace(/^He\b/, 'He/she')
-      } else if (
-        translation.toLowerCase().includes('she ') ||
-        translation.toLowerCase().startsWith('she ')
-      ) {
-        translation = translation
-          .replace(/\bshe\b/gi, 'he/she')
-          .replace(/^She\b/, 'He/she')
-      }
-    } else if (hasGenderVariants || audioPreference === 'with-pronoun') {
-      // Compound tenses OR with-pronoun mode: show selected gender only
-      if (selectedGender === 'male') {
-        // Show "he" - replace any existing "she" or "he/she" 
-        translation = translation
-          .replace(/\bhe\/she\b/gi, 'he')
-          .replace(/^He\/she\b/, 'He')
-          .replace(/\bshe\b/gi, 'he')
-          .replace(/^She\b/, 'He')
-      } else {
-        // Show "she" - replace any existing "he" or "he/she"
-        translation = translation
-          .replace(/\bhe\/she\b/gi, 'she')
-          .replace(/^He\/she\b/, 'She')
-          .replace(/\bhe\b/gi, 'she')
-          .replace(/^He\b/, 'She')
-      }
+      targetPronoun = 'he/she'
+    } else {
+      targetPronoun = selectedGender === 'male' ? 'he' : 'she'
     }
+
+    // Placeholder approach to avoid cascading replacements
+    translation = translation
+      .replace(/\bhe\/she\b/gi, 'PLACEHOLDER')
+      .replace(/\bHe\/she\b/g, 'PLACEHOLDER')
+      .replace(/\bshe\/he\b/gi, 'PLACEHOLDER')
+      .replace(/\bShe\/he\b/g, 'PLACEHOLDER')
+      .replace(/\bhe\b/gi, 'PLACEHOLDER')
+      .replace(/\bshe\b/gi, 'PLACEHOLDER')
+      .replace(/\bHe\b/g, 'PLACEHOLDER')
+      .replace(/\bShe\b/g, 'PLACEHOLDER')
+
+    const finalPronoun = translation.startsWith('PLACEHOLDER')
+      ? targetPronoun.charAt(0).toUpperCase() + targetPronoun.slice(1)
+      : targetPronoun
+
+    translation = translation.replace(/PLACEHOLDER/g, finalPronoun)
 
     return translation
   }
