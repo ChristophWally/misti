@@ -213,36 +213,64 @@ const loadConjugations = async () => {
     return currentForms.some(form => form.tags?.includes('compound'))
   }
 
-  // Get pronoun display based on selected gender toggle
+  // Get pronoun display based on audio preference and gender toggle
   const getPronounDisplay = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
 
-    // For 3rd person, show the selected gender
+    // For 3rd person pronouns
     if (pronoun === 'lui' || pronoun === 'lei') {
-      return selectedGender === 'male' ? 'lui' : 'lei'
+      // Check if this form has gender variants (ESSERE verbs with compound tenses)
+      const hasGenderVariants = word?.tags?.includes('essere-auxiliary') &&
+                                form.tags?.includes('compound')
+
+      if (audioPreference === 'form-only') {
+        // Form-only mode: show lui/lei for forms without gender variants
+        return hasGenderVariants ? (selectedGender === 'male' ? 'lui' : 'lei') : 'lui/lei'
+      } else {
+        // With-pronoun mode: always show selected gender
+        return selectedGender === 'male' ? 'lui' : 'lei'
+      }
     }
 
     // For all other persons, show the base pronoun
     return pronoun || ''
   }
 
-  // Get translation based on selected gender toggle
+  // Get translation based on audio preference and gender toggle
   const getDynamicTranslation = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
     let translation = form.translation
 
-    // For 3rd person, adjust translation based on selected gender
+    // For 3rd person pronouns
     if (pronoun === 'lui' || pronoun === 'lei') {
-      if (selectedGender === 'male') {
-        // Ensure it says "he"
+      // Check if this form has gender variants
+      const hasGenderVariants = word?.tags?.includes('essere-auxiliary') &&
+                                form.tags?.includes('compound')
+
+      if (audioPreference === 'form-only' && !hasGenderVariants) {
+        // Form-only mode for non-gender-variant forms: show "he/she"
         translation = translation
-          .replace(/she /gi, 'he ')
-          .replace(/^She /g, 'He ')
-      } else {
-        // Ensure it says "she"
-        translation = translation
-          .replace(/he /gi, 'she ')
-          .replace(/^He /g, 'She ')
+          .replace(/^he /i, 'he/she ')
+          .replace(/^she /i, 'he/she ')
+          .replace(/^He /g, 'He/she ')
+          .replace(/^She /g, 'He/she ')
+      } else if (hasGenderVariants || audioPreference === 'with-pronoun') {
+        // Gender-variant forms OR with-pronoun mode: show selected gender
+        if (selectedGender === 'male') {
+          // Clean up any existing replacements first, then set to "he"
+          translation = translation
+            .replace(/he\/she /gi, 'he ')
+            .replace(/He\/she /g, 'He ')
+            .replace(/she /gi, 'he ')
+            .replace(/^She /g, 'He ')
+        } else {
+          // Clean up any existing replacements first, then set to "she"
+          translation = translation
+            .replace(/he\/she /gi, 'she ')
+            .replace(/He\/she /g, 'She ')
+            .replace(/he /gi, 'she ')
+            .replace(/^He /g, 'She ')
+        }
       }
     }
 
@@ -466,8 +494,8 @@ const loadConjugations = async () => {
                 </button>
               </div>
 
-              {/* Gender Controls */}
-              {audioPreference === 'with-pronoun' && (compound || currentForms.some(f => ['lui', 'lei'].includes(extractTagValue(f.tags, 'pronoun')))) && (
+              {/* Gender Controls - Only for ESSERE verbs */}
+              {word?.tags?.includes('essere-auxiliary') && (
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Gender
@@ -476,8 +504,8 @@ const loadConjugations = async () => {
                     <button
                       onClick={() => setSelectedGender('male')}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        selectedGender === 'male' 
-                          ? 'border-blue-500 bg-blue-500 text-white' 
+                        selectedGender === 'male'
+                          ? 'border-blue-500 bg-blue-500 text-white'
                           : 'border-blue-500 text-blue-500 bg-white'
                       }`}
                     >
@@ -486,8 +514,8 @@ const loadConjugations = async () => {
                     <button
                       onClick={() => setSelectedGender('female')}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        selectedGender === 'female' 
-                          ? 'border-pink-500 bg-pink-500 text-white' 
+                        selectedGender === 'female'
+                          ? 'border-pink-500 bg-pink-500 text-white'
                           : 'border-pink-500 text-pink-500 bg-white'
                       }`}
                     >
