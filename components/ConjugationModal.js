@@ -638,7 +638,13 @@ function ConjugationRow({
   const isPlural = form.tags?.includes('plurale') || ['noi', 'voi', 'loro'].includes(pronounDisplay)
   
   // Determine colors based on gender variants and toggle state
+  // Determine colors based on gender variants and toggle state
   const getColors = () => {
+    // Extract pronoun directly from tags (without helper)
+    const pronoun = form.tags?.find(tag =>
+      ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro'].includes(tag)
+    )
+
     // Check if this form has actual gender variants in the verb form
     const hasVerbGenderVariants =
       form.tags?.includes('compound') &&
@@ -648,8 +654,8 @@ function ConjugationRow({
     const isThirdPerson =
       form.tags?.includes('lui') ||
       form.tags?.includes('lei') ||
-      extractTagValue(form.tags, 'pronoun') === 'lui' ||
-      extractTagValue(form.tags, 'pronoun') === 'lei'
+      pronoun === 'lui' ||
+      pronoun === 'lei'
 
     if (audioPreference === 'form-only') {
       if (hasVerbGenderVariants) {
