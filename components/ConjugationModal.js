@@ -775,11 +775,10 @@ function ConjugationRow({
       pronoun === 'lui' ||
       pronoun === 'lei'
 
-    // Check if this is a formal context (tu/voi mapped to Lei/Loro)
-    const isFormalContext =
-      selectedFormality === 'formal' && (pronoun === 'tu' || pronoun === 'voi')
+    // CORRECT: Determine formal context based on displayed pronoun
+    const isFormalContext = pronounDisplay === 'Lei' || pronounDisplay === 'Loro'
 
-    // Formal contexts get purple coloring
+    // FORMAL CONTEXTS get purple color
     if (isFormalContext) {
       return {
         form: 'text-purple-600',
