@@ -247,6 +247,7 @@ const loadConjugations = async () => {
 
     // Get the original translation
     let translation = form.translation
+    const startsWithCapital = /^[A-Z]/.test(translation.trim())
 
     // Check if this form has gender variants (compound tenses with ESSERE)
     const hasGenderVariants =
@@ -271,11 +272,14 @@ const loadConjugations = async () => {
       .replace(/\bHe\b/g, 'PLACEHOLDER')
       .replace(/\bShe\b/g, 'PLACEHOLDER')
 
-    const finalPronoun = translation.startsWith('PLACEHOLDER')
-      ? targetPronoun.charAt(0).toUpperCase() + targetPronoun.slice(1)
-      : targetPronoun
+    if (translation.startsWith('PLACEHOLDER')) {
+      const first = startsWithCapital
+        ? targetPronoun.charAt(0).toUpperCase() + targetPronoun.slice(1)
+        : targetPronoun
+      translation = translation.replace('PLACEHOLDER', first)
+    }
 
-    translation = translation.replace(/PLACEHOLDER/g, finalPronoun)
+    translation = translation.replace(/PLACEHOLDER/g, targetPronoun)
 
     return translation
   }
