@@ -503,20 +503,26 @@ const loadConjugations = async () => {
                   <div className="flex gap-2 justify-center">
                     <button
                       onClick={() => setSelectedGender('male')}
+                      disabled={!currentForms.some(form => form.tags?.includes('compound'))}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        selectedGender === 'male'
-                          ? 'border-blue-500 bg-blue-500 text-white'
-                          : 'border-blue-500 text-blue-500 bg-white'
+                        !currentForms.some(form => form.tags?.includes('compound'))
+                          ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
+                          : selectedGender === 'male'
+                              ? 'border-blue-500 bg-blue-500 text-white'
+                              : 'border-blue-500 text-blue-500 bg-white hover:bg-blue-50'
                       }`}
                     >
                       ♂
                     </button>
                     <button
                       onClick={() => setSelectedGender('female')}
+                      disabled={!currentForms.some(form => form.tags?.includes('compound'))}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        selectedGender === 'female'
-                          ? 'border-pink-500 bg-pink-500 text-white'
-                          : 'border-pink-500 text-pink-500 bg-white'
+                        !currentForms.some(form => form.tags?.includes('compound'))
+                          ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
+                          : selectedGender === 'female'
+                              ? 'border-pink-500 bg-pink-500 text-white'
+                              : 'border-pink-500 text-pink-500 bg-white hover:bg-pink-50'
                       }`}
                     >
                       ♀
@@ -551,6 +557,7 @@ const loadConjugations = async () => {
                           isCompound={compound}
                           selectedGender={selectedGender}
                           audioPreference={audioPreference}
+                          wordTags={word?.tags || []}
                         />
                       )
                     })}
@@ -572,6 +579,7 @@ const loadConjugations = async () => {
                           isCompound={compound}
                           selectedGender={selectedGender}
                           audioPreference={audioPreference}
+                          wordTags={word?.tags || []}
                         />
                       )
                     })}
@@ -587,11 +595,12 @@ const loadConjugations = async () => {
                         key={form.id}
                         form={form}
                         audioText={getAudioText(form)}
-                        pronounDisplay={''}
-                        isCompound={compound}
-                        selectedGender={selectedGender}
-                        audioPreference={audioPreference}
-                      />
+                      pronounDisplay={''}
+                      isCompound={compound}
+                      selectedGender={selectedGender}
+                      audioPreference={audioPreference}
+                      wordTags={word?.tags || []}
+                    />
                     ))}
                   </>
                 )}
@@ -614,48 +623,44 @@ const loadConjugations = async () => {
 }
 
 // Individual conjugation row component
-function ConjugationRow({ 
-  form, 
-  audioText, 
-  pronounDisplay, 
-  isCompound, 
-  selectedGender, 
-  audioPreference 
+function ConjugationRow({
+  form,
+  audioText,
+  pronounDisplay,
+  isCompound,
+  selectedGender,
+  audioPreference,
+  wordTags
 }) {
   const isIrregular = form.tags?.includes('irregular')
   const isPlural = form.tags?.includes('plurale') || ['noi', 'voi', 'loro'].includes(pronounDisplay)
   
-  // Determine colors based on compound + gender
+  // Determine colors based on gender variants and toggle state
   const getColors = () => {
-    if (audioPreference === 'form-only') {
+    // Check if this form has gender variants (can change based on gender toggle)
+    const hasGenderVariants =
+      form.tags?.includes('compound') &&
+      (wordTags.includes('essere-auxiliary') || form.base_form_id)
+
+    if (!hasGenderVariants) {
+      // No gender variants - always use default color
       return {
         form: 'text-teal-600',
         audio: 'bg-emerald-600'
       }
     }
-    
-    if (isCompound) {
-      if (selectedGender === 'male') {
-        return {
-          form: isPlural ? 'text-amber-500' : 'text-blue-500',
-          audio: isPlural ? 'bg-amber-500' : 'bg-blue-500'
-        }
-      } else {
-        return {
-          form: 'text-pink-500',
-          audio: 'bg-pink-500'
-        }
-      }
-    } else if (['lui', 'lei'].includes(pronounDisplay.split('/')[0])) {
+
+    // Has gender variants - color based on current display
+    if (selectedGender === 'male') {
       return {
-        form: selectedGender === 'male' ? 'text-blue-500' : 'text-pink-500',
-        audio: selectedGender === 'male' ? 'bg-blue-500' : 'bg-pink-500'
+        form: isPlural ? 'text-amber-500' : 'text-blue-500',
+        audio: isPlural ? 'bg-amber-500' : 'bg-blue-500'
       }
-    }
-    
-    return {
-      form: 'text-teal-600',
-      audio: 'bg-emerald-600'
+    } else {
+      return {
+        form: 'text-pink-500',
+        audio: 'bg-pink-500'
+      }
     }
   }
 
