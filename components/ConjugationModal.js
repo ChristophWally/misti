@@ -243,14 +243,17 @@ const loadConjugations = async () => {
     return pronoun || ''
   }
 
-  // Get translation based on audio preference, gender toggle, AND formality - WITH FORMAL SUPPORT
-  const getDynamicTranslation = (form) => {
-    const pronoun = extractTagValue(form.tags, 'pronoun')
+  // Get translation based on audio preference, gender toggle, AND formality - FIXED FORMAL DETECTION
+  const getDynamicTranslation = (displayForm, originalForm) => {
+    const originalPronoun = extractTagValue(originalForm.tags, 'pronoun')
+    const isFormalContext =
+      selectedFormality === 'formal' &&
+      (originalPronoun === 'tu' || originalPronoun === 'voi')
 
-    // Handle formal contexts first
-    if (selectedFormality === 'formal') {
-      if (pronoun === 'tu') {
-        let translation = form.translation
+    if (isFormalContext) {
+      let translation = displayForm.translation
+
+      if (originalPronoun === 'tu') {
         return translation
           .replace(/\bhe\/she\b/gi, 'you')
           .replace(/\bHe\/she\b/g, 'You')
@@ -260,28 +263,25 @@ const loadConjugations = async () => {
           .replace(/\bShe\b/g, 'You')
       }
 
-      if (pronoun === 'voi') {
-        let translation = form.translation
+      if (originalPronoun === 'voi') {
         return translation
           .replace(/\bthey\b/gi, 'you all')
           .replace(/\bThey\b/g, 'You all')
       }
     }
 
-    // Only modify translations for 3rd person in non-formal contexts
+    const pronoun = extractTagValue(displayForm.tags, 'pronoun')
+
     if (pronoun !== 'lui' && pronoun !== 'lei') {
-      return form.translation
+      return displayForm.translation
     }
 
-    // Get the original translation
-    let translation = form.translation
+    let translation = displayForm.translation
     const startsWithCapital = /^[A-Z]/.test(translation.trim())
 
-    // Check if this form has gender variants (compound tenses with ESSERE)
     const hasGenderVariants =
-      word?.tags?.includes('essere-auxiliary') && form.tags?.includes('compound')
+      word?.tags?.includes('essere-auxiliary') && displayForm.tags?.includes('compound')
 
-    // Determine final pronoun
     let targetPronoun
     if (audioPreference === 'form-only' && !hasGenderVariants) {
       targetPronoun = 'he/she'
@@ -289,7 +289,6 @@ const loadConjugations = async () => {
       targetPronoun = selectedGender === 'male' ? 'he' : 'she'
     }
 
-    // Placeholder approach to avoid cascading replacements
     translation = translation
       .replace(/\bhe\/she\b/gi, 'PLACEHOLDER')
       .replace(/\bHe\/she\b/g, 'PLACEHOLDER')
@@ -686,7 +685,7 @@ const loadConjugations = async () => {
                       return (
                         <ConjugationRow
                           key={form.id}
-                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm) }}
+                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
                           audioText={getAudioText(form)}
                           pronounDisplay={getPronounDisplay(form)}
                           isCompound={compound}
@@ -709,7 +708,7 @@ const loadConjugations = async () => {
                       return (
                         <ConjugationRow
                           key={form.id}
-                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm) }}
+                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
                           audioText={getAudioText(form)}
                           pronounDisplay={getPronounDisplay(form)}
                           isCompound={compound}
@@ -732,7 +731,7 @@ const loadConjugations = async () => {
                       return (
                         <ConjugationRow
                           key={form.id}
-                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm) }}
+                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
                           audioText={getAudioText(form)}
                           pronounDisplay={getPronounDisplay(form)}
                           isCompound={compound}
