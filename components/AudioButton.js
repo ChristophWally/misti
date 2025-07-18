@@ -45,16 +45,13 @@ export default function AudioButton({
     } catch (error) {
       console.error('Audio playback failed:', error)
       setIsError(true)
-      
+
       // Show error state briefly, then reset
       setTimeout(() => {
         setIsError(false)
       }, 2000)
     } finally {
-      // Reset playing state after a delay
-      setTimeout(() => {
-        setIsPlaying(false)
-      }, 1000)
+      setIsPlaying(false)
     }
   }
 
