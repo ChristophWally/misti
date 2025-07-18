@@ -160,8 +160,11 @@ const loadConjugations = async () => {
   }
 
   // Get current forms to display
+  // Get current forms to display
   const getCurrentForms = () => {
-    return conjugations[selectedMood]?.[selectedTense] || []
+    const currentForms = conjugations[selectedMood]?.[selectedTense] || []
+    console.log('🔍 Current forms for', selectedMood, selectedTense, ':', currentForms.length, 'forms')
+    return currentForms
   }
 
   // Order forms by pronoun sequence
@@ -235,27 +238,39 @@ const loadConjugations = async () => {
 
   // Group forms into singular/plural
   const groupFormsBySingularPlural = (forms) => {
+    console.log('🔍 Grouping forms:', forms.length, 'total forms')
+
     const orderedForms = orderFormsByPronoun(forms)
-    
-    const singular = orderedForms.filter(form => 
-      form.tags?.includes('singolare') || 
-      extractTagValue(form.tags, 'pronoun') === 'io' ||
-      extractTagValue(form.tags, 'pronoun') === 'tu' ||
-      extractTagValue(form.tags, 'pronoun') === 'lui' ||
-      extractTagValue(form.tags, 'pronoun') === 'lei'
-    )
-    
-    const plural = orderedForms.filter(form => 
-      form.tags?.includes('plurale') ||
-      extractTagValue(form.tags, 'pronoun') === 'noi' ||
-      extractTagValue(form.tags, 'pronoun') === 'voi' ||
-      extractTagValue(form.tags, 'pronoun') === 'loro'
-    )
-    
-    const other = orderedForms.filter(form => 
+
+    const singular = orderedForms.filter(form => {
+      const isPersonalSingular = form.tags?.includes('singolare') ||
+        extractTagValue(form.tags, 'pronoun') === 'io' ||
+        extractTagValue(form.tags, 'pronoun') === 'tu' ||
+        extractTagValue(form.tags, 'pronoun') === 'lui' ||
+        extractTagValue(form.tags, 'pronoun') === 'lei'
+
+      const isCalculatedSingular = form.variant_type === 'fem-sing'
+
+      return isPersonalSingular || isCalculatedSingular
+    })
+
+    const plural = orderedForms.filter(form => {
+      const isPersonalPlural = form.tags?.includes('plurale') ||
+        extractTagValue(form.tags, 'pronoun') === 'noi' ||
+        extractTagValue(form.tags, 'pronoun') === 'voi' ||
+        extractTagValue(form.tags, 'pronoun') === 'loro'
+
+      const isCalculatedPlural = form.variant_type === 'fem-plur'
+
+      return isPersonalPlural || isCalculatedPlural
+    })
+
+    const other = orderedForms.filter(form =>
       !singular.includes(form) && !plural.includes(form)
     )
-    
+
+    console.log('🔍 Grouped:', singular.length, 'singular,', plural.length, 'plural,', other.length, 'other')
+
     return { singular, plural, other }
   }
 
