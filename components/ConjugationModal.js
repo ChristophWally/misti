@@ -41,7 +41,7 @@ export default function ConjugationModal({
         'condizionale-presente', 'condizionale-passato',
         'imperativo-presente', 'infinito-presente', 'infinito-passato', 
         'participio-presente', 'participio-passato', 'gerundio-presente', 'gerundio-passato',
-        'presente-progressivo'
+        'presente-progressivo', 'passato-progressivo'
       ]
       return tags.find(tag => tenseTags.includes(tag)) || null
     }
