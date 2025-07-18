@@ -218,11 +218,17 @@ const loadConjugations = async () => {
   const getPronounDisplay = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
 
+    // Handle formality first
+    if (selectedFormality === 'formal') {
+      if (pronoun === 'tu') return 'Lei'
+      if (pronoun === 'voi') return 'Loro'
+    }
+
     // For 3rd person pronouns
     if (pronoun === 'lui' || pronoun === 'lei') {
       // Check if this form has gender variants (ESSERE verbs with compound tenses)
-      const hasGenderVariants = word?.tags?.includes('essere-auxiliary') &&
-                                form.tags?.includes('compound')
+      const hasGenderVariants =
+        word?.tags?.includes('essere-auxiliary') && form.tags?.includes('compound')
 
       if (audioPreference === 'form-only') {
         // Form-only mode: show lui/lei for forms without gender variants
@@ -307,10 +313,47 @@ const loadConjugations = async () => {
     return calculatedVariant || baseForm
   }
 
+  // Get the appropriate form to display based on gender toggle AND formality
+  const getDisplayFormWithFormality = (baseForm) => {
+    const pronoun = extractTagValue(baseForm.tags, 'pronoun')
+
+    // Handle formality mapping first
+    if (selectedFormality === 'formal') {
+      // Map 2nd person to 3rd person forms when formal
+      if (pronoun === 'tu') {
+        const allForms = conjugations[selectedMood]?.[selectedTense] || []
+        const thirdPersonForm = allForms.find(
+          (form) =>
+            !form.tags?.includes('calculated-variant') &&
+            (extractTagValue(form.tags, 'pronoun') === 'lui' ||
+              extractTagValue(form.tags, 'pronoun') === 'lei')
+        )
+        if (thirdPersonForm) {
+          return getDisplayForm(thirdPersonForm)
+        }
+      }
+
+      if (pronoun === 'voi') {
+        const allForms = conjugations[selectedMood]?.[selectedTense] || []
+        const thirdPersonPluralForm = allForms.find(
+          (form) =>
+            !form.tags?.includes('calculated-variant') &&
+            extractTagValue(form.tags, 'pronoun') === 'loro'
+        )
+        if (thirdPersonPluralForm) {
+          return getDisplayForm(thirdPersonPluralForm)
+        }
+      }
+    }
+
+    // For informal or non-2nd-person forms, use normal gender logic
+    return getDisplayForm(baseForm)
+  }
+
   // Get audio text based on preference
   const getAudioText = (form) => {
-    // Determine what form text to use based on gender toggle
-    const displayForm = getDisplayForm(form)
+    // Determine what form text to use based on gender and formality toggles
+    const displayForm = getDisplayFormWithFormality(form)
 
     if (audioPreference === 'form-only') {
       return displayForm.form_text
@@ -618,7 +661,7 @@ const loadConjugations = async () => {
                   <>
                     <SectionHeading>Singular</SectionHeading>
                     {singular.map(form => {
-                      const displayForm = getDisplayForm(form)
+                      const displayForm = getDisplayFormWithFormality(form)
                       return (
                         <ConjugationRow
                           key={form.id}
@@ -629,6 +672,7 @@ const loadConjugations = async () => {
                           selectedGender={selectedGender}
                           audioPreference={audioPreference}
                           wordTags={word?.tags || []}
+                          selectedFormality={selectedFormality}
                         />
                       )
                     })}
@@ -640,7 +684,7 @@ const loadConjugations = async () => {
                   <>
                     <SectionHeading className="mt-5">Plural</SectionHeading>
                     {plural.map(form => {
-                      const displayForm = getDisplayForm(form)
+                      const displayForm = getDisplayFormWithFormality(form)
                       return (
                         <ConjugationRow
                           key={form.id}
@@ -651,6 +695,7 @@ const loadConjugations = async () => {
                           selectedGender={selectedGender}
                           audioPreference={audioPreference}
                           wordTags={word?.tags || []}
+                          selectedFormality={selectedFormality}
                         />
                       )
                     })}
@@ -661,18 +706,22 @@ const loadConjugations = async () => {
                 {other.length > 0 && (
                   <>
                     <SectionHeading className="mt-5">Other Forms</SectionHeading>
-                    {other.map(form => (
-                      <ConjugationRow
-                        key={form.id}
-                        form={form}
-                        audioText={getAudioText(form)}
-                      pronounDisplay={''}
-                      isCompound={compound}
-                      selectedGender={selectedGender}
-                      audioPreference={audioPreference}
-                      wordTags={word?.tags || []}
-                    />
-                    ))}
+                    {other.map(form => {
+                      const displayForm = getDisplayFormWithFormality(form)
+                      return (
+                        <ConjugationRow
+                          key={form.id}
+                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm) }}
+                          audioText={getAudioText(form)}
+                          pronounDisplay={getPronounDisplay(form)}
+                          isCompound={compound}
+                          selectedGender={selectedGender}
+                          audioPreference={audioPreference}
+                          wordTags={word?.tags || []}
+                          selectedFormality={selectedFormality}
+                        />
+                      )
+                    })}
                   </>
                 )}
               </div>
@@ -701,7 +750,8 @@ function ConjugationRow({
   isCompound,
   selectedGender,
   audioPreference,
-  wordTags
+  wordTags,
+  selectedFormality
 }) {
   const isIrregular = form.tags?.includes('irregular')
   const isPlural = form.tags?.includes('plurale') || ['noi', 'voi', 'loro'].includes(pronounDisplay)
