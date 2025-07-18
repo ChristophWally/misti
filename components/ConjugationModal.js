@@ -243,70 +243,50 @@ const loadConjugations = async () => {
     return pronoun || ''
   }
 
-  // Get translation based on audio preference, gender toggle, AND formality - FIXED FORMAL DETECTION
+  // Get translation - USE ORIGINAL TRANSLATION for formal contexts
   const getDynamicTranslation = (displayForm, originalForm) => {
-    const originalPronoun = extractTagValue(originalForm.tags, 'pronoun')
-    const isFormalContext =
-      selectedFormality === 'formal' &&
-      (originalPronoun === 'tu' || originalPronoun === 'voi')
-
-    if (isFormalContext) {
-      let translation = displayForm.translation
-
-      if (originalPronoun === 'tu') {
-        return translation
-          .replace(/\bhe\/she\b/gi, 'you')
-          .replace(/\bHe\/she\b/g, 'You')
-          .replace(/\bhe\b/gi, 'you')
-          .replace(/\bshe\b/gi, 'you')
-          .replace(/\bHe\b/g, 'You')
-          .replace(/\bShe\b/g, 'You')
-      }
-
-      if (originalPronoun === 'voi') {
-        return translation
-          .replace(/\bthey\b/gi, 'you all')
-          .replace(/\bThey\b/g, 'You all')
+    // For formal contexts, always use the ORIGINAL form's translation
+    if (selectedFormality === 'formal') {
+      const originalPronoun = extractTagValue(originalForm.tags, 'pronoun')
+      if (originalPronoun === 'tu' || originalPronoun === 'voi') {
+        return originalForm.translation // Use original tu/voi translation directly
       }
     }
 
+    // For non-formal contexts, use existing gender logic on the display form
     const pronoun = extractTagValue(displayForm.tags, 'pronoun')
 
+    // Only modify 3rd person translations for non-formal contexts  
     if (pronoun !== 'lui' && pronoun !== 'lei') {
       return displayForm.translation
     }
 
+    // Start from the original translation each time
     let translation = displayForm.translation
-    const startsWithCapital = /^[A-Z]/.test(translation.trim())
-
     const hasGenderVariants =
       word?.tags?.includes('essere-auxiliary') && displayForm.tags?.includes('compound')
 
-    let targetPronoun
     if (audioPreference === 'form-only' && !hasGenderVariants) {
-      targetPronoun = 'he/she'
-    } else {
-      targetPronoun = selectedGender === 'male' ? 'he' : 'she'
+      if (translation.toLowerCase().includes('he ') || translation.toLowerCase().startsWith('he ')) {
+        translation = translation.replace(/\bhe\b/gi, 'he/she').replace(/^He\b/, 'He/she')
+      } else if (translation.toLowerCase().includes('she ') || translation.toLowerCase().startsWith('she ')) {
+        translation = translation.replace(/\bshe\b/gi, 'he/she').replace(/^She\b/, 'He/she')
+      }
+    } else if (hasGenderVariants || audioPreference === 'with-pronoun') {
+      if (selectedGender === 'male') {
+        translation = translation
+          .replace(/\bhe\/she\b/gi, 'he')
+          .replace(/^He\/she\b/, 'He')
+          .replace(/\bshe\b/gi, 'he')
+          .replace(/^She\b/, 'He')
+      } else {
+        translation = translation
+          .replace(/\bhe\/she\b/gi, 'she')
+          .replace(/^He\/she\b/, 'She')
+          .replace(/\bhe\b/gi, 'she')
+          .replace(/^He\b/, 'She')
+      }
     }
-
-    translation = translation
-      .replace(/\bhe\/she\b/gi, 'PLACEHOLDER')
-      .replace(/\bHe\/she\b/g, 'PLACEHOLDER')
-      .replace(/\bshe\/he\b/gi, 'PLACEHOLDER')
-      .replace(/\bShe\/he\b/g, 'PLACEHOLDER')
-      .replace(/\bhe\b/gi, 'PLACEHOLDER')
-      .replace(/\bshe\b/gi, 'PLACEHOLDER')
-      .replace(/\bHe\b/g, 'PLACEHOLDER')
-      .replace(/\bShe\b/g, 'PLACEHOLDER')
-
-    if (translation.startsWith('PLACEHOLDER')) {
-      const first = startsWithCapital
-        ? targetPronoun.charAt(0).toUpperCase() + targetPronoun.slice(1)
-        : targetPronoun
-      translation = translation.replace('PLACEHOLDER', first)
-    }
-
-    translation = translation.replace(/PLACEHOLDER/g, targetPronoun)
 
     return translation
   }
