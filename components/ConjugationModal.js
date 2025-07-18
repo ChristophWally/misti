@@ -639,30 +639,73 @@ function ConjugationRow({
   
   // Determine colors based on gender variants and toggle state
   const getColors = () => {
-    // Check if this is a form that actually changes based on gender
-    const hasActualGenderVariants =
+    // Check if this form has actual gender variants in the verb form
+    const hasVerbGenderVariants =
       form.tags?.includes('compound') &&
       (wordTags?.includes('essere-auxiliary') || form.base_form_id)
 
-    if (audioPreference === 'form-only' && !hasActualGenderVariants) {
-      // Form-only with no gender variants - default color
+    // Check if this is a 3rd person form that changes pronouns
+    const isThirdPerson =
+      form.tags?.includes('lui') ||
+      form.tags?.includes('lei') ||
+      extractTagValue(form.tags, 'pronoun') === 'lui' ||
+      extractTagValue(form.tags, 'pronoun') === 'lei'
+
+    if (audioPreference === 'form-only') {
+      if (hasVerbGenderVariants) {
+        // Form-only + compound: verb form changes, use gender colors
+        return {
+          form:
+            selectedGender === 'male'
+              ? isPlural
+                ? 'text-amber-500'
+                : 'text-blue-500'
+              : 'text-pink-500',
+          audio:
+            selectedGender === 'male'
+              ? isPlural
+                ? 'bg-amber-500'
+                : 'bg-blue-500'
+              : 'bg-pink-500'
+        }
+      }
+
+      // Form-only + simple: no changes, default color
       return {
         form: 'text-teal-600',
         audio: 'bg-emerald-600'
       }
-    }
-
-    // Either has gender variants or with-pronoun mode - use gender colors
-    if (selectedGender === 'male') {
-      return {
-        form: isPlural ? 'text-amber-500' : 'text-blue-500',
-        audio: isPlural ? 'bg-amber-500' : 'bg-blue-500'
+    } else {
+      // With-pronoun mode
+      if (hasVerbGenderVariants) {
+        // Compound: both pronoun and verb change
+        return {
+          form:
+            selectedGender === 'male'
+              ? isPlural
+                ? 'text-amber-500'
+                : 'text-blue-500'
+              : 'text-pink-500',
+          audio:
+            selectedGender === 'male'
+              ? isPlural
+                ? 'bg-amber-500'
+                : 'bg-blue-500'
+              : 'bg-pink-500'
+        }
+      } else if (isThirdPerson) {
+        // Simple + 3rd person: only pronoun changes
+        return {
+          form: selectedGender === 'male' ? 'text-blue-500' : 'text-pink-500',
+          audio: selectedGender === 'male' ? 'bg-blue-500' : 'bg-pink-500'
+        }
       }
-    }
 
-    return {
-      form: 'text-pink-500',
-      audio: 'bg-pink-500'
+      // Simple + 1st/2nd person: no changes
+      return {
+        form: 'text-teal-600',
+        audio: 'bg-emerald-600'
+      }
     }
   }
 
