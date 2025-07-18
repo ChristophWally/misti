@@ -160,11 +160,17 @@ const loadConjugations = async () => {
   }
 
   // Get current forms to display
-  // Get current forms to display
+  // Get current forms to display (ONLY base stored forms)
   const getCurrentForms = () => {
-    const currentForms = conjugations[selectedMood]?.[selectedTense] || []
-    console.log('🔍 Current forms for', selectedMood, selectedTense, ':', currentForms.length, 'forms')
-    return currentForms
+    const allForms = conjugations[selectedMood]?.[selectedTense] || []
+
+    // Filter to show ONLY stored forms (not calculated variants)
+    const baseStoredForms = allForms.filter(form => !form.tags?.includes('calculated-variant'))
+
+    console.log('🔍 Base stored forms for', selectedMood, selectedTense, ':', baseStoredForms.length, 'forms')
+    console.log('🔍 All forms available:', allForms.length, 'total (including calculated)')
+
+    return baseStoredForms
   }
 
   // Order forms by pronoun sequence
@@ -226,13 +232,38 @@ const loadConjugations = async () => {
     return pronoun || ''
   }
 
+  // Get the appropriate form to display based on gender toggle
+  const getDisplayForm = (baseForm) => {
+    // If masculine gender selected, use base stored form
+    if (selectedGender === 'male') {
+      return baseForm
+    }
+
+    // If feminine gender selected, find the calculated variant
+    const allForms = conjugations[selectedMood]?.[selectedTense] || []
+
+    // Find matching calculated variant
+    const calculatedVariant = allForms.find(form =>
+      form.base_form_id === baseForm.id &&
+      form.tags?.includes('calculated-variant') &&
+      ((baseForm.tags?.includes('singolare') && form.variant_type === 'fem-sing') ||
+       (baseForm.tags?.includes('plurale') && form.variant_type === 'fem-plur'))
+    )
+
+    // Return calculated variant if found, otherwise base form
+    return calculatedVariant || baseForm
+  }
+
   // Get audio text based on preference
   const getAudioText = (form) => {
+    // Determine what form text to use based on gender toggle
+    const displayForm = getDisplayForm(form)
+
     if (audioPreference === 'form-only') {
-      return form.form_text
+      return displayForm.form_text
     } else {
       const pronoun = getPronounDisplay(form)
-      return `${pronoun} ${form.form_text}`
+      return `${pronoun} ${displayForm.form_text}`
     }
   }
 
@@ -464,17 +495,20 @@ const loadConjugations = async () => {
                 {singular.length > 0 && (
                   <>
                     <SectionHeading>Singular</SectionHeading>
-                    {singular.map(form => (
-                      <ConjugationRow
-                        key={form.id}
-                        form={form}
-                        audioText={getAudioText(form)}
-                        pronounDisplay={getPronounDisplay(form)}
-                        isCompound={compound}
-                        selectedGender={selectedGender}
-                        audioPreference={audioPreference}
-                      />
-                    ))}
+                    {singular.map(form => {
+                      const displayForm = getDisplayForm(form)
+                      return (
+                        <ConjugationRow
+                          key={form.id}
+                          form={displayForm}  // Use display form instead of base form
+                          audioText={getAudioText(form)}
+                          pronounDisplay={getPronounDisplay(form)}
+                          isCompound={compound}
+                          selectedGender={selectedGender}
+                          audioPreference={audioPreference}
+                        />
+                      )
+                    })}
                   </>
                 )}
 
@@ -482,17 +516,20 @@ const loadConjugations = async () => {
                 {plural.length > 0 && (
                   <>
                     <SectionHeading className="mt-5">Plural</SectionHeading>
-                    {plural.map(form => (
-                      <ConjugationRow
-                        key={form.id}
-                        form={form}
-                        audioText={getAudioText(form)}
-                        pronounDisplay={getPronounDisplay(form)}
-                        isCompound={compound}
-                        selectedGender={selectedGender}
-                        audioPreference={audioPreference}
-                      />
-                    ))}
+                    {plural.map(form => {
+                      const displayForm = getDisplayForm(form)
+                      return (
+                        <ConjugationRow
+                          key={form.id}
+                          form={displayForm}  // Use display form instead of base form
+                          audioText={getAudioText(form)}
+                          pronounDisplay={getPronounDisplay(form)}
+                          isCompound={compound}
+                          selectedGender={selectedGender}
+                          audioPreference={audioPreference}
+                        />
+                      )
+                    })}
                   </>
                 )}
 
