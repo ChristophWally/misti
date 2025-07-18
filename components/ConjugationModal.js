@@ -756,15 +756,14 @@ function ConjugationRow({
   const isIrregular = form.tags?.includes('irregular')
   const isPlural = form.tags?.includes('plurale') || ['noi', 'voi', 'loro'].includes(pronounDisplay)
   
-  // Determine colors based on gender variants and toggle state
-  // Determine colors based on gender variants and toggle state
+  // Determine colors based on gender variants, toggle state, AND formality
   const getColors = () => {
-    // Extract pronoun directly from tags (without helper)
+    // Extract pronoun directly from tags
     const pronoun = form.tags?.find(tag =>
       ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro'].includes(tag)
     )
 
-    // Check if this form has actual gender variants in the verb form
+    // Check if this form has actual gender variants in the verb form itself
     const hasVerbGenderVariants =
       form.tags?.includes('compound') &&
       (wordTags?.includes('essere-auxiliary') || form.base_form_id)
@@ -775,6 +774,18 @@ function ConjugationRow({
       form.tags?.includes('lei') ||
       pronoun === 'lui' ||
       pronoun === 'lei'
+
+    // Check if this is a formal context (tu/voi mapped to Lei/Loro)
+    const isFormalContext =
+      selectedFormality === 'formal' && (pronoun === 'tu' || pronoun === 'voi')
+
+    // Formal contexts get purple coloring
+    if (isFormalContext) {
+      return {
+        form: 'text-purple-600',
+        audio: 'bg-purple-600'
+      }
+    }
 
     if (audioPreference === 'form-only') {
       if (hasVerbGenderVariants) {
