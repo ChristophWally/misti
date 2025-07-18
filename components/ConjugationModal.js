@@ -502,48 +502,64 @@ const loadConjugations = async () => {
                 </button>
               </div>
 
-              {/* Formality Controls - Always visible */}
+              {/* Formality Controls - Single Toggle */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   Formality
                 </label>
-                <div className="flex gap-2 justify-center">
+                <div className="flex justify-center">
                   <button
-                    onClick={() => setSelectedFormality('informal')}
-                    className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                      selectedFormality === 'informal'
-                        ? 'border-green-500 bg-green-500 text-white'
-                        : 'border-green-500 text-green-500 bg-white hover:bg-green-50'
-                    }`}
-                    title="Informal (tu/voi)"
-                  >
-                    😊
-                  </button>
-                  <button
-                    onClick={() => setSelectedFormality('formal')}
-                    className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center transition-colors ${
+                    onClick={() =>
+                      setSelectedFormality(
+                        selectedFormality === 'formal' ? 'informal' : 'formal'
+                      )
+                    }
+                    className={`w-12 h-10 border-2 rounded-lg flex items-center justify-center transition-colors ${
                       selectedFormality === 'formal'
-                        ? 'border-purple-500 bg-purple-500 text-white'
-                        : 'border-purple-500 text-purple-500 bg-white hover:bg-purple-50'
+                        ? 'border-purple-500 bg-purple-500 text-white shadow-md'
+                        : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
                     }`}
-                    title="Formal (Lei/Loro)"
+                    title={
+                      selectedFormality === 'formal'
+                        ? 'Formal (Lei/Loro)'
+                        : 'Informal (tu/voi) - Click for formal'
+                    }
                   >
                     <svg
-                      width="20"
-                      height="20"
+                      width="22"
+                      height="22"
                       viewBox="0 0 24 24"
                       fill="currentColor"
                       className="drop-shadow-sm"
                     >
-                      {/* Royal Crown SVG */}
-                      <path d="M12 6L9 12H15L12 6Z" />
-                      <path d="M5 9L2 12H6L5 9Z" />
-                      <path d="M19 9L22 12H18L19 9Z" />
-                      <path d="M7 15L17 15L16 13H8L7 15Z" />
-                      <circle cx="12" cy="4" r="1.5" />
-                      <circle cx="5" cy="7" r="1" />
-                      <circle cx="19" cy="7" r="1" />
-                      <rect x="2" y="18" width="20" height="3" rx="1" />
+                      {/* British Royal Crown SVG */}
+                      {/* Crown base band */}
+                      <ellipse cx="12" cy="19" rx="10" ry="2" />
+
+                      {/* Main crown body */}
+                      <path d="M3 17h18l-1-8H4l-1 8z" />
+
+                      {/* Crown points/peaks */}
+                      <path d="M6 9l1-3 2 2 3-4 3 4 2-2 1 3" />
+
+                      {/* Center arch */}
+                      <path d="M8 9c0-2 1.5-3 4-3s4 1 4 3" strokeWidth="0.5" stroke="currentColor" fill="none" />
+
+                      {/* Side arches */}
+                      <path d="M4 12c2-1 4-1 6 0" strokeWidth="0.5" stroke="currentColor" fill="none" />
+                      <path d="M14 12c2-1 4-1 6 0" strokeWidth="0.5" stroke="currentColor" fill="none" />
+
+                      {/* Crown jewels */}
+                      <circle cx="12" cy="8" r="1" opacity="0.8" />
+                      <circle cx="7" cy="10" r="0.5" opacity="0.6" />
+                      <circle cx="17" cy="10" r="0.5" opacity="0.6" />
+
+                      {/* Cross on top */}
+                      <path d="M11.5 5h1v3h-1z" />
+                      <path d="M10.5 6h3v1h-3z" />
+
+                      {/* Royal orb */}
+                      <circle cx="12" cy="4" r="1.5" opacity="0.9" />
                     </svg>
                   </button>
                 </div>
