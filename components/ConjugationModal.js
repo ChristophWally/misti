@@ -243,11 +243,32 @@ const loadConjugations = async () => {
     return pronoun || ''
   }
 
-  // Get translation based on audio preference and gender toggle - BULLETPROOF VERSION
+  // Get translation based on audio preference, gender toggle, AND formality - WITH FORMAL SUPPORT
   const getDynamicTranslation = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
 
-    // Only modify translations for 3rd person
+    // Handle formal contexts first
+    if (selectedFormality === 'formal') {
+      if (pronoun === 'tu') {
+        let translation = form.translation
+        return translation
+          .replace(/\bhe\/she\b/gi, 'you')
+          .replace(/\bHe\/she\b/g, 'You')
+          .replace(/\bhe\b/gi, 'you')
+          .replace(/\bshe\b/gi, 'you')
+          .replace(/\bHe\b/g, 'You')
+          .replace(/\bShe\b/g, 'You')
+      }
+
+      if (pronoun === 'voi') {
+        let translation = form.translation
+        return translation
+          .replace(/\bthey\b/gi, 'you all')
+          .replace(/\bThey\b/g, 'You all')
+      }
+    }
+
+    // Only modify translations for 3rd person in non-formal contexts
     if (pronoun !== 'lui' && pronoun !== 'lei') {
       return form.translation
     }
