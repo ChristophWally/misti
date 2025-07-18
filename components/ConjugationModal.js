@@ -213,23 +213,40 @@ const loadConjugations = async () => {
     return currentForms.some(form => form.tags?.includes('compound'))
   }
 
-  // Get pronoun display text
+  // Get pronoun display based on selected gender toggle
   const getPronounDisplay = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
-    
-    if (audioPreference === 'with-pronoun' && pronoun === 'lui') {
-      return selectedGender === 'male' ? 'lui' : 'lei'
-    }
-    if (audioPreference === 'with-pronoun' && pronoun === 'lei') {
-      return selectedGender === 'male' ? 'lui' : 'lei'
-    }
-    
-    // Handle lui/lei cases
+
+    // For 3rd person, show the selected gender
     if (pronoun === 'lui' || pronoun === 'lei') {
-      return audioPreference === 'form-only' ? 'lui/lei' : pronoun
+      return selectedGender === 'male' ? 'lui' : 'lei'
     }
-    
+
+    // For all other persons, show the base pronoun
     return pronoun || ''
+  }
+
+  // Get translation based on selected gender toggle
+  const getDynamicTranslation = (form) => {
+    const pronoun = extractTagValue(form.tags, 'pronoun')
+    let translation = form.translation
+
+    // For 3rd person, adjust translation based on selected gender
+    if (pronoun === 'lui' || pronoun === 'lei') {
+      if (selectedGender === 'male') {
+        // Ensure it says "he"
+        translation = translation
+          .replace(/she /gi, 'he ')
+          .replace(/^She /g, 'He ')
+      } else {
+        // Ensure it says "she"
+        translation = translation
+          .replace(/he /gi, 'she ')
+          .replace(/^He /g, 'She ')
+      }
+    }
+
+    return translation
   }
 
   // Get the appropriate form to display based on gender toggle
@@ -500,7 +517,7 @@ const loadConjugations = async () => {
                       return (
                         <ConjugationRow
                           key={form.id}
-                          form={displayForm}  // Use display form instead of base form
+                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm) }}
                           audioText={getAudioText(form)}
                           pronounDisplay={getPronounDisplay(form)}
                           isCompound={compound}
@@ -521,7 +538,7 @@ const loadConjugations = async () => {
                       return (
                         <ConjugationRow
                           key={form.id}
-                          form={displayForm}  // Use display form instead of base form
+                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm) }}
                           audioText={getAudioText(form)}
                           pronounDisplay={getPronounDisplay(form)}
                           isCompound={compound}
