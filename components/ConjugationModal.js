@@ -41,7 +41,7 @@ export default function ConjugationModal({
         'condizionale-presente', 'condizionale-passato',
         'imperativo-presente', 'infinito-presente', 'infinito-passato', 
         'participio-presente', 'participio-passato', 'gerundio-presente', 'gerundio-passato',
-        'presente-progressivo'
+        'presente-progressivo', 'passato-progressivo'
       ]
       return tags.find(tag => tenseTags.includes(tag)) || null
     }
@@ -211,7 +211,11 @@ const loadConjugations = async () => {
   // Check if compound tense
   const isCompoundTense = () => {
     const currentForms = getCurrentForms()
-    return currentForms.some(form => form.tags?.includes('compound'))
+    return currentForms.some(form =>
+      form.tags?.includes('compound') &&
+      !form.tags?.includes('presente-progressivo') &&
+      !form.tags?.includes('passato-progressivo')
+    )
   }
 
   // Get pronoun display based on audio preference and gender toggle
@@ -228,7 +232,10 @@ const loadConjugations = async () => {
     if (pronoun === 'lui' || pronoun === 'lei') {
       // Check if this form has gender variants (ESSERE verbs with compound tenses)
       const hasGenderVariants =
-        word?.tags?.includes('essere-auxiliary') && form.tags?.includes('compound')
+        word?.tags?.includes('essere-auxiliary') &&
+        form.tags?.includes('compound') &&
+        !form.tags?.includes('presente-progressivo') &&
+        !form.tags?.includes('passato-progressivo')
 
       if (audioPreference === 'form-only') {
         // Form-only mode: show lui/lei for forms without gender variants
@@ -264,7 +271,10 @@ const loadConjugations = async () => {
     // Start from the original translation each time
     let translation = displayForm.translation
     const hasGenderVariants =
-      word?.tags?.includes('essere-auxiliary') && displayForm.tags?.includes('compound')
+      word?.tags?.includes('essere-auxiliary') &&
+      displayForm.tags?.includes('compound') &&
+      !displayForm.tags?.includes('presente-progressivo') &&
+      !displayForm.tags?.includes('passato-progressivo')
 
     if (audioPreference === 'form-only' && !hasGenderVariants) {
       if (translation.toLowerCase().includes('he ') || translation.toLowerCase().startsWith('he ')) {
@@ -617,9 +627,17 @@ const loadConjugations = async () => {
                   <div className="flex gap-2 justify-center">
                     <button
                       onClick={() => setSelectedGender('male')}
-                      disabled={audioPreference === 'form-only' && !currentForms.some(form => form.tags?.includes('compound'))}
+                      disabled={audioPreference === 'form-only' && !currentForms.some(form =>
+                        form.tags?.includes('compound') &&
+                        !form.tags?.includes('presente-progressivo') &&
+                        !form.tags?.includes('passato-progressivo')
+                      )}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        (audioPreference === 'form-only' && !currentForms.some(form => form.tags?.includes('compound')))
+                        (audioPreference === 'form-only' && !currentForms.some(form =>
+                          form.tags?.includes('compound') &&
+                          !form.tags?.includes('presente-progressivo') &&
+                          !form.tags?.includes('passato-progressivo')
+                        ))
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'male'
                               ? 'border-blue-500 bg-blue-500 text-white'
@@ -630,9 +648,17 @@ const loadConjugations = async () => {
                     </button>
                     <button
                       onClick={() => setSelectedGender('female')}
-                      disabled={audioPreference === 'form-only' && !currentForms.some(form => form.tags?.includes('compound'))}
+                      disabled={audioPreference === 'form-only' && !currentForms.some(form =>
+                        form.tags?.includes('compound') &&
+                        !form.tags?.includes('presente-progressivo') &&
+                        !form.tags?.includes('passato-progressivo')
+                      )}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        (audioPreference === 'form-only' && !currentForms.some(form => form.tags?.includes('compound')))
+                        (audioPreference === 'form-only' && !currentForms.some(form =>
+                          form.tags?.includes('compound') &&
+                          !form.tags?.includes('presente-progressivo') &&
+                          !form.tags?.includes('passato-progressivo')
+                        ))
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'female'
                               ? 'border-pink-500 bg-pink-500 text-white'
@@ -766,6 +792,8 @@ function ConjugationRow({
     // Check if this form has actual gender variants in the verb form itself
     const hasVerbGenderVariants =
       form.tags?.includes('compound') &&
+      !form.tags?.includes('presente-progressivo') &&
+      !form.tags?.includes('passato-progressivo') &&
       (wordTags?.includes('essere-auxiliary') || form.base_form_id)
 
     // Check if this is a 3rd person form that changes pronouns
