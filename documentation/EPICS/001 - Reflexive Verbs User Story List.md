@@ -143,24 +143,122 @@ CREATE TABLE user_form_translation_progress (
 
 **Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:5` `type:technical` `component:database`
 
-**As a** developer
-**I want** to create the new database tables for semantic contexts and form translations
-**So that** we can support multiple meanings per word and form
+**As a** developer  
+**I want** to migrate existing dictionary entries (21 words, 432 forms) to the new schema structure  
+**So that** current words continue to work while gaining multiple translation capabilities
 
 **Acceptance Criteria:**
 
-- [ ] `word_semantic_contexts` table created with all required fields
-- [ ] `form_translations` table created with proper foreign key relationships
-- [ ] `user_form_translation_progress` table created for SRS tracking
-- [ ] All constraints, indexes, and cascading deletes properly configured
-- [ ] Database migration script tested on development environment
+- [ ] All 21 existing dictionary entries preserved without data loss
+- [ ] Default semantic context created for each existing word with `context_type = 'primary-meaning'`
+- [ ] All 432 existing word_forms.translation values migrated to new form_translations table
+- [ ] Each existing form linked to its word's default semantic context
+- [ ] Extensive conjugation data for "parlare" and "andare" (160+ forms) preserved correctly
+- [ ] Existing word_audio_metadata relationships maintained (2 current records)
+- [ ] Existing word_relationships preserved (2 current records)
+- [ ] Migration script includes rollback plan tested on development environment
+- [ ] No downtime during migration process
 
-**Technical Notes:**
+**Migration Strategy:**
 
-- Follow the schema defined in implementation plan
-- Ensure UUID primary keys and proper referential integrity
-- Add GIN indexes on JSONB fields for performance
+```sql
+-- Step 1: Create default contexts for all existing words
+INSERT INTO word_semantic_contexts (word_id, context_type, context_name, base_translation, frequency_rank)
+SELECT 
+  id,
+  'primary-meaning',
+  CASE word_type
+    WHEN 'VERB' THEN 'Primary Usage'
+    WHEN 'NOUN' THEN 'Common Meaning'
+    WHEN 'ADJECTIVE' THEN 'Standard Form'
+    WHEN 'ADVERB' THEN 'Basic Usage'
+  END,
+  english, -- Use existing english field as base_translation
+  1 -- Primary meaning gets rank 1
+FROM dictionary;
 
+-- Step 2: Migrate all word_forms.translation to form_translations
+INSERT INTO form_translations (form_id, semantic_context_id, translation)
+SELECT 
+  wf.id,
+  wsc.id,
+  COALESCE(wf.translation, wf.form_text) -- Use translation if exists, fallback to form_text
+FROM word_forms wf
+JOIN word_semantic_contexts wsc ON wsc.word_id = wf.word_id
+WHERE wsc.context_type = 'primary-meaning';
+
+-- Step 3: Verify migration completeness
+-- All 432 forms should have form_translations entries
+```
+
+**Definition of Done:**
+
+- [ ] Pre-migration backup created and verified
+- [ ] All 432 word forms have corresponding form_translations entries
+- [ ] All 21 words have primary semantic contexts created
+- [ ] Data integrity verified: no orphaned records
+- [ ] Performance tests confirm <200ms query times post-migration
+- [ ] Rollback script tested and documented
+
+-----
+
+### Issue #3: Create Reflexive Verb Test Data
+
+**Labels**: `epic:reflexive-verbs` `priority:high` `phase:1` `story-points:3` `type:technical` `component:database`
+
+**As a** developer  
+**I want** to create comprehensive test data for "lavarsi" with multiple semantic contexts  
+**So that** we can test and demonstrate the multiple meanings functionality
+
+**Acceptance Criteria:**
+
+- [ ] "lavarsi" entry created with reflexive-verb tags
+- [ ] Two semantic contexts created:
+  - Direct reflexive: "Wash Oneself" (`context_type: 'direct-reflexive'`)
+  - Reciprocal: "Wash Each Other" (`context_type: 'reciprocal'`)
+- [ ] Complete present indicative conjugations (6 forms) created for lavarsi
+- [ ] Context-specific translations for each form in both meanings:
+  - "ci laviamo" → "we wash ourselves" (direct) vs "we wash each other" (reciprocal)
+  - "si lavano" → "they wash themselves" (direct) vs "they wash each other" (reciprocal)
+- [ ] Usage examples created for key forms demonstrating context differences
+- [ ] Audio metadata placeholders created following existing pattern
+- [ ] Related word links created (sapone, asciugamano for direct; insieme, aiutarsi for reciprocal)
+
+**Test Data Structure:**
+
+```sql
+-- Dictionary entry
+INSERT INTO dictionary (italian, english, word_type, tags) VALUES
+('lavarsi', 'to wash', 'VERB', ARRAY[
+  'reflexive-verb', 'are-conjugation', 'essere-auxiliary', 
+  'both-transitivity', 'freq-top1000', 'CEFR-A2'
+]);
+
+-- Semantic contexts  
+INSERT INTO word_semantic_contexts (word_id, context_type, context_name, base_translation, semantic_tags) VALUES
+(lavarsi_id, 'direct-reflexive', 'Wash Oneself', 'to wash oneself', ARRAY['self-directed', 'personal-care']),
+(lavarsi_id, 'reciprocal', 'Wash Each Other', 'to wash each other', ARRAY['mutual-action', 'cooperative']);
+
+-- Sample key forms with dual translations
+-- "ci laviamo" with both meanings
+-- "si lavano" with both meanings  
+-- "mi lavo" (only direct - singular can't be reciprocal)
+```
+
+**Context-Specific Examples:**
+
+- **Direct Reflexive**: "Mi lavo le mani prima di mangiare" → "I wash my hands before eating"
+- **Reciprocal**: "Ci laviamo a vicenda dopo il lavoro" → "We wash each other after work"
+- **Usage Notes**: Reciprocal meaning requires plural subject (noi, voi, loro only)
+
+**Definition of Done:**
+
+- [ ] "lavarsi" fully functional in dictionary search
+- [ ] Context switching works in conjugation modal
+- [ ] Gender variants generate correctly for compound tenses
+- [ ] Related words display per context appropriately
+- [ ] Integration with existing VariantCalculator confirmed
+- [ ] Test data serves as template for additional reflexive verbs
 -----
 
 ### Story 1.2: Migrate Existing Dictionary Data
