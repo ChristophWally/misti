@@ -52,37 +52,91 @@ Each issue is tagged with:
 
 ## Component: Database Architecture
 
+You're absolutely right! Looking at your document, you need to overwrite **Issue #1: Create Multiple Translations Schema**.
+
+Here's the exact text to replace that section:
+
+---
+
 ### Issue #1: Create Multiple Translations Schema
 
 **Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:8` `type:technical` `component:database`
 
 **As a** developer  
 **I want** to create the new database tables for semantic contexts and form translations  
-**So that** we can support multiple meanings per reflexive verbs
+**So that** we can support multiple meanings per reflexive verbs while preserving existing data
 
 **Acceptance Criteria:**
 
-- [ ] `word_semantic_contexts` table created with all required fields
-- [ ] `form_translations` table created with proper foreign key relationships
-- [ ] `user_form_translation_progress` table created for SRS tracking
-- [ ] All constraints, indexes, and cascading deletes properly configured
-- [ ] Database migration script tested on development environment
+- [ ] `word_semantic_contexts` table created with proper foreign key to existing `dictionary` table
+- [ ] `form_translations` table created linking to existing `word_forms` and new `word_semantic_contexts` tables  
+- [ ] `user_form_translation_progress` table created extending existing `user_word_progress` pattern
+- [ ] All foreign key constraints properly configured with CASCADE deletes to `dictionary.id`
+- [ ] GIN indexes created on JSONB fields for performance (`context_links`, `usage_examples`)
+- [ ] Integration with existing `word_audio_metadata` source_table/source_id pattern verified
+- [ ] Database migration script tested on development environment with existing 21 words + 432 forms
 
 **Technical Implementation:**
 
 ```sql
--- Reference the complete schema in technical plan document
--- Ensure UUID primary keys and proper referential integrity
--- Add GIN indexes on JSONB fields for performance
+-- SEMANTIC CONTEXTS: Multiple meanings per word
+CREATE TABLE word_semantic_contexts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  word_id uuid NOT NULL REFERENCES dictionary(id) ON DELETE CASCADE,
+  context_type text NOT NULL, -- 'direct-reflexive', 'reciprocal', 'indirect-reflexive'
+  context_name text NOT NULL, -- 'Wash Oneself', 'Wash Each Other'  
+  base_translation text NOT NULL, -- 'to wash oneself', 'to wash each other'
+  semantic_tags text[] DEFAULT '{}', -- ['self-directed', 'body-care']
+  frequency_rank integer DEFAULT 1, -- 1 = most common meaning
+  context_links jsonb DEFAULT '[]', -- [{"word_id": "uuid", "link_type": "synonym"}]
+  created_at timestamp with time zone DEFAULT now()
+);
+
+-- FORM TRANSLATIONS: Context-specific translations for existing word_forms
+CREATE TABLE form_translations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  form_id uuid NOT NULL REFERENCES word_forms(id) ON DELETE CASCADE,
+  semantic_context_id uuid NOT NULL REFERENCES word_semantic_contexts(id) ON DELETE CASCADE,
+  translation text NOT NULL, -- 'we wash ourselves' vs 'we wash each other'
+  usage_examples jsonb DEFAULT '[]', -- [{"italian": "Ci laviamo", "english": "We wash ourselves"}]
+  context_notes text, -- Additional pedagogical explanations
+  created_at timestamp with time zone DEFAULT now(),
+  UNIQUE(form_id, semantic_context_id) -- One translation per form per context
+);
+
+-- SRS PROGRESS: Extends existing pattern to track per form+context combination  
+CREATE TABLE user_form_translation_progress (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL, -- Matches existing user_word_progress pattern
+  form_translation_id uuid NOT NULL REFERENCES form_translations(id) ON DELETE CASCADE,
+  deck_id uuid REFERENCES decks(id) ON DELETE SET NULL, -- Optional deck association
+  
+  -- SRS Algorithm fields (matches existing user_word_progress exactly)
+  difficulty_factor numeric DEFAULT 2.5,
+  interval_days integer DEFAULT 1,
+  repetitions integer DEFAULT 0,
+  correct_streak integer DEFAULT 0,
+  total_reviews integer DEFAULT 0,
+  correct_reviews integer DEFAULT 0,
+  last_reviewed timestamp with time zone,
+  next_review timestamp with time zone,
+  average_response_time numeric,
+  difficulty_adjustments integer DEFAULT 0,
+  
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  UNIQUE(user_id, form_translation_id, deck_id)
+);
 ```
 
 **Definition of Done:**
 
 - [ ] Code reviewed and approved
-- [ ] Migration script tested on staging
-- [ ] All foreign key constraints validated
-- [ ] Performance benchmarks meet requirements (<100ms for complex queries)
-
+- [ ] Migration script tested preserving all existing 21 dictionary entries and 432 word forms
+- [ ] All foreign key constraints validated (CASCADE from dictionary.id works correctly)
+- [ ] Performance benchmarks meet requirements (<100ms for complex context queries)
+- [ ] Integration confirmed with existing `word_audio_metadata.source_table = 'word_forms'` pattern
+- [ ] No breaking changes to existing `dictionary` or `word_forms` table structure
 -----
 
 ### Issue #2: Migrate Existing Dictionary Data
