@@ -402,3 +402,9 @@ The UUID-based file naming provides security through obscurity while supporting 
 **Clear Scaling Economics**: Revenue models align with user value creation and infrastructure costs, providing sustainable growth paths that support both community development and commercial viability.
 
 This comprehensive development foundation provides a solid, scalable base for building a language learning application that can compete with established commercial platforms while maintaining cost-effective operations and technical flexibility for future innovation and growth.
+
+### July 20, 2025 - Conjugation Dropdown Update
+- Implemented fixed mood and tense ordering for a consistent dropdown sequence.
+- Added progressive tenses to the recognized list and dropdown.
+- Updated dropdown rendering and default selection logic to respect the new order.
+

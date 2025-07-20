@@ -9,6 +9,61 @@ import AudioButton from './AudioButton'
 import SectionHeading from './SectionHeading'
 import { VariantCalculator } from '../lib/variant-calculator'
 
+// Desired display order for moods and tenses
+const moodOrder = [
+  'indicativo',
+  'congiuntivo',
+  'condizionale',
+  'imperativo',
+  'infinito',
+  'participio',
+  'gerundio'
+]
+
+const tenseOrderMap = {
+  indicativo: [
+    'presente',
+    'passato-prossimo',
+    'imperfetto',
+    'trapassato-prossimo',
+    'presente-progressivo',
+    'passato-progressivo',
+    'passato-remoto',
+    'trapassato-remoto',
+    'futuro-semplice',
+    'futuro-anteriore'
+  ],
+  congiuntivo: [
+    'congiuntivo-presente',
+    'congiuntivo-passato',
+    'congiuntivo-imperfetto',
+    'congiuntivo-trapassato'
+  ],
+  condizionale: [
+    'condizionale-presente',
+    'condizionale-passato'
+  ],
+  imperativo: ['imperativo-presente'],
+  infinito: ['infinito-presente', 'infinito-passato'],
+  participio: ['participio-presente', 'participio-passato'],
+  gerundio: ['gerundio-presente', 'gerundio-passato']
+}
+
+const sortMoods = moods =>
+  moods.sort((a, b) => moodOrder.indexOf(a) - moodOrder.indexOf(b))
+
+const sortTenses = (mood, tenses) => {
+  const order = tenseOrderMap[mood] || []
+  return tenses.sort((a, b) => {
+    const aIdx = order.indexOf(a)
+    const bIdx = order.indexOf(b)
+    if (aIdx === -1 && bIdx === -1) return a.localeCompare(b)
+    if (aIdx === -1) return 1
+    if (bIdx === -1) return -1
+    return aIdx - bIdx
+  })
+}
+
 export default function ConjugationModal({ 
   isOpen, 
   onClose, 
@@ -35,13 +90,29 @@ export default function ConjugationModal({
     
     if (category === 'tense') {
       const tenseTags = [
-        'presente', 'imperfetto', 'passato-prossimo', 'passato-remoto', 
-        'trapassato-prossimo', 'trapassato-remoto', 'futuro-semplice', 'futuro-anteriore',
-        'congiuntivo-presente', 'congiuntivo-imperfetto', 'congiuntivo-passato', 'congiuntivo-trapassato',
-        'condizionale-presente', 'condizionale-passato',
-        'imperativo-presente', 'infinito-presente', 'infinito-passato', 
-        'participio-presente', 'participio-passato', 'gerundio-presente', 'gerundio-passato',
-        'presente-progressivo', 'passato-progressivo'
+        'presente',
+        'passato-prossimo',
+        'imperfetto',
+        'trapassato-prossimo',
+        'presente-progressivo',
+        'passato-progressivo',
+        'passato-remoto',
+        'trapassato-remoto',
+        'futuro-semplice',
+        'futuro-anteriore',
+        'congiuntivo-presente',
+        'congiuntivo-passato',
+        'congiuntivo-imperfetto',
+        'congiuntivo-trapassato',
+        'condizionale-presente',
+        'condizionale-passato',
+        'imperativo-presente',
+        'infinito-presente',
+        'infinito-passato',
+        'participio-presente',
+        'participio-passato',
+        'gerundio-presente',
+        'gerundio-passato'
       ]
       return tags.find(tag => tenseTags.includes(tag)) || null
     }
@@ -135,8 +206,8 @@ const loadConjugations = async () => {
   // Get available mood/tense combinations for dropdown
   const getAvailableOptions = () => {
     const options = []
-    Object.keys(conjugations).forEach(mood => {
-      Object.keys(conjugations[mood]).forEach(tense => {
+    sortMoods(Object.keys(conjugations)).forEach(mood => {
+      sortTenses(mood, Object.keys(conjugations[mood])).forEach(tense => {
         const forms = conjugations[mood][tense]
         const hasIrregular = forms.some(form => form.tags?.includes('irregular'))
         const hasRegular = forms.some(form => form.tags?.includes('regular'))
@@ -420,7 +491,10 @@ const loadConjugations = async () => {
   useEffect(() => {
     // Set default tense when mood changes
     if (conjugations[selectedMood]) {
-      const availableTenses = Object.keys(conjugations[selectedMood])
+      const availableTenses = sortTenses(
+        selectedMood,
+        Object.keys(conjugations[selectedMood])
+      )
       if (!availableTenses.includes(selectedTense)) {
         setSelectedTense(availableTenses[0] || 'presente')
       }
@@ -508,14 +582,14 @@ const loadConjugations = async () => {
                 {dropdownOpen && (
                   <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-80 overflow-y-auto">
                     {/* Group by mood */}
-                    {Object.keys(conjugations).map(mood => (
-                      <div key={mood} className="border-b border-gray-100 last:border-b-0">
-                        <div className="px-4 py-2 bg-gray-50 font-semibold text-sm text-gray-700 border-b border-gray-200">
-                          {mood.charAt(0).toUpperCase() + mood.slice(1)}
-                        </div>
-                        {Object.keys(conjugations[mood]).map(tense => {
-                          const option = availableOptions.find(opt => opt.mood === mood && opt.tense === tense)
-                          const isSelected = mood === selectedMood && tense === selectedTense
+                      {sortMoods(Object.keys(conjugations)).map(mood => (
+                        <div key={mood} className="border-b border-gray-100 last:border-b-0">
+                          <div className="px-4 py-2 bg-gray-50 font-semibold text-sm text-gray-700 border-b border-gray-200">
+                            {mood.charAt(0).toUpperCase() + mood.slice(1)}
+                          </div>
+                          {sortTenses(mood, Object.keys(conjugations[mood])).map(tense => {
+                            const option = availableOptions.find(opt => opt.mood === mood && opt.tense === tense)
+                            const isSelected = mood === selectedMood && tense === selectedTense
                           
                           return (
                             <div
