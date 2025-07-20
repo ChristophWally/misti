@@ -137,75 +137,120 @@ CREATE TABLE user_form_translation_progress (
 
 **Definition of Done:**
 
-- [ ] Code reviewed and approved
-- [ ] Migration script tested preserving all existing 21 dictionary entries and 432 word forms
-- [ ] All foreign key constraints validated (CASCADE from dictionary.id works correctly)
-- [ ] Performance benchmarks meet requirements (<100ms for complex context queries)
-- [ ] Integration confirmed with existing `word_audio_metadata.source_table = 'word_forms'` pattern
-- [ ] No breaking changes to existing `dictionary` or `word_forms` table structure
+- [x] Code reviewed and approved
+- [x] Migration script tested preserving all existing 21 dictionary entries and 432 word forms
+- [x] All foreign key constraints validated (CASCADE from dictionary.id works correctly)
+- [x] Performance benchmarks meet requirements (<100ms for complex context queries)
+- [x] Integration confirmed with existing `word_audio_metadata.source_table = 'word_forms'` pattern
+- [x] No breaking changes to existing `dictionary` or `word_forms` table structure
 -----
 
-### Issue #2: Migrate Existing Dictionary Data
+### Issue #2: Migrate Existing Dictionary Data with Proper Multiple Meanings
 
-**Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:5` `type:technical` `component:database`
+**Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:8` `type:technical` `component:database`
 
 **As a** developer  
-**I want** to migrate existing dictionary entries (21 words, 432 forms) to the new schema structure  
-**So that** current words continue to work while gaining multiple translation capabilities
+**I want** to analyze and properly migrate existing dictionary entries (21 words, 432 forms) with real semantic contexts  
+**So that** current words gain genuine multiple meanings functionality rather than placeholder data
 
 **Acceptance Criteria:**
 
-- [ ] All 21 existing dictionary entries preserved without data loss
-- [ ] Default semantic context created for each existing word with `context_type = 'primary-meaning'`
-- [ ] All 432 existing word_forms.translation values migrated to new form_translations table
-- [ ] Each existing form linked to its word's default semantic context
-- [ ] Extensive conjugation data for "parlare" and "andare" (160+ forms) preserved correctly
-- [ ] Existing word_audio_metadata relationships maintained (2 current records)
-- [ ] Existing word_relationships preserved (2 current records)
-- [ ] Migration script includes rollback plan tested on development environment
-- [ ] No downtime during migration process
+- [ ] All 21 existing dictionary entries analyzed for multiple meanings in English translations
+- [ ] Words with multiple meanings split into proper semantic contexts:
+  - `ciao` → "Greeting" context + "Farewell" context
+  - `bello` → "Physical Beauty" context + "General Excellence" context
+  - Other multi-meaning words identified and split appropriately
+- [ ] Single-meaning words get appropriate semantic contexts with proper context_type classification
+- [ ] All 432 existing word_forms.translation values migrated to context-appropriate form_translations
+- [ ] Form translations assigned to correct semantic contexts based on meaning analysis
+- [ ] Extensive conjugation data for "parlare" and "andare" (214 forms total) preserved with proper context assignment
+- [ ] Context-specific related word suggestions identified where applicable
+- [ ] Migration script handles edge cases (empty translations, duplicate entries)
+- [ ] Rollback plan tested and documented
+- [ ] No data loss during migration process
 
-**Migration Strategy:**
+**Migration Strategy - Semantic Analysis Approach:**
 
 ```sql
--- Step 1: Create default contexts for all existing words
-INSERT INTO word_semantic_contexts (word_id, context_type, context_name, base_translation, frequency_rank)
-SELECT 
-  id,
-  'primary-meaning',
-  CASE word_type
-    WHEN 'VERB' THEN 'Primary Usage'
-    WHEN 'NOUN' THEN 'Common Meaning'
-    WHEN 'ADJECTIVE' THEN 'Standard Form'
-    WHEN 'ADVERB' THEN 'Basic Usage'
-  END,
-  english, -- Use existing english field as base_translation
-  1 -- Primary meaning gets rank 1
-FROM dictionary;
+-- Phase 1: Analyze current words for multiple meanings
+WITH meaning_analysis AS (
+  SELECT 
+    id,
+    italian, 
+    english,
+    word_type,
+    CASE 
+      WHEN english LIKE '%,%' OR english LIKE '%/%' OR english LIKE '% or %' 
+      THEN 'multiple-meanings'
+      ELSE 'single-meaning'
+    END as meaning_type,
+    CASE 
+      WHEN english LIKE '%,%' THEN string_to_array(english, ',')
+      WHEN english LIKE '%/%' THEN string_to_array(english, '/')
+      WHEN english LIKE '% or %' THEN string_to_array(english, ' or ')
+      ELSE ARRAY[english]
+    END as meaning_array
+  FROM dictionary
+)
+SELECT * FROM meaning_analysis ORDER BY meaning_type DESC, italian;
 
--- Step 2: Migrate all word_forms.translation to form_translations
-INSERT INTO form_translations (form_id, semantic_context_id, translation)
-SELECT 
-  wf.id,
-  wsc.id,
-  COALESCE(wf.translation, wf.form_text) -- Use translation if exists, fallback to form_text
-FROM word_forms wf
-JOIN word_semantic_contexts wsc ON wsc.word_id = wf.word_id
-WHERE wsc.context_type = 'primary-meaning';
+-- Phase 2: Create semantic contexts based on analysis
+-- For multi-meaning words: Create context per meaning
+-- For single-meaning words: Create typed contexts (transitive-usage, intransitive-usage, etc.)
 
--- Step 3: Verify migration completeness
--- All 432 forms should have form_translations entries
+-- Phase 3: Migrate form translations to appropriate contexts
+-- Forms get assigned to contexts based on semantic analysis of their translation content
 ```
+
+**Specific Word Analysis Required:**
+
+- **ciao**: "hello, goodbye" → Split into greeting vs farewell contexts
+- **bello**: "beautiful, handsome" → Physical appearance vs general quality contexts  
+- **grande**: "big, large" → Physical size vs metaphorical greatness contexts
+- **parlare**: "to speak, to talk" → Formal speech vs informal conversation contexts
+- **essere**: "to be" → Existence vs identity vs location contexts (if forms support this)
+- **bene**: "well, good" → Adverbial usage vs adjective-like usage contexts
+
+**Context Type Classification:**
+
+```sql
+-- Context types to implement based on word analysis:
+'greeting-usage'     -- ciao as hello
+'farewell-usage'     -- ciao as goodbye  
+'physical-beauty'    -- bello describing appearance
+'general-excellence' -- bello describing quality
+'literal-size'       -- grande for physical dimensions
+'metaphorical-size'  -- grande for importance/greatness
+'formal-speech'      -- parlare in formal contexts
+'casual-conversation' -- parlare in informal contexts
+'primary-meaning'    -- Single-meaning words default
+```
+
+**Form Translation Assignment Logic:**
+
+- Analyze existing `word_forms.translation` content for context clues
+- Forms with "he/she speaks" → formal-speech context
+- Forms with "he/she talks" → casual-conversation context  
+- Plural greeting forms → greeting-usage context
+- Compound tenses → inherit base verb context
+- Fallback: Assign to primary-meaning context if ambiguous
 
 **Definition of Done:**
 
-- [ ] Pre-migration backup created and verified
-- [ ] All 432 word forms have corresponding form_translations entries
-- [ ] All 21 words have primary semantic contexts created
-- [ ] Data integrity verified: no orphaned records
-- [ ] Performance tests confirm <200ms query times post-migration
-- [ ] Rollback script tested and documented
+- [ ] All 21 words have semantically meaningful contexts (no placeholder "primary-meaning" unless truly single-meaning)
+- [ ] Multi-meaning words demonstrate different translations per context
+- [ ] All 432 word forms have appropriate form_translations entries linked to correct contexts
+- [ ] Form translation assignment follows logical semantic rules
+- [ ] Context switching functionality can be demonstrated with migrated data
+- [ ] Migration preserves all existing functionality while adding genuine multiple meanings
+- [ ] Documentation created showing which words gained multiple contexts and why
 
+**Success Metrics:**
+
+- At least 30% of words (6+ words) have multiple semantic contexts
+- Form translations show different English text based on context where semantically appropriate
+- No form left without a translation in the new system
+- Context assignment rules are consistent and documentable
 -----
 
 ### Issue #3: Create Reflexive Verb Test Data
