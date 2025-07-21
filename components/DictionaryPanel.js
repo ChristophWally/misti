@@ -47,7 +47,7 @@ export default function DictionaryPanel({
       }
       
       console.log('Loading words with filters:', processedFilters)
-      const results = await dictionarySystem.loadWords(term, processedFilters)
+      const results = await dictionarySystem.loadWordsWithTranslations(term, processedFilters)
       console.log('Loaded words:', results.length)
       setWords(results)
     } catch (error) {
