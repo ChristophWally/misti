@@ -1,4 +1,4 @@
-# Epic: Reflexive Verbs Implementation - GitHub Issues
+# Epic: Reflexive Verbs Implementation - User Stories
 
 ## Project Structure
 
@@ -7,28 +7,19 @@
 **Project Board**: Reflexive Verbs Epic  
 **Milestone**: v2.0 - Advanced Grammar Support
 
-## Issue Organization
+## Epic Overview
 
-Each issue is tagged with:
+**Epic Goal**: Enable users to learn reflexive verb translations separately (direct vs. reciprocal vs. indirect reflexive) with independent spaced repetition tracking, using a translation-first architecture that mirrors how native speakers understand complex grammatical patterns.
 
-- **Epic**: reflexive-verbs
-- **Priority**: critical/high/medium/low
-- **Phase**: implementation-order (1-6)
-- **Story Points**: relative effort estimate (1-13 scale)
-- **Type**: feature/technical/bug/research
-- **Component**: database/ui/audio/srs/testing
-
-## Epic Progress Tracking
-
-**Epic Scope**: Reflexive Verbs Architecture Foundation  
-**Overall Progress**: 0/16 issues completed (0%)
+**Epic Scope**: Translation-First Architecture Foundation  
+**Overall Progress**: 0/12 user stories completed (0%)
 
 ### Phase Completion Status
 
-- [ ] **Phase 1**: Database Foundation (0/3 issues) - Target: Week 2
-- [ ] **Phase 2**: Business Logic Core (0/4 issues) - Target: Week 4
-- [ ] **Phase 3**: UI Foundation (0/4 issues) - Target: Week 6
-- [ ] **Phase 4**: Testing & Polish (0/3 issues) - Target: Week 8
+- [ ] **Phase 1**: Database Foundation (0/4 stories) - Target: Week 2
+- [ ] **Phase 2**: Business Logic Core (0/3 stories) - Target: Week 4
+- [ ] **Phase 3**: UI Foundation (0/3 stories) - Target: Week 6
+- [ ] **Phase 4**: Testing & Polish (0/2 stories) - Target: Week 8
 
 ### Out of Scope (Future Epics)
 
@@ -36,23 +27,22 @@ Each issue is tagged with:
 - **Audio Epic**: Premium audio generation, variant playback, TTS integration
 - **Deck Management Epic**: Study session creation, deck analytics, review scheduling
 
-### Key Milestones
+### Key Success Metrics
 
-- [ ] **Database schema deployed** with multiple translations support (End of Phase 1)
-- [ ] **lavarsi fully functional** with context switching in UI (End of Phase 3)
-- [ ] **Architecture validated** and ready for SRS/Audio epic integration (End of Phase 4)
+- [ ] **Translation assignment accuracy** of 90%+ for automatic matching
+- [ ] **At least 6 words** demonstrate multiple translations (bello, bene, casa, ciao, grande, parlare)
+- [ ] **All 432 existing forms** successfully migrated to new translation system
+- [ ] **Architecture validated** and ready for SRS/Audio epic integration
 
 -----
 
 # Phase 1: Database Foundation 🗄️
 
-**Epic Milestone**: Database Architecture Complete  
+**Epic Milestone**: Translation-First Database Architecture Complete  
 **Target**: Weeks 1-2  
 **Dependencies**: None
 
-## Component: Database Architecture
-
-### Issue #1: Create Multiple Translations Schema
+## Story 1: Create Translation-First Schema
 
 **Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:8` `type:technical` `component:database`
 
@@ -70,72 +60,47 @@ Each issue is tagged with:
 - [ ] `context_metadata` JSONB field for usage context information
 - [ ] Database migration script tested on development environment with existing 21 words + 432 forms
 
-**Technical Implementation:**
-
-```sql
--- WORD TRANSLATIONS: Multiple translations per word
-CREATE TABLE word_translations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  word_id uuid NOT NULL REFERENCES dictionary(id) ON DELETE CASCADE,
-  translation text NOT NULL, -- 'to speak', 'to talk', 'hello', 'goodbye'
-  display_priority integer NOT NULL DEFAULT 1, -- 1 = primary/most common
-  context_metadata jsonb DEFAULT '{}', -- {"usage": "formal", "situations": ["presentations", "interviews"]}
-  usage_notes text, -- "Used in formal situations"
-  created_at timestamp with time zone DEFAULT now()
-);
-
--- FORM TRANSLATIONS: Assignment of forms to specific word translations
-CREATE TABLE form_translations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  form_id uuid NOT NULL REFERENCES word_forms(id) ON DELETE CASCADE,
-  word_translation_id uuid NOT NULL REFERENCES word_translations(id) ON DELETE CASCADE,
-  translation text NOT NULL, -- 'I speak', 'he/she talks', etc.
-  usage_examples jsonb DEFAULT '[]', -- [{"italian": "Parlo italiano", "english": "I speak Italian"}]
-  assignment_method text DEFAULT 'automatic', -- 'automatic', 'manual', 'calculated-variant'
-  created_at timestamp with time zone DEFAULT now(),
-  UNIQUE(form_id, word_translation_id) -- One assignment per form per word translation
-);
-
--- SRS PROGRESS: Placeholder for future SRS Epic  
-CREATE TABLE user_form_translation_progress (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  form_translation_id uuid NOT NULL REFERENCES form_translations(id) ON DELETE CASCADE,
-  deck_id uuid REFERENCES decks(id) ON DELETE SET NULL,
-  
-  -- SRS Algorithm fields (matches existing user_word_progress)
-  difficulty_factor numeric DEFAULT 2.5,
-  interval_days integer DEFAULT 1,
-  repetitions integer DEFAULT 0,
-  correct_streak integer DEFAULT 0,
-  total_reviews integer DEFAULT 0,
-  correct_reviews integer DEFAULT 0,
-  last_reviewed timestamp with time zone,
-  next_review timestamp with time zone,
-  average_response_time numeric,
-  difficulty_adjustments integer DEFAULT 0,
-  
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  UNIQUE(user_id, form_translation_id, deck_id)
-);
-```
-
 **Definition of Done:**
 
 - [ ] All three tables created with proper constraints and indexes
-- [ ] Migration script tested preserving all existing 21 dictionary entries and 432 word forms
+- [ ] Migration script tested preserving all existing data
 - [ ] Integration confirmed with existing `word_audio_metadata` pattern
 - [ ] No breaking changes to existing `dictionary` or `word_forms` table structure
 
 -----
 
-### Issue #2: Migrate Existing Dictionary Data with Translation Matching
+## Story 2: Drop Incorrect Context-First Tables
 
-**Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:5` `type:technical` `component:database`
+**Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:3` `type:technical` `component:database`
 
 **As a** developer  
-**I want** to migrate existing dictionary entries using translation matching logic  
+**I want** to safely remove the incorrectly designed context-first tables  
+**So that** we can implement the correct translation-first architecture
+
+**Acceptance Criteria:**
+
+- [ ] `word_semantic_contexts` table dropped safely
+- [ ] `form_translations` table dropped safely (old version)
+- [ ] `user_form_translation_progress` table dropped safely (old version)
+- [ ] No impact on existing `dictionary`, `word_forms`, or other core tables
+- [ ] Rollback script created in case of issues
+- [ ] Verification that no foreign key constraints remain
+
+**Definition of Done:**
+
+- [ ] All incorrect tables successfully removed
+- [ ] Database in clean state for new schema implementation  
+- [ ] No orphaned data or broken references
+- [ ] System functions normally after table removal
+
+-----
+
+## Story 3: Migrate Existing Data with Translation Matching
+
+**Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:8` `type:technical` `component:database`
+
+**As a** developer  
+**I want** to migrate existing dictionary entries using intelligent translation matching logic  
 **So that** current words gain multiple translations while preserving all existing form relationships
 
 **Acceptance Criteria:**
@@ -144,63 +109,31 @@ CREATE TABLE user_form_translation_progress (
 - [ ] Multiple translations split into separate `word_translations` entries:
   - `ciao` "hello, goodbye" → 2 word_translations with priorities 1,2
   - `parlare` "to speak, to talk" → 2 word_translations with priorities 1,2
+  - `bello` "beautiful, handsome" → 2 word_translations with priorities 1,2
   - `casa` "house, home" → 2 word_translations with priorities 1,2
-  - etc.
+  - `grande` "big, large" → 2 word_translations with priorities 1,2
+  - `bene` "well, good" → 2 word_translations with priorities 1,2
 - [ ] Single-meaning words get single `word_translations` entry with priority 1
 - [ ] All 432 existing `word_forms.translation` values migrated using **translation matching**:
   - Form "I speak" → assigned to word_translation "to speak" (priority 1)
   - Form "I talk" → would be assigned to word_translation "to talk" (priority 2) if it existed
 - [ ] Context metadata populated based on translation analysis
+- [ ] Translation assignment achieves 90%+ automatic matching success rate
 - [ ] No data loss during migration
-- [ ] Rollback plan tested
-
-**Translation Matching Logic:**
-
-```sql
--- Migration Logic: Match form translations to word translations
--- Example: parlare has word_translations ["to speak", "to talk"]
--- Form "I speak" matches word_translation "to speak"
--- Form "I talk" matches word_translation "to talk"
-
-WITH form_assignment AS (
-  SELECT 
-    wf.id as form_id,
-    wf.translation as form_translation,
-    wt.id as word_translation_id,
-    wt.translation as word_translation,
-    CASE 
-      WHEN wf.translation ILIKE '%speak%' AND wt.translation ILIKE '%speak%' THEN 'match'
-      WHEN wf.translation ILIKE '%talk%' AND wt.translation ILIKE '%talk%' THEN 'match'
-      -- Add more matching rules...
-      ELSE 'no-match'
-    END as match_quality
-  FROM word_forms wf
-  JOIN word_translations wt ON wt.word_id = wf.word_id
-  WHERE wf.translation IS NOT NULL
-)
--- Forms get assigned to best matching word_translation
-```
-
-**Special Cases:**
-
-- **Reflexive verbs**: Use existing tags system for context-specific forms
-- **Compound tenses**: Inherit assignment from base form
-- **Gender variants**: Use calculated-variant assignment method
-- **Ambiguous forms**: Default to priority 1 (most common) translation
 
 **Definition of Done:**
 
-- [ ] At least 6 words have multiple `word_translations` (bello, bene, casa, ciao, grande, parlare)
+- [ ] At least 6 words have multiple `word_translations` (target: bello, bene, casa, ciao, grande, parlare)
 - [ ] All 432 forms have `form_translations` entries with proper `word_translation_id` assignment
-- [ ] Translation matching achieves 90%+ automatic assignment rate
 - [ ] Manual assignment needed for <10% of forms
 - [ ] Priority ordering enables proper display in UI
+- [ ] Migration preserves all existing functionality
 
 -----
 
-### Issue #3: Create Reflexive Verb Test Data with Translation Focus
+## Story 4: Create Reflexive Verb Test Data
 
-**Labels**: `epic:reflexive-verbs` `priority:high` `phase:1` `story-points:3` `type:technical` `component:database`
+**Labels**: `epic:reflexive-verbs` `priority:high` `phase:1` `story-points:5` `type:technical` `component:database`
 
 **As a** developer  
 **I want** to create comprehensive test data for "lavarsi" using the translation-first architecture  
@@ -216,31 +149,12 @@ WITH form_assignment AS (
   - "mi lavo" → assigned to "to wash oneself" (only valid assignment)
   - "ci laviamo" → can be assigned to either translation (demonstrate choice)
   - "si lavano" → can be assigned to either translation
-- [ ] Context metadata populated with usage information
+- [ ] Context metadata populated with usage information:
+  - Direct: `{"usage": "direct-reflexive", "plurality": "any"}`
+  - Reciprocal: `{"usage": "reciprocal", "plurality": "plural-only"}`
 - [ ] Form assignment demonstrates translation matching logic
 - [ ] Gender variants work with VariantCalculator integration
 - [ ] Usage examples created for key translation distinctions
-
-**Test Data Architecture:**
-
-```sql
--- lavarsi word translations
-INSERT INTO word_translations (word_id, translation, display_priority, context_metadata) VALUES
-(lavarsi_id, 'to wash oneself', 1, '{"usage": "direct-reflexive", "plurality": "any"}'),
-(lavarsi_id, 'to wash each other', 2, '{"usage": "reciprocal", "plurality": "plural-only"}');
-
--- Form assignments using translation matching
--- "mi lavo" = "I wash myself" → matches "to wash oneself"
--- "ci laviamo" could be "we wash ourselves" OR "we wash each other" 
---   → demonstrates choice/context via tags or metadata
-```
-
-**Special Reflexive Handling:**
-
-- Use existing `tags` system to mark reciprocal-capable forms
-- Singular forms (mi, ti, si) → only "to wash oneself" translation
-- Plural forms (ci, vi, si) → can use either translation based on context
-- Context switching in UI will filter translations by form appropriateness
 
 **Definition of Done:**
 
@@ -251,263 +165,226 @@ INSERT INTO word_translations (word_id, translation, display_priority, context_m
 - [ ] Architecture serves as template for other reflexive verbs
 - [ ] Card display prioritization works correctly
 
-### Story 1.2: Migrate Existing Dictionary Data
-
-**Priority**: Critical | **Points**: 5 | **Type**: Technical
-
-**As a** developer
-**I want** to migrate existing dictionary entries to the new schema structure
-**So that** current words continue to work while gaining multiple translation capabilities
-
-**Acceptance Criteria:**
-
-- [ ] All existing dictionary entries preserved
-- [ ] Default semantic context created for each existing word
-- [ ] Existing translations moved to form_translations table
-- [ ] No data loss during migration
-- [ ] Rollback plan tested and documented
-
-**Migration Strategy:**
-
-- Create default context with type “primary-meaning”
-- Preserve existing English translations as base_translation
-- Maintain all existing word_forms relationships
-
------
-
-### Story 1.3: Create Reflexive Verb Test Data
-
-**Priority**: High | **Points**: 3 | **Type**: Technical
-
-**As a** developer
-**I want** to create comprehensive test data for “lavarsi” with multiple contexts
-**So that** we can test and demonstrate the multiple meanings functionality
-
-**Acceptance Criteria:**
-
-- [ ] “lavarsi” entry with both direct-reflexive and reciprocal contexts
-- [ ] Complete present tense conjugations for both meanings
-- [ ] Sample usage examples for each context
-- [ ] Related words linked to appropriate contexts
-- [ ] Audio metadata placeholders created
-
-**Test Data Requirements:**
-
-- Include forms: mi lavo, ti lavi, si lava, ci laviamo, vi lavate, si lavano
-- Two semantic contexts: “Wash Oneself” and “Wash Each Other”
-- Context-specific translations for each form
-- Meaningful usage examples in Italian and English
-
 -----
 
 # Phase 2: Business Logic Core 🧠
 
-## Epic: Word Management System
+**Epic Milestone**: Translation Management System Complete  
+**Target**: Weeks 3-4  
+**Dependencies**: Phase 1 complete
 
-### Story 2.1: Load Words with Multiple Contexts
+## Story 5: Implement Enhanced Dictionary System
 
-**Priority**: Critical | **Points**: 8 | **Type**: Feature
+**Labels**: `epic:reflexive-verbs` `priority:critical` `phase:2` `story-points:13` `type:feature` `component:business-logic`
 
 **As a** user browsing the dictionary
-**I want** to see all different meanings of a word clearly separated
-**So that** I can understand the distinct contexts and choose which ones to study
+**I want** to see all different translations of a word clearly separated with proper prioritization
+**So that** I can understand the distinct translations and choose which ones to study
 
 **Acceptance Criteria:**
 
-- [ ] Dictionary panel shows multiple meanings per word
-- [ ] Each meaning displays context name and base translation
-- [ ] Usage examples visible for each context
-- [ ] “Study This Meaning” button per context
-- [ ] Context-specific related words displayed
+- [ ] Dictionary panel shows multiple translations per word ordered by priority
+- [ ] Each translation displays context metadata and usage notes
+- [ ] Usage examples visible for each translation
+- [ ] "Study This Translation" button per translation
+- [ ] Translation-specific related words displayed (future enhancement)
 - [ ] Loading performance under 200ms for complex words
+- [ ] Search works across all translations, not just primary English field
 
-**UI Mockup Reference:**
+**Technical Implementation:**
 
-```
-🏠 lavarsi
-Multiple Meanings:
-1️⃣ to wash oneself (Direct) - "Mi lavo le mani"
-2️⃣ to wash each other (Reciprocal) - "Ci laviamo a vicenda"
-```
+- [ ] `EnhancedDictionarySystem.loadWordsWithTranslations()` implemented
+- [ ] `processTranslationsForDisplay()` handles prioritization and context parsing
+- [ ] Integration with existing `word_audio_metadata` pattern maintained
+- [ ] Caching layer implemented for performance
+
+**Definition of Done:**
+
+- [ ] Dictionary search returns words with all translations properly displayed
+- [ ] Translation prioritization works correctly (primary first)
+- [ ] Context metadata renders meaningfully in UI
+- [ ] Performance benchmarks meet requirements (<200ms for complex queries)
+- [ ] Integration with existing systems maintained
 
 -----
 
-### Story 2.2: Generate Gender Variants for Reflexive Verbs
+## Story 6: Build Translation Assignment Engine
 
-**Priority**: High | **Points**: 13 | **Type**: Technical
+**Labels**: `epic:reflexive-verbs` `priority:high` `phase:2` `story-points:8` `type:technical` `component:business-logic`
 
-**As a** language learner
-**I want** reflexive verb forms to automatically show both masculine and feminine variants
-**So that** I can practice gender agreement in compound tenses correctly
+**As a** developer
+**I want** to create an intelligent system for assigning word forms to appropriate translations
+**So that** form-to-translation matching can be automated and improved over time
 
 **Acceptance Criteria:**
 
-- [ ] VariantCalculator correctly identifies reflexive compound forms
+- [ ] `TranslationAssignmentEngine` class implemented with core matching algorithms
+- [ ] Keyword matching works for basic cases ("I speak" → "to speak")
+- [ ] Reflexive context matching handles complexity (reciprocal only for plural forms)
+- [ ] Confidence scoring system provides assignment quality metrics
+- [ ] Fallback logic assigns forms to primary translation when matching fails
+- [ ] Special handling for calculated gender variants
+- [ ] Assignment methods tracked ('automatic', 'manual', 'calculated-variant')
+
+**Technical Implementation:**
+
+- [ ] `findTranslationMatches()` implements semantic matching logic
+- [ ] `checkReflexiveContext()` handles reflexive verb special cases
+- [ ] `containsKeywords()` provides basic text matching
+- [ ] Confidence threshold system prevents low-quality assignments
+- [ ] Integration with existing `VariantCalculator` for gender variants
+
+**Definition of Done:**
+
+- [ ] Assignment engine achieves 90%+ automatic matching accuracy
+- [ ] Reflexive verb forms correctly assigned based on plurality constraints
+- [ ] Confidence scores provide meaningful assignment quality metrics
+- [ ] Manual override capability for edge cases
+- [ ] Unit tests validate matching logic accuracy
+
+-----
+
+## Story 7: Integrate Gender Variant Generation
+
+**Labels**: `epic:reflexive-verbs` `priority:medium` `phase:2` `story-points:5` `type:technical` `component:business-logic`
+
+**As a** language learner
+**I want** reflexive verb forms to automatically show both masculine and feminine variants with correct translation assignments
+**So that** I can practice gender agreement in compound tenses correctly across multiple translations
+
+**Acceptance Criteria:**
+
+- [ ] `VariantCalculator` correctly identifies reflexive compound forms needing gender variants
 - [ ] Feminine variants generated using Italian morphological rules
-- [ ] Variants inherit same semantic contexts as base forms
+- [ ] Generated variants inherit translation assignments from base forms
 - [ ] All major participle patterns supported (-ato, -ito, -uto, irregular)
-- [ ] Gender variants tagged as calculated rather than stored
+- [ ] Gender variants tagged as `assignment_method: 'calculated-variant'`
 - [ ] Performance: variant generation under 50ms per verb
 
-**Morphological Patterns to Support:**
+**Technical Implementation:**
 
-- Regular: lavato → lavata, lavati, lavate
-- Irregular: fatto → fatta, fatti, fatte
-- Complex: “mi sono lavato” → “mi sono lavata”
+- [ ] Integration between `VariantCalculator` and new translation system
+- [ ] Generated variants get `form_translations` entries automatically
+- [ ] Context metadata inheritance from base forms
+- [ ] Proper handling of multiple translations per generated variant
 
------
+**Definition of Done:**
 
-### Story 2.3: Context-Specific Word Relationships
-
-**Priority**: Medium | **Points**: 5 | **Type**: Feature
-
-**As a** language learner
-**I want** to see related words that are specific to each meaning
-**So that** I can build vocabulary around specific contexts rather than getting confused
-
-**Acceptance Criteria:**
-
-- [ ] Related words display only for current context
-- [ ] Link types shown (synonym, antonym, related-concept, etc.)
-- [ ] Clicking related word opens in same context if available
-- [ ] Link resolution performance under 100ms
-- [ ] Graceful handling of missing linked words
-
-**Example Implementation:**
-
-- “lavarsi” (wash oneself) → shows “sapone” (soap), “asciugamano” (towel)
-- “lavarsi” (wash each other) → shows “aiutarsi” (help each other), “insieme” (together)
-
------
-
-## Epic: Form Generation System
-
-### Story 2.4: Infinitive Construction Generation
-
-**Priority**: High | **Points**: 8 | **Type**: Technical
-
-**As a** language learner
-**I want** to see infinitive forms with attached pronouns (lavarmi, lavarti, etc.)
-**So that** I can practice using reflexive verbs with modal verbs and prepositions
-
-**Acceptance Criteria:**
-
-- [ ] Generate all infinitive + pronoun combinations (lavarmi, lavarti, lavarci, etc.)
-- [ ] Include base infinitive (lavarsi) in the list
-- [ ] Store as infinitive mood forms in existing schema
-- [ ] Apply same multiple translation logic to infinitive forms
-- [ ] Handle form collisions (lavarsi appears twice with different meanings)
-
-**Forms to Generate:**
-
-- Base: lavarsi (general infinitive)
-- Personal: lavarmi, lavarti, lavarsi (3rd), lavarci, lavarvi, lavarsi (loro)
-- Each gets appropriate context translations
+- [ ] Gender variants display correctly in conjugation modal
+- [ ] Generated variants show appropriate translations for selected translation
+- [ ] Performance requirements met for variant generation
+- [ ] Integration with existing morphological patterns maintained
 
 -----
 
 # Phase 3: UI Foundation 🎨
 
-## Epic: Conjugation Modal Enhancement
+**Epic Milestone**: Translation Selection Interface Complete  
+**Target**: Weeks 5-6  
+**Dependencies**: Phase 2 complete
 
-### Story 3.1: Context Switching Interface
+## Story 8: Create Translation Selection Interface
 
-**Priority**: Critical | **Points**: 13 | **Type**: Feature
+**Labels**: `epic:reflexive-verbs` `priority:critical` `phase:3` `story-points:8` `type:feature` `component:ui`
 
 **As a** language learner
-**I want** to switch between different meanings while viewing conjugations
-**So that** I can understand how the same forms have different translations
+**I want** to select between different translations while viewing conjugations
+**So that** I can understand how the same forms have different translations based on meaning
 
 **Acceptance Criteria:**
 
-- [ ] Context dropdown showing available meanings for current verb
-- [ ] Translations update immediately when context changes
-- [ ] Context selection persists within modal session
-- [ ] Smooth transitions between contexts (no jarring reloads)
-- [ ] Context unavailable for certain forms (reciprocal + singular) properly handled
-- [ ] Audio continues to work correctly across context switches
+- [ ] `TranslationSelector` component shows available translations with priority indicators
+- [ ] Primary translation clearly marked with visual indicator
+- [ ] Context information (plurality restrictions, usage) displayed per translation
+- [ ] Smooth transitions when switching between translations
+- [ ] Translation selection persists within modal session
+- [ ] Unavailable translations properly disabled (e.g., reciprocal for singular forms)
+- [ ] Responsive design works on mobile devices
 
-**UI Behavior:**
+**UI Implementation:**
 
-- Context dropdown shows: “Direct: wash oneself” and “Reciprocal: wash each other”
-- Form “ci laviamo” shows “we wash ourselves” vs “we wash each other”
-- Singular forms disabled/grayed when reciprocal context selected
+- [ ] Translation buttons with priority badges and context hints
+- [ ] Clear visual hierarchy (primary vs secondary translations)
+- [ ] Accessibility compliance (keyboard navigation, screen readers)
+- [ ] Integration with existing modal design system
+
+**Definition of Done:**
+
+- [ ] Translation selection interface renders correctly for multi-translation words
+- [ ] Primary/secondary translations visually distinguished
+- [ ] Context restrictions properly enforced (plural-only for reciprocal)
+- [ ] Mobile responsive design maintained
+- [ ] Accessibility requirements met
 
 -----
 
-### Story 3.2: Gender Toggle Integration
+## Story 9: Enhance Conjugation Modal with Translation Logic
 
-**Priority**: High | **Points**: 8 | **Type**: Feature
+**Labels**: `epic:reflexive-verbs` `priority:critical` `phase:3` `story-points:13` `type:feature` `component:ui`
 
 **As a** language learner
-**I want** to toggle between masculine and feminine forms for reflexive verbs
-**So that** I can practice correct gender agreement in compound tenses
+**I want** conjugation forms to show different translations based on my selected translation
+**So that** I can practice specific meanings without confusion
 
 **Acceptance Criteria:**
 
-- [ ] Gender toggle (♂/♀) appears for reflexive verbs with compound tenses
-- [ ] Toggle disabled/grayed when not applicable (simple tenses)
-- [ ] Form text updates dynamically: “sono andato” ↔ “sono andata”
-- [ ] Color coding reflects gender selection (blue for masculine, pink for feminine)
-- [ ] Audio plays correct gender variant when available
-- [ ] Toggle state resets appropriately when changing tenses
-
-**Visual Design:**
-
-- Elegant toggle buttons with gender symbols
-- Clear visual feedback for enabled/disabled states
-- Color coordination with form text
-
------
-
-### Story 3.3: Audio Integration with Context Awareness
-
-**Priority**: High | **Points**: 5 | **Type**: Feature
-
-**As a** language learner
-**I want** audio playback to work correctly regardless of which context I’m viewing
-**So that** I can hear proper pronunciation while learning different meanings
-
-**Acceptance Criteria:**
-
-- [ ] Audio plays form text regardless of selected context
-- [ ] Premium audio indicator (gold border) displays correctly
-- [ ] TTS fallback works when premium audio unavailable
-- [ ] Audio preference (form-only vs with-pronoun) respected
-- [ ] No audio errors when switching contexts rapidly
-- [ ] Loading states handled gracefully
+- [ ] Conjugation modal loads with all available translations for current verb
+- [ ] Form translations update immediately when translation selection changes
+- [ ] Forms unavailable for selected translation are properly handled
+- [ ] Gender toggle integration works correctly with translation selection
+- [ ] Audio playback continues to work correctly across translation switches
+- [ ] Form grouping (singular/plural) respects translation constraints
+- [ ] Performance: translation switching under 100ms
 
 **Technical Implementation:**
 
-- Audio plays “ci laviamo” regardless of whether translation shows “wash ourselves” or “wash each other”
-- Context selection affects translation display only, not pronunciation
+- [ ] `getTranslationForSelectedTranslation()` handles form-to-translation lookup
+- [ ] `getAvailableTranslations()` provides translation options for selector
+- [ ] Integration with existing gender toggle and mood/tense selection
+- [ ] Proper filtering of forms based on translation constraints
+
+**Definition of Done:**
+
+- [ ] Modal displays all available translations with proper selector interface
+- [ ] Form translations update correctly when selection changes
+- [ ] Gender variants work properly across translation switches
+- [ ] Performance requirements met for translation switching
+- [ ] Integration with existing modal functionality maintained
 
 -----
 
-## Epic: Dictionary Enhancement
+## Story 10: Update Dictionary Panel for Multiple Translations
 
-### Story 3.4: Multiple Meanings Display
-
-**Priority**: High | **Points**: 8 | **Type**: Feature
+**Labels**: `epic:reflexive-verbs` `priority:high` `phase:3` `story-points:5` `type:feature` `component:ui`
 
 **As a** user browsing the dictionary
-**I want** to see each meaning of a word as a separate, studyable unit
-**So that** I can focus on learning specific meanings that are most relevant to me
+**I want** to see each translation of a word as a separate, studyable unit with proper priority ordering
+**So that** I can focus on learning specific translations that are most relevant to me
 
 **Acceptance Criteria:**
 
-- [ ] Word cards show expandable meanings sections
-- [ ] Each meaning has its own “Study This Meaning” button
-- [ ] Context names are clear and user-friendly
-- [ ] Usage examples displayed for each meaning
-- [ ] Related words shown per context, not globally
-- [ ] Visual hierarchy makes meanings easily scannable
+- [ ] Word cards show expandable translations sections ordered by priority
+- [ ] Each translation has its own "Study This Translation" button
+- [ ] Context metadata displayed meaningfully (usage notes, plurality restrictions)
+- [ ] Usage examples displayed per translation when available
+- [ ] Translation-specific related words shown (placeholder for future)
+- [ ] Visual hierarchy makes translations easily scannable
+- [ ] Loading performance maintained with multiple translations
 
-**Interaction Design:**
+**UI Design:**
 
-- Accordion-style expansion for meanings
-- Clear visual separation between contexts
-- Consistent iconography for different meaning types
+- [ ] Accordion-style or tabbed interface for multiple translations
+- [ ] Clear visual separation between translations
+- [ ] Priority indicators (primary vs secondary)
+- [ ] Context hints and usage guidance
+
+**Definition of Done:**
+
+- [ ] Dictionary panel properly displays multiple translations per word
+- [ ] Priority ordering works correctly (primary translation first)
+- [ ] Context metadata renders meaningfully for users
+- [ ] "Study This Translation" functionality ready for future SRS integration
+- [ ] Performance maintained with expanded data display
 
 -----
 
@@ -517,144 +394,100 @@ Multiple Meanings:
 **Target**: Weeks 7-8  
 **Dependencies**: Phases 1-3 complete
 
-## Component: Quality Assurance
-
-### Issue #13: Morphological Accuracy Testing
+## Story 11: Comprehensive Translation Assignment Testing
 
 **Labels**: `epic:reflexive-verbs` `priority:high` `phase:4` `story-points:8` `type:technical` `component:testing`
 
 **As a** developer
-**I want** comprehensive tests for Italian reflexive verb morphology
-**So that** gender variant generation is linguistically accurate
+**I want** comprehensive tests for translation assignment accuracy and reflexive verb handling
+**So that** the system correctly assigns forms to translations with high confidence
 
 **Acceptance Criteria:**
 
-- [ ] Unit tests for all major participle patterns
-- [ ] Integration tests for reflexive verb processing
-- [ ] Validation against authoritative Italian grammar sources
-- [ ] Performance tests for variant generation
-- [ ] Edge case handling (irregular verbs, archaic forms)
+- [ ] Unit tests for all major translation matching patterns
+- [ ] Integration tests for reflexive verb complexity (reciprocal constraints)
+- [ ] Validation against known correct assignments for migrated data
+- [ ] Performance tests for assignment engine with large datasets
+- [ ] Edge case handling (ambiguous translations, missing forms)
 - [ ] Automated testing in CI/CD pipeline
 
 **Test Coverage:**
 
-- Regular patterns: -ato, -ito, -uto transformations
-- Irregular patterns: fatto, preso, visto, etc.
-- Complex compounds: reflexive + gender + person combinations
+- [ ] Basic keyword matching ("I speak" → "to speak")
+- [ ] Reflexive context constraints (reciprocal requires plural)
+- [ ] Fallback logic to primary translation
+- [ ] Confidence scoring accuracy
+- [ ] Gender variant assignment inheritance
+
+**Definition of Done:**
+
+- [ ] Test suite achieves 95%+ code coverage for assignment logic
+- [ ] All reflexive verb test cases pass with expected assignments
+- [ ] Performance benchmarks validate assignment speed requirements
+- [ ] Edge cases handled gracefully with appropriate fallbacks
+- [ ] CI/CD integration ensures ongoing quality
 
 -----
 
-### Issue #14: Context Switching UX Polish
+## Story 12: User Experience Polish and Performance Optimization
 
 **Labels**: `epic:reflexive-verbs` `priority:medium` `phase:4` `story-points:5` `type:feature` `component:ui`
 
 **As a** language learner
-**I want** smooth, intuitive interactions when switching between verb contexts
+**I want** smooth, intuitive interactions when switching between translations and viewing forms
 **So that** I can focus on learning rather than wrestling with the interface
 
 **Acceptance Criteria:**
 
-- [ ] Smooth animations for context switching
+- [ ] Smooth animations for translation switching (under 100ms)
 - [ ] Loading states for all async operations
-- [ ] Responsive design across screen sizes
-- [ ] Keyboard navigation support
+- [ ] Responsive design across screen sizes (mobile, tablet, desktop)
+- [ ] Keyboard navigation support for translation selection
 - [ ] Clear visual feedback for all interactions
 - [ ] Accessibility compliance (WCAG 2.1 AA)
+- [ ] Performance optimization for complex words with many forms
 
 **Polish Areas:**
 
-- Context transition animations
-- Button hover states and feedback
-- Loading skeletons for complex queries
-- Error handling with helpful messages
+- [ ] Translation transition animations
+- [ ] Button hover states and feedback
+- [ ] Loading skeletons for complex queries
+- [ ] Error handling with helpful messages
+- [ ] Mobile-optimized touch interactions
+
+**Definition of Done:**
+
+- [ ] Translation switching feels fluid and responsive
+- [ ] Loading states provide clear feedback during async operations
+- [ ] Mobile experience equals desktop functionality
+- [ ] Accessibility requirements fully met
+- [ ] Performance benchmarks achieved across all device types
 
 -----
 
-### Issue #15: Performance Optimization
+# Epic Definition of Done
 
-**Labels**: `epic:reflexive-verbs` `priority:medium` `phase:4` `story-points:5` `type:technical` `component:database`
+The Reflexive Verbs Epic is considered complete when:
 
-**As a** user of the application
-**I want** fast response times when browsing reflexive verbs and contexts
-**So that** learning feels fluid and responsive
+- [ ] All 12 user stories completed with acceptance criteria met
+- [ ] Translation-first architecture fully implemented and tested
+- [ ] At least 6 words demonstrate multiple translations functionality
+- [ ] 90%+ automatic translation assignment accuracy achieved
+- [ ] All existing functionality preserved during migration
+- [ ] Performance requirements met (<200ms complex queries, <100ms switching)
+- [ ] Architecture documented and ready for future SRS/Audio epic integration
+- [ ] User testing validates improved learning experience
 
-**Acceptance Criteria:**
+## Future Epic Integration Points
 
-- [ ] Complex word+context queries under 200ms
-- [ ] Database query optimization with proper indexing
-- [ ] Caching strategy for frequently accessed words
-- [ ] Performance monitoring and alerting
-- [ ] Load testing for concurrent users
-- [ ] Memory usage optimization for variant generation
+**SRS Epic Dependencies:**
+- [ ] `user_form_translation_progress` table structure validated
+- [ ] Form+translation combination tracking architecture proven
+- [ ] Card generation logic ready for translation-specific cards
 
-**Optimization Targets:**
+**Audio Epic Dependencies:**  
+- [ ] Audio playback integration with translation selection confirmed
+- [ ] Form variant audio generation compatible with new system
+- [ ] Translation-aware audio preference handling ready
 
-- Dictionary search: <100ms average
-- Conjugation modal loading: <150ms
-- Context switching: <50ms
-- Gender variant generation: <25ms per verb
-
------
-
-### Issue #16: Epic Documentation & Handoff
-
-**Labels**: `epic:reflexive-verbs` `priority:medium` `phase:4` `story-points:3` `type:technical` `component:testing`
-
-**As a** future developer working on SRS/Audio epics
-**I want** comprehensive documentation of the reflexive verbs architecture
-**So that** I can integrate with the system effectively
-
-**Acceptance Criteria:**
-
-- [ ] API documentation for all new endpoints
-- [ ] Database schema documentation with examples
-- [ ] Component integration guides
-- [ ] Performance benchmarks documented
-- [ ] Known limitations and future considerations documented
-- [ ] Migration guides for expanding to other verb types
-
------
-
-# Future Epics: SRS & Audio Integration 🚀
-
-## Epic: Spaced Repetition System
-
-**Estimated Start**: After Reflexive Verbs Epic completion  
-**Dependencies**: Reflexive Verbs architecture, user authentication
-
-**Scope**:
-
-- Context-aware card generation from form_translations
-- Individual progress tracking per semantic context
-- Smart deck management with context selection
-- Review scheduling algorithm implementation
-
------
-
-## Epic: Premium Audio System
-
-**Estimated Start**: Parallel with or after SRS Epic  
-**Dependencies**: Reflexive Verbs architecture, Azure TTS integration
-
-**Scope**:
-
-- Multi-variant audio generation for reflexive verbs
-- Gender-aware audio playback
-- OPUS format optimization
-- Context-aware audio management
-
------
-
-# Definition of Done
-
-Each issue is considered complete when:
-
-- [ ] All acceptance criteria met
-- [ ] Code reviewed and approved
-- [ ] Unit tests written and passing
-- [ ] Manual testing completed
-- [ ] Documentation updated
-- [ ] Performance requirements met
-- [ ] No accessibility regressions
-- [ ] Deployed to staging environment
-- [ ] Ready for integration with future SRS/Audio epics
+This epic establishes the foundational translation-first architecture that enables Misti to handle the genuine linguistic complexity of Italian while maintaining pedagogical effectiveness through intelligent spaced repetition.
