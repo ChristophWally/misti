@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import AudioButton from './AudioButton'
 import SectionHeading from './SectionHeading'
 import { VariantCalculator } from '../lib/variant-calculator'
+import TranslationSelector from './TranslationSelector'
 
 // Desired display order for moods and tenses
 const moodOrder = [
@@ -78,6 +79,9 @@ export default function ConjugationModal({
   const [selectedGender, setSelectedGender] = useState('male')
   const [selectedFormality, setSelectedFormality] = useState('informal')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [selectedTranslationId, setSelectedTranslationId] = useState(null)
+  const [wordTranslations, setWordTranslations] = useState([])
+  const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
 
   // Extract tag values from tag array
   const extractTagValue = (tags, category) => {
@@ -203,6 +207,61 @@ const loadConjugations = async () => {
     setIsLoading(false)
   }
 }
+
+// Load all translations for the current word
+const loadWordTranslations = async () => {
+  if (!word?.id) return
+
+  setIsLoadingTranslations(true)
+  try {
+    const { data: translations, error } = await supabase
+      .from('word_translations')
+      .select(`
+        id,
+        translation,
+        display_priority,
+        context_metadata,
+        usage_notes,
+        frequency_estimate
+      `)
+      .eq('word_id', word.id)
+      .order('display_priority')
+
+    if (error) throw error
+
+    // Add form counts to each translation
+    const translationsWithCounts = await Promise.all(
+      translations.map(async (translation) => {
+        const { count } = await supabase
+          .from('form_translations')
+          .select('*', { count: 'exact', head: true })
+          .eq('word_translation_id', translation.id)
+
+        return {
+          ...translation,
+          assigned_forms: count || 0
+        }
+      })
+    )
+
+    console.log('🔍 Loaded translations:', translationsWithCounts)
+
+    setWordTranslations(translationsWithCounts)
+
+    if (translationsWithCounts.length > 0 && !selectedTranslationId) {
+      const primary =
+        translationsWithCounts.find(t => t.display_priority === 1) ||
+        translationsWithCounts[0]
+      setSelectedTranslationId(primary.id)
+      console.log('🔍 Selected primary translation:', primary.translation)
+    }
+  } catch (error) {
+    console.error('Error loading word translations:', error)
+    setWordTranslations([])
+  } finally {
+    setIsLoadingTranslations(false)
+  }
+}
   // Get available mood/tense combinations for dropdown
   const getAvailableOptions = () => {
     const options = []
@@ -243,6 +302,26 @@ const loadConjugations = async () => {
     console.log('🔍 All forms available:', allForms.length, 'total (including calculated)')
 
     return baseStoredForms
+  }
+
+  // Determine current form context (singular/plural etc.)
+  const getCurrentFormContext = () => {
+    const currentForms = getCurrentForms()
+    if (currentForms.length === 0) return null
+
+    const singularForms = currentForms.filter(form =>
+      form.tags?.includes('singolare') ||
+      ['io', 'tu', 'lui', 'lei'].some(p => form.tags?.includes(p))
+    )
+    const pluralForms = currentForms.filter(form =>
+      form.tags?.includes('plurale') ||
+      ['noi', 'voi', 'loro'].some(p => form.tags?.includes(p))
+    )
+
+    return {
+      number: singularForms.length >= pluralForms.length ? 'singular' : 'plural',
+      hasBoth: singularForms.length > 0 && pluralForms.length > 0
+    }
   }
 
   // Order forms by pronoun sequence
@@ -485,6 +564,7 @@ const loadConjugations = async () => {
   useEffect(() => {
     if (isOpen && word) {
       loadConjugations()
+      loadWordTranslations()
     }
   }, [isOpen, word])
 
@@ -746,6 +826,18 @@ const loadConjugations = async () => {
               )}
             </div>
           </div>
+
+          {/* Translation Selector - only show if multiple translations exist */}
+          {wordTranslations.length > 1 && (
+            <div className="p-4 border-b bg-blue-50">
+              <TranslationSelector
+                translations={wordTranslations}
+                selectedTranslationId={selectedTranslationId}
+                onTranslationChange={setSelectedTranslationId}
+                currentFormContext={getCurrentFormContext()}
+              />
+            </div>
+          )}
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-5">
