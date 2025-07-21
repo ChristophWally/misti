@@ -52,72 +52,58 @@ Each issue is tagged with:
 
 ## Component: Database Architecture
 
-You're absolutely right! Looking at your document, you need to overwrite **Issue #1: Create Multiple Translations Schema**.
-
-Here's the exact text to replace that section:
-
----
-
 ### Issue #1: Create Multiple Translations Schema
 
 **Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:8` `type:technical` `component:database`
 
 **As a** developer  
-**I want** to create the new database tables for semantic contexts and form translations  
-**So that** we can support multiple meanings per reflexive verbs while preserving existing data
+**I want** to create the new database tables for word translations and form translation assignments  
+**So that** we can support multiple translations per word with proper form assignment and display prioritization
 
 **Acceptance Criteria:**
 
-- [x] `word_semantic_contexts` table created with proper foreign key to existing `dictionary` table
-- [x] `form_translations` table created linking to existing `word_forms` and new `word_semantic_contexts` tables  
-- [x] `user_form_translation_progress` table created extending existing `user_word_progress` pattern
-- [x] All foreign key constraints properly configured with CASCADE deletes to `dictionary.id`
-- [x] GIN indexes created on JSONB fields for performance (`context_links`, `usage_examples`)
-- [x] Integration with existing `word_audio_metadata` source_table/source_id pattern verified
-      Integration Verified: Your audio is linked to dictionary words directly via word_id, with           source_table = 'dictionary' and variant_type = 'base-word'. Our new system integrates               perfectly:
-      Audio Access Chain: form_translations → word_forms → dictionary → word_audio_metadata
-- [x] Database migration script tested on development environment with existing 21 words + 432 forms
-      - 21 semantic contexts to create (one per word)
-      - 215 form_translations to create (107 + 107 + 1)
-      - "andare" and "parlare" have extensive conjugation data (107 forms each!)
-      - Most other words have base dictionary entries only
+- [ ] `word_translations` table created with proper foreign key to existing `dictionary` table
+- [ ] `form_translations` table created linking to existing `word_forms` and new `word_translations` tables  
+- [ ] `user_form_translation_progress` table created extending existing `user_word_progress` pattern (placeholder for future SRS)
+- [ ] All foreign key constraints properly configured with CASCADE deletes to `dictionary.id`
+- [ ] `display_priority` column added for card ordering
+- [ ] `context_metadata` JSONB field for usage context information
+- [ ] Database migration script tested on development environment with existing 21 words + 432 forms
 
 **Technical Implementation:**
 
 ```sql
--- SEMANTIC CONTEXTS: Multiple meanings per word
-CREATE TABLE word_semantic_contexts (
+-- WORD TRANSLATIONS: Multiple translations per word
+CREATE TABLE word_translations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   word_id uuid NOT NULL REFERENCES dictionary(id) ON DELETE CASCADE,
-  context_type text NOT NULL, -- 'direct-reflexive', 'reciprocal', 'indirect-reflexive'
-  context_name text NOT NULL, -- 'Wash Oneself', 'Wash Each Other'  
-  base_translation text NOT NULL, -- 'to wash oneself', 'to wash each other'
-  semantic_tags text[] DEFAULT '{}', -- ['self-directed', 'body-care']
-  frequency_rank integer DEFAULT 1, -- 1 = most common meaning
-  context_links jsonb DEFAULT '[]', -- [{"word_id": "uuid", "link_type": "synonym"}]
+  translation text NOT NULL, -- 'to speak', 'to talk', 'hello', 'goodbye'
+  display_priority integer NOT NULL DEFAULT 1, -- 1 = primary/most common
+  context_metadata jsonb DEFAULT '{}', -- {"usage": "formal", "situations": ["presentations", "interviews"]}
+  usage_notes text, -- "Used in formal situations"
   created_at timestamp with time zone DEFAULT now()
 );
 
--- FORM TRANSLATIONS: Context-specific translations for existing word_forms
+-- FORM TRANSLATIONS: Assignment of forms to specific word translations
 CREATE TABLE form_translations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   form_id uuid NOT NULL REFERENCES word_forms(id) ON DELETE CASCADE,
-  semantic_context_id uuid NOT NULL REFERENCES word_semantic_contexts(id) ON DELETE CASCADE,
-  translation text NOT NULL, -- 'we wash ourselves' vs 'we wash each other'
-  usage_examples jsonb DEFAULT '[]', -- [{"italian": "Ci laviamo", "english": "We wash ourselves"}]
-  context_notes text, -- Additional pedagogical explanations
+  word_translation_id uuid NOT NULL REFERENCES word_translations(id) ON DELETE CASCADE,
+  translation text NOT NULL, -- 'I speak', 'he/she talks', etc.
+  usage_examples jsonb DEFAULT '[]', -- [{"italian": "Parlo italiano", "english": "I speak Italian"}]
+  assignment_method text DEFAULT 'automatic', -- 'automatic', 'manual', 'calculated-variant'
   created_at timestamp with time zone DEFAULT now(),
-  UNIQUE(form_id, semantic_context_id) -- One translation per form per context
+  UNIQUE(form_id, word_translation_id) -- One assignment per form per word translation
 );
 
--- SRS PROGRESS: Extends existing pattern to track per form+context combination  
+-- SRS PROGRESS: Placeholder for future SRS Epic  
 CREATE TABLE user_form_translation_progress (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL, -- Matches existing user_word_progress pattern
+  user_id uuid NOT NULL,
   form_translation_id uuid NOT NULL REFERENCES form_translations(id) ON DELETE CASCADE,
-  deck_id uuid REFERENCES decks(id) ON DELETE SET NULL, -- Optional deck association
+  deck_id uuid REFERENCES decks(id) ON DELETE SET NULL,
   
-  -- SRS Algorithm fields (matches existing user_word_progress exactly)
+  -- SRS Algorithm fields (matches existing user_word_progress)
   difficulty_factor numeric DEFAULT 2.5,
   interval_days integer DEFAULT 1,
   repetitions integer DEFAULT 0,
@@ -137,180 +123,133 @@ CREATE TABLE user_form_translation_progress (
 
 **Definition of Done:**
 
-- [x] Code reviewed and approved
-- [x] Migration script tested preserving all existing 21 dictionary entries and 432 word forms
-- [x] All foreign key constraints validated (CASCADE from dictionary.id works correctly)
-- [x] Performance benchmarks meet requirements (<100ms for complex context queries)
-- [x] Integration confirmed with existing `word_audio_metadata.source_table = 'word_forms'` pattern
-- [x] No breaking changes to existing `dictionary` or `word_forms` table structure
+- [ ] All three tables created with proper constraints and indexes
+- [ ] Migration script tested preserving all existing 21 dictionary entries and 432 word forms
+- [ ] Integration confirmed with existing `word_audio_metadata` pattern
+- [ ] No breaking changes to existing `dictionary` or `word_forms` table structure
+
 -----
 
-### Issue #2: Migrate Existing Dictionary Data with Proper Multiple Meanings
+### Issue #2: Migrate Existing Dictionary Data with Translation Matching
 
-**Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:8` `type:technical` `component:database`
+**Labels**: `epic:reflexive-verbs` `priority:critical` `phase:1` `story-points:5` `type:technical` `component:database`
 
 **As a** developer  
-**I want** to analyze and properly migrate existing dictionary entries (21 words, 432 forms) with real semantic contexts  
-**So that** current words gain genuine multiple meanings functionality rather than placeholder data
+**I want** to migrate existing dictionary entries using translation matching logic  
+**So that** current words gain multiple translations while preserving all existing form relationships
 
 **Acceptance Criteria:**
 
-- [ ] All 21 existing dictionary entries analyzed for multiple meanings in English translations
-- [ ] Words with multiple meanings split into proper semantic contexts:
-  - `ciao` → "Greeting" context + "Farewell" context
-  - `bello` → "Physical Beauty" context + "General Excellence" context
-  - Other multi-meaning words identified and split appropriately
-- [ ] Single-meaning words get appropriate semantic contexts with proper context_type classification
-- [ ] All 432 existing word_forms.translation values migrated to context-appropriate form_translations
-- [ ] Form translations assigned to correct semantic contexts based on meaning analysis
-- [ ] Extensive conjugation data for "parlare" and "andare" (214 forms total) preserved with proper context assignment
-- [ ] Context-specific related word suggestions identified where applicable
-- [ ] Migration script handles edge cases (empty translations, duplicate entries)
-- [ ] Rollback plan tested and documented
-- [ ] No data loss during migration process
+- [ ] All 21 existing dictionary entries analyzed for multiple translations in English field
+- [ ] Multiple translations split into separate `word_translations` entries:
+  - `ciao` "hello, goodbye" → 2 word_translations with priorities 1,2
+  - `parlare` "to speak, to talk" → 2 word_translations with priorities 1,2
+  - `casa` "house, home" → 2 word_translations with priorities 1,2
+  - etc.
+- [ ] Single-meaning words get single `word_translations` entry with priority 1
+- [ ] All 432 existing `word_forms.translation` values migrated using **translation matching**:
+  - Form "I speak" → assigned to word_translation "to speak" (priority 1)
+  - Form "I talk" → would be assigned to word_translation "to talk" (priority 2) if it existed
+- [ ] Context metadata populated based on translation analysis
+- [ ] No data loss during migration
+- [ ] Rollback plan tested
 
-**Migration Strategy - Semantic Analysis Approach:**
+**Translation Matching Logic:**
 
 ```sql
--- Phase 1: Analyze current words for multiple meanings
-WITH meaning_analysis AS (
+-- Migration Logic: Match form translations to word translations
+-- Example: parlare has word_translations ["to speak", "to talk"]
+-- Form "I speak" matches word_translation "to speak"
+-- Form "I talk" matches word_translation "to talk"
+
+WITH form_assignment AS (
   SELECT 
-    id,
-    italian, 
-    english,
-    word_type,
+    wf.id as form_id,
+    wf.translation as form_translation,
+    wt.id as word_translation_id,
+    wt.translation as word_translation,
     CASE 
-      WHEN english LIKE '%,%' OR english LIKE '%/%' OR english LIKE '% or %' 
-      THEN 'multiple-meanings'
-      ELSE 'single-meaning'
-    END as meaning_type,
-    CASE 
-      WHEN english LIKE '%,%' THEN string_to_array(english, ',')
-      WHEN english LIKE '%/%' THEN string_to_array(english, '/')
-      WHEN english LIKE '% or %' THEN string_to_array(english, ' or ')
-      ELSE ARRAY[english]
-    END as meaning_array
-  FROM dictionary
+      WHEN wf.translation ILIKE '%speak%' AND wt.translation ILIKE '%speak%' THEN 'match'
+      WHEN wf.translation ILIKE '%talk%' AND wt.translation ILIKE '%talk%' THEN 'match'
+      -- Add more matching rules...
+      ELSE 'no-match'
+    END as match_quality
+  FROM word_forms wf
+  JOIN word_translations wt ON wt.word_id = wf.word_id
+  WHERE wf.translation IS NOT NULL
 )
-SELECT * FROM meaning_analysis ORDER BY meaning_type DESC, italian;
-
--- Phase 2: Create semantic contexts based on analysis
--- For multi-meaning words: Create context per meaning
--- For single-meaning words: Create typed contexts (transitive-usage, intransitive-usage, etc.)
-
--- Phase 3: Migrate form translations to appropriate contexts
--- Forms get assigned to contexts based on semantic analysis of their translation content
+-- Forms get assigned to best matching word_translation
 ```
 
-**Specific Word Analysis Required:**
+**Special Cases:**
 
-- **ciao**: "hello, goodbye" → Split into greeting vs farewell contexts
-- **bello**: "beautiful, handsome" → Physical appearance vs general quality contexts  
-- **grande**: "big, large" → Physical size vs metaphorical greatness contexts
-- **parlare**: "to speak, to talk" → Formal speech vs informal conversation contexts
-- **essere**: "to be" → Existence vs identity vs location contexts (if forms support this)
-- **bene**: "well, good" → Adverbial usage vs adjective-like usage contexts
-
-**Context Type Classification:**
-
-```sql
--- Context types to implement based on word analysis:
-'greeting-usage'     -- ciao as hello
-'farewell-usage'     -- ciao as goodbye  
-'physical-beauty'    -- bello describing appearance
-'general-excellence' -- bello describing quality
-'literal-size'       -- grande for physical dimensions
-'metaphorical-size'  -- grande for importance/greatness
-'formal-speech'      -- parlare in formal contexts
-'casual-conversation' -- parlare in informal contexts
-'primary-meaning'    -- Single-meaning words default
-```
-
-**Form Translation Assignment Logic:**
-
-- Analyze existing `word_forms.translation` content for context clues
-- Forms with "he/she speaks" → formal-speech context
-- Forms with "he/she talks" → casual-conversation context  
-- Plural greeting forms → greeting-usage context
-- Compound tenses → inherit base verb context
-- Fallback: Assign to primary-meaning context if ambiguous
+- **Reflexive verbs**: Use existing tags system for context-specific forms
+- **Compound tenses**: Inherit assignment from base form
+- **Gender variants**: Use calculated-variant assignment method
+- **Ambiguous forms**: Default to priority 1 (most common) translation
 
 **Definition of Done:**
 
-- [ ] All 21 words have semantically meaningful contexts (no placeholder "primary-meaning" unless truly single-meaning)
-- [ ] Multi-meaning words demonstrate different translations per context
-- [ ] All 432 word forms have appropriate form_translations entries linked to correct contexts
-- [ ] Form translation assignment follows logical semantic rules
-- [ ] Context switching functionality can be demonstrated with migrated data
-- [ ] Migration preserves all existing functionality while adding genuine multiple meanings
-- [ ] Documentation created showing which words gained multiple contexts and why
+- [ ] At least 6 words have multiple `word_translations` (bello, bene, casa, ciao, grande, parlare)
+- [ ] All 432 forms have `form_translations` entries with proper `word_translation_id` assignment
+- [ ] Translation matching achieves 90%+ automatic assignment rate
+- [ ] Manual assignment needed for <10% of forms
+- [ ] Priority ordering enables proper display in UI
 
-**Success Metrics:**
-
-- At least 30% of words (6+ words) have multiple semantic contexts
-- Form translations show different English text based on context where semantically appropriate
-- No form left without a translation in the new system
-- Context assignment rules are consistent and documentable
 -----
 
-### Issue #3: Create Reflexive Verb Test Data
+### Issue #3: Create Reflexive Verb Test Data with Translation Focus
 
 **Labels**: `epic:reflexive-verbs` `priority:high` `phase:1` `story-points:3` `type:technical` `component:database`
 
 **As a** developer  
-**I want** to create comprehensive test data for "lavarsi" with multiple semantic contexts  
-**So that** we can test and demonstrate the multiple meanings functionality
+**I want** to create comprehensive test data for "lavarsi" using the translation-first architecture  
+**So that** we can test and demonstrate the multiple translations functionality with reflexive verb complexity
 
 **Acceptance Criteria:**
 
-- [ ] "lavarsi" entry created with reflexive-verb tags
-- [ ] Two semantic contexts created:
-  - Direct reflexive: "Wash Oneself" (`context_type: 'direct-reflexive'`)
-  - Reciprocal: "Wash Each Other" (`context_type: 'reciprocal'`)
-- [ ] Complete present indicative conjugations (6 forms) created for lavarsi
-- [ ] Context-specific translations for each form in both meanings:
-  - "ci laviamo" → "we wash ourselves" (direct) vs "we wash each other" (reciprocal)
-  - "si lavano" → "they wash themselves" (direct) vs "they wash each other" (reciprocal)
-- [ ] Usage examples created for key forms demonstrating context differences
-- [ ] Audio metadata placeholders created following existing pattern
-- [ ] Related word links created (sapone, asciugamano for direct; insieme, aiutarsi for reciprocal)
+- [ ] "lavarsi" entry created with appropriate reflexive tags
+- [ ] Two word translations created:
+  - Translation 1: "to wash oneself" (priority 1, direct reflexive)
+  - Translation 2: "to wash each other" (priority 2, reciprocal) 
+- [ ] Complete present tense conjugations created with proper translation assignment:
+  - "mi lavo" → assigned to "to wash oneself" (only valid assignment)
+  - "ci laviamo" → can be assigned to either translation (demonstrate choice)
+  - "si lavano" → can be assigned to either translation
+- [ ] Context metadata populated with usage information
+- [ ] Form assignment demonstrates translation matching logic
+- [ ] Gender variants work with VariantCalculator integration
+- [ ] Usage examples created for key translation distinctions
 
-**Test Data Structure:**
+**Test Data Architecture:**
 
 ```sql
--- Dictionary entry
-INSERT INTO dictionary (italian, english, word_type, tags) VALUES
-('lavarsi', 'to wash', 'VERB', ARRAY[
-  'reflexive-verb', 'are-conjugation', 'essere-auxiliary', 
-  'both-transitivity', 'freq-top1000', 'CEFR-A2'
-]);
+-- lavarsi word translations
+INSERT INTO word_translations (word_id, translation, display_priority, context_metadata) VALUES
+(lavarsi_id, 'to wash oneself', 1, '{"usage": "direct-reflexive", "plurality": "any"}'),
+(lavarsi_id, 'to wash each other', 2, '{"usage": "reciprocal", "plurality": "plural-only"}');
 
--- Semantic contexts  
-INSERT INTO word_semantic_contexts (word_id, context_type, context_name, base_translation, semantic_tags) VALUES
-(lavarsi_id, 'direct-reflexive', 'Wash Oneself', 'to wash oneself', ARRAY['self-directed', 'personal-care']),
-(lavarsi_id, 'reciprocal', 'Wash Each Other', 'to wash each other', ARRAY['mutual-action', 'cooperative']);
-
--- Sample key forms with dual translations
--- "ci laviamo" with both meanings
--- "si lavano" with both meanings  
--- "mi lavo" (only direct - singular can't be reciprocal)
+-- Form assignments using translation matching
+-- "mi lavo" = "I wash myself" → matches "to wash oneself"
+-- "ci laviamo" could be "we wash ourselves" OR "we wash each other" 
+--   → demonstrates choice/context via tags or metadata
 ```
 
-**Context-Specific Examples:**
+**Special Reflexive Handling:**
 
-- **Direct Reflexive**: "Mi lavo le mani prima di mangiare" → "I wash my hands before eating"
-- **Reciprocal**: "Ci laviamo a vicenda dopo il lavoro" → "We wash each other after work"
-- **Usage Notes**: Reciprocal meaning requires plural subject (noi, voi, loro only)
+- Use existing `tags` system to mark reciprocal-capable forms
+- Singular forms (mi, ti, si) → only "to wash oneself" translation
+- Plural forms (ci, vi, si) → can use either translation based on context
+- Context switching in UI will filter translations by form appropriateness
 
 **Definition of Done:**
 
-- [ ] "lavarsi" fully functional in dictionary search
-- [ ] Context switching works in conjugation modal
-- [ ] Gender variants generate correctly for compound tenses
-- [ ] Related words display per context appropriately
+- [ ] "lavarsi" demonstrates multiple translation functionality
+- [ ] Translation assignment logic handles reflexive complexity
+- [ ] Context metadata enables appropriate form filtering
 - [ ] Integration with existing VariantCalculator confirmed
-- [ ] Test data serves as template for additional reflexive verbs
------
+- [ ] Architecture serves as template for other reflexive verbs
+- [ ] Card display prioritization works correctly
 
 ### Story 1.2: Migrate Existing Dictionary Data
 
