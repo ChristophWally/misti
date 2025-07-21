@@ -150,7 +150,6 @@ export default function ConjugationModal({
 const loadConjugations = async () => {
   setIsLoading(true)
   try {
-    console.log('🔍 DEBUG: Starting conjugation query for word:', word.id)
     
     const { data, error } = await supabase
       .from('word_forms')
@@ -160,34 +159,27 @@ const loadConjugations = async () => {
           audio_filename,
           azure_voice_name,
           duration_seconds
+        ),
+        form_translations (
+          word_translation_id
         )
       `)
       .eq('word_id', word.id)
       .eq('form_type', 'conjugation')
       .order('tags')
 
-    console.log('🔍 Raw query result:', { data, error })
 
     if (error) throw error
     
-    // Check what we actually got
-    console.log('🔍 First form raw data:', data?.[0])
-    console.log('🔍 First form audio_metadata_id:', data?.[0]?.audio_metadata_id)
-    console.log('🔍 First form word_audio_metadata:', data?.[0]?.word_audio_metadata)
     
     const processedData = (data || []).map(form => {
       const result = {
         ...form,
         audio_filename: form.word_audio_metadata?.audio_filename || null,
-        azure_voice_name: form.word_audio_metadata?.azure_voice_name || null
+        azure_voice_name: form.word_audio_metadata?.azure_voice_name || null,
+        form_translations: form.form_translations || []
       }
 
-      console.log('🔍 Processed form:', {
-        form_text: form.form_text,
-        audio_metadata_id: form.audio_metadata_id,
-        word_audio_metadata: form.word_audio_metadata,
-        final_audio_filename: result.audio_filename
-      })
 
       return result
     })
@@ -195,8 +187,6 @@ const loadConjugations = async () => {
     // Generate all forms (stored + calculated variants)
     const allForms = VariantCalculator.getAllForms(processedData, word.tags || [])
 
-    console.log('🔍 All forms (stored + calculated):', allForms.length, 'total forms')
-    console.log('🔍 Calculated variants:', allForms.filter(f => f.tags?.includes('calculated-variant')))
 
     const groupedConjugations = groupConjugationsByMoodTense(allForms)
     setConjugations(groupedConjugations)
@@ -208,7 +198,7 @@ const loadConjugations = async () => {
   }
 }
 
-// Load all translations for the current word
+  // Load all translations for the current word
 const loadWordTranslations = async () => {
   if (!word?.id) return
 
@@ -229,32 +219,14 @@ const loadWordTranslations = async () => {
 
     if (error) throw error
 
-    // Add form counts to each translation
-    const translationsWithCounts = await Promise.all(
-      translations.map(async (translation) => {
-        const { count } = await supabase
-          .from('form_translations')
-          .select('*', { count: 'exact', head: true })
-          .eq('word_translation_id', translation.id)
+    setWordTranslations(translations)
 
-        return {
-          ...translation,
-          assigned_forms: count || 0
-        }
-      })
-    )
-
-    console.log('🔍 Loaded translations:', translationsWithCounts)
-
-    setWordTranslations(translationsWithCounts)
-
-    if (translationsWithCounts.length > 0 && !selectedTranslationId) {
-      const primary =
-        translationsWithCounts.find(t => t.display_priority === 1) ||
-        translationsWithCounts[0]
+    // Set default selection to primary translation
+    if (translations.length > 0 && !selectedTranslationId) {
+      const primary = translations.find(t => t.display_priority === 1) || translations[0]
       setSelectedTranslationId(primary.id)
-      console.log('🔍 Selected primary translation:', primary.translation)
     }
+
   } catch (error) {
     console.error('Error loading word translations:', error)
     setWordTranslations([])
@@ -298,31 +270,27 @@ const loadWordTranslations = async () => {
     // Filter to show ONLY stored forms (not calculated variants)
     const baseStoredForms = allForms.filter(form => !form.tags?.includes('calculated-variant'))
 
-    console.log('🔍 Base stored forms for', selectedMood, selectedTense, ':', baseStoredForms.length, 'forms')
-    console.log('🔍 All forms available:', allForms.length, 'total (including calculated)')
 
     return baseStoredForms
   }
 
-  // Determine current form context (singular/plural etc.)
-  const getCurrentFormContext = () => {
-    const currentForms = getCurrentForms()
-    if (currentForms.length === 0) return null
+  // Filter forms to those relevant for the selected translation
+  const getFormsForSelectedTranslation = () => {
+    const allForms = getCurrentForms()
 
-    const singularForms = currentForms.filter(form =>
-      form.tags?.includes('singolare') ||
-      ['io', 'tu', 'lui', 'lei'].some(p => form.tags?.includes(p))
-    )
-    const pluralForms = currentForms.filter(form =>
-      form.tags?.includes('plurale') ||
-      ['noi', 'voi', 'loro'].some(p => form.tags?.includes(p))
-    )
+    if (!selectedTranslationId) return allForms
 
-    return {
-      number: singularForms.length >= pluralForms.length ? 'singular' : 'plural',
-      hasBoth: singularForms.length > 0 && pluralForms.length > 0
-    }
+    // Filter forms that have assignments for the selected translation
+    const filteredForms = allForms.filter(form => {
+      const hasAssignment = form.form_translations?.some(
+        assignment => assignment.word_translation_id === selectedTranslationId
+      )
+      return hasAssignment
+    })
+
+    return filteredForms
   }
+
 
   // Order forms by pronoun sequence
   const orderFormsByPronoun = (forms) => {
@@ -525,7 +493,6 @@ const loadWordTranslations = async () => {
 
   // Group forms into singular/plural
   const groupFormsBySingularPlural = (forms) => {
-    console.log('🔍 Grouping forms:', forms.length, 'total forms')
 
     const orderedForms = orderFormsByPronoun(forms)
 
@@ -556,9 +523,105 @@ const loadWordTranslations = async () => {
       !singular.includes(form) && !plural.includes(form)
     )
 
-    console.log('🔍 Grouped:', singular.length, 'singular,', plural.length, 'plural,', other.length, 'other')
 
     return { singular, plural, other }
+  }
+
+  // Render conjugation forms with filtering and helpful messages
+  const renderConjugationForms = () => {
+    const currentForms = getFormsForSelectedTranslation()
+
+    if (currentForms.length === 0) {
+      const selectedTranslation = wordTranslations.find(t => t.id === selectedTranslationId)
+      const translationName = selectedTranslation?.translation || 'this translation'
+
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-500 mb-2">
+            No forms available for "{translationName}" in {selectedMood} {selectedTense}.
+          </p>
+          <p className="text-sm text-gray-400">
+            Try selecting a different translation or changing the mood/tense.
+          </p>
+        </div>
+      )
+    }
+
+    const { singular, plural, other } = groupFormsBySingularPlural(currentForms)
+    const compound = isCompoundTense()
+
+    return (
+      <div className="space-y-1">
+        {/* Singular Section */}
+        {singular.length > 0 && (
+          <>
+            <SectionHeading>Singular</SectionHeading>
+            {singular.map(form => {
+              const displayForm = getDisplayFormWithFormality(form)
+              return (
+                <ConjugationRow
+                  key={form.id}
+                  form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
+                  audioText={getAudioText(form)}
+                  pronounDisplay={getPronounDisplay(form)}
+                  isCompound={compound}
+                  selectedGender={selectedGender}
+                  audioPreference={audioPreference}
+                  wordTags={word?.tags || []}
+                  selectedFormality={selectedFormality}
+                />
+              )
+            })}
+          </>
+        )}
+
+        {/* Plural Section */}
+        {plural.length > 0 && (
+          <>
+            <SectionHeading className="mt-5">Plural</SectionHeading>
+            {plural.map(form => {
+              const displayForm = getDisplayFormWithFormality(form)
+              return (
+                <ConjugationRow
+                  key={form.id}
+                  form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
+                  audioText={getAudioText(form)}
+                  pronounDisplay={getPronounDisplay(form)}
+                  isCompound={compound}
+                  selectedGender={selectedGender}
+                  audioPreference={audioPreference}
+                  wordTags={word?.tags || []}
+                  selectedFormality={selectedFormality}
+                />
+              )
+            })}
+          </>
+        )}
+
+        {/* Other Forms */}
+        {other.length > 0 && (
+          <>
+            <SectionHeading className="mt-5">Other Forms</SectionHeading>
+            {other.map(form => {
+              const displayForm = getDisplayFormWithFormality(form)
+              return (
+                <ConjugationRow
+                  key={form.id}
+                  form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
+                  audioText={getAudioText(form)}
+                  pronounDisplay={getPronounDisplay(form)}
+                  isCompound={compound}
+                  selectedGender={selectedGender}
+                  audioPreference={audioPreference}
+                  wordTags={word?.tags || []}
+                  selectedFormality={selectedFormality}
+                />
+              )
+            })}
+          </>
+        )}
+      </div>
+    )
   }
 
   useEffect(() => {
@@ -582,9 +645,7 @@ const loadWordTranslations = async () => {
   }, [selectedMood, conjugations])
 
   const availableOptions = getAvailableOptions()
-  const currentForms = getCurrentForms()
-  const { singular, plural, other } = groupFormsBySingularPlural(currentForms)
-  const compound = isCompoundTense()
+  const currentForms = getFormsForSelectedTranslation()
 
   return (
     <>
@@ -834,7 +895,6 @@ const loadWordTranslations = async () => {
                 translations={wordTranslations}
                 selectedTranslationId={selectedTranslationId}
                 onTranslationChange={setSelectedTranslationId}
-                currentFormContext={getCurrentFormContext()}
               />
             </div>
           )}
@@ -846,86 +906,8 @@ const loadWordTranslations = async () => {
                 <div className="animate-spin h-8 w-8 border-2 border-teal-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading conjugations...</p>
               </div>
-            ) : currentForms.length > 0 ? (
-              <div className="space-y-1">
-                {/* Singular Section */}
-                {singular.length > 0 && (
-                  <>
-                    <SectionHeading>Singular</SectionHeading>
-                    {singular.map(form => {
-                      const displayForm = getDisplayFormWithFormality(form)
-                      return (
-                        <ConjugationRow
-                          key={form.id}
-                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
-                          audioText={getAudioText(form)}
-                          pronounDisplay={getPronounDisplay(form)}
-                          isCompound={compound}
-                          selectedGender={selectedGender}
-                          audioPreference={audioPreference}
-                          wordTags={word?.tags || []}
-                          selectedFormality={selectedFormality}
-                        />
-                      )
-                    })}
-                  </>
-                )}
-
-                {/* Plural Section */}
-                {plural.length > 0 && (
-                  <>
-                    <SectionHeading className="mt-5">Plural</SectionHeading>
-                    {plural.map(form => {
-                      const displayForm = getDisplayFormWithFormality(form)
-                      return (
-                        <ConjugationRow
-                          key={form.id}
-                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
-                          audioText={getAudioText(form)}
-                          pronounDisplay={getPronounDisplay(form)}
-                          isCompound={compound}
-                          selectedGender={selectedGender}
-                          audioPreference={audioPreference}
-                          wordTags={word?.tags || []}
-                          selectedFormality={selectedFormality}
-                        />
-                      )
-                    })}
-                  </>
-                )}
-
-                {/* Other Forms */}
-                {other.length > 0 && (
-                  <>
-                    <SectionHeading className="mt-5">Other Forms</SectionHeading>
-                    {other.map(form => {
-                      const displayForm = getDisplayFormWithFormality(form)
-                      return (
-                        <ConjugationRow
-                          key={form.id}
-                          form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
-                          audioText={getAudioText(form)}
-                          pronounDisplay={getPronounDisplay(form)}
-                          isCompound={compound}
-                          selectedGender={selectedGender}
-                          audioPreference={audioPreference}
-                          wordTags={word?.tags || []}
-                          selectedFormality={selectedFormality}
-                        />
-                      )
-                    })}
-                  </>
-                )}
-              </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">
-                  Conjugations for {selectedMood} {selectedTense} are not yet available.
-                </p>
-                <p className="text-sm text-gray-400">
-                  Coming soon as we expand our conjugation database.
-                </p>
-              </div>
+              renderConjugationForms()
             )}
           </div>
         </div>
