@@ -1,185 +1,173 @@
-// Key additions to existing ConjugationModal.js
-// These are the specific changes needed for Story 8
+'use client'
 
-import TranslationSelector from './TranslationSelector'
+// components/TranslationSelector.js
+// Translation selection interface for multiple word meanings
 
-// ADD THESE STATE VARIABLES to existing ConjugationModal:
-export default function ConjugationModal({ isOpen, onClose, word, userAudioPreference = 'form-only' }) {
-  // ... existing state variables ...
-  
-  // NEW: Translation selection state
-  const [selectedTranslationId, setSelectedTranslationId] = useState(null)
-  const [wordTranslations, setWordTranslations] = useState([])
-  const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
+import { useState, useEffect } from 'react'
 
-  // NEW: Load translations when modal opens
-  const loadWordTranslations = async () => {
-    if (!word?.id) return
+export default function TranslationSelector({
+  translations = [],
+  selectedTranslationId,
+  onTranslationChange,
+  currentFormContext = null, // { number: 'singular'|'plural', person: 'io'|'tu'|etc }
+  className = ''
+}) {
+  const [tooltip, setTooltip] = useState({ show: false, content: '', id: null })
+
+  // Sort translations by priority (primary first)
+  const sortedTranslations = translations.sort((a, b) => a.display_priority - b.display_priority)
+
+  // Check if translation is available for current context
+  const isTranslationAvailable = (translation) => {
+    if (!currentFormContext) return true
     
-    setIsLoadingTranslations(true)
-    try {
-      const { data: translations, error } = await supabase
-        .from('word_translations')
-        .select(`
-          id,
-          translation,
-          display_priority,
-          context_metadata,
-          usage_notes,
-          frequency_estimate
-        `)
-        .eq('word_id', word.id)
-        .order('display_priority')
+    const contextMetadata = translation.context_metadata || {}
+    
+    // Check plurality restrictions
+    if (contextMetadata.plurality === 'plural-only' && currentFormContext.number === 'singular') {
+      return false
+    }
+    if (contextMetadata.plurality === 'singular-only' && currentFormContext.number === 'plural') {
+      return false
+    }
+    
+    return true
+  }
 
-      if (error) throw error
+  // Get context hint for translation
+  const getContextHint = (translation) => {
+    const contextMetadata = translation.context_metadata || {}
+    const hints = []
+    
+    if (contextMetadata.usage) {
+      hints.push(contextMetadata.usage)
+    }
+    if (contextMetadata.plurality) {
+      hints.push(contextMetadata.plurality.replace('-', ' '))
+    }
+    if (contextMetadata.semantic_type) {
+      hints.push(contextMetadata.semantic_type.replace('-', ' '))
+    }
+    
+    return hints.join(' • ')
+  }
 
-      // Add form counts to each translation
-      const translationsWithCounts = await Promise.all(
-        translations.map(async (translation) => {
-          const { count } = await supabase
-            .from('form_translations')
-            .select('*', { count: 'exact', head: true })
-            .eq('word_translation_id', translation.id)
+  // Handle tooltip show/hide
+  const showTooltip = (translationId, content) => {
+    setTooltip({ show: true, content, id: translationId })
+  }
 
-          return {
-            ...translation,
-            assigned_forms: count || 0
-          }
-        })
-      )
+  const hideTooltip = () => {
+    setTooltip({ show: false, content: '', id: null })
+  }
 
-      setWordTranslations(translationsWithCounts)
-      
-      // Set default selection to primary translation
-      if (translationsWithCounts.length > 0 && !selectedTranslationId) {
-        const primary = translationsWithCounts.find(t => t.display_priority === 1) || translationsWithCounts[0]
-        setSelectedTranslationId(primary.id)
-      }
-      
-    } catch (error) {
-      console.error('Error loading word translations:', error)
-      setWordTranslations([])
-    } finally {
-      setIsLoadingTranslations(false)
+  // Handle translation selection
+  const handleTranslationSelect = (translationId) => {
+    const translation = translations.find(t => t.id === translationId)
+    if (translation && isTranslationAvailable(translation)) {
+      onTranslationChange(translationId)
     }
   }
 
-  // NEW: Get current form context for translation availability
-  const getCurrentFormContext = () => {
-    const currentForms = getCurrentForms() // existing function
-    if (currentForms.length === 0) return null
-    
-    // Determine if we're looking at singular or plural forms primarily
-    const singularForms = currentForms.filter(form => 
-      form.tags?.includes('singolare') || 
-      ['io', 'tu', 'lui', 'lei'].some(p => form.tags?.includes(p))
-    )
-    const pluralForms = currentForms.filter(form =>
-      form.tags?.includes('plurale') || 
-      ['noi', 'voi', 'loro'].some(p => form.tags?.includes(p))
-    )
-    
-    return {
-      number: singularForms.length >= pluralForms.length ? 'singular' : 'plural',
-      hasBoth: singularForms.length > 0 && pluralForms.length > 0
-    }
-  }
-
-  // NEW: Get forms filtered by selected translation
-  const getFormsForSelectedTranslation = () => {
-    if (!selectedTranslationId) return getCurrentForms()
-    
-    const allForms = getCurrentForms()
-    return allForms.filter(form => {
-      // Check if form has assignment for selected translation
-      const hasAssignment = form.form_translations?.some(
-        assignment => assignment.word_translation_id === selectedTranslationId
-      )
-      return hasAssignment
-    })
-  }
-
-  // NEW: Get translation text for form based on selected translation
-  const getTranslationForForm = (form) => {
-    if (!selectedTranslationId) return form.translation
-    
-    const assignment = form.form_translations?.find(
-      assignment => assignment.word_translation_id === selectedTranslationId
-    )
-    
-    return assignment?.translation || form.translation
-  }
-
-  // UPDATE: Load translations when modal opens
-  useEffect(() => {
-    if (isOpen && word) {
-      loadConjugations() // existing function
-      loadWordTranslations() // NEW function
-    }
-  }, [isOpen, word])
-
-  // UPDATE: Reset translation selection when word changes
-  useEffect(() => {
-    setSelectedTranslationId(null)
-  }, [word?.id])
-
-  // ADD THIS TO EXISTING MODAL CONTENT, after mood/tense controls:
-  const renderTranslationSelector = () => {
-    if (isLoadingTranslations || wordTranslations.length <= 1) {
-      return null // Don't show selector for single-translation words
-    }
-
-    return (
-      <div className="mb-4">
-        <TranslationSelector
-          translations={wordTranslations}
-          selectedTranslationId={selectedTranslationId}
-          onTranslationChange={setSelectedTranslationId}
-          currentFormContext={getCurrentFormContext()}
-        />
-      </div>
-    )
-  }
-
-  // UPDATE: Use filtered forms in render
-  const renderConjugationForms = () => {
-    const currentForms = getFormsForSelectedTranslation() // NEW: filtered forms
-    const { singular, plural, other } = groupFormsBySingularPlural(currentForms)
-
-    if (currentForms.length === 0) {
-      return (
-        <div className="text-center py-8">
-          <p className="text-gray-500 mb-2">
-            No forms available for the selected translation in {selectedMood} {selectedTense}.
-          </p>
-          <p className="text-sm text-gray-400">
-            Try selecting a different translation or changing the mood/tense.
-          </p>
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-1">
-        {/* Render singular, plural, other sections as before, but use getTranslationForForm */}
-      </div>
-    )
-  }
-
-  // INTEGRATION POINT: Add translation selector to modal content
   return (
-    <>
-      {/* Modal content structure stays the same, but add: */}
-      <div className="modal-controls">
-        {/* Existing mood/tense/gender controls */}
-        
-        {/* NEW: Translation Selector */}
-        {renderTranslationSelector()}
+    <div className={`translation-selector ${className}`}>
+      <label className="block text-sm font-semibold text-gray-700 mb-3">
+        Select Translation Meaning
+      </label>
+      
+      <div className="flex flex-wrap gap-3">
+        {sortedTranslations.map((translation, index) => {
+          const isSelected = selectedTranslationId === translation.id
+          const isAvailable = isTranslationAvailable(translation)
+          const isPrimary = translation.display_priority === 1
+          const contextHint = getContextHint(translation)
+          
+          return (
+            <button
+              key={translation.id}
+              onClick={() => handleTranslationSelect(translation.id)}
+              onMouseEnter={() => showTooltip(translation.id, translation.usage_notes || contextHint)}
+              onMouseLeave={hideTooltip}
+              disabled={!isAvailable}
+              className={`
+                relative px-4 py-3 rounded-xl border-2 transition-all duration-300 ease-in-out
+                text-left min-w-[140px] flex-1 max-w-[300px]
+                ${isAvailable ? 'cursor-pointer hover:scale-105' : 'cursor-not-allowed opacity-50'}
+                ${isSelected 
+                  ? 'border-teal-500 bg-teal-50 text-teal-800 shadow-lg transform scale-105' 
+                  : isAvailable 
+                    ? 'border-gray-300 bg-white text-gray-700 hover:border-teal-300 hover:shadow-md' 
+                    : 'border-gray-200 bg-gray-50 text-gray-400'
+                }
+                ${isPrimary ? 'ring-2 ring-blue-200 ring-opacity-50' : ''}
+                focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2
+                sketchy
+              `}
+              aria-pressed={isSelected}
+              aria-describedby={`translation-${translation.id}-description`}
+            >
+              {/* Translation Text */}
+              <div className="font-semibold text-base mb-1">
+                {translation.translation}
+              </div>
+              
+              {/* Priority and Context Indicators */}
+              <div className="flex items-center gap-2 text-xs">
+                {isPrimary && (
+                  <span className={`
+                    px-2 py-1 rounded-full font-medium
+                    ${isSelected ? 'bg-teal-200 text-teal-800' : 'bg-blue-100 text-blue-600'}
+                  `}>
+                    Primary
+                  </span>
+                )}
+                
+                {contextHint && (
+                  <span className={`
+                    px-2 py-1 rounded-full font-medium
+                    ${isSelected ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-600'}
+                  `}>
+                    {contextHint}
+                  </span>
+                )}
+                
+                {!isAvailable && (
+                  <span className="px-2 py-1 bg-red-100 text-red-600 rounded-full font-medium">
+                    Not Available
+                  </span>
+                )}
+              </div>
+              
+              {/* Form Count Indicator */}
+              {translation.assigned_forms > 0 && (
+                <div className="absolute -top-2 -right-2 bg-teal-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-semibold">
+                  {translation.assigned_forms}
+                </div>
+              )}
+            </button>
+          )
+        })}
       </div>
       
-      <div className="forms-display">
-        {renderConjugationForms()}
-      </div>
-    </>
+      {/* Tooltip */}
+      {tooltip.show && tooltip.content && (
+        <div className="mt-3 p-3 bg-gray-800 text-white text-sm rounded-lg">
+          {tooltip.content}
+        </div>
+      )}
+      
+      {/* Hidden descriptions for screen readers */}
+      {sortedTranslations.map(translation => (
+        <div
+          key={`desc-${translation.id}`}
+          id={`translation-${translation.id}-description`}
+          className="sr-only"
+        >
+          {translation.usage_notes || getContextHint(translation)}. 
+          Priority {translation.display_priority}. 
+          {translation.assigned_forms} forms available.
+        </div>
+      ))}
+    </div>
   )
 }
