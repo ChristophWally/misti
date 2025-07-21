@@ -159,6 +159,9 @@ const loadConjugations = async () => {
           audio_filename,
           azure_voice_name,
           duration_seconds
+        ),
+        form_translations (
+          word_translation_id
         )
       `)
       .eq('word_id', word.id)
@@ -173,7 +176,8 @@ const loadConjugations = async () => {
       const result = {
         ...form,
         audio_filename: form.word_audio_metadata?.audio_filename || null,
-        azure_voice_name: form.word_audio_metadata?.azure_voice_name || null
+        azure_voice_name: form.word_audio_metadata?.azure_voice_name || null,
+        form_translations: form.form_translations || []
       }
 
 
