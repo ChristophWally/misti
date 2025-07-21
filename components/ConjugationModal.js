@@ -381,12 +381,12 @@ const loadWordTranslations = async () => {
     // For non-formal contexts, use existing gender logic on the display form
     const pronoun = extractTagValue(displayForm.tags, 'pronoun')
 
-    // Only modify 3rd person translations for non-formal contexts  
+    // Only modify 3rd person translations for non-formal contexts
     if (pronoun !== 'lui' && pronoun !== 'lei') {
       return displayForm.translation
     }
 
-    // Start from the original translation each time
+    // Start from the form translation so that the selected translation is respected
     let translation = displayForm.translation
     const hasGenderVariants =
       word?.tags?.includes('essere-auxiliary') &&
@@ -395,24 +395,21 @@ const loadWordTranslations = async () => {
       !displayForm.tags?.includes('passato-progressivo')
 
     if (audioPreference === 'form-only' && !hasGenderVariants) {
-      if (translation.toLowerCase().includes('he ') || translation.toLowerCase().startsWith('he ')) {
-        translation = translation.replace(/\bhe\b/gi, 'he/she').replace(/^He\b/, 'He/she')
-      } else if (translation.toLowerCase().includes('she ') || translation.toLowerCase().startsWith('she ')) {
-        translation = translation.replace(/\bshe\b/gi, 'he/she').replace(/^She\b/, 'He/she')
-      }
+      // Form-only mode: keep combined he/she translation
+      return translation
     } else if (hasGenderVariants || audioPreference === 'with-pronoun') {
       if (selectedGender === 'male') {
         translation = translation
           .replace(/\bhe\/she\b/gi, 'he')
           .replace(/^He\/she\b/, 'He')
-          .replace(/\bshe\b/gi, 'he')
-          .replace(/^She\b/, 'He')
+          .replace(/\bhimself\/herself\b/gi, 'himself')
+          .replace(/^Himself\/herself\b/, 'Himself')
       } else {
         translation = translation
           .replace(/\bhe\/she\b/gi, 'she')
           .replace(/^He\/she\b/, 'She')
-          .replace(/\bhe\b/gi, 'she')
-          .replace(/^He\b/, 'She')
+          .replace(/\bhimself\/herself\b/gi, 'herself')
+          .replace(/^Himself\/herself\b/, 'Herself')
       }
     }
 
