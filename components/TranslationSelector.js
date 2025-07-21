@@ -1,9 +1,9 @@
 'use client'
 
 // components/TranslationSelector.js
-// Updated: Always show all translations, remove form counts
+// Compact dropdown with beautiful context tags
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 export default function TranslationSelector({
   translations = [],
@@ -11,120 +11,146 @@ export default function TranslationSelector({
   onTranslationChange,
   className = ''
 }) {
-  const [tooltip, setTooltip] = useState({ show: false, content: '', id: null })
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef(null)
 
-  // Sort translations by priority (primary first)
-  const sortedTranslations = translations
-    .slice()
-    .sort((a, b) => a.display_priority - b.display_priority)
+  const sortedTranslations = translations.sort((a, b) => a.display_priority - b.display_priority)
+  const selectedTranslation = translations.find(t => t.id === selectedTranslationId)
 
-  // Get context hint for translation
-  const getContextHint = (translation) => {
-    const contextMetadata = translation.context_metadata || {}
-    const hints = []
-
-    if (contextMetadata.usage) {
-      hints.push(contextMetadata.usage)
-    }
-    if (contextMetadata.plurality) {
-      hints.push(contextMetadata.plurality.replace('-', ' '))
-    }
-    if (contextMetadata.semantic_type) {
-      hints.push(contextMetadata.semantic_type.replace('-', ' '))
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
     }
 
-    return hints.join(' • ')
-  }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
-  // Handle tooltip show/hide
-  const showTooltip = (translationId, content) => {
-    setTooltip({ show: true, content, id: translationId })
-  }
+  // Parse context metadata into visual tags
+  const getContextTags = (translation) => {
+    const metadata = translation.context_metadata || {}
+    const tags = []
 
-  const hideTooltip = () => {
-    setTooltip({ show: false, content: '', id: null })
+    if (metadata.usage) {
+      tags.push({
+        text: metadata.usage.replace('-', ' '),
+        color: metadata.usage === 'reciprocal' ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'
+      })
+    }
+
+    if (metadata.plurality) {
+      tags.push({
+        text: metadata.plurality.replace('-', ' '),
+        color: metadata.plurality === 'plural-only' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+      })
+    }
+
+    if (metadata.semantic_type) {
+      tags.push({
+        text: metadata.semantic_type.replace('-', ' '),
+        color: 'bg-gray-100 text-gray-700'
+      })
+    }
+
+    return tags
   }
 
   return (
-    <div className={`translation-selector ${className}`}>
-      <label className="block text-sm font-semibold text-gray-700 mb-3">
-        Select Translation Meaning
+    <div className={`translation-selector-compact relative ${className}`} ref={dropdownRef}>
+      <label className="block text-sm font-semibold text-gray-700 mb-2">
+        Translation Meaning
       </label>
 
-      <div className="flex flex-wrap gap-3">
-        {sortedTranslations.map((translation) => {
-          const isSelected = selectedTranslationId === translation.id
-          const isPrimary = translation.display_priority === 1
-          const contextHint = getContextHint(translation)
-
-          return (
-            <button
-              key={translation.id}
-              onClick={() => onTranslationChange(translation.id)}
-              onMouseEnter={() => showTooltip(translation.id, translation.usage_notes || contextHint)}
-              onMouseLeave={hideTooltip}
-              className={`
-                relative px-4 py-3 rounded-xl border-2 transition-all duration-300 ease-in-out
-                text-left min-w-[140px] flex-1 max-w-[300px] cursor-pointer hover:scale-105
-                ${isSelected 
-                  ? 'border-teal-500 bg-teal-50 text-teal-800 shadow-lg transform scale-105' 
-                  : 'border-gray-300 bg-white text-gray-700 hover:border-teal-300 hover:shadow-md'
-                }
-                ${isPrimary ? 'ring-2 ring-blue-200 ring-opacity-50' : ''}
-                focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2
-                sketchy
-              `}
-              aria-pressed={isSelected}
-              aria-describedby={`translation-${translation.id}-description`}
-            >
-              {/* Translation Text */}
-              <div className="font-semibold text-base mb-1">
-                {translation.translation}
-              </div>
-
-              {/* Priority and Context Indicators */}
-              <div className="flex items-center gap-2 text-xs">
-                {isPrimary && (
-                  <span className={`
-                    px-2 py-1 rounded-full font-medium
-                    ${isSelected ? 'bg-teal-200 text-teal-800' : 'bg-blue-100 text-blue-600'}
-                  `}>
-                    Primary
-                  </span>
-                )}
-
-                {contextHint && (
-                  <span className={`
-                    px-2 py-1 rounded-full font-medium
-                    ${isSelected ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-600'}
-                  `}>
-                    {contextHint}
-                  </span>
-                )}
-              </div>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Tooltip */}
-      {tooltip.show && tooltip.content && (
-        <div className="mt-3 p-3 bg-gray-800 text-white text-sm rounded-lg">
-          {tooltip.content}
-        </div>
-      )}
-
-      {/* Hidden descriptions for screen readers */}
-      {sortedTranslations.map(translation => (
-        <div
-          key={`desc-${translation.id}`}
-          id={`translation-${translation.id}-description`}
-          className="sr-only"
+      <div className="relative">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full p-3 bg-white border-2 border-teal-600 rounded-lg font-medium text-left flex items-center justify-between hover:border-teal-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1"
         >
-          {translation.usage_notes || getContextHint(translation)}. 
-          Priority {translation.display_priority}.
-        </div>
-      ))}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <span className="text-teal-800 font-semibold truncate">
+              {selectedTranslation?.translation || 'Select translation'}
+            </span>
+            {selectedTranslation?.display_priority === 1 && (
+              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-medium flex-shrink-0">
+                Primary
+              </span>
+            )}
+          </div>
+          <span className={`transform transition-transform duration-200 text-teal-600 ml-2 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+        </button>
+
+        {isOpen && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+            {sortedTranslations.map((translation, index) => {
+              const isSelected = selectedTranslationId === translation.id
+              const isPrimary = translation.display_priority === 1
+              const contextTags = getContextTags(translation)
+
+              return (
+                <button
+                  key={translation.id}
+                  onClick={() => {
+                    onTranslationChange(translation.id)
+                    setIsOpen(false)
+                  }}
+                  className={`w-full text-left p-4 transition-all duration-150 ${
+                    index !== sortedTranslations.length - 1 ? 'border-b border-gray-100' : ''
+                  } ${
+                    isSelected 
+                      ? 'bg-teal-50 hover:bg-teal-100' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  {/* Main translation text and selection indicator */}
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className={`font-semibold text-base truncate ${
+                        isSelected ? 'text-teal-800' : 'text-gray-800'
+                      }`}>
+                        {translation.translation}
+                      </span>
+                      {isPrimary && (
+                        <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-medium flex-shrink-0">
+                          Primary
+                        </span>
+                      )}
+                    </div>
+                    {isSelected && (
+                      <span className="text-teal-600 text-lg flex-shrink-0 ml-2">✓</span>
+                    )}
+                  </div>
+
+                  {/* Context tags */}
+                  {contextTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {contextTags.map((tag, tagIndex) => (
+                        <span
+                          key={tagIndex}
+                          className={`text-xs px-2 py-1 rounded-full font-medium ${tag.color}`}
+                        >
+                          {tag.text}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Usage notes */}
+                  {translation.usage_notes && (
+                    <div className={`text-sm mt-1 ${
+                      isSelected ? 'text-teal-700' : 'text-gray-600'
+                    }`}>
+                      {translation.usage_notes}
+                    </div>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
