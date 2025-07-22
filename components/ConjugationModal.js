@@ -351,26 +351,23 @@ const loadWordTranslations = async () => {
       finalForms.push(displayForm)
     })
 
-    console.log(`🎭 Final forms with gender selection:`, finalForms.length)
-    return finalForms
+    // Deduplicate by pronoun in case data contains both masculine and feminine stored forms
+    const deduped = []
+    const seenPronouns = new Set()
+    finalForms.forEach(form => {
+      const pronoun = extractTagValue(form.tags, 'pronoun') || ''
+      if (!seenPronouns.has(pronoun)) {
+        seenPronouns.add(pronoun)
+        deduped.push(form)
+      }
+    })
+
+    console.log(`🎭 Final forms with gender selection:`, deduped.length)
+    return deduped
   }
 
   // Get translation string for the current form based on selected translation
-  const getTranslationForSelectedTranslation = (form) => {
-    if (!selectedTranslationId) return form.translation
-
-    const assignment = form.form_translations?.find(
-      ft => ft.word_translation_id === selectedTranslationId
-    )
-
-    const translationObj = wordTranslations.find(t => t.id === selectedTranslationId)
-
-    if (assignment && translationObj) {
-      return translationObj.translation
-    }
-
-    return form.translation
-  }
+  const getTranslationForSelectedTranslation = (form) => form.translation
 
 
   // Order forms by pronoun sequence
