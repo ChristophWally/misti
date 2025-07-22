@@ -354,26 +354,39 @@ const loadWordTranslations = async () => {
     )
   }
 
-  // Check if the CURRENT translation has gender variants in this mood/tense
+  // Check if the CURRENT translation actually changes with gender toggle
   const hasGenderVariantsInCurrentMoodTense = () => {
     const formsForTranslation = getFormsForSelectedTranslation()
 
-    const hasCompounds = formsForTranslation.some(
-      form =>
+    // Look for any form that would change either the verb itself or the
+    // accompanying pronoun when switching genders
+    const hasChanges = formsForTranslation.some((form) => {
+      const pronoun = extractTagValue(form.tags, 'pronoun')
+
+      // Verb text changes only for essere compound tenses
+      const verbChanges =
+        word?.tags?.includes('essere-auxiliary') &&
         form.tags?.includes('compound') &&
         !form.tags?.includes('presente-progressivo') &&
-        !form.tags?.includes('passato-progressivo') &&
-        !form.tags?.includes('calculated-variant')
-    )
+        !form.tags?.includes('passato-progressivo')
+
+      // Pronoun changes only matter when audio includes pronouns
+      const pronounChanges = pronoun === 'lui' || pronoun === 'lei'
+
+      if (verbChanges) return true
+      if (pronounChanges && audioPreference !== 'form-only') return true
+      return false
+    })
 
     console.log(
       '🎭 Checking if gender variants available for current translation in',
       selectedMood,
       selectedTense,
       ':',
-      hasCompounds
+      hasChanges
     )
-    return hasCompounds
+
+    return hasChanges
   }
 
   // Get pronoun display based on audio preference and gender toggle
