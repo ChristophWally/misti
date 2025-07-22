@@ -276,19 +276,83 @@ const loadWordTranslations = async () => {
 
   // Filter forms to those relevant for the selected translation
   const getFormsForSelectedTranslation = () => {
-    const allForms = getCurrentForms()
+    const baseForms = getCurrentForms()
+    console.log(`🔍 Base forms for ${selectedMood}/${selectedTense}:`, baseForms.length)
+    console.log(`🔍 Selected translation ID:`, selectedTranslationId)
+    console.log(`🔍 Selected gender:`, selectedGender)
 
-    if (!selectedTranslationId) return allForms
+    let filtered = baseForms
 
-    // Filter forms that have assignments for the selected translation
-    const filteredForms = allForms.filter(form => {
-      const hasAssignment = form.form_translations?.some(
-        assignment => assignment.word_translation_id === selectedTranslationId
-      )
-      return hasAssignment
+    // Step 1: Apply translation filtering if translation is selected
+    if (selectedTranslationId) {
+      filtered = baseForms.filter(form => {
+        const hasAssignment = form.form_translations?.some(
+          assignment => assignment.word_translation_id === selectedTranslationId
+        )
+        if (!hasAssignment) {
+          console.log(`🚫 Form "${form.form_text}" has no assignment for selected translation`)
+        } else {
+          console.log(`✅ Form "${form.form_text}" HAS assignment for selected translation`)
+        }
+        return hasAssignment
+      })
+      console.log(`✅ Translation filtered forms:`, filtered.length)
+    } else {
+      console.log('⚠️ No translation selected, showing all forms')
+    }
+
+    // Step 2: Apply gender-aware form selection
+    const finalForms = []
+
+    filtered.forEach(baseForm => {
+      let displayForm = baseForm // Start with base form
+
+      // Check if this form needs gender variant generation
+      const needsGenderVariant =
+        selectedGender === 'female' &&
+        word?.tags?.includes('essere-auxiliary') &&
+        baseForm.tags?.includes('compound') &&
+        !baseForm.tags?.includes('presente-progressivo') &&
+        !baseForm.tags?.includes('passato-progressivo')
+
+      if (needsGenderVariant) {
+        // Generate ALL variants for this word to find the feminine one
+        const allFormsWithVariants = VariantCalculator.getAllForms([baseForm], word.tags || [])
+
+        // Find the appropriate feminine variant
+        const pronoun = extractTagValue(baseForm.tags, 'pronoun')
+        const isBaseFormPlural = ['noi', 'voi', 'loro'].includes(pronoun) || baseForm.tags?.includes('plurale')
+
+        const feminineVariant = allFormsWithVariants.find(form =>
+          form.base_form_id === baseForm.id &&
+          form.tags?.includes('calculated-variant') &&
+          form.tags?.includes('feminine') &&
+          ((isBaseFormPlural && form.variant_type === 'fem-plur') ||
+           (!isBaseFormPlural && form.variant_type === 'fem-sing'))
+        )
+
+        if (feminineVariant) {
+          // Inherit translation assignments from base form
+          feminineVariant.form_translations = baseForm.form_translations?.map(assignment => ({
+            ...assignment,
+            id: `${assignment.id}-${feminineVariant.variant_type}`,
+            form_id: feminineVariant.id
+          })) || []
+
+          displayForm = feminineVariant
+          console.log(`♀️ Using feminine variant: ${baseForm.form_text} → ${feminineVariant.form_text}`)
+        } else {
+          console.log(`♀️ No feminine variant found for: ${baseForm.form_text}`)
+        }
+      } else {
+        console.log(`♂️ Using masculine form: ${baseForm.form_text}`)
+      }
+
+      finalForms.push(displayForm)
     })
 
-    return filteredForms
+    console.log(`🎭 Final forms with gender selection:`, finalForms.length)
+    return finalForms
   }
 
 
@@ -547,53 +611,73 @@ const loadWordTranslations = async () => {
     const { singular, plural, other } = groupFormsBySingularPlural(currentForms)
     const compound = isCompoundTense()
 
-    return (
-      <div className="space-y-1">
-        {/* Singular Section */}
-        {singular.length > 0 && (
-          <>
-            <SectionHeading>Singular</SectionHeading>
-            {singular.map(form => {
-              const displayForm = getDisplayFormWithFormality(form)
-              return (
-                <ConjugationRow
-                  key={form.id}
-                  form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
-                  audioText={getAudioText(form)}
-                  pronounDisplay={getPronounDisplay(form)}
-                  isCompound={compound}
-                  selectedGender={selectedGender}
-                  audioPreference={audioPreference}
-                  wordTags={word?.tags || []}
-                  selectedFormality={selectedFormality}
-                />
-              )
-            })}
-          </>
-        )}
+      return (
+        <div className="space-y-1">
+          {/* Singular Section */}
+          {singular.length > 0 && (
+            <>
+              <SectionHeading>Singular</SectionHeading>
+              {singular.map(form => {
+                // Apply formality mapping only (gender is already applied)
+                const displayForm = getDisplayFormWithFormality(form)
+                const dynamicTranslation = getDynamicTranslation(displayForm, form)
 
-        {/* Plural Section */}
-        {plural.length > 0 && (
-          <>
-            <SectionHeading className="mt-5">Plural</SectionHeading>
-            {plural.map(form => {
-              const displayForm = getDisplayFormWithFormality(form)
-              return (
-                <ConjugationRow
-                  key={form.id}
-                  form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
-                  audioText={getAudioText(form)}
-                  pronounDisplay={getPronounDisplay(form)}
-                  isCompound={compound}
-                  selectedGender={selectedGender}
-                  audioPreference={audioPreference}
-                  wordTags={word?.tags || []}
-                  selectedFormality={selectedFormality}
-                />
-              )
-            })}
-          </>
-        )}
+                console.log('🎭 Rendering singular form:', {
+                  original: form.form_text,
+                  display: displayForm.form_text,
+                  translation: dynamicTranslation,
+                  gender: selectedGender
+                })
+
+                return (
+                  <ConjugationRow
+                    key={`${form.id}-${selectedGender}`}
+                    form={{ ...displayForm, translation: dynamicTranslation }}
+                    audioText={getAudioText(form)}
+                    pronounDisplay={getPronounDisplay(form)}
+                    isCompound={compound}
+                    selectedGender={selectedGender}
+                    audioPreference={audioPreference}
+                    wordTags={word?.tags || []}
+                    selectedFormality={selectedFormality}
+                  />
+                )
+              })}
+            </>
+          )}
+
+          {/* Plural Section */}
+          {plural.length > 0 && (
+            <>
+              <SectionHeading className="mt-5">Plural</SectionHeading>
+              {plural.map(form => {
+                // Apply formality mapping only (gender is already applied)
+                const displayForm = getDisplayFormWithFormality(form)
+                const dynamicTranslation = getDynamicTranslation(displayForm, form)
+
+                console.log('🎭 Rendering plural form:', {
+                  original: form.form_text,
+                  display: displayForm.form_text,
+                  translation: dynamicTranslation,
+                  gender: selectedGender
+                })
+
+                return (
+                  <ConjugationRow
+                    key={`${form.id}-${selectedGender}`}
+                    form={{ ...displayForm, translation: dynamicTranslation }}
+                    audioText={getAudioText(form)}
+                    pronounDisplay={getPronounDisplay(form)}
+                    isCompound={compound}
+                    selectedGender={selectedGender}
+                    audioPreference={audioPreference}
+                    wordTags={word?.tags || []}
+                    selectedFormality={selectedFormality}
+                  />
+                )
+              })}
+            </>
+          )}
 
         {/* Other Forms */}
         {other.length > 0 && (
