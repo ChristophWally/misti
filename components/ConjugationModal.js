@@ -305,19 +305,8 @@ const loadWordTranslations = async () => {
 
     console.log('✅ Translation filtered forms:', translationFilteredForms.length)
 
-    // Apply gender variants if needed using the filtered base forms
-    const allFormsWithVariants = VariantCalculator.getAllForms(
-      translationFilteredForms,
-      word.tags || []
-    )
-
-    console.log('🎭 Final forms with variants:', allFormsWithVariants.length)
-    console.log(
-      '🎭 Sample variant form:',
-      allFormsWithVariants.find(f => f.tags?.includes('calculated-variant'))
-    )
-
-    return allFormsWithVariants
+    // Return only the base forms. Gender variants are applied dynamically
+    return translationFilteredForms
   }
 
 
@@ -940,15 +929,24 @@ const loadWordTranslations = async () => {
                         console.log('🎭 STEP 2 FIXED: Gender button clicked - Male')
                         setSelectedGender('male')
                       }}
-                      disabled={!hasGenderVariantsInCurrentMoodTense()}
+                      disabled={
+                        audioPreference === 'form-only' &&
+                        !hasGenderVariantsInCurrentMoodTense()
+                      }
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
+                        audioPreference === 'form-only' &&
                         !hasGenderVariantsInCurrentMoodTense()
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'male'
                               ? 'border-blue-500 bg-blue-500 text-white'
                               : 'border-blue-500 text-blue-500 bg-white hover:bg-blue-50'
                       }`}
-                      title={hasGenderVariantsInCurrentMoodTense() ? 'Select masculine gender' : 'No gender variants in this tense'}
+                      title={
+                        audioPreference === 'form-only' &&
+                        !hasGenderVariantsInCurrentMoodTense()
+                          ? 'No gender variants in this tense'
+                          : 'Select masculine gender'
+                      }
                     >
                       ♂
                     </button>
@@ -957,15 +955,24 @@ const loadWordTranslations = async () => {
                         console.log('🎭 STEP 2 FIXED: Gender button clicked - Female')
                         setSelectedGender('female')
                       }}
-                      disabled={!hasGenderVariantsInCurrentMoodTense()}
+                      disabled={
+                        audioPreference === 'form-only' &&
+                        !hasGenderVariantsInCurrentMoodTense()
+                      }
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
+                        audioPreference === 'form-only' &&
                         !hasGenderVariantsInCurrentMoodTense()
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'female'
                               ? 'border-pink-500 bg-pink-500 text-white'
                               : 'border-pink-500 text-pink-500 bg-white hover:bg-pink-50'
                       }`}
-                      title={hasGenderVariantsInCurrentMoodTense() ? 'Select feminine gender' : 'No gender variants in this tense'}
+                      title={
+                        audioPreference === 'form-only' &&
+                        !hasGenderVariantsInCurrentMoodTense()
+                          ? 'No gender variants in this tense'
+                          : 'Select feminine gender'
+                      }
                     >
                       ♀
                     </button>
