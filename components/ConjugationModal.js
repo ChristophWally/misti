@@ -285,25 +285,11 @@ const loadWordTranslations = async () => {
   }
 
 
-  // Enhanced form filtering with translation persistence
-  const dedupeFormsByPronoun = (forms) => {
-    const seen = new Set()
-    return forms.filter(form => {
-      const pronoun = extractTagValue(form.tags, 'pronoun')
-      if (!pronoun) return true
-      if (seen.has(pronoun)) return false
-      seen.add(pronoun)
-      return true
-    })
-  }
-
   const getFormsForSelectedTranslation = () => {
     const baseForms = getCurrentForms()
-    console.log(
-      `\ud83d\udd0d Base forms for ${selectedMood}/${selectedTense}:`,
-      baseForms.length
-    )
-    console.log(`\ud83d\udd0d Selected translation ID:`, selectedTranslationId)
+    console.log(`🔍 Base forms for ${selectedMood}/${selectedTense}:`, baseForms.length)
+    console.log(`🔍 Selected translation ID:`, selectedTranslationId)
+    console.log(`🔍 Selected gender:`, selectedGender)
 
     let filtered = baseForms
 
@@ -313,13 +299,9 @@ const loadWordTranslations = async () => {
           assignment => assignment.word_translation_id === selectedTranslationId
         )
         if (!hasAssignment) {
-          console.log(
-            `🚫 Form "${form.form_text}" has no assignment for selected translation`
-          )
+          console.log(`🚫 Form "${form.form_text}" has no assignment for selected translation`)
         } else {
-          console.log(
-            `✅ Form "${form.form_text}" HAS assignment for selected translation`
-          )
+          console.log(`✅ Form "${form.form_text}" HAS assignment for selected translation`)
         }
         return hasAssignment
       })
@@ -328,11 +310,54 @@ const loadWordTranslations = async () => {
       console.log('⚠️ No translation selected, showing all forms')
     }
 
-    // Remove duplicate pronoun entries
-    const deduped = dedupeFormsByPronoun(filtered)
-    console.log(`✅ After dedupe:`, deduped.length)
+    const finalForms = []
 
-    return deduped
+    filtered.forEach(baseForm => {
+      let displayForm = baseForm
+
+      const needsGenderVariant =
+        selectedGender === 'female' &&
+        word?.tags?.includes('essere-auxiliary') &&
+        baseForm.tags?.includes('compound') &&
+        !baseForm.tags?.includes('presente-progressivo') &&
+        !baseForm.tags?.includes('passato-progressivo')
+
+      if (needsGenderVariant) {
+        const allFormsWithVariants = VariantCalculator.getAllForms([baseForm], word.tags || [])
+
+        const pronoun = extractTagValue(baseForm.tags, 'pronoun')
+        const isBaseFormPlural = ['noi', 'voi', 'loro'].includes(pronoun) || baseForm.tags?.includes('plurale')
+
+        const feminineVariant = allFormsWithVariants.find(form =>
+          form.base_form_id === baseForm.id &&
+          form.tags?.includes('calculated-variant') &&
+          form.tags?.includes('feminine') &&
+          ((isBaseFormPlural && form.variant_type === 'fem-plur') ||
+            (!isBaseFormPlural && form.variant_type === 'fem-sing'))
+        )
+
+        if (feminineVariant) {
+          feminineVariant.form_translations =
+            baseForm.form_translations?.map(assignment => ({
+              ...assignment,
+              id: `${assignment.id}-${feminineVariant.variant_type}`,
+              form_id: feminineVariant.id
+            })) || []
+
+          displayForm = feminineVariant
+          console.log(`♀️ Using feminine variant: ${baseForm.form_text} → ${feminineVariant.form_text}`)
+        } else {
+          console.log(`♀️ No feminine variant found for: ${baseForm.form_text}`)
+        }
+      } else {
+        console.log(`♂️ Using masculine form: ${baseForm.form_text}`)
+      }
+
+      finalForms.push(displayForm)
+    })
+
+    console.log(`🎭 Final forms with gender selection:`, finalForms.length)
+    return finalForms
   }
   const maintainTranslationSelection = useCallback(() => {
     console.log('\ud83d\udd04 Checking translation persistence...')
@@ -560,47 +585,6 @@ const loadWordTranslations = async () => {
     return getDisplayForm(baseForm)
   }
 
-  // Enhanced gender-aware form selection combining translation and gender toggles
-  const getDisplayFormWithTranslationAndGender = (baseForm) => {
-    console.log(
-      `\ud83c\udf9d Getting display form for "${baseForm.form_text}" with gender:`,
-      selectedGender
-    )
-
-    // Apply formality mapping first
-    let mappedForm = getDisplayFormWithFormality(baseForm)
-    console.log('👔 After formality mapping:', mappedForm.form_text)
-
-    // For masculine gender or non-compound forms, use the mapped form as-is
-    if (selectedGender === 'male') {
-      console.log('♂️ Using masculine form:', mappedForm.form_text)
-      return mappedForm
-    }
-
-    // For feminine gender, check if we have a calculated variant
-    const allForms = conjugations[selectedMood]?.[selectedTense] || []
-
-    const calculatedVariant = allForms.find(
-      form =>
-        form.base_form_id === mappedForm.id &&
-        form.tags?.includes('calculated-variant') &&
-        form.tags?.includes('feminine') &&
-        ((mappedForm.tags?.includes('singolare') && form.variant_type === 'fem-sing') ||
-          (mappedForm.tags?.includes('plurale') && form.variant_type === 'fem-plur') ||
-          (['io', 'tu', 'lui', 'lei'].some(p => mappedForm.tags?.includes(p)) &&
-            form.variant_type === 'fem-sing') ||
-          (['noi', 'voi', 'loro'].some(p => mappedForm.tags?.includes(p)) &&
-            form.variant_type === 'fem-plur'))
-    )
-
-    if (calculatedVariant) {
-      console.log('♀️ Using calculated feminine variant:', calculatedVariant.form_text)
-      return calculatedVariant
-    }
-
-    console.log('♂️ No feminine variant available, using original:', mappedForm.form_text)
-    return mappedForm
-  }
 
   // Get audio text based on preference
   const getAudioText = (form) => {
@@ -703,7 +687,8 @@ const loadWordTranslations = async () => {
           <>
             <SectionHeading>Singular</SectionHeading>
             {singular.map(form => {
-              const displayForm = getDisplayFormWithTranslationAndGender(form)
+              // Apply formality mapping only (gender is already applied)
+              const displayForm = getDisplayFormWithFormality(form)
               const dynamicTranslation = getDynamicTranslation(displayForm, form)
 
               console.log('🎭 Rendering singular form:', {
@@ -735,7 +720,8 @@ const loadWordTranslations = async () => {
           <>
             <SectionHeading className="mt-5">Plural</SectionHeading>
             {plural.map(form => {
-              const displayForm = getDisplayFormWithTranslationAndGender(form)
+              // Apply formality mapping only (gender is already applied)
+              const displayForm = getDisplayFormWithFormality(form)
               const dynamicTranslation = getDynamicTranslation(displayForm, form)
 
               console.log('🎭 Rendering plural form:', {
