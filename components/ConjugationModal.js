@@ -161,7 +161,17 @@ const loadConjugations = async () => {
           duration_seconds
         ),
         form_translations (
-          word_translation_id
+          id,
+          translation,
+          assignment_method,
+          word_translation_id,
+          word_translations (
+            id,
+            translation,
+            display_priority,
+            context_metadata,
+            usage_notes
+          )
         )
       `)
       .eq('word_id', word.id)
@@ -415,6 +425,14 @@ const loadWordTranslations = async () => {
     return pronoun || ''
   }
 
+  // Get translation text for current translation selection
+  const getTranslationForSelectedTranslation = (form) => {
+    const assignment = form.form_translations?.find(
+      (ft) => ft.word_translation_id === selectedTranslationId
+    )
+    return assignment?.translation || form.translation
+  }
+
   // Get translation - USE ORIGINAL TRANSLATION for formal contexts
   const getDynamicTranslation = (displayForm, originalForm) => {
     // For formal contexts, always use the ORIGINAL form's translation
@@ -428,13 +446,13 @@ const loadWordTranslations = async () => {
     // For non-formal contexts, use existing gender logic on the display form
     const pronoun = extractTagValue(displayForm.tags, 'pronoun')
 
-    // Only modify 3rd person translations for non-formal contexts
-    if (pronoun !== 'lui' && pronoun !== 'lei') {
-      return displayForm.translation
-    }
+    // Translation text for the currently selected meaning
+    let translation = getTranslationForSelectedTranslation(originalForm)
 
-    // Start from the form translation so that the selected translation is respected
-    let translation = displayForm.translation
+    // Only modify gendered wording for 3rd person
+    if (pronoun !== 'lui' && pronoun !== 'lei') {
+      return translation
+    }
     const hasGenderVariants =
       word?.tags?.includes('essere-auxiliary') &&
       displayForm.tags?.includes('compound') &&
