@@ -284,82 +284,30 @@ const loadWordTranslations = async () => {
     return baseStoredForms
   }
 
+
   // Enhanced form filtering with translation persistence
   const getFormsForSelectedTranslation = () => {
     const baseForms = getCurrentForms()
     console.log(
-      `\ud83d\udd0d Step 2: Base forms for ${selectedMood}/${selectedTense}:`,
+      `\ud83d\udd0d Base forms for ${selectedMood}/${selectedTense}:`,
       baseForms.length
     )
-    console.log(`\ud83d\udd0d DEBUG: Selected translation ID:`, selectedTranslationId)
-    console.log(`\ud83d\udd0d DEBUG: Selected gender:`, selectedGender)
+    console.log(`\ud83d\udd0d Selected translation ID:`, selectedTranslationId)
 
     if (!selectedTranslationId) {
       console.log('⚠️ No translation selected, showing all forms')
-      // Still generate variants for all forms when no translation selected
-      return VariantCalculator.getAllForms(baseForms, word.tags || [])
+      return baseForms
     }
 
-    // Debug each form's translation assignments
-    baseForms.forEach(form => {
-      console.log(
-        `\ud83d\udd0d DEBUG: Form "${form.form_text}" assignments:`,
-        form.form_translations?.map(ft => ({
-          translationId: ft.word_translation_id,
-          translation: ft.translation
-        }))
-      )
-    })
-
-    // Filter forms that have assignments for the selected translation
-    const translationFilteredForms = baseForms.filter(form => {
-      const hasAssignment = form.form_translations?.some(
+    const translationFilteredForms = baseForms.filter(form =>
+      form.form_translations?.some(
         assignment => assignment.word_translation_id === selectedTranslationId
       )
-      if (!hasAssignment) {
-        console.log(
-          `\ud83d\udeab Form "${form.form_text}" has no assignment for selected translation`
-        )
-      } else {
-        console.log(
-          `\u2705 Form "${form.form_text}" HAS assignment for selected translation`
-        )
-      }
-      return hasAssignment
-    })
-
-    console.log(`\u2705 Translation filtered forms:`, translationFilteredForms.length)
-
-    // Apply gender variants with translation inheritance
-    const allFormsWithVariants = VariantCalculator.getAllForms(
-      translationFilteredForms,
-      word.tags || []
     )
 
-    // Ensure calculated variants inherit translation assignments from base forms
-    allFormsWithVariants.forEach(form => {
-      if (form.tags?.includes('calculated-variant') && form.base_form_id) {
-        const baseForm = translationFilteredForms.find(bf => bf.id === form.base_form_id)
-        if (baseForm && baseForm.form_translations) {
-          form.form_translations = baseForm.form_translations.map(assignment => ({
-            ...assignment,
-            id: `${assignment.id}-${form.variant_type}`,
-            form_id: form.id
-          }))
-          console.log(
-            `\ud83c\udf9d Variant "${form.form_text}" inherited ${form.form_translations.length} translation assignments`
-          )
-        }
-      }
-    })
-
-    console.log(
-      `\ud83c\udf9d Final forms with variants and translation inheritance:`,
-      allFormsWithVariants.length
-    )
-    return allFormsWithVariants
+    console.log(`✅ Translation filtered forms:`, translationFilteredForms.length)
+    return translationFilteredForms
   }
-
   const maintainTranslationSelection = useCallback(() => {
     console.log('\ud83d\udd04 Checking translation persistence...')
 
