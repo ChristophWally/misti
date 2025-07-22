@@ -3,7 +3,7 @@
 // components/ConjugationModal.js
 // REDESIGNED: Complete new layout matching HTML mockup
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import AudioButton from './AudioButton'
 import SectionHeading from './SectionHeading'
@@ -386,7 +386,11 @@ const loadWordTranslations = async () => {
       hasChanges
     )
 
-    return hasChanges
+  return hasChanges
+  }
+
+  const shouldEnableGenderButtons = () => {
+    return hasGenderVariantsInCurrentMoodTense()
   }
 
   // Get pronoun display based on audio preference and gender toggle
@@ -610,25 +614,87 @@ const loadWordTranslations = async () => {
     return { singular, plural, other }
   }
 
+  // STEP 5: Performance Optimization - Add memoization for smooth switching
+  const memoizedFormProcessing = useMemo(() => {
+    console.log('🚀 PERFORMANCE: Memoizing form processing for:', selectedMood, selectedTense, selectedTranslationId)
+    const startTime = performance.now()
+    const processedForms = getFormsForSelectedTranslation()
+    const endTime = performance.now()
+    console.log(`⚡ Form processing took: ${(endTime - startTime).toFixed(2)}ms`)
+    console.log(`📊 Processed ${processedForms.length} forms`)
+    return processedForms
+  }, [selectedTranslationId, selectedMood, selectedTense, selectedGender, selectedFormality])
+
+  const availableTranslations = useMemo(() => {
+    console.log('🚀 PERFORMANCE: Memoizing available translations')
+    if (!wordTranslations || wordTranslations.length === 0) return []
+    const currentBaseForms = getCurrentForms()
+    const availableTranslations = wordTranslations.filter(translation => {
+      const hasFormsInCurrentMoodTense = currentBaseForms.some(form =>
+        form.form_translations?.some(assignment => assignment.word_translation_id === translation.id)
+      )
+      return hasFormsInCurrentMoodTense
+    })
+    console.log(`📊 ${availableTranslations.length}/${wordTranslations.length} translations available in ${selectedMood}/${selectedTense}`)
+    return availableTranslations
+  }, [wordTranslations, selectedMood, selectedTense])
+
+  const genderButtonState = useMemo(() => {
+    console.log('🚀 PERFORMANCE: Memoizing gender button state')
+    const state = {
+      shouldEnable: shouldEnableGenderButtons(),
+      hasVariants: hasGenderVariantsInCurrentMoodTense(),
+      indicatorText:
+        audioPreference === 'with-pronoun'
+          ? '(pronoun changes)'
+          : hasGenderVariantsInCurrentMoodTense()
+              ? '(form variants)'
+              : ''
+    }
+    console.log('🎭 Gender button state:', state)
+    return state
+  }, [audioPreference, selectedMood, selectedTense, word?.tags])
+
   // Render conjugation forms with filtering and helpful messages
   const renderConjugationForms = () => {
-    const currentForms = getFormsForSelectedTranslation()
-    console.log('🎭 RENDER: Current forms count:', currentForms.length, 'Selected gender:', selectedGender)
+    const currentForms = memoizedFormProcessing
+    console.log('🎭 RENDER: Using memoized forms count:', currentForms.length)
 
     if (currentForms.length === 0) {
       const selectedTranslation = wordTranslations.find(t => t.id === selectedTranslationId)
       const translationName = selectedTranslation?.translation || 'this translation'
 
-      return (
-        <div className="text-center py-8">
-          <p className="text-gray-500 mb-2">
-            No forms available for "{translationName}" in {selectedMood} {selectedTense}.
-          </p>
-          <p className="text-sm text-gray-400">
-            Try selecting a different translation or changing the mood/tense.
-          </p>
-        </div>
-      )
+      const allFormsInMoodTense = getCurrentForms()
+
+      if (allFormsInMoodTense.length === 0) {
+        return (
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-2">
+              No conjugations available for {selectedMood} {selectedTense}.
+            </p>
+          </div>
+        )
+      } else {
+        return (
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-2">
+              💭 "{translationName}" is not available in {selectedMood} {selectedTense.replace('-', ' ')}.
+            </p>
+            <p className="text-sm text-gray-400 mb-4">
+              This translation only applies to certain grammatical contexts.
+            </p>
+            <button
+              onClick={() => {
+                const primary = wordTranslations.find(t => t.display_priority === 1) || wordTranslations[0]
+                setSelectedTranslationId(primary.id)
+              }}
+              className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700"
+            >
+              Switch to "{wordTranslations.find(t => t.display_priority === 1)?.translation || 'primary translation'}"
+            </button>
+          </div>
+        )
+      }
     }
 
     const { singular, plural, other } = groupFormsBySingularPlural(currentForms)
@@ -739,8 +805,17 @@ const loadWordTranslations = async () => {
     console.log('🎭 STEP 2: Gender changed to:', selectedGender)
   }, [selectedGender])
 
+  // 7. ADD: Performance monitoring useEffect
+  useEffect(() => {
+    console.log('📊 PERFORMANCE METRICS:')
+    console.log(`- Mood/Tense: ${selectedMood}/${selectedTense}`)
+    console.log(`- Translation: ${selectedTranslationId}`)
+    console.log(`- Gender: ${selectedGender}`)
+    console.log(`- Forms in memory: ${memoizedFormProcessing.length}`)
+    console.log(`- Available translations: ${availableTranslations.length}`)
+  }, [selectedMood, selectedTense, selectedTranslationId, selectedGender, memoizedFormProcessing.length, availableTranslations.length])
+
   const availableOptions = getAvailableOptions()
-  const currentForms = getFormsForSelectedTranslation()
 
   return (
     <>
@@ -928,55 +1003,55 @@ const loadWordTranslations = async () => {
                 </div>
               </div>
 
-              {/* Gender Controls - Only for ESSERE verbs */}
+              {/* Gender Controls - For ESSERE verbs with memoized performance */}
               {word?.tags?.includes('essere-auxiliary') && (
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Gender
-                    {hasGenderVariantsInCurrentMoodTense() && (
-                      <span className="ml-1 text-green-600 text-xs">(variants available)</span>
+                    {genderButtonState.indicatorText && (
+                      <span className="ml-1 text-green-600 text-xs">{genderButtonState.indicatorText}</span>
                     )}
                   </label>
                   <div className="flex gap-2 justify-center">
                     <button
                       onClick={() => {
-                        console.log('🎭 STEP 2 FIXED: Gender button clicked - Male')
+                        const startTime = performance.now()
+                        console.log('🎭 STEP 5: Gender button clicked - Male')
                         setSelectedGender('male')
+                        setTimeout(() => {
+                          const endTime = performance.now()
+                          console.log(`⚡ Gender switch took: ${(endTime - startTime).toFixed(2)}ms`)
+                        }, 0)
                       }}
-                      disabled={!hasGenderVariantsInCurrentMoodTense()}
+                      disabled={!genderButtonState.shouldEnable}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        !hasGenderVariantsInCurrentMoodTense()
+                        !genderButtonState.shouldEnable
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'male'
                               ? 'border-blue-500 bg-blue-500 text-white'
                               : 'border-blue-500 text-blue-500 bg-white hover:bg-blue-50'
                       }`}
-                      title={
-                        !hasGenderVariantsInCurrentMoodTense()
-                          ? 'No gender variants in this tense'
-                          : 'Select masculine gender'
-                      }
                     >
                       ♂
                     </button>
                     <button
                       onClick={() => {
-                        console.log('🎭 STEP 2 FIXED: Gender button clicked - Female')
+                        const startTime = performance.now()
+                        console.log('🎭 STEP 5: Gender button clicked - Female')
                         setSelectedGender('female')
+                        setTimeout(() => {
+                          const endTime = performance.now()
+                          console.log(`⚡ Gender switch took: ${(endTime - startTime).toFixed(2)}ms`)
+                        }, 0)
                       }}
-                      disabled={!hasGenderVariantsInCurrentMoodTense()}
+                      disabled={!genderButtonState.shouldEnable}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        !hasGenderVariantsInCurrentMoodTense()
+                        !genderButtonState.shouldEnable
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'female'
                               ? 'border-pink-500 bg-pink-500 text-white'
                               : 'border-pink-500 text-pink-500 bg-white hover:bg-pink-50'
                       }`}
-                      title={
-                        !hasGenderVariantsInCurrentMoodTense()
-                          ? 'No gender variants in this tense'
-                          : 'Select feminine gender'
-                      }
                     >
                       ♀
                     </button>
@@ -990,9 +1065,17 @@ const loadWordTranslations = async () => {
           {wordTranslations.length > 1 && (
             <div className="p-4 border-b bg-blue-50">
               <TranslationSelector
-                translations={wordTranslations}
+                translations={availableTranslations}
                 selectedTranslationId={selectedTranslationId}
-                onTranslationChange={setSelectedTranslationId}
+                onTranslationChange={(newTranslationId) => {
+                  const startTime = performance.now()
+                  console.log('🔍 DEBUG: Translation changed from', selectedTranslationId, 'to', newTranslationId)
+                  setSelectedTranslationId(newTranslationId)
+                  setTimeout(() => {
+                    const endTime = performance.now()
+                    console.log(`⚡ Translation switch took: ${(endTime - startTime).toFixed(2)}ms`)
+                  }, 0)
+                }}
               />
             </div>
           )}
