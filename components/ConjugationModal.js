@@ -286,19 +286,38 @@ const loadWordTranslations = async () => {
 
   // Filter forms to those relevant for the selected translation
   const getFormsForSelectedTranslation = () => {
-    const allForms = getCurrentForms()
+    const baseForms = getCurrentForms()
+    console.log(`🔍 Step 1: Base forms for ${selectedMood}/${selectedTense}:`, baseForms.length)
+    console.log('🔍 DEBUG: Selected translation ID:', selectedTranslationId)
 
-    if (!selectedTranslationId) return allForms
+    if (!selectedTranslationId) {
+      console.log('⚠️ No translation selected, showing all forms')
+      return baseForms
+    }
 
     // Filter forms that have assignments for the selected translation
-    const filteredForms = allForms.filter(form => {
+    const translationFilteredForms = baseForms.filter(form => {
       const hasAssignment = form.form_translations?.some(
         assignment => assignment.word_translation_id === selectedTranslationId
       )
       return hasAssignment
     })
 
-    return filteredForms
+    console.log('✅ Translation filtered forms:', translationFilteredForms.length)
+
+    // Apply gender variants if needed using the filtered base forms
+    const allFormsWithVariants = VariantCalculator.getAllForms(
+      translationFilteredForms,
+      word.tags || []
+    )
+
+    console.log('🎭 Final forms with variants:', allFormsWithVariants.length)
+    console.log(
+      '🎭 Sample variant form:',
+      allFormsWithVariants.find(f => f.tags?.includes('calculated-variant'))
+    )
+
+    return allFormsWithVariants
   }
 
 
@@ -344,6 +363,27 @@ const loadWordTranslations = async () => {
       !form.tags?.includes('presente-progressivo') &&
       !form.tags?.includes('passato-progressivo')
     )
+  }
+
+  // Check if any forms in the current mood/tense have gender variants
+  const hasGenderVariantsInCurrentMoodTense = () => {
+    const allFormsForMoodTense = conjugations[selectedMood]?.[selectedTense] || []
+
+    const hasCompounds = allFormsForMoodTense.some(form =>
+      form.tags?.includes('compound') &&
+      !form.tags?.includes('presente-progressivo') &&
+      !form.tags?.includes('passato-progressivo') &&
+      !form.tags?.includes('calculated-variant')
+    )
+
+    console.log(
+      '🎭 Checking if gender variants available in',
+      selectedMood,
+      selectedTense,
+      ':',
+      hasCompounds
+    )
+    return hasCompounds
   }
 
   // Get pronoun display based on audio preference and gender toggle
@@ -454,7 +494,7 @@ const loadWordTranslations = async () => {
 
   // Get the appropriate form to display based on gender toggle
   const getDisplayForm = (baseForm) => {
-    console.log('🎭 STEP 2: Getting display form for gender:', selectedGender, 'Form:', baseForm.form_text)
+    console.log('🎭 STEP 2 FIXED: Getting display form for gender:', selectedGender, 'Form:', baseForm.form_text)
     // If masculine gender selected, use base stored form
     if (selectedGender === 'male') {
       console.log('✅ Using masculine base form:', baseForm.form_text)
@@ -462,10 +502,10 @@ const loadWordTranslations = async () => {
     }
 
     // If feminine gender selected, find the calculated variant
-    const allFilteredForms = getFormsForSelectedTranslation()
+    const allFormsForMoodTense = conjugations[selectedMood]?.[selectedTense] || []
 
     // Find matching calculated variant that was generated from this base form
-    const calculatedVariant = allFilteredForms.find(form =>
+    const calculatedVariant = allFormsForMoodTense.find(form =>
       form.base_form_id === baseForm.id &&
       form.tags?.includes('calculated-variant') &&
       ((baseForm.tags?.includes('singolare') && form.variant_type === 'fem-sing') ||
@@ -570,6 +610,7 @@ const loadWordTranslations = async () => {
   // Render conjugation forms with filtering and helpful messages
   const renderConjugationForms = () => {
     const currentForms = getFormsForSelectedTranslation()
+    console.log('🎭 RENDER: Current forms count:', currentForms.length, 'Selected gender:', selectedGender)
 
     if (currentForms.length === 0) {
       const selectedTranslation = wordTranslations.find(t => t.id === selectedTranslationId)
@@ -590,6 +631,9 @@ const loadWordTranslations = async () => {
     const { singular, plural, other } = groupFormsBySingularPlural(currentForms)
     const compound = isCompoundTense()
 
+    console.log('🎭 RENDER: Singular forms:', singular.length, 'Plural forms:', plural.length)
+    console.log('🎭 RENDER: Is compound tense:', compound)
+
     return (
       <div className="space-y-1">
         {/* Singular Section */}
@@ -597,7 +641,9 @@ const loadWordTranslations = async () => {
           <>
             <SectionHeading>Singular</SectionHeading>
             {singular.map(form => {
+              console.log('🎭 RENDER SINGULAR: Base form:', form.form_text, 'Gender:', selectedGender)
               const displayForm = getDisplayFormWithFormality(form)
+              console.log('🎭 RENDER SINGULAR: Display form:', displayForm.form_text)
               return (
                 <ConjugationRow
                   key={form.id}
@@ -620,7 +666,9 @@ const loadWordTranslations = async () => {
           <>
             <SectionHeading className="mt-5">Plural</SectionHeading>
             {plural.map(form => {
+              console.log('🎭 RENDER PLURAL: Base form:', form.form_text, 'Gender:', selectedGender)
               const displayForm = getDisplayFormWithFormality(form)
+              console.log('🎭 RENDER PLURAL: Display form:', displayForm.form_text)
               return (
                 <ConjugationRow
                   key={form.id}
@@ -882,60 +930,42 @@ const loadWordTranslations = async () => {
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Gender
-                    {currentForms.some(form =>
-                      form.tags?.includes('compound') &&
-                      !form.tags?.includes('presente-progressivo') &&
-                      !form.tags?.includes('passato-progressivo')
-                    ) && (
+                    {hasGenderVariantsInCurrentMoodTense() && (
                       <span className="ml-1 text-green-600 text-xs">(variants available)</span>
                     )}
                   </label>
                   <div className="flex gap-2 justify-center">
                     <button
                       onClick={() => {
-                        console.log('🎭 STEP 2: Gender button clicked - Male')
+                        console.log('🎭 STEP 2 FIXED: Gender button clicked - Male')
                         setSelectedGender('male')
                       }}
-                      disabled={audioPreference === 'form-only' && !currentForms.some(form =>
-                        form.tags?.includes('compound') &&
-                        !form.tags?.includes('presente-progressivo') &&
-                        !form.tags?.includes('passato-progressivo')
-                      )}
+                      disabled={!hasGenderVariantsInCurrentMoodTense()}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        (audioPreference === 'form-only' && !currentForms.some(form =>
-                          form.tags?.includes('compound') &&
-                          !form.tags?.includes('presente-progressivo') &&
-                          !form.tags?.includes('passato-progressivo')
-                        ))
+                        !hasGenderVariantsInCurrentMoodTense()
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'male'
                               ? 'border-blue-500 bg-blue-500 text-white'
                               : 'border-blue-500 text-blue-500 bg-white hover:bg-blue-50'
                       }`}
+                      title={hasGenderVariantsInCurrentMoodTense() ? 'Select masculine gender' : 'No gender variants in this tense'}
                     >
                       ♂
                     </button>
                     <button
                       onClick={() => {
-                        console.log('🎭 STEP 2: Gender button clicked - Female')
+                        console.log('🎭 STEP 2 FIXED: Gender button clicked - Female')
                         setSelectedGender('female')
                       }}
-                      disabled={audioPreference === 'form-only' && !currentForms.some(form =>
-                        form.tags?.includes('compound') &&
-                        !form.tags?.includes('presente-progressivo') &&
-                        !form.tags?.includes('passato-progressivo')
-                      )}
+                      disabled={!hasGenderVariantsInCurrentMoodTense()}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        (audioPreference === 'form-only' && !currentForms.some(form =>
-                          form.tags?.includes('compound') &&
-                          !form.tags?.includes('presente-progressivo') &&
-                          !form.tags?.includes('passato-progressivo')
-                        ))
+                        !hasGenderVariantsInCurrentMoodTense()
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'female'
                               ? 'border-pink-500 bg-pink-500 text-white'
                               : 'border-pink-500 text-pink-500 bg-white hover:bg-pink-50'
                       }`}
+                      title={hasGenderVariantsInCurrentMoodTense() ? 'Select feminine gender' : 'No gender variants in this tense'}
                     >
                       ♀
                     </button>
