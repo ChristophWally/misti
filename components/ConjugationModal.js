@@ -420,7 +420,7 @@ const loadWordTranslations = async () => {
       (ft) => ft.word_translation_id === selectedTranslationId
     )
 
-    const result = assignment?.word_translation?.translation || assignment?.translation || form.translation
+    const result = assignment?.translation || assignment?.word_translation?.translation || form.translation
     console.log('✅ Selected translation result:', result)
     return result
   }
