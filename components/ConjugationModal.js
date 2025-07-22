@@ -354,25 +354,39 @@ const loadWordTranslations = async () => {
     )
   }
 
-  // Check if any forms in the current mood/tense have gender variants
+  // Check if the CURRENT translation actually changes with gender toggle
   const hasGenderVariantsInCurrentMoodTense = () => {
-    const allFormsForMoodTense = conjugations[selectedMood]?.[selectedTense] || []
+    const formsForTranslation = getFormsForSelectedTranslation()
 
-    const hasCompounds = allFormsForMoodTense.some(form =>
-      form.tags?.includes('compound') &&
-      !form.tags?.includes('presente-progressivo') &&
-      !form.tags?.includes('passato-progressivo') &&
-      !form.tags?.includes('calculated-variant')
-    )
+    // Look for any form that would change either the verb itself or the
+    // accompanying pronoun when switching genders
+    const hasChanges = formsForTranslation.some((form) => {
+      const pronoun = extractTagValue(form.tags, 'pronoun')
+
+      // Verb text changes only for essere compound tenses
+      const verbChanges =
+        word?.tags?.includes('essere-auxiliary') &&
+        form.tags?.includes('compound') &&
+        !form.tags?.includes('presente-progressivo') &&
+        !form.tags?.includes('passato-progressivo')
+
+      // Pronoun changes only matter when audio includes pronouns
+      const pronounChanges = pronoun === 'lui' || pronoun === 'lei'
+
+      if (verbChanges) return true
+      if (pronounChanges && audioPreference !== 'form-only') return true
+      return false
+    })
 
     console.log(
-      '🎭 Checking if gender variants available in',
+      '🎭 Checking if gender variants available for current translation in',
       selectedMood,
       selectedTense,
       ':',
-      hasCompounds
+      hasChanges
     )
-    return hasCompounds
+
+    return hasChanges
   }
 
   // Get pronoun display based on audio preference and gender toggle
@@ -929,12 +943,8 @@ const loadWordTranslations = async () => {
                         console.log('🎭 STEP 2 FIXED: Gender button clicked - Male')
                         setSelectedGender('male')
                       }}
-                      disabled={
-                        audioPreference === 'form-only' &&
-                        !hasGenderVariantsInCurrentMoodTense()
-                      }
+                      disabled={!hasGenderVariantsInCurrentMoodTense()}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        audioPreference === 'form-only' &&
                         !hasGenderVariantsInCurrentMoodTense()
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'male'
@@ -942,7 +952,6 @@ const loadWordTranslations = async () => {
                               : 'border-blue-500 text-blue-500 bg-white hover:bg-blue-50'
                       }`}
                       title={
-                        audioPreference === 'form-only' &&
                         !hasGenderVariantsInCurrentMoodTense()
                           ? 'No gender variants in this tense'
                           : 'Select masculine gender'
@@ -955,12 +964,8 @@ const loadWordTranslations = async () => {
                         console.log('🎭 STEP 2 FIXED: Gender button clicked - Female')
                         setSelectedGender('female')
                       }}
-                      disabled={
-                        audioPreference === 'form-only' &&
-                        !hasGenderVariantsInCurrentMoodTense()
-                      }
+                      disabled={!hasGenderVariantsInCurrentMoodTense()}
                       className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        audioPreference === 'form-only' &&
                         !hasGenderVariantsInCurrentMoodTense()
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'female'
@@ -968,7 +973,6 @@ const loadWordTranslations = async () => {
                               : 'border-pink-500 text-pink-500 bg-white hover:bg-pink-50'
                       }`}
                       title={
-                        audioPreference === 'form-only' &&
                         !hasGenderVariantsInCurrentMoodTense()
                           ? 'No gender variants in this tense'
                           : 'Select feminine gender'
