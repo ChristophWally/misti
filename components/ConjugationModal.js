@@ -161,7 +161,13 @@ const loadConjugations = async () => {
           duration_seconds
         ),
         form_translations (
-          word_translation_id
+          word_translation_id,
+          translation,
+          assignment_method,
+          word_translations (
+            id,
+            translation
+          )
         )
       `)
       .eq('word_id', word.id)
@@ -177,9 +183,13 @@ const loadConjugations = async () => {
         ...form,
         audio_filename: form.word_audio_metadata?.audio_filename || null,
         azure_voice_name: form.word_audio_metadata?.azure_voice_name || null,
-        form_translations: form.form_translations || []
+        form_translations: (form.form_translations || []).map(ft => ({
+          word_translation_id: ft.word_translation_id,
+          translation: ft.translation,
+          assignment_method: ft.assignment_method,
+          word_translation: ft.word_translations || null
+        }))
       }
-
 
       return result
     })
@@ -368,26 +378,50 @@ const loadWordTranslations = async () => {
     return pronoun || ''
   }
 
+  // Lookup translation text for the currently selected meaning
+  const getTranslationForSelectedTranslation = (form) => {
+    console.log('🔍 Looking up translation for form:', form.form_text, 'Selected translation ID:', selectedTranslationId)
+    console.log('📋 Form translation assignments:', form.form_translations?.map(ft => ({
+      id: ft.word_translation_id,
+      translation: ft.word_translation?.translation || ft.translation,
+      method: ft.assignment_method
+    })))
+
+    const assignment = form.form_translations?.find(
+      (ft) => ft.word_translation_id === selectedTranslationId
+    )
+
+    const result = assignment?.word_translation?.translation || assignment?.translation || form.translation
+    console.log('✅ Selected translation result:', result)
+    return result
+  }
+
   // Get translation - USE ORIGINAL TRANSLATION for formal contexts
   const getDynamicTranslation = (displayForm, originalForm) => {
+    console.log('🔍 STEP 2: Getting dynamic translation for:', displayForm.form_text, 'Original:', originalForm.form_text)
+
     // For formal contexts, always use the ORIGINAL form's translation
     if (selectedFormality === 'formal') {
       const originalPronoun = extractTagValue(originalForm.tags, 'pronoun')
       if (originalPronoun === 'tu' || originalPronoun === 'voi') {
-        return originalForm.translation // Use original tu/voi translation directly
+        const formalTranslation = getTranslationForSelectedTranslation(originalForm)
+        console.log('👑 Using formal translation:', formalTranslation)
+        return formalTranslation
       }
     }
 
-    // For non-formal contexts, use existing gender logic on the display form
+    // For non-formal contexts, use the DISPLAY FORM for translation lookup
     const pronoun = extractTagValue(displayForm.tags, 'pronoun')
 
-    // Only modify 3rd person translations for non-formal contexts
-    if (pronoun !== 'lui' && pronoun !== 'lei') {
-      return displayForm.translation
-    }
+    // Translation text for the currently selected meaning from the DISPLAY FORM
+    let translation = getTranslationForSelectedTranslation(displayForm)
+    console.log('🎯 Base translation from display form:', translation)
 
-    // Start from the form translation so that the selected translation is respected
-    let translation = displayForm.translation
+    // Only modify gendered wording for 3rd person
+    if (pronoun !== 'lui' && pronoun !== 'lei') {
+      console.log('➡️ Non-3rd person, returning as-is:', translation)
+      return translation
+    }
     const hasGenderVariants =
       word?.tags?.includes('essere-auxiliary') &&
       displayForm.tags?.includes('compound') &&
@@ -395,9 +429,10 @@ const loadWordTranslations = async () => {
       !displayForm.tags?.includes('passato-progressivo')
 
     if (audioPreference === 'form-only' && !hasGenderVariants) {
-      // Form-only mode: keep combined he/she translation
+      console.log('📝 Form-only mode, no gender variants:', translation)
       return translation
     } else if (hasGenderVariants || audioPreference === 'with-pronoun') {
+      console.log('🎭 Applying gender-specific wording for:', selectedGender)
       if (selectedGender === 'male') {
         translation = translation
           .replace(/\bhe\/she\b/gi, 'he')
@@ -411,6 +446,7 @@ const loadWordTranslations = async () => {
           .replace(/\bhimself\/herself\b/gi, 'herself')
           .replace(/^Himself\/herself\b/, 'Herself')
       }
+      console.log('✨ Final gendered translation:', translation)
     }
 
     return translation
@@ -418,24 +454,31 @@ const loadWordTranslations = async () => {
 
   // Get the appropriate form to display based on gender toggle
   const getDisplayForm = (baseForm) => {
+    console.log('🎭 STEP 2: Getting display form for gender:', selectedGender, 'Form:', baseForm.form_text)
     // If masculine gender selected, use base stored form
     if (selectedGender === 'male') {
+      console.log('✅ Using masculine base form:', baseForm.form_text)
       return baseForm
     }
 
     // If feminine gender selected, find the calculated variant
-    const allForms = conjugations[selectedMood]?.[selectedTense] || []
+    const allFilteredForms = getFormsForSelectedTranslation()
 
-    // Find matching calculated variant
-    const calculatedVariant = allForms.find(form =>
+    // Find matching calculated variant that was generated from this base form
+    const calculatedVariant = allFilteredForms.find(form =>
       form.base_form_id === baseForm.id &&
       form.tags?.includes('calculated-variant') &&
       ((baseForm.tags?.includes('singolare') && form.variant_type === 'fem-sing') ||
        (baseForm.tags?.includes('plurale') && form.variant_type === 'fem-plur'))
     )
 
-    // Return calculated variant if found, otherwise base form
-    return calculatedVariant || baseForm
+    if (calculatedVariant) {
+      console.log('✅ Found feminine variant:', calculatedVariant.form_text, 'with translation assignments:', calculatedVariant.form_translations?.length)
+      return calculatedVariant
+    }
+
+    console.log('⚠️ No feminine variant found, using base form:', baseForm.form_text)
+    return baseForm
   }
 
   // Get the appropriate form to display based on gender toggle AND formality
@@ -641,6 +684,10 @@ const loadWordTranslations = async () => {
     }
   }, [selectedMood, conjugations])
 
+  useEffect(() => {
+    console.log('🎭 STEP 2: Gender changed to:', selectedGender)
+  }, [selectedGender])
+
   const availableOptions = getAvailableOptions()
   const currentForms = getFormsForSelectedTranslation()
 
@@ -835,10 +882,20 @@ const loadWordTranslations = async () => {
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Gender
+                    {currentForms.some(form =>
+                      form.tags?.includes('compound') &&
+                      !form.tags?.includes('presente-progressivo') &&
+                      !form.tags?.includes('passato-progressivo')
+                    ) && (
+                      <span className="ml-1 text-green-600 text-xs">(variants available)</span>
+                    )}
                   </label>
                   <div className="flex gap-2 justify-center">
                     <button
-                      onClick={() => setSelectedGender('male')}
+                      onClick={() => {
+                        console.log('🎭 STEP 2: Gender button clicked - Male')
+                        setSelectedGender('male')
+                      }}
                       disabled={audioPreference === 'form-only' && !currentForms.some(form =>
                         form.tags?.includes('compound') &&
                         !form.tags?.includes('presente-progressivo') &&
@@ -859,7 +916,10 @@ const loadWordTranslations = async () => {
                       ♂
                     </button>
                     <button
-                      onClick={() => setSelectedGender('female')}
+                      onClick={() => {
+                        console.log('🎭 STEP 2: Gender button clicked - Female')
+                        setSelectedGender('female')
+                      }}
                       disabled={audioPreference === 'form-only' && !currentForms.some(form =>
                         form.tags?.includes('compound') &&
                         !form.tags?.includes('presente-progressivo') &&
