@@ -3,7 +3,7 @@
 // components/ConjugationModal.js
 // REDESIGNED: Complete new layout matching HTML mockup
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import AudioButton from './AudioButton'
 import SectionHeading from './SectionHeading'
@@ -274,22 +274,69 @@ const loadWordTranslations = async () => {
     return baseStoredForms
   }
 
-  // Filter forms to those relevant for the selected translation
+  // Enhanced form filtering with translation persistence
   const getFormsForSelectedTranslation = () => {
-    const allForms = getCurrentForms()
+    const baseForms = getCurrentForms()
+    console.log(`\ud83d\udd0d Step 1: Base forms for ${selectedMood}/${selectedTense}:`, baseForms.length)
 
-    if (!selectedTranslationId) return allForms
+    if (!selectedTranslationId) {
+      console.log('\u26a0\ufe0f No translation selected, showing all forms')
+      return baseForms
+    }
 
     // Filter forms that have assignments for the selected translation
-    const filteredForms = allForms.filter(form => {
+    const translationFilteredForms = baseForms.filter(form => {
       const hasAssignment = form.form_translations?.some(
         assignment => assignment.word_translation_id === selectedTranslationId
       )
+      if (!hasAssignment) {
+        console.log(`\ud83d\udeab Form "${form.form_text}" has no assignment for selected translation`)
+      }
       return hasAssignment
     })
 
-    return filteredForms
+    console.log(`\u2705 Translation filtered forms:`, translationFilteredForms.length)
+
+    // Apply gender variants if needed
+    const allFormsWithVariants = VariantCalculator.getAllForms(translationFilteredForms, word.tags || [])
+
+    console.log(`\ud83c\udf9d Final forms with variants:`, allFormsWithVariants.length)
+    return allFormsWithVariants
   }
+
+  const maintainTranslationSelection = useCallback(() => {
+    console.log('\ud83d\udd04 Checking translation persistence...')
+
+    if (!selectedTranslationId || wordTranslations.length === 0) {
+      console.log('\u26a0\ufe0f No translation to maintain')
+      return
+    }
+
+    // Check if current translation is still valid
+    const translationStillExists = wordTranslations.some(t => t.id === selectedTranslationId)
+
+    if (!translationStillExists) {
+      console.log('\u274c Selected translation no longer exists, falling back to primary')
+      const primary = wordTranslations.find(t => t.display_priority === 1) || wordTranslations[0]
+      setSelectedTranslationId(primary.id)
+      return
+    }
+
+    // Check if current translation has any forms in this mood/tense
+    const currentForms = getCurrentForms()
+    const hasFormsForTranslation = currentForms.some(form =>
+      form.form_translations?.some(assignment => assignment.word_translation_id === selectedTranslationId)
+    )
+
+    if (!hasFormsForTranslation) {
+      console.log('\u26a0\ufe0f Selected translation has no forms in current mood/tense')
+      // Option 1: Keep selection (show empty state with helpful message)
+      // Option 2: Fall back to primary translation
+      // We'll keep selection for now to show the empty state message
+    } else {
+      console.log('\u2705 Translation selection maintained successfully')
+    }
+  }, [selectedTranslationId, wordTranslations, selectedMood, selectedTense])
 
 
   // Order forms by pronoun sequence
@@ -526,22 +573,44 @@ const loadWordTranslations = async () => {
 
   // Render conjugation forms with filtering and helpful messages
   const renderConjugationForms = () => {
-    const currentForms = getFormsForSelectedTranslation()
+    const currentForms = getFormsForSelectedTranslation() // Use the new function
 
     if (currentForms.length === 0) {
       const selectedTranslation = wordTranslations.find(t => t.id === selectedTranslationId)
       const translationName = selectedTranslation?.translation || 'this translation'
 
-      return (
-        <div className="text-center py-8">
-          <p className="text-gray-500 mb-2">
-            No forms available for "{translationName}" in {selectedMood} {selectedTense}.
-          </p>
-          <p className="text-sm text-gray-400">
-            Try selecting a different translation or changing the mood/tense.
-          </p>
-        </div>
-      )
+      // Check if it's because of translation filtering or no forms exist at all
+      const allFormsInMoodTense = getCurrentForms()
+
+      if (allFormsInMoodTense.length === 0) {
+        return (
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-2">
+              No conjugations available for {selectedMood} {selectedTense}.
+            </p>
+          </div>
+        )
+      } else {
+        return (
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-2">
+              💭 "{translationName}" is not available in {selectedMood} {selectedTense.replace('-', ' ')}.
+            </p>
+            <p className="text-sm text-gray-400 mb-4">
+              This translation only applies to certain grammatical contexts.
+            </p>
+            <button
+              onClick={() => {
+                const primary = wordTranslations.find(t => t.display_priority === 1) || wordTranslations[0]
+                setSelectedTranslationId(primary.id)
+              }}
+              className="bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700"
+            >
+              Switch to "{wordTranslations.find(t => t.display_priority === 1)?.translation || 'primary translation'}"
+            </button>
+          </div>
+        )
+      }
     }
 
     const { singular, plural, other } = groupFormsBySingularPlural(currentForms)
@@ -629,6 +698,8 @@ const loadWordTranslations = async () => {
   }, [isOpen, word])
 
   useEffect(() => {
+    console.log(`\ud83c\udf1f Mood/tense changed to: ${selectedMood}/${selectedTense}`)
+
     // Set default tense when mood changes
     if (conjugations[selectedMood]) {
       const availableTenses = sortTenses(
@@ -636,10 +707,16 @@ const loadWordTranslations = async () => {
         Object.keys(conjugations[selectedMood])
       )
       if (!availableTenses.includes(selectedTense)) {
+        console.log(`\ud83d\udd27 Updating tense from ${selectedTense} to ${availableTenses[0]}`)
         setSelectedTense(availableTenses[0] || 'presente')
       }
     }
-  }, [selectedMood, conjugations])
+
+    // Maintain translation selection after mood/tense change
+    setTimeout(() => {
+      maintainTranslationSelection()
+    }, 100)
+  }, [selectedMood, selectedTense, conjugations, maintainTranslationSelection])
 
   const availableOptions = getAvailableOptions()
   const currentForms = getFormsForSelectedTranslation()
