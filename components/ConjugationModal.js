@@ -286,6 +286,17 @@ const loadWordTranslations = async () => {
 
 
   // Enhanced form filtering with translation persistence
+  const dedupeFormsByPronoun = (forms) => {
+    const seen = new Set()
+    return forms.filter(form => {
+      const pronoun = extractTagValue(form.tags, 'pronoun')
+      if (!pronoun) return true
+      if (seen.has(pronoun)) return false
+      seen.add(pronoun)
+      return true
+    })
+  }
+
   const getFormsForSelectedTranslation = () => {
     const baseForms = getCurrentForms()
     console.log(
@@ -294,19 +305,34 @@ const loadWordTranslations = async () => {
     )
     console.log(`\ud83d\udd0d Selected translation ID:`, selectedTranslationId)
 
-    if (!selectedTranslationId) {
+    let filtered = baseForms
+
+    if (selectedTranslationId) {
+      filtered = baseForms.filter(form => {
+        const hasAssignment = form.form_translations?.some(
+          assignment => assignment.word_translation_id === selectedTranslationId
+        )
+        if (!hasAssignment) {
+          console.log(
+            `🚫 Form "${form.form_text}" has no assignment for selected translation`
+          )
+        } else {
+          console.log(
+            `✅ Form "${form.form_text}" HAS assignment for selected translation`
+          )
+        }
+        return hasAssignment
+      })
+      console.log(`✅ Translation filtered forms:`, filtered.length)
+    } else {
       console.log('⚠️ No translation selected, showing all forms')
-      return baseForms
     }
 
-    const translationFilteredForms = baseForms.filter(form =>
-      form.form_translations?.some(
-        assignment => assignment.word_translation_id === selectedTranslationId
-      )
-    )
+    // Remove duplicate pronoun entries
+    const deduped = dedupeFormsByPronoun(filtered)
+    console.log(`✅ After dedupe:`, deduped.length)
 
-    console.log(`✅ Translation filtered forms:`, translationFilteredForms.length)
-    return translationFilteredForms
+    return deduped
   }
   const maintainTranslationSelection = useCallback(() => {
     console.log('\ud83d\udd04 Checking translation persistence...')
