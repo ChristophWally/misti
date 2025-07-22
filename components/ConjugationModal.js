@@ -355,6 +355,23 @@ const loadWordTranslations = async () => {
     return finalForms
   }
 
+  // Get translation string for the current form based on selected translation
+  const getTranslationForSelectedTranslation = (form) => {
+    if (!selectedTranslationId) return form.translation
+
+    const assignment = form.form_translations?.find(
+      ft => ft.word_translation_id === selectedTranslationId
+    )
+
+    const translationObj = wordTranslations.find(t => t.id === selectedTranslationId)
+
+    if (assignment && translationObj) {
+      return translationObj.translation
+    }
+
+    return form.translation
+  }
+
 
   // Order forms by pronoun sequence
   const orderFormsByPronoun = (forms) => {
@@ -438,7 +455,7 @@ const loadWordTranslations = async () => {
     if (selectedFormality === 'formal') {
       const originalPronoun = extractTagValue(originalForm.tags, 'pronoun')
       if (originalPronoun === 'tu' || originalPronoun === 'voi') {
-        return originalForm.translation // Use original tu/voi translation directly
+        return getTranslationForSelectedTranslation(originalForm)
       }
     }
 
@@ -447,11 +464,11 @@ const loadWordTranslations = async () => {
 
     // Only modify 3rd person translations for non-formal contexts
     if (pronoun !== 'lui' && pronoun !== 'lei') {
-      return displayForm.translation
+      return getTranslationForSelectedTranslation(displayForm)
     }
 
     // Start from the form translation so that the selected translation is respected
-    let translation = displayForm.translation
+    let translation = getTranslationForSelectedTranslation(displayForm)
     const hasGenderVariants =
       word?.tags?.includes('essere-auxiliary') &&
       displayForm.tags?.includes('compound') &&
@@ -629,9 +646,11 @@ const loadWordTranslations = async () => {
                   gender: selectedGender
                 })
 
+                const rowKey = `${displayForm.base_form_id || displayForm.id}-$
+{selectedGender}-${selectedTranslationId || 'all'}`
                 return (
                   <ConjugationRow
-                    key={`${form.id}-${selectedGender}`}
+                    key={rowKey}
                     form={{ ...displayForm, translation: dynamicTranslation }}
                     audioText={getAudioText(form)}
                     pronounDisplay={getPronounDisplay(form)}
@@ -662,9 +681,11 @@ const loadWordTranslations = async () => {
                   gender: selectedGender
                 })
 
+                const rowKey = `${displayForm.base_form_id || displayForm.id}-$
+{selectedGender}-${selectedTranslationId || 'all'}`
                 return (
                   <ConjugationRow
-                    key={`${form.id}-${selectedGender}`}
+                    key={rowKey}
                     form={{ ...displayForm, translation: dynamicTranslation }}
                     audioText={getAudioText(form)}
                     pronounDisplay={getPronounDisplay(form)}
@@ -685,10 +706,12 @@ const loadWordTranslations = async () => {
             <SectionHeading className="mt-5">Other Forms</SectionHeading>
             {other.map(form => {
               const displayForm = getDisplayFormWithFormality(form)
+              const dynamicTranslation = getDynamicTranslation(displayForm, form)
+              const rowKey = `${displayForm.base_form_id || displayForm.id}-${selectedGender}-${selectedTranslationId || 'all'}`
               return (
                 <ConjugationRow
-                  key={form.id}
-                  form={{ ...displayForm, translation: getDynamicTranslation(displayForm, form) }}
+                  key={rowKey}
+                  form={{ ...displayForm, translation: dynamicTranslation }}
                   audioText={getAudioText(form)}
                   pronounDisplay={getPronounDisplay(form)}
                   isCompound={compound}
