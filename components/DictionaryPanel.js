@@ -1,8 +1,5 @@
 'use client'
 
-// components/DictionaryPanel.js
-// FIXED: Restored slide-in/slide-out animations
-
 import { useState, useEffect, useCallback } from 'react'
 import WordCard from './WordCard'
 import { EnhancedDictionarySystem } from '../lib/enhanced-dictionary-system'
@@ -20,7 +17,7 @@ export default function DictionaryPanel({
   onClose, 
   className = '' 
 }) {
-  // State management
+  // State management (existing)
   const [searchTerm, setSearchTerm] = useState('')
   const [filters, setFilters] = useState(createInitialFilters())
   const [words, setWords] = useState([])
@@ -28,46 +25,56 @@ export default function DictionaryPanel({
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [dictionarySystem] = useState(() => new EnhancedDictionarySystem(supabase))
 
-  // Resize functionality state
+  // Resize functionality state (existing)
   const [isResizing, setIsResizing] = useState(false)
-  const [panelWidth, setPanelWidth] = useState(null) // null = use CSS default
+  const [panelWidth, setPanelWidth] = useState(null)
 
-  // Debounced search
+  // Debounced search (existing)
   const [searchTimeout, setSearchTimeout] = useState(null)
 
-  // Load words with current filters - FIXED to handle empty filters
+  // Load words with current filters (existing)
   const loadWords = useCallback(async (term = searchTerm, currentFilters = filters) => {
     setIsLoading(true)
     try {
-      // IMPORTANT FIX: Convert empty filters to work with your enhanced dictionary system
       const processedFilters = {
         ...currentFilters,
-        // If no word types selected, don't filter by word type (show all)
         wordType: currentFilters.wordType?.length > 0 ? currentFilters.wordType : undefined
       }
       
-      console.log('Loading words with filters:', processedFilters)
+      console.log('📚 Loading words with enhanced translation data:', processedFilters)
       const results = await dictionarySystem.loadWordsWithTranslations(term, processedFilters)
-      console.log('Loaded words:', results.length)
+      console.log(`✅ Loaded ${results.length} words with translation data`)
+      
+      // Log sample translation data for debugging
+      if (results.length > 0) {
+        const sampleWord = results.find(w => w.processedTranslations?.length > 1) || results[0]
+        console.log('📋 Sample word with translations:', {
+          italian: sampleWord.italian,
+          translations: sampleWord.processedTranslations?.map(t => ({
+            translation: t.translation,
+            priority: t.priority,
+            isPrimary: t.isPrimary
+          }))
+        })
+      }
+      
       setWords(results)
     } catch (error) {
-      console.error('Error loading words:', error)
+      console.error('❌ Error loading words:', error)
       setWords([])
     } finally {
       setIsLoading(false)
     }
   }, [dictionarySystem, searchTerm, filters])
 
-  // Handle search input with debouncing
+  // Handle search input with debouncing (existing)
   const handleSearchChange = (value) => {
     setSearchTerm(value)
     
-    // Clear existing timeout
     if (searchTimeout) {
       clearTimeout(searchTimeout)
     }
     
-    // Set new timeout
     const timeout = setTimeout(() => {
       loadWords(value, filters)
     }, 300)
@@ -75,24 +82,22 @@ export default function DictionaryPanel({
     setSearchTimeout(timeout)
   }
 
-  // Handle filter changes
+  // Handle filter changes (existing)
   const handleFilterChange = (filterType, filterValue, clickedElement = null) => {
     let newFilters
     
     if (clickedElement) {
-      // Use the extracted filter utility
       newFilters = handleFilterChipClick(filterType, filterValue, filters, clickedElement)
     } else {
-      // Simple filter update
       newFilters = { ...filters, [filterType]: filterValue }
     }
     
-    console.log('Filter changed:', { filterType, filterValue, newFilters })
+    console.log('🔍 Filter changed:', { filterType, filterValue, newFilters })
     setFilters(newFilters)
     loadWords(searchTerm, newFilters)
   }
 
-  // Handle filter chip clicks
+  // Handle filter chip clicks (existing)
   const handleChipClick = (event) => {
     const chip = event.target
     if (!chip.classList.contains('filter-chip')) return
@@ -103,17 +108,66 @@ export default function DictionaryPanel({
     handleFilterChange(filterType, filterValue, chip)
   }
 
-  // Handle add to deck
-  const handleAddToDeck = (word) => {
-    // TODO: Implement deck addition logic
-    console.log('Adding word to deck:', word.italian)
+  // ENHANCED: Handle add to deck with translation-specific information
+  const handleAddToDeck = (word, selectedTranslation = null) => {
+    console.log('📚 Adding to deck:', {
+      word: word.italian,
+      wordType: word.word_type,
+      selectedTranslation: selectedTranslation ? {
+        translation: selectedTranslation.translation,
+        priority: selectedTranslation.priority,
+        isPrimary: selectedTranslation.isPrimary,
+        contextInfo: selectedTranslation.contextInfo
+      } : null,
+      totalTranslations: word.processedTranslations?.length || 1
+    })
+
+    // For now, just log the action - this will be connected to SRS system later
+    if (selectedTranslation) {
+      console.log(`🎯 Specific translation selected: "${selectedTranslation.translation}"`)
+      console.log('📋 Context info:', selectedTranslation.contextInfo)
+      console.log('📝 Usage notes:', selectedTranslation.usageNotes)
+      
+      // Show user feedback for translation-specific addition
+      const feedbackMessage = `Added "${word.italian}" with meaning "${selectedTranslation.translation}" to study deck`
+      showUserFeedback(feedbackMessage, 'success')
+    } else {
+      // Fallback for single-translation words
+      console.log(`📖 Adding word with primary translation: "${word.english}"`)
+      const feedbackMessage = `Added "${word.italian}" to study deck`
+      showUserFeedback(feedbackMessage, 'success')
+    }
   }
 
-  // Resize functionality
+  // NEW: Show user feedback for actions
+  const showUserFeedback = (message, type = 'info') => {
+    // Create temporary feedback notification
+    const feedback = document.createElement('div')
+    feedback.className = `
+      fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white font-medium
+      transition-all duration-300 transform translate-x-0
+      ${type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'}
+    `
+    feedback.textContent = message
+    document.body.appendChild(feedback)
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      feedback.style.transform = 'translateX(full)'
+      feedback.style.opacity = '0'
+      setTimeout(() => {
+        if (feedback.parentNode) {
+          feedback.parentNode.removeChild(feedback)
+        }
+      }, 300)
+    }, 3000)
+  }
+
+  // Resize functionality (existing)
   const startResize = (e) => {
     setIsResizing(true)
     const startX = e.clientX
-    const startWidth = panelWidth || (window.innerWidth * 0.5) // Default to 50% if no custom width
+    const startWidth = panelWidth || (window.innerWidth * 0.5)
     
     const handleMouseMove = (e) => {
       const deltaX = startX - e.clientX
@@ -136,18 +190,18 @@ export default function DictionaryPanel({
     document.addEventListener('mouseup', handleMouseUp)
   }
 
-  // Get applicable grammar filters
+  // Get applicable grammar filters (existing)
   const grammarFilters = getApplicableGrammarFilters(filters.wordType)
 
-  // IMPORTANT: Load words immediately when panel opens (fixed default state)
+  // Load words immediately when panel opens (existing)
   useEffect(() => {
     if (isOpen) {
-      console.log('Panel opened, loading initial words...')
-      loadWords('', createInitialFilters()) // Load with empty search and default filters
+      console.log('📖 Dictionary panel opened, loading initial words...')
+      loadWords('', createInitialFilters())
     }
   }, [isOpen])
 
-  // Cleanup timeout on unmount
+  // Cleanup timeout on unmount (existing)
   useEffect(() => {
     return () => {
       if (searchTimeout) {
@@ -156,16 +210,31 @@ export default function DictionaryPanel({
     }
   }, [searchTimeout])
 
-  // Cleanup resize listeners when panel closes
+  // Cleanup resize listeners when panel closes (existing)
   useEffect(() => {
     if (!isOpen) {
       setIsResizing(false)
     }
   }, [isOpen])
 
+  // NEW: Calculate statistics for display
+  const getDisplayStats = () => {
+    const totalWords = words.length
+    const wordsWithMultipleTranslations = words.filter(w => w.processedTranslations?.length > 1).length
+    const totalTranslations = words.reduce((sum, w) => sum + (w.processedTranslations?.length || 1), 0)
+    
+    return {
+      totalWords,
+      wordsWithMultipleTranslations,
+      totalTranslations
+    }
+  }
+
+  const stats = getDisplayStats()
+
   return (
     <>
-      {/* FIXED: Overlay with proper fade animation timing */}
+      {/* Overlay with proper fade animation timing */}
       <div 
         className={`
           fixed inset-0 bg-black bg-opacity-50 z-40 
@@ -175,7 +244,7 @@ export default function DictionaryPanel({
         onClick={onClose}
       />
       
-      {/* FIXED: Panel with proper slide animation */}
+      {/* Panel with proper slide animation */}
       <div 
         className={`
           fixed inset-y-0 right-0 bg-white shadow-xl z-50
@@ -197,9 +266,22 @@ export default function DictionaryPanel({
         />
         
         <div className="flex flex-col h-full">
-          {/* Header */}
+          {/* Header with enhanced info */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-teal-500 to-cyan-500">
-            <h2 className="text-lg font-semibold text-white nav-title-sketchy">Dictionary</h2>
+            <div>
+              <h2 className="text-lg font-semibold text-white nav-title-sketchy">Dictionary</h2>
+              {/* NEW: Translation stats */}
+              {stats.totalWords > 0 && (
+                <p className="text-sm text-cyan-100 mt-1">
+                  {stats.totalWords} words • {stats.totalTranslations} translations
+                  {stats.wordsWithMultipleTranslations > 0 && (
+                    <span className="ml-2 text-cyan-200">
+                      ({stats.wordsWithMultipleTranslations} with multiple meanings)
+                    </span>
+                  )}
+                </p>
+              )}
+            </div>
             <button 
               onClick={onClose}
               className="text-white hover:text-cyan-200 text-xl nav-btn-sketchy"
@@ -208,7 +290,7 @@ export default function DictionaryPanel({
             </button>
           </div>
 
-          {/* Search and Filters */}
+          {/* Search and Filters (existing) */}
           <div className="p-4 border-b bg-cyan-50">
             <div className="space-y-3">
               {/* Search Input */}
@@ -216,7 +298,7 @@ export default function DictionaryPanel({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Search Italian words..."
+                placeholder="Search Italian words and meanings..."
                 className="w-full px-3 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 search-input-sketchy"
               />
               
@@ -232,7 +314,7 @@ export default function DictionaryPanel({
                 </span>
               </button>
               
-              {/* Advanced Filters */}
+              {/* Advanced Filters (existing) */}
               {showAdvancedFilters && (
                 <div className="space-y-3 pt-2 border-t border-teal-200">
                   {/* Word Type Filter */}
