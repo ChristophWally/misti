@@ -460,28 +460,28 @@ What We Fixed:
 
 **Acceptance Criteria:**
 
-- [ ] Conjugation modal loads with all available translations for current verb
-- [ ] Form translations update immediately when translation selection changes
-- [ ] Forms unavailable for selected translation are properly handled
-- [ ] Gender toggle integration works correctly with translation selection
-- [ ] Audio playback continues to work correctly across translation switches
-- [ ] Form grouping (singular/plural) respects translation constraints
-- [ ] Performance: translation switching under 100ms
+- [x] Conjugation modal loads with all available translations for current verb
+- [x] Form translations update immediately when translation selection changes
+- [x] Forms unavailable for selected translation are properly handled
+- [x] Gender toggle integration works correctly with translation selection
+- [x] Audio playback continues to work correctly across translation switches
+- [x] Form grouping (singular/plural) respects translation constraints
+- [x] Performance: translation switching under 100ms
 
 **Technical Implementation:**
 
-- [ ] `getTranslationForSelectedTranslation()` handles form-to-translation lookup
-- [ ] `getAvailableTranslations()` provides translation options for selector
-- [ ] Integration with existing gender toggle and mood/tense selection
-- [ ] Proper filtering of forms based on translation constraints
+- [x] `getTranslationForSelectedTranslation()` handles form-to-translation lookup
+- [x] `getAvailableTranslations()` provides translation options for selector
+- [x] Integration with existing gender toggle and mood/tense selection
+- [x] Proper filtering of forms based on translation constraints
 
 **Definition of Done:**
 
-- [ ] Modal displays all available translations with proper selector interface
-- [ ] Form translations update correctly when selection changes
-- [ ] Gender variants work properly across translation switches
-- [ ] Performance requirements met for translation switching
-- [ ] Integration with existing modal functionality maintained
+- [x] Modal displays all available translations with proper selector interface
+- [x] Form translations update correctly when selection changes
+- [x] Gender variants work properly across translation switches
+- [x] Performance requirements met for translation switching
+- [x] Integration with existing modal functionality maintained
 
 -----
 
