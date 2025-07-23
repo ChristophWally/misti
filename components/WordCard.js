@@ -174,89 +174,132 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     )
   }
 
-  // NEW: Render expanded translations section
+  // NEW: Render numbered translations layout
   const renderTranslationsSection = () => {
     if (!hasMultipleTranslations) {
-      // Single translation - show as before with main study button
+      // Single translation - show as before
       return (
-        <div className="mt-3">
-          <p className={`text-base mb-3 opacity-80 ${colors.text}`}>
-            {word.english}
-          </p>
+        <div className="mt-3 mb-3">
+          <div className="bg-gray-100 p-3 rounded border-l-4 border-gray-400">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className={`text-base font-medium ${colors.text}`}>{word.english}</p>
+              </div>
+              <button
+                onClick={() => onAddToDeck && onAddToDeck(word)}
+                className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-colors ml-3"
+                title="Add to study deck"
+              >
+                +
+              </button>
+            </div>
+          </div>
         </div>
       )
     }
 
-    // Multiple translations - show primary + expandable section
-    const primaryTranslation = word.processedTranslations.find(t => t.isPrimary) || word.processedTranslations[0]
-    const secondaryTranslations = word.processedTranslations.filter(t => !t.isPrimary)
+    // Multiple translations - show numbered list
+    const sortedTranslations = word.processedTranslations.sort((a, b) => a.priority - b.priority)
+    const firstThree = sortedTranslations.slice(0, 3)
+    const additional = sortedTranslations.slice(3)
 
     return (
-      <div className="mt-3">
-        {/* Primary Translation */}
-        <div className="mb-3">
-          <div className="flex items-center gap-2 mb-1">
-            <p className={`text-base opacity-80 ${colors.text} flex-1`}>
-              {primaryTranslation.translation}
-            </p>
-            <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-medium">
-              Primary
-            </span>
-          </div>
-          {renderContextMetadata(primaryTranslation.contextInfo)}
-          
-          {/* Primary Translation Study Button */}
-          <button 
-            onClick={() => onAddToDeck && onAddToDeck(word, primaryTranslation)}
-            className="mt-2 bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700 transition-colors btn-sketchy"
-          >
-            📚 Study "{primaryTranslation.translation}"
-          </button>
+      <div className="mt-3 mb-3">
+        {/* First 3 translations - always visible */}
+        <div className="space-y-2">
+          {firstThree.map((translation, index) => (
+            <div key={translation.id} className="bg-gray-100 p-3 rounded border-l-4 border-gray-400">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold text-gray-600 min-w-[24px]">{index + 1}.</span>
+                    <div className="flex-1">
+                      <p className={`text-base font-medium ${colors.text}`}>{translation.translation}</p>
+                      {/* Context info inline */}
+                      {translation.contextInfo && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {translation.contextInfo.usage && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-teal-100 text-teal-700">
+                              {translation.contextInfo.usage.replace('-', ' ')}
+                            </span>
+                          )}
+                          {translation.contextInfo.plurality && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700">
+                              {translation.contextInfo.plurality.replace('-', ' ')}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {/* Usage notes */}
+                      {translation.usageNotes && (
+                        <p className="text-sm text-gray-600 mt-1 italic">{translation.usageNotes}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onAddToDeck && onAddToDeck(word, translation)}
+                  className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-colors ml-3"
+                  title={`Add "${translation.translation}" to study deck`}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* Additional Translations Toggle */}
-        {secondaryTranslations.length > 0 && (
-          <div className="border-t border-gray-200 pt-3">
-            <button 
-              className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-2 btn-sketchy mb-3"
+        {/* Additional translations (4+) - expandable */}
+        {additional.length > 0 && (
+          <div className="mt-4">
+            <button
+              className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-2 mb-2 font-medium"
               onClick={() => setShowTranslations(!showTranslations)}
             >
-              <span>🔄 {secondaryTranslations.length} more meaning{secondaryTranslations.length > 1 ? 's' : ''}</span>
-              <span className={`transform transition-transform duration-200 ${showTranslations ? 'rotate-180' : ''}`}>
-                ▼
-              </span>
+              <span>Additional meanings ({additional.length})</span>
+              <span className={`transform transition-transform duration-200 ${showTranslations ? 'rotate-180' : ''}`}>▼</span>
             </button>
-            
-            {/* Expanded Translations */}
+
             {showTranslations && (
-              <div className="space-y-3 bg-gray-50 p-3 rounded transition-all duration-300">
-                {secondaryTranslations.map((translation, index) => (
-                  <div key={translation.id} className="border-l-3 border-gray-300 pl-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className={`text-base ${colors.text} flex-1`}>
-                        {translation.translation}
-                      </p>
-                      <span className="text-xs bg-gray-500 text-white px-2 py-1 rounded-full font-medium">
-                        #{translation.priority}
-                      </span>
+              <div className="space-y-2">
+                {additional.map((translation, index) => (
+                  <div key={translation.id} className="bg-gray-100 p-3 rounded border-l-4 border-gray-400">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold text-gray-600 min-w-[24px]">{index + 4}.</span>
+                          <div className="flex-1">
+                            <p className={`text-base font-medium ${colors.text}`}>{translation.translation}</p>
+                            {/* Context info inline */}
+                            {translation.contextInfo && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {translation.contextInfo.usage && (
+                                  <span className="text-xs px-2 py-1 rounded-full bg-teal-100 text-teal-700">
+                                    {translation.contextInfo.usage.replace('-', ' ')}
+                                  </span>
+                                )}
+                                {translation.contextInfo.plurality && (
+                                  <span className="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700">
+                                    {translation.contextInfo.plurality.replace('-', ' ')}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {/* Usage notes */}
+                            {translation.usageNotes && (
+                              <p className="text-sm text-gray-600 mt-1 italic">{translation.usageNotes}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => onAddToDeck && onAddToDeck(word, translation)}
+                        className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-colors ml-3"
+                        title={`Add "${translation.translation}" to study deck`}
+                      >
+                        +
+                      </button>
                     </div>
-                    
-                    {renderContextMetadata(translation.contextInfo)}
-                    
-                    {/* Usage Notes */}
-                    {translation.usageNotes && (
-                      <p className="text-sm text-gray-600 mt-1 italic">
-                        {translation.usageNotes}
-                      </p>
-                    )}
-                    
-                    {/* Secondary Translation Study Button */}
-                    <button 
-                      onClick={() => onAddToDeck && onAddToDeck(word, translation)}
-                      className="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors btn-sketchy"
-                    >
-                      📖 Study "{translation.translation}"
-                    </button>
                   </div>
                 ))}
               </div>
@@ -315,53 +358,46 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         ${className}
       `}>
         
-        {/* Header Section */}
-        <div className="flex justify-between items-start">
+        {/* Header Section - UPDATED: Tags moved to right of word */}
+        <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
             {renderArticleDisplay()}
-            
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className={`text-xl font-semibold ${colors.text}`}>
-                {word.italian}
-              </h3>
-              
-              <AudioButton
-                wordId={word.id}
-                italianText={word.italian}
-                audioFilename={audioFilename}
-                size="md"
-                title={hasPremiumAudio ? `Play premium audio (${voiceName})` : 'Play pronunciation'}
-                colorClass="bg-emerald-600 hover:bg-emerald-700"
-              />
-              
-              {renderTags(processedTags.essential, 'essential')}
+
+            <div className="flex items-center justify-between mb-2">
+              {/* Left side: Word + Audio */}
+              <div className="flex items-center gap-2">
+                <h3 className={`text-xl font-semibold ${colors.text}`}>{word.italian}</h3>
+
+                <AudioButton
+                  wordId={word.id}
+                  italianText={word.italian}
+                  audioFilename={audioFilename}
+                  size="md"
+                  title={hasPremiumAudio ? `Play premium audio (${voiceName})` : 'Play pronunciation'}
+                  colorClass="bg-emerald-600 hover:bg-emerald-700"
+                />
+              </div>
+
+              {/* Right side: Tags */}
+              <div className="flex items-center gap-1 flex-wrap justify-end">
+                <span className={`tag-essential tag-word-type ${colors.tag}`}>{word.word_type.toLowerCase()}</span>
+                {renderTags(processedTags.essential, 'essential')}
+                {renderTags(processedTags.detailed, 'detailed')}
+              </div>
             </div>
-            
-            {/* NEW: Multiple Translations Section */}
-            {renderTranslationsSection()}
-            
-            <div className="flex flex-wrap gap-1 mb-2">
-              <span className={`tag-essential tag-word-type ${colors.tag}`}>
-                {word.word_type.toLowerCase()}
-              </span>
-              {renderTags(processedTags.detailed, 'detailed')}
-            </div>
-            
-            {renderVerbFeatures()}
-            {renderWordForms()}
-            {renderRelationships()}
           </div>
-          
-          {/* UPDATED: Main add button only shown for single translations */}
-          {!hasMultipleTranslations && (
-            <button 
-              onClick={() => onAddToDeck && onAddToDeck(word)}
-              className="bg-emerald-600 text-white px-4 py-2 rounded text-sm hover:bg-emerald-700 transition-colors ml-4 flex-shrink-0 btn-sketchy"
-            >
-              + Add
-            </button>
-          )}
         </div>
+
+        {/* NEW: Numbered Translations Section */}
+        {renderTranslationsSection()}
+
+        <div className="flex flex-wrap gap-1 mb-2">
+          {/* Word type tag already displayed above */}
+        </div>
+
+        {renderVerbFeatures()}
+        {renderWordForms()}
+        {renderRelationships()}
       </div>
       
       {/* Conjugation Modal */}
