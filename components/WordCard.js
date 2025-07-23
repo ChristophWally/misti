@@ -299,18 +299,20 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         </div>
       )}
 
-      <div className={`
-    word-card border-2 rounded-lg p-4 transition-all duration-200
+  <div className={`
+    word-card border-2 rounded-lg p-3 text-sm transition-all duration-200
     ${colors.border} ${colors.bg} ${colors.hover}
     word-card-${word.word_type.toLowerCase()} sketchy-fill
     ${className}
   `}>
         {/* Main Word Header - New Layout */}
-        <div className="flex items-center gap-3 mb-4">
-          {/* Italian Word - Large and Prominent */}
-          <h3 className={`text-2xl font-bold ${colors.text}`}>
-            {word.italian}
-          </h3>
+        <div className="mb-3">
+          {renderArticleDisplay()}
+          <div className="flex items-center gap-3">
+            {/* Italian Word - Larger */}
+            <h3 className={`text-3xl font-bold ${colors.text}`}> 
+              {word.italian}
+            </h3>
 
           {/* Audio Button - Right next to word */}
           <AudioButton
@@ -354,8 +356,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             </span>
           )}
         </div>
-
-        {renderArticleDisplay()}
+        </div>
 
         {/* Multiple Translations Box - Grey Background */}
         {visibleTranslations.length > 0 ? (
@@ -376,11 +377,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                     <span className="text-base text-gray-900 font-medium">
                       {translation.translation}
                     </span>
-                    {translation.isPrimary && (
-                      <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-medium">
-                        Primary
-                      </span>
-                    )}
                   </div>
 
                   {/* Context Hint - Flexible space to push button right */}
