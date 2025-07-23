@@ -300,17 +300,17 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       )}
 
   <div className={`
-    word-card border-2 rounded-lg p-3 text-sm transition-all duration-200
+    word-card border-2 rounded-lg p-2 text-sm transition-all duration-200
     ${colors.border} ${colors.bg} ${colors.hover}
     word-card-${word.word_type.toLowerCase()} sketchy-fill
     ${className}
   `}>
         {/* Main Word Header - New Layout */}
-        <div className="mb-3">
+        <div className="mb-2">
           {renderArticleDisplay()}
-          <div className="flex items-center gap-3">
-            {/* Italian Word - Larger */}
-            <h3 className={`text-3xl font-bold ${colors.text}`}> 
+          <div className="flex items-center gap-2">
+            {/* Italian Word */}
+            <h3 className={`text-2xl font-bold ${colors.text}`}>
               {word.italian}
             </h3>
 
@@ -360,11 +360,11 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
         {/* Multiple Translations Box - Grey Background */}
         {visibleTranslations.length > 0 ? (
-          <div className="bg-gray-50 rounded-lg p-3 mb-3">
+          <div className="bg-gray-50 rounded-lg p-2 mb-2">
             {visibleTranslations.map((translation, index) => (
               <div key={translation.id || index}>
                 {/* Translation Row */}
-                <div className="flex items-stretch py-2 min-h-[40px]">
+                <div className="flex items-stretch py-1 min-h-[32px]">
                   {/* Number - Fixed width */}
                   <div className="w-6 flex-shrink-0 flex items-center">
                     <span className="text-sm font-bold text-gray-600">
@@ -407,8 +407,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           </div>
         ) : (
           /* Fallback for single translation */
-          <div className="bg-gray-50 rounded-lg p-3 mb-3">
-            <div className="flex items-stretch py-2 min-h-[40px]">
+          <div className="bg-gray-50 rounded-lg p-2 mb-2">
+            <div className="flex items-stretch py-1 min-h-[32px]">
               <div className="w-6 flex-shrink-0 flex items-center">
                 <span className="text-sm font-bold text-gray-600">1.</span>
               </div>
@@ -445,10 +445,10 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             </button>
 
             {showAdditionalMeanings && (
-              <div className="bg-gray-50 rounded-lg p-3 mt-2">
+              <div className="bg-gray-50 rounded-lg p-2 mt-1">
                 {additionalTranslations.map((translation, index) => (
                   <div key={translation.id || index}>
-                    <div className="flex items-stretch py-2 min-h-[40px]">
+                    <div className="flex items-stretch py-1 min-h-[32px]">
                       <div className="w-6 flex-shrink-0 flex items-center">
                         <span className="text-sm font-bold text-gray-600">
                           {visibleTranslations.length + index + 1}.
