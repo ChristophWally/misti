@@ -465,8 +465,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
               onClick={() => setShowAdditionalMeanings(!showAdditionalMeanings)}
               className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
             >
-              <span className={`transform transition-transform ${showAdditionalMeanings ? 'rotate-90' : ''}`}>
-                ▶
+              <span className={`transform transition-transform ${showAdditionalMeanings ? 'rotate-180' : ''}`}>
+                ▼
               </span>
               {additionalTranslations.length} additional meanings
             </button>
