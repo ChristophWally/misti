@@ -1093,35 +1093,36 @@ function ConjugationRow({
   const colors = getColors()
 
   return (
-    <div className="flex items-center py-2 px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-colors min-h-12">
-      {/* Pronoun */}
-      <div className="w-16 flex-shrink-0 font-bold text-gray-600 text-lg">
-        {pronounDisplay}
-      </div>
-      
-      {/* Form */}
-      <div className={`w-32 flex-shrink-0 font-bold text-lg ${colors.form} flex items-center gap-1`}>
-        {form.form_text}
-        {isIrregular && <span className="text-amber-500 text-base">⚠️</span>}
-      </div>
+    <div className="py-2 px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-colors">
+      <div className="flex items-center min-h-12">
+        {/* Pronoun */}
+        <div className="w-16 flex-shrink-0 font-bold text-gray-600 text-lg">
+          {pronounDisplay}
+        </div>
 
-      {/* Translation */}
-      <div className="flex-1 text-gray-600 text-lg mr-4 ml-4">
-        {form.translation}
+        {/* Form */}
+        <div className={`w-32 flex-shrink-0 font-bold text-lg ${colors.form} flex items-center gap-1`}>
+          {form.form_text}
+          {isIrregular && <span className="text-amber-500 text-base">⚠️</span>}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+          <AudioButton
+            wordId={form.id}
+            italianText={audioText}
+            audioFilename={form.audio_filename}
+            size="lg"
+            colorClass={colors.audio}
+          />
+          <button className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-colors">
+            +
+          </button>
+        </div>
       </div>
-      
-      {/* Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <AudioButton
-          wordId={form.id}
-          italianText={audioText}
-          audioFilename={form.audio_filename}
-          size="lg"
-          colorClass={colors.audio}
-        />
-        <button className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-colors">
-          +
-        </button>
+      {/* Translation */}
+      <div className="text-gray-600 text-lg ml-16 mt-1">
+        {form.translation}
       </div>
     </div>
   )
