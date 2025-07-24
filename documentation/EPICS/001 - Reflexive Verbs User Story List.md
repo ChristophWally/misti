@@ -517,6 +517,12 @@ What We Fixed:
 - [ ] Context metadata renders meaningfully for users
 - [ ] "Study This Translation" functionality ready for future SRS integration
 - [ ] Performance maintained with expanded data display
+📋 Story 10 Implementation Summary
+- Added expandable translation sections showing top two meanings with context hints and individual study buttons
+- Combined verb type with word type into a single badge that opens conjugations
+- Gender and irregularity tags remain filled, while other tags use a lighter outlined style with restored tooltips
+- Word card layout tightened with smaller padding and articles above a larger Italian word
+
 
 -----
 
