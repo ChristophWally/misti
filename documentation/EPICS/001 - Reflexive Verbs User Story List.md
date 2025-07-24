@@ -517,19 +517,62 @@ What We Fixed:
 - [x] Context metadata renders meaningfully for users
 - [x] "Study This Translation" functionality ready for future SRS integration
 - [x] Performance maintained with expanded data display
+
 📋 Story 10 Implementation Summary
 - Added expandable translation sections showing top two meanings with context hints and individual study buttons
 - Combined verb type with word type into a single badge that opens conjugations
 - Gender and irregularity tags remain filled, while other tags use a lighter outlined style with restored tooltips
 - Word card layout tightened with smaller padding and articles above a larger Italian word
 
-📝 Future User Story - Translation Context Indicators
-Story 10.5+: Display Translation-Specific Context Metadata
+### Story 10.5: Display Translation-Specific Context Metadata
 
-Show gender restrictions (♂/♀) next to relevant translations
-Display register indicators (FORMAL, INFORMAL, etc.)
-Show usage constraints (PLURAL-ONLY, etc.)
-Integration with existing contextInfo from word_translations table
+**Labels**: `epic:reflexive-verbs` `priority:medium` `phase:3.5` `story-points:3` `type:feature` `component:ui`
+
+**As a** language learner  
+**I want** to see visual indicators for translation-specific context information (gender restrictions, formality, usage constraints)  
+**So that** I can understand when and how to use each translation appropriately
+
+**Acceptance Criteria:**
+
+- [ ] Gender-specific translations show ♂/♀ indicators next to relevant meanings
+- [ ] Register indicators display for formal/informal distinctions (👑 FORMAL, 😊 CASUAL)
+- [ ] Usage constraints visible (👥 PLURAL-ONLY, 👤 SINGULAR-ONLY)
+- [ ] Semantic type indicators show relationship context (🪞 REFLEXIVE, 🤝 RECIPROCAL)
+- [ ] Context metadata integrates seamlessly with existing translation display
+- [ ] Visual hierarchy maintains readability while adding helpful information
+- [ ] Mobile-friendly display of context indicators
+
+**Technical Implementation:**
+
+- [ ] Parse `context_metadata` JSONB fields from `word_translations` table
+- [ ] Create visual indicator components for each context type
+- [ ] Integrate indicators into existing `TranslationSelector` and `WordCard` components
+- [ ] Ensure indicators update correctly when translation selection changes
+
+**Definition of Done:**
+
+- [ ] Context indicators display correctly across dictionary and conjugation interfaces
+- [ ] Visual design maintains clean, uncluttered appearance
+- [ ] Context information helps users understand translation usage appropriately
+- [ ] Performance impact minimal (indicators render without delay)
+- [ ] Integration with existing translation system seamless
+
+## Implementation Plan for Story 10.5
+
+Here's the step-by-step approach:
+
+### Step 1: Context Metadata Analysis
+First, we'll examine your existing `context_metadata` structure in the database to understand what indicators we need to support.
+
+### Step 2: Visual Indicator Design
+Create reusable components for different types of context indicators that match your existing design system.
+
+### Step 3: Integration with Translation Display
+Enhance your existing `TranslationSelector` and word card components to show these indicators.
+
+### Step 4: Testing and Polish
+Ensure the indicators work correctly across all your translation scenarios.
+
 
 
 -----
