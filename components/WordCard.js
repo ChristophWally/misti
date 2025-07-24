@@ -26,6 +26,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         border: 'border-teal-200',
         bg: 'bg-teal-50',
         hover: 'hover:bg-teal-100',
+        badgeHover: 'hover:bg-teal-200',
         tag: 'bg-teal-100 text-teal-800 border-teal-300',
         text: 'text-teal-900'
       },
@@ -33,6 +34,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         border: 'border-cyan-200',
         bg: 'bg-cyan-50',
         hover: 'hover:bg-cyan-100',
+        badgeHover: 'hover:bg-cyan-200',
         tag: 'bg-cyan-100 text-cyan-800 border-cyan-300',
         text: 'text-cyan-900'
       },
@@ -40,6 +42,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         border: 'border-blue-200',
         bg: 'bg-blue-50',
         hover: 'hover:bg-blue-100',
+        badgeHover: 'hover:bg-blue-200',
         tag: 'bg-blue-100 text-blue-800 border-blue-300',
         text: 'text-blue-900'
       },
@@ -47,6 +50,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         border: 'border-purple-200',
         bg: 'bg-purple-50',
         hover: 'hover:bg-purple-100',
+        badgeHover: 'hover:bg-purple-200',
         tag: 'bg-purple-100 text-purple-800 border-purple-300',
         text: 'text-purple-900'
       }
@@ -349,7 +353,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           {/* Gender Tag - Early in header, before word type */}
           {genderTag && (
             <span
-              className={`tag-essential text-xs px-2 py-1 rounded-full font-semibold ${outlinedClass(genderTag.class)}`}
+              className={`tag-essential text-xs px-2 py-1 rounded-full font-semibold ${genderTag.class}`}
               title={genderTag.description}
               onClick={handleTagClick}
               style={{ cursor: 'pointer' }}
@@ -361,7 +365,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           {/* Word Type Badge - opens conjugations */}
           <button
             onClick={() => setShowConjugations(true)}
-            className={`px-3 py-1 rounded-full text-sm font-semibold border cursor-pointer active:translate-y-px transition-all ${colors.tag} ${colors.hover}`}
+            className={`px-3 py-1 rounded-full text-sm font-semibold border cursor-pointer active:translate-y-px transition-all ${colors.tag} ${colors.badgeHover}`}
             title="View conjugations"
           >
             {wordTypeLabel}
