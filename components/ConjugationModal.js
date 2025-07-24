@@ -851,92 +851,83 @@ const loadWordTranslations = async () => {
               </div>
             </div>
 
-            {/* Audio and Formality Controls */}
+            {/* Audio and Pronoun/Formality Controls */}
             <div className="w-48 flex flex-col gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Audio Type
-                </label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Audio Type</label>
                 <button
                   onClick={toggleAudioPreference}
                   className={`w-full p-2 border border-gray-300 rounded-md text-sm font-medium transition-colors ${
-                    audioPreference === 'form-only'
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-teal-600 text-white'
+                    audioPreference === 'form-only' ? 'bg-teal-600 text-white' : 'bg-teal-600 text-white'
                   }`}
                 >
                   {audioPreference === 'form-only' ? '📝 Form Only' : '👤 With Pronoun'}
                 </button>
               </div>
 
-              {/* Formality Controls - Single Toggle */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Formality
-                </label>
-                <div className="flex justify-center">
-                  <button
-                    onClick={() =>
-                      setSelectedFormality(
-                        selectedFormality === 'formal' ? 'informal' : 'formal'
-                      )
-                    }
-                    className={`w-12 h-10 border-2 rounded-lg flex items-center justify-center transition-colors ${
-                      selectedFormality === 'formal'
-                        ? 'border-purple-500 bg-purple-500 text-white shadow-md'
-                        : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
-                    }`}
-                    title={
-                      selectedFormality === 'formal'
-                        ? 'Formal (Lei/Loro)'
-                        : 'Informal (tu/voi) - Click for formal'
-                    }
-                  >
-                    <svg
-                      width="22"
-                      height="22"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="drop-shadow-sm"
+              <div className="flex gap-2">
+                {/* Formality Controls */}
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Formality</label>
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() =>
+                        setSelectedFormality(selectedFormality === 'formal' ? 'informal' : 'formal')
+                      }
+                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center transition-colors ${
+                        selectedFormality === 'formal'
+                          ? 'border-purple-500 bg-purple-500 text-white shadow-md'
+                          : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                      }`}
+                      title={
+                        selectedFormality === 'formal'
+                          ? 'Formal (Lei/Loro)'
+                          : 'Informal (tu/voi) - Click for formal'
+                      }
                     >
-                      {/* British Royal Crown SVG */}
-                      {/* Crown base band */}
-                      <ellipse cx="12" cy="19" rx="10" ry="2" />
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="drop-shadow-sm"
+                      >
+                        {/* British Royal Crown SVG */}
+                        {/* Crown base band */}
+                        <ellipse cx="12" cy="19" rx="10" ry="2" />
 
-                      {/* Main crown body */}
-                      <path d="M3 17h18l-1-8H4l-1 8z" />
+                        {/* Main crown body */}
+                        <path d="M3 17h18l-1-8H4l-1 8z" />
 
-                      {/* Crown points/peaks */}
-                      <path d="M6 9l1-3 2 2 3-4 3 4 2-2 1 3" />
+                        {/* Crown points/peaks */}
+                        <path d="M6 9l1-3 2 2 3-4 3 4 2-2 1 3" />
 
-                      {/* Center arch */}
-                      <path d="M8 9c0-2 1.5-3 4-3s4 1 4 3" strokeWidth="0.5" stroke="currentColor" fill="none" />
+                        {/* Center arch */}
+                        <path d="M8 9c0-2 1.5-3 4-3s4 1 4 3" strokeWidth="0.5" stroke="currentColor" fill="none" />
 
-                      {/* Side arches */}
-                      <path d="M4 12c2-1 4-1 6 0" strokeWidth="0.5" stroke="currentColor" fill="none" />
-                      <path d="M14 12c2-1 4-1 6 0" strokeWidth="0.5" stroke="currentColor" fill="none" />
+                        {/* Side arches */}
+                        <path d="M4 12c2-1 4-1 6 0" strokeWidth="0.5" stroke="currentColor" fill="none" />
+                        <path d="M14 12c2-1 4-1 6 0" strokeWidth="0.5" stroke="currentColor" fill="none" />
 
-                      {/* Crown jewels */}
-                      <circle cx="12" cy="8" r="1" opacity="0.8" />
-                      <circle cx="7" cy="10" r="0.5" opacity="0.6" />
-                      <circle cx="17" cy="10" r="0.5" opacity="0.6" />
+                        {/* Crown jewels */}
+                        <circle cx="12" cy="8" r="1" opacity="0.8" />
+                        <circle cx="7" cy="10" r="0.5" opacity="0.6" />
+                        <circle cx="17" cy="10" r="0.5" opacity="0.6" />
 
-                      {/* Cross on top */}
-                      <path d="M11.5 5h1v3h-1z" />
-                      <path d="M10.5 6h3v1h-3z" />
+                        {/* Cross on top */}
+                        <path d="M11.5 5h1v3h-1z" />
+                        <path d="M10.5 6h3v1h-3z" />
 
-                      {/* Royal orb */}
-                      <circle cx="12" cy="4" r="1.5" opacity="0.9" />
-                    </svg>
-                  </button>
+                        {/* Royal orb */}
+                        <circle cx="12" cy="4" r="1.5" opacity="0.9" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Gender Controls */}
-              <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Gender
-                  </label>
+                {/* Gender Controls */}
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Gender</label>
                   <div className="flex justify-center">
                     <button
                       onClick={() => {
@@ -944,7 +935,7 @@ const loadWordTranslations = async () => {
                         setSelectedGender(prev => (prev === 'male' ? 'female' : 'male'))
                       }}
                       disabled={!hasGenderVariantsInCurrentMoodTense()}
-                      className={`w-12 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-all duration-200 shadow-md ${
+                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-all duration-200 shadow-md ${
                         !hasGenderVariantsInCurrentMoodTense()
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'male'
@@ -963,6 +954,7 @@ const loadWordTranslations = async () => {
                     </button>
                   </div>
                 </div>
+              </div>
             </div>
           </div>
 
