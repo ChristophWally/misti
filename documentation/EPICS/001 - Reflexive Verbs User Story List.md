@@ -495,33 +495,41 @@ What We Fixed:
 
 **Acceptance Criteria:**
 
-- [ ] Word cards show expandable translations sections ordered by priority
-- [ ] Each translation has its own "Study This Translation" button
-- [ ] Context metadata displayed meaningfully (usage notes, plurality restrictions)
-- [ ] Usage examples displayed per translation when available
-- [ ] Translation-specific related words shown (placeholder for future)
-- [ ] Visual hierarchy makes translations easily scannable
-- [ ] Loading performance maintained with multiple translations
+- [x] Word cards show expandable translations sections ordered by priority
+- [x] Each translation has its own "Study This Translation" button
+- [x] Context metadata displayed meaningfully (usage notes, plurality restrictions)
+- [x] Usage examples displayed per translation when available
+- [x] Translation-specific related words shown (placeholder for future)
+- [x] Visual hierarchy makes translations easily scannable
+- [x] Loading performance maintained with multiple translations
 
 **UI Design:**
 
-- [ ] Accordion-style or tabbed interface for multiple translations
-- [ ] Clear visual separation between translations
-- [ ] Priority indicators (primary vs secondary)
-- [ ] Context hints and usage guidance
-
+- [x] Accordion-style or tabbed interface for multiple translations
+- [x] Clear visual separation between translations
+- [x] Priority indicators (primary vs secondary)
+- [x] Context hints and usage guidance
+      
 **Definition of Done:**
 
-- [ ] Dictionary panel properly displays multiple translations per word
-- [ ] Priority ordering works correctly (primary translation first)
-- [ ] Context metadata renders meaningfully for users
-- [ ] "Study This Translation" functionality ready for future SRS integration
-- [ ] Performance maintained with expanded data display
+- [x] Dictionary panel properly displays multiple translations per word
+- [x] Priority ordering works correctly (primary translation first)
+- [x] Context metadata renders meaningfully for users
+- [x] "Study This Translation" functionality ready for future SRS integration
+- [x] Performance maintained with expanded data display
 📋 Story 10 Implementation Summary
 - Added expandable translation sections showing top two meanings with context hints and individual study buttons
 - Combined verb type with word type into a single badge that opens conjugations
 - Gender and irregularity tags remain filled, while other tags use a lighter outlined style with restored tooltips
 - Word card layout tightened with smaller padding and articles above a larger Italian word
+
+📝 Future User Story - Translation Context Indicators
+Story 10.5+: Display Translation-Specific Context Metadata
+
+Show gender restrictions (♂/♀) next to relevant translations
+Display register indicators (FORMAL, INFORMAL, etc.)
+Show usage constraints (PLURAL-ONLY, etc.)
+Integration with existing contextInfo from word_translations table
 
 
 -----
