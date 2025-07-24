@@ -236,13 +236,13 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   // Convert filled tag classes to outlined style for less visual weight
   const outlinedClass = (cls) => {
     const map = {
-      'bg-blue-500 text-white': 'bg-transparent text-blue-500 border-blue-500',
-      'bg-pink-500 text-white': 'bg-transparent text-pink-500 border-pink-500',
-      'bg-purple-500 text-white': 'bg-transparent text-purple-500 border-purple-500',
-      'bg-yellow-500 text-white': 'bg-transparent text-yellow-500 border-yellow-500',
-      'bg-orange-500 text-white': 'bg-transparent text-orange-500 border-orange-500',
-      'bg-green-500 text-white': 'bg-transparent text-green-500 border-green-500',
-      'bg-gray-200 text-gray-700': 'bg-transparent text-gray-700 border-gray-400'
+      'bg-blue-500 text-white': 'border bg-transparent text-blue-500 border-blue-500',
+      'bg-pink-500 text-white': 'border bg-transparent text-pink-500 border-pink-500',
+      'bg-purple-500 text-white': 'border bg-transparent text-purple-500 border-purple-500',
+      'bg-yellow-500 text-white': 'border bg-transparent text-yellow-500 border-yellow-500',
+      'bg-orange-500 text-white': 'border bg-transparent text-orange-500 border-orange-500',
+      'bg-green-500 text-white': 'border bg-transparent text-green-500 border-green-500',
+      'bg-gray-200 text-gray-700': 'border bg-transparent text-gray-700 border-gray-400'
     }
     return map[cls] || cls
   }
@@ -262,7 +262,14 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       tag.display !== '♂' && tag.display !== '♀' && tag.display !== '⚥' &&
       !tag.display.includes('IRREG')
     ),
-    ...processedTags.detailed
+    ...processedTags.detailed.filter(tag =>
+      ![
+        'are-conjugation',
+        'ere-conjugation',
+        'ire-conjugation',
+        'ire-isc-conjugation'
+      ].includes(tag.tag)
+    )
   ]
 
   // Get translations - use processedTranslations from EnhancedDictionarySystem
@@ -354,7 +361,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           {/* Word Type Badge - opens conjugations */}
           <button
             onClick={() => setShowConjugations(true)}
-            className={`px-3 py-1 rounded-full text-sm font-semibold border active:translate-y-px transition-transform ${colors.tag}`}
+            className={`px-3 py-1 rounded-full text-sm font-semibold border cursor-pointer active:translate-y-px transition-all ${colors.tag} ${colors.hover}`}
             title="View conjugations"
           >
             {wordTypeLabel}
