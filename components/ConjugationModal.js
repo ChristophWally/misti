@@ -936,52 +936,30 @@ const loadWordTranslations = async () => {
               <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Gender
-                    {hasGenderVariantsInCurrentMoodTense() && (
-                      <span className="ml-1 text-green-600 text-xs">(variants available)</span>
-                    )}
                   </label>
-                  <div className="flex gap-2 justify-center">
+                  <div className="flex justify-center">
                     <button
                       onClick={() => {
-                        console.log('🎭 STEP 2 FIXED: Gender button clicked - Male')
-                        setSelectedGender('male')
+                        console.log('🎭 Gender toggle clicked')
+                        setSelectedGender(prev => (prev === 'male' ? 'female' : 'male'))
                       }}
                       disabled={!hasGenderVariantsInCurrentMoodTense()}
-                      className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
+                      className={`w-12 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-all duration-200 shadow-md ${
                         !hasGenderVariantsInCurrentMoodTense()
                           ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
                           : selectedGender === 'male'
-                              ? 'border-blue-500 bg-blue-500 text-white'
-                              : 'border-blue-500 text-blue-500 bg-white hover:bg-blue-50'
+                              ? 'border-blue-500 bg-blue-500 text-white hover:bg-blue-600'
+                              : 'border-pink-500 bg-pink-500 text-white hover:bg-pink-600'
                       }`}
                       title={
                         !hasGenderVariantsInCurrentMoodTense()
                           ? 'Gender variants not available for this selection'
-                          : 'Select masculine gender'
+                          : selectedGender === 'male'
+                              ? 'Switch to feminine'
+                              : 'Switch to masculine'
                       }
                     >
-                      ♂
-                    </button>
-                    <button
-                      onClick={() => {
-                        console.log('🎭 STEP 2 FIXED: Gender button clicked - Female')
-                        setSelectedGender('female')
-                      }}
-                      disabled={!hasGenderVariantsInCurrentMoodTense()}
-                      className={`w-10 h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-colors ${
-                        !hasGenderVariantsInCurrentMoodTense()
-                          ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
-                          : selectedGender === 'female'
-                              ? 'border-pink-500 bg-pink-500 text-white'
-                              : 'border-pink-500 text-pink-500 bg-white hover:bg-pink-50'
-                      }`}
-                      title={
-                        !hasGenderVariantsInCurrentMoodTense()
-                          ? 'Gender variants not available for this selection'
-                          : 'Select feminine gender'
-                      }
-                    >
-                      ♀
+                      {selectedGender === 'male' ? '♂' : '♀'}
                     </button>
                   </div>
                 </div>
