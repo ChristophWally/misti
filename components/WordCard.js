@@ -218,6 +218,35 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   const colors = getWordTypeColors(word.word_type)
   const processedTags = processTagsForDisplay(word.tags, word.word_type)
 
+  // Determine verb conjugation type for combined badge label
+  const verbType = word.word_type === 'VERB'
+    ? (word.tags?.includes('are-conjugation')
+        ? 'are'
+        : word.tags?.includes('ere-conjugation')
+          ? 'ere'
+          : word.tags?.includes('ire-isc-conjugation')
+            ? 'ire-isc'
+            : word.tags?.includes('ire-conjugation')
+              ? 'ire'
+              : '')
+    : ''
+
+  const wordTypeLabel = verbType ? `${word.word_type} ┃${verbType}` : word.word_type
+
+  // Convert filled tag classes to outlined style for less visual weight
+  const outlinedClass = (cls) => {
+    const map = {
+      'bg-blue-500 text-white': 'bg-transparent text-blue-500 border-blue-500',
+      'bg-pink-500 text-white': 'bg-transparent text-pink-500 border-pink-500',
+      'bg-purple-500 text-white': 'bg-transparent text-purple-500 border-purple-500',
+      'bg-yellow-500 text-white': 'bg-transparent text-yellow-500 border-yellow-500',
+      'bg-orange-500 text-white': 'bg-transparent text-orange-500 border-orange-500',
+      'bg-green-500 text-white': 'bg-transparent text-green-500 border-green-500',
+      'bg-gray-200 text-gray-700': 'bg-transparent text-gray-700 border-gray-400'
+    }
+    return map[cls] || cls
+  }
+
   // Extract gender and irregularity tags for header
   const genderTag = processedTags.essential.find(tag =>
     tag.display === '♂' || tag.display === '♀' || tag.display === '⚥'
@@ -268,20 +297,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   }
 
   // Render verb-specific features
-  const renderVerbFeatures = () => {
-    if (word.word_type !== 'VERB') return null
-
-    return (
-      <div className="mt-3">
-        <button
-          onClick={() => setShowConjugations(true)}
-          className="text-sm bg-teal-600 text-white px-4 py-2 rounded hover:bg-teal-700 transition-colors btn-sketchy"
-        >
-          📝 Conjugations
-        </button>
-      </div>
-    )
-  }
 
   return (
     <>
@@ -300,7 +315,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       )}
 
   <div className={`
-    word-card border-2 rounded-lg p-2 text-sm transition-all duration-200
+    word-card border-2 rounded-lg p-3 text-sm transition-all duration-200
     ${colors.border} ${colors.bg} ${colors.hover}
     word-card-${word.word_type.toLowerCase()} sketchy-fill
     ${className}
@@ -327,7 +342,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           {/* Gender Tag - Early in header, before word type */}
           {genderTag && (
             <span
-              className={`text-xs px-2 py-1 rounded-full font-semibold ${genderTag.class}`}
+              className={`tag-essential text-xs px-2 py-1 rounded-full font-semibold ${outlinedClass(genderTag.class)}`}
               title={genderTag.description}
               onClick={handleTagClick}
               style={{ cursor: 'pointer' }}
@@ -336,18 +351,19 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             </span>
           )}
 
-          {/* Word Type Badge */}
-          <span className={`
-        px-3 py-1 rounded-full text-sm font-semibold border
-        ${colors.tag}
-      `}>
-            {word.word_type}
-          </span>
+          {/* Word Type Badge - opens conjugations */}
+          <button
+            onClick={() => setShowConjugations(true)}
+            className={`px-3 py-1 rounded-full text-sm font-semibold border active:translate-y-px transition-transform ${colors.tag}`}
+            title="View conjugations"
+          >
+            {wordTypeLabel}
+          </button>
 
           {/* Irregularity Tag - After word type */}
           {irregularTag && (
             <span
-              className={`text-xs px-2 py-1 rounded-full font-semibold ${irregularTag.class}`}
+              className={`tag-essential text-xs px-2 py-1 rounded-full font-semibold ${irregularTag.class}`}
               title={irregularTag.description}
               onClick={handleTagClick}
               style={{ cursor: 'pointer' }}
@@ -490,7 +506,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {bottomTags.map((tag, index) => (
               <span
                 key={index}
-                className={`text-xs px-2 py-1 rounded-full font-semibold ${tag.class}`}
+                className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${outlinedClass(tag.class)}`}
                 title={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
@@ -501,7 +517,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           </div>
         )}
 
-        {renderVerbFeatures()}
       </div>
 
       {/* Conjugation Modal */}
