@@ -814,7 +814,11 @@ const loadWordTranslations = async () => {
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                 >
                   <span>{getCurrentSelectionText()}</span>
-                  <span className={`transform transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}>
+                  <span
+                    className={`transform transition-transform duration-200 ${
+                      dropdownOpen ? 'rotate-0' : '-rotate-90'
+                    }`}
+                  >
                     ▼
                   </span>
                 </div>
