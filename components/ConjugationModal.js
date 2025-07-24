@@ -1093,17 +1093,17 @@ function ConjugationRow({
   const colors = getColors()
 
   return (
-    <div className="py-2 px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-colors">
-      <div className="flex items-center min-h-12">
+    <div className="py-1 px-2 sm:py-2 sm:px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-colors">
+      <div className="flex items-center min-h-10 sm:min-h-12">
         {/* Pronoun */}
-        <div className="w-16 flex-shrink-0 font-bold text-gray-600 text-lg">
+        <div className="w-12 sm:w-16 flex-shrink-0 font-bold text-gray-600 text-base sm:text-lg">
           {pronounDisplay}
         </div>
 
         {/* Form */}
-        <div className={`w-32 flex-shrink-0 font-bold text-lg ${colors.form} flex items-center gap-1`}>
+        <div className={`w-28 sm:w-32 flex-shrink-0 font-bold text-base sm:text-lg ${colors.form} flex items-center gap-1`}>
           {form.form_text}
-          {isIrregular && <span className="text-amber-500 text-base">⚠️</span>}
+          {isIrregular && <span className="text-amber-500 text-sm sm:text-base">⚠️</span>}
         </div>
 
         {/* Actions */}
@@ -1121,7 +1121,7 @@ function ConjugationRow({
         </div>
       </div>
       {/* Translation */}
-      <div className="text-gray-600 text-lg ml-16 mt-1">
+      <div className="text-gray-600 text-base sm:text-lg ml-12 sm:ml-16 mt-1">
         {form.translation}
       </div>
     </div>
