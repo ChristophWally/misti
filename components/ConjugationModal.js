@@ -370,11 +370,13 @@ const loadWordTranslations = async () => {
         !form.tags?.includes('presente-progressivo') &&
         !form.tags?.includes('passato-progressivo')
 
-      // Pronoun changes only matter when audio includes pronouns
-      const pronounChanges = pronoun === 'lui' || pronoun === 'lei'
+      // Pronoun changes matter for ANY verb when audio includes pronouns
+      const pronounChanges =
+        (pronoun === 'lui' || pronoun === 'lei') &&
+        audioPreference === 'with-pronoun'
 
       if (verbChanges) return true
-      if (pronounChanges && audioPreference !== 'form-only') return true
+      if (pronounChanges) return true
       return false
     })
 
@@ -382,7 +384,9 @@ const loadWordTranslations = async () => {
       '🎭 Checking if gender variants available for current translation in',
       selectedMood,
       selectedTense,
-      ':',
+      'Audio preference:',
+      audioPreference,
+      'Has changes:',
       hasChanges
     )
 
@@ -928,9 +932,8 @@ const loadWordTranslations = async () => {
                 </div>
               </div>
 
-              {/* Gender Controls - Only for ESSERE verbs */}
-              {word?.tags?.includes('essere-auxiliary') && (
-                <div>
+              {/* Gender Controls */}
+              <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Gender
                     {hasGenderVariantsInCurrentMoodTense() && (
@@ -953,7 +956,7 @@ const loadWordTranslations = async () => {
                       }`}
                       title={
                         !hasGenderVariantsInCurrentMoodTense()
-                          ? 'No gender variants in this tense'
+                          ? 'Gender variants not available for this selection'
                           : 'Select masculine gender'
                       }
                     >
@@ -974,7 +977,7 @@ const loadWordTranslations = async () => {
                       }`}
                       title={
                         !hasGenderVariantsInCurrentMoodTense()
-                          ? 'No gender variants in this tense'
+                          ? 'Gender variants not available for this selection'
                           : 'Select feminine gender'
                       }
                     >
@@ -982,7 +985,6 @@ const loadWordTranslations = async () => {
                     </button>
                   </div>
                 </div>
-              )}
             </div>
           </div>
 
