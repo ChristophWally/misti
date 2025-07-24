@@ -370,11 +370,13 @@ const loadWordTranslations = async () => {
         !form.tags?.includes('presente-progressivo') &&
         !form.tags?.includes('passato-progressivo')
 
-      // Pronoun changes only matter when audio includes pronouns
-      const pronounChanges = pronoun === 'lui' || pronoun === 'lei'
+      // Pronoun changes matter for ANY verb when audio includes pronouns
+      const pronounChanges =
+        (pronoun === 'lui' || pronoun === 'lei') &&
+        audioPreference === 'with-pronoun'
 
       if (verbChanges) return true
-      if (pronounChanges && audioPreference !== 'form-only') return true
+      if (pronounChanges) return true
       return false
     })
 
@@ -382,7 +384,9 @@ const loadWordTranslations = async () => {
       '🎭 Checking if gender variants available for current translation in',
       selectedMood,
       selectedTense,
-      ':',
+      'Audio preference:',
+      audioPreference,
+      'Has changes:',
       hasChanges
     )
 
