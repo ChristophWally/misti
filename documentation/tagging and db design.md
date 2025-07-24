@@ -60,213 +60,250 @@ The systematic character of adverb formation enables students to expand their vo
 
 ---
 
-## Comprehensive Tag Structure with Visual Indicators
+# Complete Tag System Documentation - Misti Italian Learning App
 
-The tagging system balances comprehensive grammatical classification with practical feature development needs. Tags serve multiple functions: they drive automatic content generation (like article calculation), enable sophisticated search and filtering capabilities, support voice consistency in audio production, and provide grammatical context that enhances learning comprehension. The system integrates established linguistic categories with learning-specific metadata to create a robust foundation for intelligent vocabulary instruction.
+This document covers all three tag systems in the Misti architecture, each serving different purposes in the complex Italian language learning system.
 
-### Universal Tags for All Word Types
+## Overview of the Three Tag Systems
 
-These tags apply across all word categories and establish the foundational classification system that drives core application features. **CEFR level tags** align vocabulary with internationally recognized proficiency standards, enabling students to focus on age-appropriate content and track their progression through established learning milestones.
+Understanding Italian requires tracking grammatical information at multiple levels. Our system uses three distinct but interconnected tag systems:
 
-**CEFR Proficiency Levels:**
-- `CEFR-A1` → 📚 A1 (Beginner level vocabulary)
-- `CEFR-A2` → 📚 A2 (Elementary level vocabulary)  
-- `CEFR-B1` → 📚 B1 (Intermediate level vocabulary)
-- `CEFR-B2` → 📚 B2 (Upper intermediate vocabulary)
-- `CEFR-C1` → 📚 C1 (Advanced level vocabulary)
-- `CEFR-C2` → 📚 C2 (Proficiency level vocabulary)
+**Core Word Tags** (`dictionary.tags[]`) - Define the fundamental properties of the dictionary entry itself, such as gender, conjugation type, and frequency rankings.
 
-**Frequency Classifications** help students prioritize vocabulary acquisition by focusing on words that appear most commonly in authentic Italian communication. These rankings derive from corpus analysis of contemporary Italian texts and provide empirical guidance for vocabulary selection.
+**Word Forms Tags** (`word_forms.tags[]`) - Capture the specific grammatical properties of individual conjugated forms, including mood, tense, person, and morphological characteristics.
 
-**Frequency Rankings:**
-- `freq-top100` → ⭐ 100 (Top 100 most frequent words)
-- `freq-top500` → ⭐ 500 (Top 500 most frequent words)
-- `freq-top1000` → ⭐ 1K (Top 1000 most frequent words)
-- `freq-top5000` → ⭐ 5K (Top 5000 most frequent words)
+**Translation Context Tags** (`word_translations.context_metadata`) - Specify usage restrictions and semantic context for individual translations, particularly gender usage patterns and register information.
 
-**Advanced Fluency Categories** identify specialized vocabulary that extends beyond everyday communication into professional, academic, and cultural domains. These classifications help students develop register awareness and select vocabulary appropriate for specific communicative contexts.
+---
 
-**Specialized Vocabulary:**
-- `native` → 🗣️ NAT (Natural native-speaker vocabulary)
-- `business` → 💼 BIZ (Professional/commercial terminology)
-- `academic` → 🎓 ACAD (Scholarly and technical vocabulary)
-- `literary` → 📜 LIT (Literary and artistic language)
-- `regional` → 🗺️ REG (Regional dialects and local variants)
+## System 1: Core Word Tags (`dictionary.tags[]`)
 
-### Noun Tags: Gender, Number, and Morphological Patterns
+These tags define the essential grammatical and metadata properties of the base dictionary entry. They determine how the word behaves grammatically and help with learning prioritization.
 
-Noun classification provides the foundation for article generation, agreement calculation, and systematic pattern recognition. The gender system drives automatic article selection, while number patterns enable plural form generation and recognition. Understanding these classifications helps students develop intuitive grasp of Italian's systematic grammatical structure.
+### Universal Tags (All Word Types)
 
-**Required Gender Classification:**
-- `masculine` → ♂ (Grammatically masculine noun requiring masculine articles)
-- `feminine` → ♀ (Grammatically feminine noun requiring feminine articles)
-- `common-gender` → ⚥ (Same form for both genders, determined by article)
+**CEFR Proficiency Levels** - Essential for learning progression
+- `CEFR-A1` → 📚 A1 - Beginner level vocabulary (most basic words)
+- `CEFR-A2` → 📚 A2 - Elementary level vocabulary  
+- `CEFR-B1` → 📚 B1 - Intermediate level vocabulary
+- `CEFR-B2` → 📚 B2 - Upper intermediate vocabulary
+- `CEFR-C1` → 📚 C1 - Advanced level vocabulary
+- `CEFR-C2` → 📚 C2 - Proficiency level vocabulary (near-native)
 
-**Plural Formation Patterns** describe systematic morphological processes that students can learn and apply to new vocabulary. These patterns reflect historical development from Latin declensional systems while maintaining predictable modern Italian morphology.
+**Frequency Rankings** - Critical for learning prioritization
+- `freq-top100` → ⭐ 100 - Top 100 most frequent words (absolute essentials)
+- `freq-top500` → ⭐ 500 - Top 500 most frequent words (conversational foundation)
+- `freq-top1000` → ⭐ 1K - Top 1000 most frequent words (solid base)
+- `freq-top5000` → ⭐ 5K - Top 5000 most frequent words (advanced fluency)
 
-**Number Morphology:**
-- `plural-i` → 📝 plural-i (Forms plural by changing ending to -i)
-- `plural-e` → 📄 plural-e (Forms plural by changing ending to -e)
-- `plural-a` → 📃 plural-a (Masculine noun with feminine -a plural)
-- `plural-invariable` → 🔒 invariable (Identical singular and plural forms)
-- `plural-only` → 👥 plural-only (Noun exists only in plural form)
-- `singular-only` → 👤 sing-only (Mass/uncountable noun typically singular only)
-- `plural-irregular` → 🔄 plural-irreg (Unique irregular plural formation)
+**Advanced Fluency Categories** - Specialized vocabulary domains
+- `native` → 🗣️ NAT - Natural native-speaker vocabulary (colloquialisms, idioms)
+- `business` → 💼 BIZ - Professional and commercial terminology
+- `academic` → 🎓 ACAD - Scholarly and technical vocabulary
+- `literary` → 📜 LIT - Literary and artistic language
+- `regional` → 🗺️ REG - Regional dialects and local variants
 
-**Article Exception Handling** addresses systematic irregularities where standard phonetic rules for article selection don't apply. These tags enable automatic article generation while preserving accuracy for historically inherited exceptions.
+### Word-Type Specific Tags
 
-**Article Overrides:**
-- `article-lo` → Forces "lo" regardless of phonetic analysis
-- `article-il` → Forces "il" despite apparent irregularities  
-- `article-la` → Forces "la" for exceptional cases
-- `article-gli` → Forces "gli" in plural contexts
-- `article-le` → Forces "le" when standard rules fail
+**NOUN Tags** - Define gender and plural formation patterns
+- `masculine` → ♂ - Requires masculine articles (il ragazzo, un libro)
+- `feminine` → ♀ - Requires feminine articles (la ragazza, una casa)  
+- `common-gender` → ⚥ - Same form for both genders (il/la cantante)
+- `irregular-pattern` → ⚠️ IRREG - Unusual formation patterns (uomo → uomini)
 
-### Verb Tags: Conjugation, Auxiliary Selection, and Semantic Properties
+**VERB Tags** - Define conjugation behavior and argument structure
+- `are-conjugation` → 🔸 -are - First conjugation group (parlare, amare)
+- `ere-conjugation` → 🔹 -ere - Second conjugation group (credere, vendere)
+- `ire-conjugation` → 🔶 -ire - Third conjugation group (dormire, partire)
+- `ire-isc-conjugation` → -ISC - Third conjugation with -isc- infix (finire → finisco)
+- `irregular-pattern` → ⚠️ IRREG - Non-standard conjugation patterns (essere, andare)
+- `avere-auxiliary` → 🤝 avere - Forms compound tenses with avere (ho parlato)
+- `essere-auxiliary` → 🫱 essere - Forms compound tenses with essere (sono andato)
+- `transitive-verb` → ➡️ trans - Takes direct objects (mangiare la pizza)
+- `intransitive-verb` → ↩️ intrans - Cannot take direct objects (andare, dormire)
+- `reflexive-verb` → 🪞 reflexive - Action reflects back on subject (lavarsi)
 
-Verb classification enables systematic conjugation recognition, auxiliary selection for compound tenses, and semantic categorization that supports intelligent vocabulary grouping. The conjugation system provides the framework for generating individual verb forms, while auxiliary and transitivity information drives automatic grammar checking and learning recommendations.
+**ADJECTIVE Tags** - Define agreement and comparison patterns
+- `form-4` → 📋 form-4 - Four distinct forms (rosso/rossa/rossi/rosse)
+- `form-2` → 📑 form-2 - Two forms only (grande/grandi)
+- `form-irregular` → ⚠️ IRREG - Special formation rules (bello → bel ragazzo)
+- `type-gradable` → 📈 gradable - Can form comparatives (più alto, altissimo)
+- `type-absolute` → 🛑 absolute - Cannot be compared logically (morto, elettrico)
 
-**Conjugation Group Classification** reflects the three-way systematic division that governs Italian verbal morphology. Understanding conjugation membership helps students predict verb behavior and apply systematic patterns to new vocabulary acquisition.
+**ADVERB Tags** - Define semantic and syntactic categories
+- `type-manner` → 🎭 manner - Describes how actions are performed (bene, velocemente)
+- `type-time` → ⏰ time - Indicates temporal relationships (ora, domani, sempre)
+- `type-place` → 📍 place - Specifies locations or directions (qui, sopra, dentro)
+- `type-quantity` → 📊 quantity - Expresses degree or amount (molto, poco, troppo)
 
-**Primary Conjugation Classes:**
-- `are-conjugation` → 🔸 -are (First conjugation group, infinitive ends in -are)
-- `ere-conjugation` → 🔹 -ere (Second conjugation group, infinitive ends in -ere)
-- `ire-conjugation` → 🔶 -ire (Third conjugation group, infinitive ends in -ire)
-- `ire-isc-conjugation` → -ISC (Third conjugation with -isc- infix in present forms)
+---
 
-**Pattern Regularity** distinguishes systematic conjugation behavior from exceptional patterns that require individual memorization. The irregular-pattern tag identifies high-frequency verbs that don't follow standard conjugation rules but maintain systematic behavior within their own paradigms.
+## System 2: Word Forms Tags (`word_forms.tags[]`)
 
-**Morphological Regularity:**
-- `irregular-pattern` → ⚠️ IRREG (Does not follow standard conjugation patterns)
+These tags capture the specific grammatical properties of individual conjugated forms. They enable precise morphological analysis and support the complex gender variant generation system.
 
-**Auxiliary Selection** for compound tenses follows systematic semantic principles that students must master for accurate temporal expression. The auxiliary system reflects conceptual distinctions between action types and provides insight into how Italian grammaticalizes aspectual meaning.
+### Form Type Categories
 
-**Auxiliary Verbs:**
-- `avere-auxiliary` → 🤝 avere (Uses avere in compound tenses)
-- `essere-auxiliary` → 🫱 essere (Uses essere in compound tenses)  
-- `both-auxiliary` → 🤜🤛 avere / essere (Can use either auxiliary depending on context)
+**Conjugation Forms** (320 total forms) - The dominant category representing all verb conjugations
+- Used for all verb forms across all moods, tenses, and persons
+- Forms the foundation for Italian verb learning system
 
-**Transitivity Classification** describes argument structure patterns that affect sentence construction and object placement. Understanding transitivity helps students construct grammatically correct sentences and recognize systematic patterns in verb behavior.
+**Plural Forms** (1 total form) - Noun plural formation patterns
+- Currently minimal, likely representing special plural formation cases
 
-**Argument Structure:**
-- `transitive-verb` → ➡️ trans (Takes a direct object)
-- `intransitive-verb` → ↩️ intrans (Does not take a direct object)
-- `both-transitivity` → ↔️ both (Can be used both transitively and intransitively)
+### Tense and Mood Classification
 
-**Special Semantic Categories** identify verbs with distinctive grammatical behavior that requires special learning attention. These categories help students recognize systematic patterns while understanding exceptions that require individual mastery.
+**Present Tense System** - Foundation of Italian grammar
+- `presente` (18 forms) - Simple present indicative (parlo, parli, parla)
+- `presente-progressivo` (18 forms) - Present continuous (sto parlando)
 
-**Special Verb Types:**
-- `reflexive-verb` → 🪞 reflexive (Action reflects back on the subject)
-- `modal-verb` → 🔑 modal (Expresses necessity, possibility, or ability)
-- `impersonal-verb` → ☁️ impersonal (Used only in third person singular)
-- `defective-verb` → 🔧 defective (Missing certain tenses or persons)
+**Past Tense System** - Complex compound and simple past relationships
+- `passato-prossimo` (18 forms) - Present perfect (ho parlato, sono andato)
+- `imperfetto` (18 forms) - Imperfect ongoing past (parlavo, ero)
+- `passato-remoto` (18 forms) - Historical past (parlai, fu)
+- `passato-progressivo` (18 forms) - Past continuous (stavo parlando)
+- `trapassato-prossimo` (18 forms) - Past perfect (avevo parlato)
+- `trapassato-remoto` (18 forms) - Past anterior (ebbi parlato)
 
-### Adjective Tags: Agreement Patterns and Position Effects
+**Future Tense System** - Simple and compound future expressions
+- `futuro-semplice` (18 forms) - Simple future (parlerò, andrò)
+- `futuro-anteriore` (18 forms) - Future perfect (avrò parlato)
 
-Adjective classification enables automatic agreement generation and systematic pattern recognition for morphological variations. The agreement system provides students with clear rules for producing grammatically correct modifications, while position-dependent patterns introduce students to sophisticated aspects of Italian morphophonology.
+**Subjunctive Mood System** - Subjective and hypothetical expressions
+- `congiuntivo-presente` (18 forms) - Present subjunctive (che io parli)
+- `congiuntivo-passato` (18 forms) - Perfect subjunctive (che io abbia parlato)
+- `congiuntivo-imperfetto` (18 forms) - Imperfect subjunctive (che io parlassi)
+- `congiuntivo-trapassato` (18 forms) - Pluperfect subjunctive (che io avessi parlato)
 
-**Agreement Form Classification** describes the systematic morphological patterns that adjectives follow when agreeing with nouns in gender and number. Understanding these patterns enables students to produce correct agreement forms automatically while recognizing systematic exceptions.
+**Conditional Mood System** - Hypothetical and polite expressions
+- `condizionale-presente` (18 forms) - Present conditional (parlerei, andrei)
+- `condizionale-passato` (18 forms) - Past conditional (avrei parlato)
 
-**Morphological Agreement:**
-- `form-4` → 📋 form-4 (Four distinct forms for gender/number: -o, -a, -i, -e)
-- `form-2` → 📑 form-2 (Two forms: -e for singular both genders, -i for plural)
-- `form-invariable` → 🔐 invariable (Form never changes regardless of gender or number)
-- `form-irregular` → ⚠️ IRREG (Special rules or position-dependent forms)
+**Imperative Mood System** - Command and instruction forms
+- `imperativo-presente` (14 forms) - Present imperative (parla!, parlate!)
 
-**Semantic Gradability** distinguishes adjectives that can be intensified or compared from those that express absolute or categorical properties. This distinction affects how adjectives can be modified and helps students understand semantic constraints on grammatical operations.
+**Non-Finite Forms** - Verbal forms without person/number specification
+- `infinito-presente` (3 forms) - Present infinitive (parlare, andare)
+- `infinito-passato` (3 forms) - Past infinitive (avere parlato)
+- `participio-presente` (3 forms) - Present participle (parlante)
+- `participio-passato` (3 forms) - Past participle (parlato, andato)
+- `gerundio-presente` (3 forms) - Present gerund (parlando)
+- `gerundio-passato` (3 forms) - Past gerund (avendo parlato)
 
-**Comparison Capability:**
-- `type-gradable` → 📈 gradable (Can be intensified with più or have superlative -issimo)
-- `type-absolute` → 🛑 absolute (Cannot be graded logically)
+### Person and Number Classification
 
-### Adverb Tags: Formation and Semantic Function
+**Person Categories** - Subject identification for conjugations
+- `prima-persona` (99 forms) - First person forms (io, noi)
+- `seconda-persona` (102 forms) - Second person forms (tu, voi)
+- `terza-persona` (101 forms) - Third person forms (lui, lei, loro)
 
-Adverb classification enables systematic derivation recognition and semantic categorization that supports vocabulary expansion and functional understanding. The formation patterns help students recognize productive morphological processes, while semantic categories provide frameworks for understanding adverbial functions across different communicative contexts.
+**Specific Person Tags** - Individual pronoun identification
+- `io` (48 forms) - First person singular (parlo, parlavo)
+- `tu` (51 forms) - Second person singular (parli, parlavi)
+- `lui` (48 forms) - Third person masculine singular (parla, parlava)
+- `lei` (42 forms) - Third person feminine singular (parla, parlava)
+- `noi` (51 forms) - First person plural (parliamo, parlavamo)
+- `voi` (51 forms) - Second person plural (parlate, parlavate)
+- `loro` (51 forms) - Third person plural (parlano, parlavano)
 
-**Formation Type Classification** distinguishes systematically derived adverbs from primary adverbial vocabulary, enabling students to understand productive patterns while recognizing exceptional forms that require individual memorization.
+**Number Categories** - Singular and plural distinction
+- `singolare` (150 forms) - Singular forms for all persons
+- `plurale` (154 forms) - Plural forms for all persons
 
-**Morphological Formation:**
-- `mente-derived` → 📝 -mente (Formed from adjectives using regular -mente pattern)
-- `mente-irregular` → 🔄 -mente irreg (Uses -mente but with systematic stem changes)
-- `primary-adverb` → 🔘 primary (Non-derived adverbs with independent morphology)
-- `suppletive-adverb` → ⚡ suppletive (Irregular forms blocking regular -mente formation)
+### Morphological Pattern Classification
 
-**Semantic Function Categories** help students understand how adverbs contribute to communication across different discourse contexts. These categories reflect systematic functional distinctions that guide appropriate usage and enable sophisticated expression of temporal, spatial, and modal meaning.
+**Regularity Patterns** - Systematic vs exceptional formations
+- `regular` (237 forms) - Follows standard conjugation patterns
+- `irregular` (27 forms) - Deviates from standard patterns (essere, andare)
 
-**Functional Categories:**
-- `type-manner` → 🎭 manner (Describes how an action is performed)
-- `type-time` → ⏰ time (Indicates when an action occurs)
-- `type-place` → 📍 place (Indicates where an action occurs)
-- `type-quantity` → 📊 quantity (Expresses how much or to what degree)
-- `type-frequency` → 🔁 frequency (Indicates how often an action occurs)
-- `type-affirming` → ✅ affirming (Used to affirm or confirm something)
-- `type-negating` → ❌ negating (Used to negate or deny something)
-- `type-doubting` → 🤔 doubting (Expresses doubt or uncertainty)
-- `type-interrogative` → ❔ question (Used to ask questions)
+**Complexity Classification** - Simple vs compound form identification
+- `simple` (148 forms) - Single-word forms (parlo, parlavo, parlerò)
+- `compound` (169 forms) - Multi-word constructions (ho parlato, sto parlando)
 
-### Word Form Tags for Individual Variations
+### Gender and Reflexive Classification
 
-Individual word forms require specialized classification that describes their specific grammatical properties and semantic contributions. These tags enable independent learning progression for each form while maintaining systematic relationships to base vocabulary. The form-specific tagging system supports sophisticated spaced repetition algorithms and enables targeted practice of specific grammatical constructions.
+**Gender Marking** - Essential for agreement in compound tenses
+- `masculine` (67 forms) - Masculine agreement (sono andato, mi sono lavato)
+- `feminine` (1 form) - Feminine agreement (sono andata, mi sono lavata)
 
-**Verb Form Classification** provides detailed grammatical analysis for individual conjugated forms, enabling students to understand systematic patterns while mastering specific temporal and modal distinctions. Each conjugated form represents a distinct semantic contribution that requires individual learning attention.
+**Reflexive Classification** - Self-directed action identification
+- `reflexive` (106 forms) - Forms containing reflexive pronouns (mi lavo, si lavano)
 
-**Complete Tense and Mood Categories:**
+### Understanding the Data Patterns
 
-**INDICATIVO (Indicative Mood):**
-- `presente` → Present tense (dormo, dormi, dorme)
-- `imperfetto` → Imperfect tense (dormivo, dormivi, dormiva)
-- `passato-prossimo` → Present perfect (ho dormito, hai dormito, ha dormito)
-- `passato-remoto` → Past historic/Remote past (dormii, dormisti, dormì)
-- `trapassato-prossimo` → Past perfect/Pluperfect (avevo dormito, avevi dormito, aveva dormito)
-- `trapassato-remoto` → Past anterior/Remote pluperfect (ebbi dormito, avesti dormito, ebbe dormito)
-- `futuro-semplice` → Simple future (dormirò, dormirai, dormirà)
-- `futuro-anteriore` → Future perfect (avrò dormito, avrai dormito, avrà dormito)
+The distribution of tags reveals important patterns about Italian grammar complexity. The dominance of regular forms (237 out of 320) demonstrates that Italian follows systematic patterns, making it learnable through rule-based approaches. The significant presence of compound forms (169) reflects Italian's rich system of auxiliary-based tenses.
 
-**CONGIUNTIVO (Subjunctive Mood):**
-- `congiuntivo-presente` → Present subjunctive (che io dorma, che tu dorma, che lui dorma)
-- `congiuntivo-imperfetto` → Imperfect subjunctive (che io dormissi, che tu dormissi, che lui dormisse)
-- `congiuntivo-passato` → Past subjunctive/Perfect subjunctive (che io abbia dormito, che tu abbia dormito)
-- `congiuntivo-trapassato` → Pluperfect subjunctive (che io avessi dormito, che tu avessi dormito)
+The near-equal distribution among person categories (99-102 forms each) shows complete paradigmatic coverage, ensuring learners encounter all grammatical persons. The higher count of irregular forms (27) compared to typical expectations reflects the inclusion of high-frequency verbs like essere and andare, which are essential despite their irregularity.
 
-**CONDIZIONALE (Conditional Mood):**
-- `condizionale-presente` → Present conditional (dormirei, dormiresti, dormirebbe)
-- `condizionale-passato` → Past conditional/Perfect conditional (avrei dormito, avresti dormito, avrebbe dormito)
+The heavy representation of reflexive forms (106) demonstrates the system's sophisticated handling of this challenging aspect of Italian grammar, particularly important for verbs like lavarsi that can express both direct and reciprocal meanings.
 
-**IMPERATIVO (Imperative Mood):**
-- `imperativo-presente` → Present imperative (dormi!, dormite!, dorma!, dormano!)
+---
 
-**INFINITO (Infinitive):**
-- `infinito-presente` → Present infinitive (dormire)
-- `infinito-passato` → Past infinitive (aver dormito, essere andato)
+## System 3: Translation Context Tags (`word_translations.context_metadata`)
 
-**PARTICIPIO (Participle):**
-- `participio-presente` → Present participle (dormiente - rare/literary)
-- `participio-passato` → Past participle (dormito, andato, fatto)
+These tags specify usage restrictions and semantic context for individual translations, stored as JSON metadata rather than simple tag arrays.
 
-**GERUNDIO (Gerund):**
-- `gerundio-presente` → Present gerund (dormendo)
-- `gerundio-passato` → Past gerund (avendo dormito, essendo andato)
+### Gender Usage Categories
 
-**Person and Number Specification:**
-- `prima-persona` → First person forms (io, noi)
-- `seconda-persona` → Second person forms (tu, voi)
-- `terza-persona` → Third person forms (lui/lei, loro)
-- `singolare` → Singular forms
-- `plurale` → Plural forms
+**Mandatory Visual Indicators** - Strict gender restrictions requiring UI symbols
+- `"male-only"` → ♂ symbol - Exclusively used for males ("handsome" for bello)
+- `"female-only"` → ♀ symbol - Exclusively used for females (rare but possible)
 
-**Adjective Agreement Forms** describe specific gender and number combinations that enable targeted practice of agreement patterns. Students can focus on particular agreement challenges while understanding systematic morphological relationships.
+**Contextual Usage Patterns** - No visual symbols, stored for reference
+- `"male-preferred"` - More commonly used for males but grammatically acceptable for females
+- `"female-preferred"` - More commonly used for females but can describe males
+- `"both"` - Used equally and naturally for both genders
+- `"neutral"` - Not person-specific, describes objects, qualities, or situations
 
-**Agreement Specification:**
-- `masculine` → Masculine agreement forms
-- `feminine` → Feminine agreement forms  
-- `singular` → Singular agreement forms
-- `plural` → Plural agreement forms
+### Register and Semantic Classifications
 
-**Form Regularity Indicators** help students recognize systematic patterns while identifying exceptional behavior that requires special attention. This classification supports intelligent difficulty adjustment and targeted practice recommendations.
+**Register Categories** - Formality and social context
+- `"formal"` - Academic, professional, or ceremonial contexts
+- `"informal"` - Casual, friendly, everyday conversation
+- `"neutral"` - Appropriate across all social contexts
 
-**Pattern Classification:**
-- `regular-pattern` → Follows systematic morphological rules
-- `irregular` → Deviates from expected patterns requiring individual memorization
+**Semantic Domain Categories** - Meaning specialization
+- `"physical-appearance"` - Describes visual characteristics
+- `"general-appeal"` - Broader attractiveness or desirability
+- `"aesthetic-quality"` - Beauty, artistic merit, visual appeal
+- `"quality-assessment"` - Evaluation of standards or acceptability
+
+**Usage Context Categories** - Situational appropriateness
+- `"casual-friendly"` - Relaxed social interactions
+- `"masculine-appeal"` - Male-oriented attractiveness
+- `"endearing"` - Affectionate, emotional contexts
+- `"acceptable-quality"` - Neutral quality assessment
+
+### Implementation and Storage
+
+Translation context metadata is stored as JSON in the `context_metadata` column:
+
+```json
+{
+  "usage": "masculine-appeal",
+  "register": "neutral", 
+  "semantic_type": "aesthetic-quality",
+  "gender_usage": "male-only"
+}
+```
+
+This flexible structure allows for complex combinations of contextual information while maintaining database efficiency and enabling sophisticated filtering and display logic.
+
+---
+
+## Integration Across Systems
+
+These three tag systems work together to provide comprehensive Italian language learning support:
+
+**Learning Progression** - Core word tags (CEFR, frequency) guide curriculum sequencing, while word forms tags ensure complete grammatical coverage, and translation context tags provide nuanced usage guidance.
+
+**Morphological Generation** - Core word tags determine which forms to generate, word forms tags classify the generated forms grammatically, and translation context tags ensure appropriate semantic assignment.
+
+**User Interface Display** - Core word tags provide essential information in card headers, word forms tags enable sophisticated conjugation displays, and translation context tags guide visual indicators and usage hints.
+
+**Spaced Repetition Integration** - All three systems contribute to intelligent scheduling, with core tags influencing difficulty weighting, forms tags enabling precise progress tracking, and context tags supporting translation-specific mastery assessment.
+
+This comprehensive tag architecture enables Misti to handle the full complexity of Italian grammar while maintaining pedagogical clarity and systematic organization.
 
 ---
 
