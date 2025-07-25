@@ -480,7 +480,15 @@ body {
 }
 
 .restriction-gender {
-  color: #7c3aed !important;
+  font-weight: bold;
+}
+
+.restriction-gender-male {
+  color: #3b82f6 !important;
+}
+
+.restriction-gender-female {
+  color: #ec4899 !important;
 }
 
 .restriction-plurality {
@@ -491,8 +499,12 @@ body {
   color: #dc2626 !important;
 }
 
-.restriction-gender:hover {
-  color: #6d28d9 !important;
+.restriction-gender-male:hover {
+  color: #1d4ed8 !important;
+}
+
+.restriction-gender-female:hover {
+  color: #be185d !important;
 }
 
 .restriction-plurality:hover {
