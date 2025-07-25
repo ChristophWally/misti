@@ -1,7 +1,7 @@
 'use client'
 
 // components/ConjugationModal.js
-// REDESIGNED: Complete new layout matching HTML mockup
+// ENHANCED: Smooth animations for translation switching
 
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
@@ -82,10 +82,12 @@ export default function ConjugationModal({
   const [selectedTranslationId, setSelectedTranslationId] = useState(null)
   const [wordTranslations, setWordTranslations] = useState([])
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
-
+  
   // NEW: Animation states
   const [isTranslationSwitching, setIsTranslationSwitching] = useState(false)
   const [formsVisible, setFormsVisible] = useState(true)
+  const [isMoodTenseSwitching, setIsMoodTenseSwitching] = useState(false)
+  const [dropdownAnimating, setDropdownAnimating] = useState(false)
 
   // Extract tag values from tag array
   const extractTagValue = (tags, category) => {
@@ -276,14 +278,12 @@ const loadWordTranslations = async () => {
     return options
   }
 
-  // Get current forms to display
   // Get current forms to display (ONLY base stored forms)
   const getCurrentForms = () => {
     const allForms = conjugations[selectedMood]?.[selectedTense] || []
 
     // Filter to show ONLY stored forms (not calculated variants)
     const baseStoredForms = allForms.filter(form => !form.tags?.includes('calculated-variant'))
-
 
     return baseStoredForms
   }
@@ -313,7 +313,6 @@ const loadWordTranslations = async () => {
     return translationFilteredForms
   }
 
-
   // Order forms by pronoun sequence
   const orderFormsByPronoun = (forms) => {
     const pronounOrder = ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro']
@@ -329,16 +328,52 @@ const loadWordTranslations = async () => {
     })
   }
 
-  // Handle dropdown selection
+  // Handle dropdown selection with animation
   const handleDropdownSelect = (mood, tense) => {
-    setSelectedMood(mood)
-    setSelectedTense(tense)
-    setDropdownOpen(false)
+    if (mood === selectedMood && tense === selectedTense) {
+      setDropdownOpen(false)
+      return
+    }
+
+    // Start mood/tense switching animation
+    setIsMoodTenseSwitching(true)
+    setFormsVisible(false)
+    setDropdownAnimating(true)
+
+    // Close dropdown with slight delay
+    setTimeout(() => {
+      setDropdownOpen(false)
+      setDropdownAnimating(false)
+    }, 100)
+
+    // Change mood/tense after fade out
+    setTimeout(() => {
+      setSelectedMood(mood)
+      setSelectedTense(tense)
+      
+      // Fade back in
+      setTimeout(() => {
+        setFormsVisible(true)
+        setIsMoodTenseSwitching(false)
+      }, 50)
+    }, 150)
   }
 
-  // Toggle audio preference
+  // Toggle audio preference with animation
   const toggleAudioPreference = () => {
+    // Add a slight animation delay for visual feedback
     setAudioPreference(prev => prev === 'form-only' ? 'with-pronoun' : 'form-only')
+  }
+
+  // Enhanced gender toggle with animation
+  const handleGenderToggle = () => {
+    console.log('🎭 Gender toggle clicked')
+    setSelectedGender(prev => (prev === 'male' ? 'female' : 'male'))
+  }
+
+  // Enhanced formality toggle with animation
+  const handleFormalityToggle = () => {
+    setSelectedFormality(prev => prev === 'formal' ? 'informal' : 'formal')
   }
 
   // Get display text for current selection
@@ -614,7 +649,6 @@ const loadWordTranslations = async () => {
       !singular.includes(form) && !plural.includes(form)
     )
 
-
     return { singular, plural, other }
   }
 
@@ -629,7 +663,7 @@ const loadWordTranslations = async () => {
     // Short delay for fade out
     setTimeout(() => {
       setSelectedTranslationId(newTranslationId)
-
+      
       // Fade back in
       setTimeout(() => {
         setFormsVisible(true)
@@ -836,13 +870,15 @@ const loadWordTranslations = async () => {
               </label>
               <div className="relative">
                 <div 
-                  className="p-3 border-2 border-teal-600 bg-white rounded-lg font-semibold text-teal-600 cursor-pointer flex items-center justify-between min-h-12 transition-all duration-200 hover:border-teal-700 hover:shadow-md"
+                  className={`p-3 border-2 border-teal-600 bg-white rounded-lg font-semibold text-teal-600 cursor-pointer flex items-center justify-between min-h-12 transition-all duration-200 hover:border-teal-700 hover:shadow-md active:scale-[0.98] ${
+                    dropdownAnimating ? 'pointer-events-none opacity-75' : ''
+                  }`}
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                 >
-                  <span>{getCurrentSelectionText()}</span>
+                  <span className="transition-colors duration-200">{getCurrentSelectionText()}</span>
                   <span
-                    className={`transform transition-transform duration-200 ${
-                      dropdownOpen ? 'rotate-0' : '-rotate-90'
+                    className={`transform transition-all duration-300 ease-out ${
+                      dropdownOpen ? 'rotate-0 scale-110' : '-rotate-90 scale-100'
                     }`}
                   >
                     ▼
@@ -850,27 +886,32 @@ const loadWordTranslations = async () => {
                 </div>
                 
                 {dropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-80 overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto animate-in slide-in-from-top-4 duration-300 fade-in">
                     {/* Group by mood */}
-                      {sortMoods(Object.keys(conjugations)).map(mood => (
+                      {sortMoods(Object.keys(conjugations)).map((mood, moodIndex) => (
                         <div key={mood} className="border-b border-gray-100 last:border-b-0">
-                          <div className="px-4 py-2 bg-gray-50 font-semibold text-sm text-gray-700 border-b border-gray-200">
+                          <div className={`px-4 py-2 bg-gray-50 font-semibold text-sm text-gray-700 border-b border-gray-200 transition-colors duration-200 hover:bg-gray-100`}>
                             {mood.charAt(0).toUpperCase() + mood.slice(1)}
                           </div>
-                          {sortTenses(mood, Object.keys(conjugations[mood])).map(tense => {
+                          {sortTenses(mood, Object.keys(conjugations[mood])).map((tense, tenseIndex) => {
                             const option = availableOptions.find(opt => opt.mood === mood && opt.tense === tense)
                             const isSelected = mood === selectedMood && tense === selectedTense
+                            const animationDelay = (moodIndex * 3 + tenseIndex) * 30 // Stagger animation
                           
                           return (
                             <div
                               key={`${mood}-${tense}`}
-                              className={`px-5 py-2 cursor-pointer text-sm flex items-center gap-2 hover:bg-gray-50 ${
-                                isSelected ? 'bg-green-50 text-green-700 font-semibold' : 'text-gray-600'
+                              className={`px-5 py-3 cursor-pointer text-sm flex items-center gap-3 transition-all duration-200 hover:bg-gray-50 hover:transform hover:translate-x-1 active:bg-gray-100 ${
+                                isSelected ? 'bg-green-50 text-green-700 font-semibold border-l-4 border-green-500' : 'text-gray-600'
                               }`}
+                              style={{ animationDelay: `${animationDelay}ms` }}
                               onClick={() => handleDropdownSelect(mood, tense)}
                             >
-                              <span>{option?.regularity}</span>
-                              <span>{option?.displayTense}</span>
+                              <span className="text-lg transition-transform duration-200 hover:scale-110">{option?.regularity}</span>
+                              <span className="transition-all duration-200">{option?.displayTense}</span>
+                              {isSelected && (
+                                <span className="ml-auto text-green-600 animate-in spin-in-180 duration-300">✓</span>
+                              )}
                             </div>
                           )
                         })}
@@ -887,11 +928,13 @@ const loadWordTranslations = async () => {
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Audio Type</label>
                 <button
                   onClick={toggleAudioPreference}
-                  className={`w-full p-2 border border-gray-300 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${
-                    audioPreference === 'form-only' ? 'bg-teal-600 text-white' : 'bg-teal-600 text-white'
+                  className={`w-full p-2 border border-gray-300 rounded-md text-sm font-medium transition-all duration-300 hover:shadow-md active:scale-[0.98] transform hover:scale-105 ${
+                    audioPreference === 'form-only' ? 'bg-teal-600 text-white shadow-lg' : 'bg-teal-600 text-white shadow-lg'
                   }`}
                 >
-                  {audioPreference === 'form-only' ? '📝 Form Only' : '👤 With Pronoun'}
+                  <span className="transition-all duration-200">
+                    {audioPreference === 'form-only' ? '📝 Form Only' : '👤 With Pronoun'}
+                  </span>
                 </button>
               </div>
 
@@ -901,17 +944,15 @@ const loadWordTranslations = async () => {
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Formality</label>
                   <div className="flex justify-center">
                     <button
-                      onClick={() =>
-                        setSelectedFormality(selectedFormality === 'formal' ? 'informal' : 'formal')
-                      }
-                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center transition-all duration-200 hover:shadow-md ${
+                      onClick={handleFormalityToggle}
+                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:scale-105 ${
                         selectedFormality === 'formal'
-                          ? 'border-purple-500 bg-purple-500 text-white shadow-md'
-                          : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                          ? 'border-purple-500 bg-purple-500 text-white shadow-md animate-pulse'
+                          : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:border-purple-300'
                       }`}
                       title={
                         selectedFormality === 'formal'
-                          ? 'Formal (Lei/Loro)'
+                          ? 'Formal (Lei/Loro) - Click for informal'
                           : 'Informal (tu/voi) - Click for formal'
                       }
                     >
@@ -920,7 +961,9 @@ const loadWordTranslations = async () => {
                         height="22"
                         viewBox="0 0 24 24"
                         fill="currentColor"
-                        className="drop-shadow-sm"
+                        className={`drop-shadow-sm transition-all duration-300 ${
+                          selectedFormality === 'formal' ? 'animate-bounce' : 'hover:scale-110'
+                        }`}
                       >
                         {/* British Royal Crown SVG */}
                         {/* Crown base band */}
@@ -960,17 +1003,14 @@ const loadWordTranslations = async () => {
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Gender</label>
                   <div className="flex justify-center">
                     <button
-                      onClick={() => {
-                        console.log('🎭 Gender toggle clicked')
-                        setSelectedGender(prev => (prev === 'male' ? 'female' : 'male'))
-                      }}
+                      onClick={handleGenderToggle}
                       disabled={!hasGenderVariantsInCurrentMoodTense()}
-                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-all duration-200 shadow-md ${
+                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-all duration-300 shadow-md hover:shadow-xl active:scale-95 transform hover:scale-105 ${
                         !hasGenderVariantsInCurrentMoodTense()
-                          ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
+                          ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed opacity-50'
                           : selectedGender === 'male'
-                              ? 'border-blue-500 bg-blue-500 text-white hover:bg-blue-600'
-                              : 'border-pink-500 bg-pink-500 text-white hover:bg-pink-600'
+                              ? 'border-blue-500 bg-blue-500 text-white hover:bg-blue-600 hover:border-blue-600 shadow-blue-200'
+                              : 'border-pink-500 bg-pink-500 text-white hover:bg-pink-600 hover:border-pink-600 shadow-pink-200'
                       }`}
                       title={
                         !hasGenderVariantsInCurrentMoodTense()
@@ -980,7 +1020,11 @@ const loadWordTranslations = async () => {
                               : 'Switch to masculine'
                       }
                     >
-                      {selectedGender === 'male' ? '♂' : '♀'}
+                      <span className={`transition-all duration-300 ${
+                        hasGenderVariantsInCurrentMoodTense() ? 'hover:scale-125' : ''
+                      }`}>
+                        {selectedGender === 'male' ? '♂' : '♀'}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -1002,11 +1046,13 @@ const loadWordTranslations = async () => {
           {/* Content with loading overlay */}
           <div className="flex-1 overflow-y-auto p-5 relative">
             {/* Loading overlay for translation switching */}
-            {isTranslationSwitching && (
-              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
-                <div className="flex items-center gap-3">
+            {(isTranslationSwitching || isMoodTenseSwitching) && (
+              <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10 animate-in fade-in duration-200">
+                <div className="flex items-center gap-3 bg-white rounded-lg shadow-lg p-4 border">
                   <div className="animate-spin h-6 w-6 border-2 border-teal-600 border-t-transparent rounded-full"></div>
-                  <span className="text-teal-600 font-medium">Switching translation...</span>
+                  <span className="text-teal-600 font-medium">
+                    {isTranslationSwitching ? 'Switching translation...' : 'Changing conjugation...'}
+                  </span>
                 </div>
               </div>
             )}
@@ -1141,7 +1187,7 @@ function ConjugationRow({
         </div>
 
         {/* Form */}
-        <div className={`w-28 sm:w-32 flex-shrink-0 font-bold text-base sm:text-lg ${colors.form} flex items-center gap-1`}>
+        <div className={`w-28 sm:w-32 flex-shrink-0 font-bold text-base sm:text-lg ${colors.form} flex items-center gap-1 transition-colors duration-200`}>
           {form.form_text}
           {isIrregular && <span className="text-amber-500 text-sm sm:text-base">⚠️</span>}
         </div>
@@ -1161,7 +1207,7 @@ function ConjugationRow({
         </div>
       </div>
       {/* Translation */}
-      <div className="text-gray-600 text-base sm:text-lg ml-12 sm:ml-16 mt-1">
+      <div className="text-gray-600 text-base sm:text-lg ml-12 sm:ml-16 mt-1 transition-colors duration-200">
         {form.translation}
       </div>
     </div>
