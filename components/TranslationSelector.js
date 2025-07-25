@@ -79,6 +79,16 @@ export default function TranslationSelector({
             <span className="text-teal-800 font-semibold truncate">
               {selectedTranslation?.translation || 'Select translation'}
             </span>
+            {selectedTranslation &&
+              getRestrictionIndicators(selectedTranslation).map((indicator) => (
+                <span
+                  key={indicator.key}
+                  className={indicator.className}
+                  title={indicator.title}
+                >
+                  {indicator.symbol}
+                </span>
+              ))}
             {selectedTranslation?.display_priority === 1 && (
               <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-medium flex-shrink-0">
                 Primary
