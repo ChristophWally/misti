@@ -583,42 +583,10 @@ Ensure the indicators work correctly across all your translation scenarios.
 **Target**: Weeks 7-8  
 **Dependencies**: Phases 1-3 complete
 
-## Story 11: Comprehensive Translation Assignment Testing
-
-**Labels**: `epic:reflexive-verbs` `priority:high` `phase:4` `story-points:8` `type:technical` `component:testing`
-
-**As a** developer
-**I want** comprehensive tests for translation assignment accuracy and reflexive verb handling
-**So that** the system correctly assigns forms to translations with high confidence
-
-**Acceptance Criteria:**
-
-- [ ] Unit tests for all major translation matching patterns
-- [ ] Integration tests for reflexive verb complexity (reciprocal constraints)
-- [ ] Validation against known correct assignments for migrated data
-- [ ] Performance tests for assignment engine with large datasets
-- [ ] Edge case handling (ambiguous translations, missing forms)
-- [ ] Automated testing in CI/CD pipeline
-
-**Test Coverage:**
-
-- [ ] Basic keyword matching ("I speak" → "to speak")
-- [ ] Reflexive context constraints (reciprocal requires plural)
-- [ ] Fallback logic to primary translation
-- [ ] Confidence scoring accuracy
-- [ ] Gender variant assignment inheritance
-
-**Definition of Done:**
-
-- [ ] Test suite achieves 95%+ code coverage for assignment logic
-- [ ] All reflexive verb test cases pass with expected assignments
-- [ ] Performance benchmarks validate assignment speed requirements
-- [ ] Edge cases handled gracefully with appropriate fallbacks
-- [ ] CI/CD integration ensures ongoing quality
 
 -----
 
-## Story 12: User Experience Polish and Performance Optimization
+## Story 11: User Experience Polish and Performance Optimization
 
 **Labels**: `epic:reflexive-verbs` `priority:medium` `phase:4` `story-points:5` `type:feature` `component:ui`
 
@@ -653,6 +621,41 @@ Ensure the indicators work correctly across all your translation scenarios.
 - [ ] Performance benchmarks achieved across all device types
 
 -----
+
+## FOR A FUTURE EPIC Story 15: Comprehensive Translation Assignment Testing
+
+**Labels**: `epic:reflexive-verbs` `priority:high` `phase:4` `story-points:8` `type:technical` `component:testing`
+
+**As a** developer
+**I want** comprehensive tests for translation assignment accuracy and reflexive verb handling
+**So that** the system correctly assigns forms to translations with high confidence
+
+**Acceptance Criteria:**
+
+- [ ] Unit tests for all major translation matching patterns
+- [ ] Integration tests for reflexive verb complexity (reciprocal constraints)
+- [ ] Validation against known correct assignments for migrated data
+- [ ] Performance tests for assignment engine with large datasets
+- [ ] Edge case handling (ambiguous translations, missing forms)
+- [ ] Automated testing in CI/CD pipeline
+
+**Test Coverage:**
+
+- [ ] Basic keyword matching ("I speak" → "to speak")
+- [ ] Reflexive context constraints (reciprocal requires plural)
+- [ ] Fallback logic to primary translation
+- [ ] Confidence scoring accuracy
+- [ ] Gender variant assignment inheritance
+
+**Definition of Done:**
+
+- [ ] Test suite achieves 95%+ code coverage for assignment logic
+- [ ] All reflexive verb test cases pass with expected assignments
+- [ ] Performance benchmarks validate assignment speed requirements
+- [ ] Edge cases handled gracefully with appropriate fallbacks
+- [ ] CI/CD integration ensures ongoing quality
+
+
 
 # Epic Definition of Done
 
