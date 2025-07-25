@@ -83,6 +83,10 @@ export default function ConjugationModal({
   const [wordTranslations, setWordTranslations] = useState([])
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
 
+  // NEW: Animation states
+  const [isTranslationSwitching, setIsTranslationSwitching] = useState(false)
+  const [formsVisible, setFormsVisible] = useState(true)
+
   // Extract tag values from tag array
   const extractTagValue = (tags, category) => {
     if (!tags || !Array.isArray(tags)) return null
@@ -614,6 +618,26 @@ const loadWordTranslations = async () => {
     return { singular, plural, other }
   }
 
+  // NEW: Handle translation change with animation
+  const handleTranslationChange = async (newTranslationId) => {
+    if (newTranslationId === selectedTranslationId) return
+
+    // Start animation
+    setIsTranslationSwitching(true)
+    setFormsVisible(false)
+
+    // Short delay for fade out
+    setTimeout(() => {
+      setSelectedTranslationId(newTranslationId)
+
+      // Fade back in
+      setTimeout(() => {
+        setFormsVisible(true)
+        setIsTranslationSwitching(false)
+      }, 50)
+    }, 150)
+  }
+
   // Render conjugation forms with filtering and helpful messages
   const renderConjugationForms = () => {
     const currentForms = getFormsForSelectedTranslation()
@@ -642,7 +666,9 @@ const loadWordTranslations = async () => {
     console.log('🎭 RENDER: Is compound tense:', compound)
 
     return (
-      <div className="space-y-1">
+      <div className={`space-y-1 transition-all duration-300 ease-in-out ${
+        formsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-2'
+      }`}>
         {/* Singular Section */}
         {singular.length > 0 && (
           <>
@@ -795,7 +821,7 @@ const loadWordTranslations = async () => {
             </div>
             <button 
               onClick={onClose}
-              className="text-white hover:text-cyan-200 text-xl"
+              className="text-white hover:text-cyan-200 text-xl transition-colors duration-200"
             >
               ✕
             </button>
@@ -810,7 +836,7 @@ const loadWordTranslations = async () => {
               </label>
               <div className="relative">
                 <div 
-                  className="p-3 border-2 border-teal-600 bg-white rounded-lg font-semibold text-teal-600 cursor-pointer flex items-center justify-between min-h-12"
+                  className="p-3 border-2 border-teal-600 bg-white rounded-lg font-semibold text-teal-600 cursor-pointer flex items-center justify-between min-h-12 transition-all duration-200 hover:border-teal-700 hover:shadow-md"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                 >
                   <span>{getCurrentSelectionText()}</span>
@@ -824,7 +850,7 @@ const loadWordTranslations = async () => {
                 </div>
                 
                 {dropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-80 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-80 overflow-y-auto animate-in slide-in-from-top-2 duration-200">
                     {/* Group by mood */}
                       {sortMoods(Object.keys(conjugations)).map(mood => (
                         <div key={mood} className="border-b border-gray-100 last:border-b-0">
@@ -861,7 +887,7 @@ const loadWordTranslations = async () => {
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Audio Type</label>
                 <button
                   onClick={toggleAudioPreference}
-                  className={`w-full p-2 border border-gray-300 rounded-md text-sm font-medium transition-colors ${
+                  className={`w-full p-2 border border-gray-300 rounded-md text-sm font-medium transition-all duration-200 hover:shadow-md ${
                     audioPreference === 'form-only' ? 'bg-teal-600 text-white' : 'bg-teal-600 text-white'
                   }`}
                 >
@@ -878,7 +904,7 @@ const loadWordTranslations = async () => {
                       onClick={() =>
                         setSelectedFormality(selectedFormality === 'formal' ? 'informal' : 'formal')
                       }
-                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center transition-colors ${
+                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center transition-all duration-200 hover:shadow-md ${
                         selectedFormality === 'formal'
                           ? 'border-purple-500 bg-purple-500 text-white shadow-md'
                           : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
@@ -968,13 +994,23 @@ const loadWordTranslations = async () => {
               <TranslationSelector
                 translations={wordTranslations}
                 selectedTranslationId={selectedTranslationId}
-                onTranslationChange={setSelectedTranslationId}
+                onTranslationChange={handleTranslationChange}
               />
             </div>
           )}
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-5">
+          {/* Content with loading overlay */}
+          <div className="flex-1 overflow-y-auto p-5 relative">
+            {/* Loading overlay for translation switching */}
+            {isTranslationSwitching && (
+              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin h-6 w-6 border-2 border-teal-600 border-t-transparent rounded-full"></div>
+                  <span className="text-teal-600 font-medium">Switching translation...</span>
+                </div>
+              </div>
+            )}
+
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin h-8 w-8 border-2 border-teal-600 border-t-transparent rounded-full mx-auto mb-4"></div>
@@ -1097,7 +1133,7 @@ function ConjugationRow({
   const colors = getColors()
 
   return (
-    <div className="py-1 px-2 sm:py-2 sm:px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-colors">
+    <div className="py-1 px-2 sm:py-2 sm:px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-all duration-200">
       <div className="flex items-center min-h-10 sm:min-h-12">
         {/* Pronoun */}
         <div className="w-12 sm:w-16 flex-shrink-0 font-bold text-gray-600 text-base sm:text-lg">
@@ -1119,7 +1155,7 @@ function ConjugationRow({
             size="lg"
             colorClass={colors.audio}
           />
-          <button className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-colors">
+          <button className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-all duration-200 hover:shadow-md active:transform active:scale-95">
             +
           </button>
         </div>
