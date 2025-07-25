@@ -4,6 +4,7 @@
 // Compact dropdown with beautiful context tags
 
 import { useState, useRef, useEffect } from 'react'
+import { renderRestrictionIndicators } from '../lib/restriction-utils'
 
 export default function TranslationSelector({
   translations = [],
@@ -58,6 +59,11 @@ export default function TranslationSelector({
     return tags
   }
 
+  const getRestrictionIndicators = (translation) => {
+    const metadata = translation.context_metadata || {}
+    return renderRestrictionIndicators(metadata, 'restriction-symbol-dropdown')
+  }
+
   return (
     <div className={`translation-selector-compact relative ${className}`} ref={dropdownRef}>
       <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -73,6 +79,16 @@ export default function TranslationSelector({
             <span className="text-teal-800 font-semibold truncate">
               {selectedTranslation?.translation || 'Select translation'}
             </span>
+            {selectedTranslation &&
+              getRestrictionIndicators(selectedTranslation).map((indicator) => (
+                <span
+                  key={indicator.key}
+                  className={indicator.className}
+                  title={indicator.title}
+                >
+                  {indicator.symbol}
+                </span>
+              ))}
             {selectedTranslation?.display_priority === 1 && (
               <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-medium flex-shrink-0">
                 Primary
@@ -112,6 +128,15 @@ export default function TranslationSelector({
                       }`}>
                         {translation.translation}
                       </span>
+                      {getRestrictionIndicators(translation).map((indicator) => (
+                        <span
+                          key={indicator.key}
+                          className={indicator.className}
+                          title={indicator.title}
+                        >
+                          {indicator.symbol}
+                        </span>
+                      ))}
                       {isPrimary && (
                         <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-medium flex-shrink-0">
                           Primary

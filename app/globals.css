@@ -449,4 +449,70 @@ body {
   color: #f59e0b !important;
 }
 
+/* Story 10.5: Translation Restriction Indicators */
+.restriction-symbol-dropdown,
+.restriction-symbol-card {
+  font-weight: 500;
+  cursor: help;
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.restriction-symbol-dropdown {
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: 4px;
+}
+
+.restriction-symbol-dropdown:hover {
+  color: #374151;
+}
+
+.restriction-symbol-card {
+  font-size: 14px;
+  color: #6b7280;
+  margin-left: 6px;
+}
+
+.restriction-symbol-card:hover {
+  color: #374151;
+}
+
+.restriction-gender {
+  font-weight: bold;
+}
+
+.restriction-gender-male {
+  color: #3b82f6 !important;
+}
+
+.restriction-gender-female {
+  color: #ec4899 !important;
+}
+
+.restriction-plurality {
+  color: #059669 !important;
+}
+
+.restriction-register {
+  color: #dc2626 !important;
+}
+
+.restriction-gender-male:hover {
+  color: #1d4ed8 !important;
+}
+
+.restriction-gender-female:hover {
+  color: #be185d !important;
+}
+
+.restriction-plurality:hover {
+  color: #047857 !important;
+}
+
+.restriction-register:hover {
+  color: #b91c1c !important;
+}
+
 

@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react'
 import AudioButton from './AudioButton'
 import ConjugationModal from './ConjugationModal'
 import { checkPremiumAudio } from '../lib/audio-utils'
+import { renderRestrictionIndicators } from '../lib/restriction-utils'
 
 export default function WordCard({ word, onAddToDeck, className = '' }) {
   const [showForms, setShowForms] = useState(false)
@@ -307,6 +308,11 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     )
   }
 
+  const getRestrictionIndicators = (translation) => {
+    const metadata = translation.contextInfo || {}
+    return renderRestrictionIndicators(metadata, 'restriction-symbol-card')
+  }
+
   // Render verb-specific features
 
   return (
@@ -404,6 +410,15 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                     <span className="text-base text-gray-900 font-medium">
                       {translation.translation}
                     </span>
+                    {getRestrictionIndicators(translation).map((indicator) => (
+                      <span
+                        key={indicator.key}
+                        className={indicator.className}
+                        title={indicator.title}
+                      >
+                        {indicator.symbol}
+                      </span>
+                    ))}
                   </div>
 
                   {/* Context Hint - Flexible space to push button right */}
@@ -489,6 +504,15 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                         <span className="text-base text-gray-900 font-medium">
                           {translation.translation}
                         </span>
+                        {getRestrictionIndicators(translation).map((indicator) => (
+                          <span
+                            key={indicator.key}
+                            className={indicator.className}
+                            title={indicator.title}
+                          >
+                            {indicator.symbol}
+                          </span>
+                        ))}
                       </div>
                       <div className="flex-1 flex items-center justify-end mr-2">
                         <span className="text-xs text-gray-500 italic text-right">
