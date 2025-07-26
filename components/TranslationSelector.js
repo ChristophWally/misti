@@ -1,10 +1,9 @@
 'use client'
 
 // components/TranslationSelector.js
-// Compact dropdown with beautiful context tags
+// ENHANCED: Complete smooth animations and better interactions
 
 import { useState, useRef, useEffect } from 'react'
-import { renderRestrictionIndicators } from '../lib/restriction-utils'
 
 export default function TranslationSelector({
   translations = [],
@@ -13,6 +12,7 @@ export default function TranslationSelector({
   className = ''
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [visible, setVisible] = useState(false)
   const dropdownRef = useRef(null)
 
   const sortedTranslations = translations.sort((a, b) => a.display_priority - b.display_priority)
@@ -22,13 +22,34 @@ export default function TranslationSelector({
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false)
+        if (isOpen) toggleDropdown()
       }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  const toggleDropdown = () => {
+    if (isOpen) {
+      setIsOpen(false)
+      setTimeout(() => setVisible(false), 200)
+    } else {
+      setVisible(true)
+      setIsOpen(true)
+    }
+  }
+
+  // Simple selection
+  const handleSelect = (translationId) => {
+    if (translationId === selectedTranslationId) {
+      toggleDropdown()
+      return
+    }
+
+    onTranslationChange(translationId)
+    toggleDropdown()
+  }
 
   // Parse context metadata into visual tags
   const getContextTags = (translation) => {
@@ -59,11 +80,6 @@ export default function TranslationSelector({
     return tags
   }
 
-  const getRestrictionIndicators = (translation) => {
-    const metadata = translation.context_metadata || {}
-    return renderRestrictionIndicators(metadata, 'restriction-symbol-dropdown')
-  }
-
   return (
     <div className={`translation-selector-compact relative ${className}`} ref={dropdownRef}>
       <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -72,34 +88,34 @@ export default function TranslationSelector({
 
       <div className="relative">
         <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full p-3 bg-white border-2 border-teal-600 rounded-lg font-medium text-left flex items-center justify-between hover:border-teal-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1"
+          onClick={toggleDropdown}
+          className="w-full p-3 bg-white border-2 border-teal-600 rounded-lg font-medium text-left flex items-center justify-between transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 active:scale-[0.98] hover:shadow-lg hover:border-teal-700 hover:scale-[1.02]"
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <span className="text-teal-800 font-semibold truncate">
+            <span className="text-teal-800 font-semibold truncate transition-colors duration-200">
               {selectedTranslation?.translation || 'Select translation'}
             </span>
-            {selectedTranslation &&
-              getRestrictionIndicators(selectedTranslation).map((indicator) => (
-                <span
-                  key={indicator.key}
-                  className={indicator.className}
-                  title={indicator.title}
-                >
-                  {indicator.symbol}
-                </span>
-              ))}
             {selectedTranslation?.display_priority === 1 && (
               <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-medium flex-shrink-0">
                 Primary
               </span>
             )}
           </div>
-          <span className={`transform transition-transform duration-200 text-teal-600 ml-2 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+          <span className={`transform transition-all duration-300 ease-out text-teal-600 ml-2 ${
+            isOpen ? 'rotate-0' : '-rotate-90'
+          }`}>
+            ▼
+          </span>
         </button>
 
-        {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+        {visible && (
+          <div
+            className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden transform transition-all duration-200 ease-out"
+            style={{
+              transformOrigin: 'top',
+              animation: `${isOpen ? 'dropdown-expand' : 'dropdown-collapse'} 200ms ease-out`
+            }}
+          >
             {sortedTranslations.map((translation, index) => {
               const isSelected = selectedTranslationId === translation.id
               const isPrimary = translation.display_priority === 1
@@ -108,35 +124,23 @@ export default function TranslationSelector({
               return (
                 <button
                   key={translation.id}
-                  onClick={() => {
-                    onTranslationChange(translation.id)
-                    setIsOpen(false)
-                  }}
-                  className={`w-full text-left p-4 transition-all duration-150 ${
+                  onClick={() => handleSelect(translation.id)}
+                  className={`w-full text-left p-4 transition-all duration-200 hover:transform hover:translate-x-1 active:scale-[0.98] ${
                     index !== sortedTranslations.length - 1 ? 'border-b border-gray-100' : ''
                   } ${
                     isSelected 
-                      ? 'bg-teal-50 hover:bg-teal-100' 
-                      : 'hover:bg-gray-50'
+                      ? 'bg-teal-50 hover:bg-teal-100 border-l-4 border-teal-500' 
+                      : 'hover:bg-gray-50 hover:shadow-md'
                   }`}
                 >
                   {/* Main translation text and selection indicator */}
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className={`font-semibold text-base truncate ${
+                      <span className={`font-semibold text-base truncate transition-all duration-200 ${
                         isSelected ? 'text-teal-800' : 'text-gray-800'
                       }`}>
                         {translation.translation}
                       </span>
-                      {getRestrictionIndicators(translation).map((indicator) => (
-                        <span
-                          key={indicator.key}
-                          className={indicator.className}
-                          title={indicator.title}
-                        >
-                          {indicator.symbol}
-                        </span>
-                      ))}
                       {isPrimary && (
                         <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full font-medium flex-shrink-0">
                           Primary
@@ -144,7 +148,9 @@ export default function TranslationSelector({
                       )}
                     </div>
                     {isSelected && (
-                      <span className="text-teal-600 text-lg flex-shrink-0 ml-2">✓</span>
+                      <span className="text-teal-600 text-lg flex-shrink-0 ml-2">
+                        ✓
+                      </span>
                     )}
                   </div>
 
@@ -154,7 +160,7 @@ export default function TranslationSelector({
                       {contextTags.map((tag, tagIndex) => (
                         <span
                           key={tagIndex}
-                          className={`text-xs px-2 py-1 rounded-full font-medium ${tag.color}`}
+                          className={`text-xs px-2 py-1 rounded-full font-medium transition-all duration-200 hover:scale-105 ${tag.color}`}
                         >
                           {tag.text}
                         </span>
@@ -164,7 +170,7 @@ export default function TranslationSelector({
 
                   {/* Usage notes */}
                   {translation.usage_notes && (
-                    <div className={`text-sm mt-1 ${
+                    <div className={`text-sm mt-1 transition-all duration-200 ${
                       isSelected ? 'text-teal-700' : 'text-gray-600'
                     }`}>
                       {translation.usage_notes}

@@ -1,7 +1,7 @@
 'use client'
 
 // components/ConjugationModal.js
-// REDESIGNED: Complete new layout matching HTML mockup
+// ENHANCED: Smooth animations for translation switching
 
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
@@ -79,9 +79,13 @@ export default function ConjugationModal({
   const [selectedGender, setSelectedGender] = useState('male')
   const [selectedFormality, setSelectedFormality] = useState('informal')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [dropdownVisible, setDropdownVisible] = useState(false)
   const [selectedTranslationId, setSelectedTranslationId] = useState(null)
   const [wordTranslations, setWordTranslations] = useState([])
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
+
+  // Quick scratch/erase animation state to fade forms out and back in
+  const [isContentChanging, setIsContentChanging] = useState(false)
 
   // Extract tag values from tag array
   const extractTagValue = (tags, category) => {
@@ -272,14 +276,12 @@ const loadWordTranslations = async () => {
     return options
   }
 
-  // Get current forms to display
   // Get current forms to display (ONLY base stored forms)
   const getCurrentForms = () => {
     const allForms = conjugations[selectedMood]?.[selectedTense] || []
 
     // Filter to show ONLY stored forms (not calculated variants)
     const baseStoredForms = allForms.filter(form => !form.tags?.includes('calculated-variant'))
-
 
     return baseStoredForms
   }
@@ -309,7 +311,6 @@ const loadWordTranslations = async () => {
     return translationFilteredForms
   }
 
-
   // Order forms by pronoun sequence
   const orderFormsByPronoun = (forms) => {
     const pronounOrder = ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro']
@@ -325,16 +326,48 @@ const loadWordTranslations = async () => {
     })
   }
 
-  // Handle dropdown selection
-  const handleDropdownSelect = (mood, tense) => {
-    setSelectedMood(mood)
-    setSelectedTense(tense)
-    setDropdownOpen(false)
+  const toggleDropdown = () => {
+    if (dropdownOpen) {
+      setDropdownOpen(false)
+      setTimeout(() => setDropdownVisible(false), 200)
+    } else {
+      setDropdownVisible(true)
+      setDropdownOpen(true)
+    }
   }
 
-  // Toggle audio preference
+  // Handle dropdown selection with quick fade
+  const handleDropdownSelect = (mood, tense) => {
+    if (mood === selectedMood && tense === selectedTense) {
+      toggleDropdown()
+      return
+    }
+
+    setIsContentChanging(true)
+    toggleDropdown()
+
+    setTimeout(() => {
+      setSelectedMood(mood)
+      setSelectedTense(tense)
+      setIsContentChanging(false)
+    }, 150)
+  }
+
+  // Toggle audio preference with animation
   const toggleAudioPreference = () => {
+    // Add a slight animation delay for visual feedback
     setAudioPreference(prev => prev === 'form-only' ? 'with-pronoun' : 'form-only')
+  }
+
+  // Enhanced gender toggle with animation
+  const handleGenderToggle = () => {
+    console.log('🎭 Gender toggle clicked')
+    setSelectedGender(prev => (prev === 'male' ? 'female' : 'male'))
+  }
+
+  // Enhanced formality toggle with animation
+  const handleFormalityToggle = () => {
+    setSelectedFormality(prev => prev === 'formal' ? 'informal' : 'formal')
   }
 
   // Get display text for current selection
@@ -610,8 +643,18 @@ const loadWordTranslations = async () => {
       !singular.includes(form) && !plural.includes(form)
     )
 
-
     return { singular, plural, other }
+  }
+
+  // Handle translation change with quick scratch effect
+  const handleTranslationChange = (newTranslationId) => {
+    if (newTranslationId === selectedTranslationId) return
+
+    setIsContentChanging(true)
+    setTimeout(() => {
+      setSelectedTranslationId(newTranslationId)
+      setIsContentChanging(false)
+    }, 150)
   }
 
   // Render conjugation forms with filtering and helpful messages
@@ -795,7 +838,7 @@ const loadWordTranslations = async () => {
             </div>
             <button 
               onClick={onClose}
-              className="text-white hover:text-cyan-200 text-xl"
+              className="text-white hover:text-cyan-200 text-xl transition-colors duration-200"
             >
               ✕
             </button>
@@ -810,12 +853,13 @@ const loadWordTranslations = async () => {
               </label>
               <div className="relative">
                 <div 
-                  className="p-3 border-2 border-teal-600 bg-white rounded-lg font-semibold text-teal-600 cursor-pointer flex items-center justify-between min-h-12"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="p-3 border-2 border-teal-600 bg-white rounded-lg font-semibold text-teal-600 cursor-pointer flex items-center justify-between min-h-12 transition-all duration-200 hover:border-teal-700 hover:shadow-md active:scale-[0.98]"
+                  onClick={toggleDropdown}
                 >
-                  <span>{getCurrentSelectionText()}</span>
+                  <span className="transition-colors duration-200">{getCurrentSelectionText()}</span>
                   <span
-                    className={`transform transition-transform duration-200 ${
+                    className={`transform transition-all duration-300 ease-out ${
+                      /* Closed → arrow points right, open ↓ */
                       dropdownOpen ? 'rotate-0' : '-rotate-90'
                     }`}
                   >
@@ -823,28 +867,37 @@ const loadWordTranslations = async () => {
                   </span>
                 </div>
                 
-                {dropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-10 max-h-80 overflow-y-auto">
+                {dropdownVisible && (
+                  <div
+                    className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto transform transition-all duration-200 ease-out"
+                    style={{
+                      transformOrigin: 'top',
+                      animation: `${dropdownOpen ? 'dropdown-expand' : 'dropdown-collapse'} 200ms ease-out`
+                    }}
+                  >
                     {/* Group by mood */}
-                      {sortMoods(Object.keys(conjugations)).map(mood => (
+                      {sortMoods(Object.keys(conjugations)).map((mood, moodIndex) => (
                         <div key={mood} className="border-b border-gray-100 last:border-b-0">
-                          <div className="px-4 py-2 bg-gray-50 font-semibold text-sm text-gray-700 border-b border-gray-200">
+                          <div className={`px-4 py-2 bg-gray-50 font-semibold text-sm text-gray-700 border-b border-gray-200 transition-colors duration-200 hover:bg-gray-100`}>
                             {mood.charAt(0).toUpperCase() + mood.slice(1)}
                           </div>
-                          {sortTenses(mood, Object.keys(conjugations[mood])).map(tense => {
+                          {sortTenses(mood, Object.keys(conjugations[mood])).map((tense) => {
                             const option = availableOptions.find(opt => opt.mood === mood && opt.tense === tense)
                             const isSelected = mood === selectedMood && tense === selectedTense
                           
                           return (
                             <div
                               key={`${mood}-${tense}`}
-                              className={`px-5 py-2 cursor-pointer text-sm flex items-center gap-2 hover:bg-gray-50 ${
-                                isSelected ? 'bg-green-50 text-green-700 font-semibold' : 'text-gray-600'
+                              className={`px-5 py-3 cursor-pointer text-sm flex items-center gap-3 transition-all duration-200 hover:bg-gray-50 hover:transform hover:translate-x-1 active:bg-gray-100 ${
+                                isSelected ? 'bg-green-50 text-green-700 font-semibold border-l-4 border-green-500' : 'text-gray-600'
                               }`}
                               onClick={() => handleDropdownSelect(mood, tense)}
                             >
-                              <span>{option?.regularity}</span>
-                              <span>{option?.displayTense}</span>
+                              <span className="text-lg transition-transform duration-200 hover:scale-110">{option?.regularity}</span>
+                              <span className="transition-all duration-200">{option?.displayTense}</span>
+                              {isSelected && (
+                                <span className="ml-auto text-green-600">✓</span>
+                              )}
                             </div>
                           )
                         })}
@@ -861,11 +914,13 @@ const loadWordTranslations = async () => {
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Audio Type</label>
                 <button
                   onClick={toggleAudioPreference}
-                  className={`w-full p-2 border border-gray-300 rounded-md text-sm font-medium transition-colors ${
-                    audioPreference === 'form-only' ? 'bg-teal-600 text-white' : 'bg-teal-600 text-white'
+                  className={`w-full p-2 border border-gray-300 rounded-md text-sm font-medium transition-all duration-300 hover:shadow-md active:scale-[0.98] transform hover:scale-105 ${
+                    audioPreference === 'form-only' ? 'bg-teal-600 text-white shadow-lg' : 'bg-teal-600 text-white shadow-lg'
                   }`}
                 >
-                  {audioPreference === 'form-only' ? '📝 Form Only' : '👤 With Pronoun'}
+                  <span className="transition-all duration-200">
+                    {audioPreference === 'form-only' ? '📝 Form Only' : '👤 With Pronoun'}
+                  </span>
                 </button>
               </div>
 
@@ -875,17 +930,15 @@ const loadWordTranslations = async () => {
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Formality</label>
                   <div className="flex justify-center">
                     <button
-                      onClick={() =>
-                        setSelectedFormality(selectedFormality === 'formal' ? 'informal' : 'formal')
-                      }
-                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center transition-colors ${
+                      onClick={handleFormalityToggle}
+                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:scale-105 ${
                         selectedFormality === 'formal'
                           ? 'border-purple-500 bg-purple-500 text-white shadow-md'
-                          : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+                          : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:border-purple-300'
                       }`}
                       title={
                         selectedFormality === 'formal'
-                          ? 'Formal (Lei/Loro)'
+                          ? 'Formal (Lei/Loro) - Click for informal'
                           : 'Informal (tu/voi) - Click for formal'
                       }
                     >
@@ -894,7 +947,7 @@ const loadWordTranslations = async () => {
                         height="22"
                         viewBox="0 0 24 24"
                         fill="currentColor"
-                        className="drop-shadow-sm"
+                        className="drop-shadow-sm transition-all duration-300 hover:scale-110"
                       >
                         {/* British Royal Crown SVG */}
                         {/* Crown base band */}
@@ -934,17 +987,14 @@ const loadWordTranslations = async () => {
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Gender</label>
                   <div className="flex justify-center">
                     <button
-                      onClick={() => {
-                        console.log('🎭 Gender toggle clicked')
-                        setSelectedGender(prev => (prev === 'male' ? 'female' : 'male'))
-                      }}
+                      onClick={handleGenderToggle}
                       disabled={!hasGenderVariantsInCurrentMoodTense()}
-                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-all duration-200 shadow-md ${
+                      className={`w-full h-10 border-2 rounded-lg flex items-center justify-center text-lg transition-all duration-300 shadow-md hover:shadow-xl active:scale-95 transform hover:scale-105 ${
                         !hasGenderVariantsInCurrentMoodTense()
-                          ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
+                          ? 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed opacity-50'
                           : selectedGender === 'male'
-                              ? 'border-blue-500 bg-blue-500 text-white hover:bg-blue-600'
-                              : 'border-pink-500 bg-pink-500 text-white hover:bg-pink-600'
+                              ? 'border-blue-500 bg-blue-500 text-white hover:bg-blue-600 hover:border-blue-600 shadow-blue-200'
+                              : 'border-pink-500 bg-pink-500 text-white hover:bg-pink-600 hover:border-pink-600 shadow-pink-200'
                       }`}
                       title={
                         !hasGenderVariantsInCurrentMoodTense()
@@ -954,7 +1004,11 @@ const loadWordTranslations = async () => {
                               : 'Switch to masculine'
                       }
                     >
-                      {selectedGender === 'male' ? '♂' : '♀'}
+                      <span className={`transition-all duration-300 ${
+                        hasGenderVariantsInCurrentMoodTense() ? 'hover:scale-125' : ''
+                      }`}>
+                        {selectedGender === 'male' ? '♂' : '♀'}
+                      </span>
                     </button>
                   </div>
                 </div>
@@ -968,20 +1022,25 @@ const loadWordTranslations = async () => {
               <TranslationSelector
                 translations={wordTranslations}
                 selectedTranslationId={selectedTranslationId}
-                onTranslationChange={setSelectedTranslationId}
+                onTranslationChange={handleTranslationChange}
               />
             </div>
           )}
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-5">
+          {/* Content with loading overlay */}
+          <div className="flex-1 overflow-y-auto p-5 relative">
+
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin h-8 w-8 border-2 border-teal-600 border-t-transparent rounded-full mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading conjugations...</p>
               </div>
             ) : (
-              renderConjugationForms()
+              <div className={`transition-all duration-150 ${
+                isContentChanging ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'
+              }`}>
+                {renderConjugationForms()}
+              </div>
             )}
           </div>
         </div>
@@ -1097,7 +1156,7 @@ function ConjugationRow({
   const colors = getColors()
 
   return (
-    <div className="py-1 px-2 sm:py-2 sm:px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-colors">
+    <div className="py-1 px-2 sm:py-2 sm:px-3 rounded-md hover:bg-gray-50 even:bg-gray-50 even:hover:bg-gray-100 transition-all duration-200">
       <div className="flex items-center min-h-10 sm:min-h-12">
         {/* Pronoun */}
         <div className="w-12 sm:w-16 flex-shrink-0 font-bold text-gray-600 text-base sm:text-lg">
@@ -1105,7 +1164,7 @@ function ConjugationRow({
         </div>
 
         {/* Form */}
-        <div className={`w-28 sm:w-32 flex-shrink-0 font-bold text-base sm:text-lg ${colors.form} flex items-center gap-1`}>
+        <div className={`w-28 sm:w-32 flex-shrink-0 font-bold text-base sm:text-lg ${colors.form} flex items-center gap-1 transition-colors duration-200`}>
           {form.form_text}
           {isIrregular && <span className="text-amber-500 text-sm sm:text-base">⚠️</span>}
         </div>
@@ -1119,13 +1178,13 @@ function ConjugationRow({
             size="lg"
             colorClass={colors.audio}
           />
-          <button className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-colors">
+          <button className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-all duration-200 hover:shadow-md active:transform active:scale-95">
             +
           </button>
         </div>
       </div>
       {/* Translation */}
-      <div className="text-gray-600 text-base sm:text-lg ml-12 sm:ml-16 mt-1">
+      <div className="text-gray-600 text-base sm:text-lg ml-12 sm:ml-16 mt-1 transition-colors duration-200">
         {form.translation}
       </div>
     </div>
