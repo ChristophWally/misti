@@ -82,12 +82,6 @@ export default function ConjugationModal({
   const [selectedTranslationId, setSelectedTranslationId] = useState(null)
   const [wordTranslations, setWordTranslations] = useState([])
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
-  
-  // NEW: Animation states
-  const [isTranslationSwitching, setIsTranslationSwitching] = useState(false)
-  const [formsVisible, setFormsVisible] = useState(true)
-  const [isMoodTenseSwitching, setIsMoodTenseSwitching] = useState(false)
-  const [dropdownAnimating, setDropdownAnimating] = useState(false)
 
   // Extract tag values from tag array
   const extractTagValue = (tags, category) => {
@@ -328,35 +322,16 @@ const loadWordTranslations = async () => {
     })
   }
 
-  // Handle dropdown selection with animation
+  // Handle dropdown selection
   const handleDropdownSelect = (mood, tense) => {
     if (mood === selectedMood && tense === selectedTense) {
       setDropdownOpen(false)
       return
     }
 
-    // Start mood/tense switching animation
-    setIsMoodTenseSwitching(true)
-    setFormsVisible(false)
-    setDropdownAnimating(true)
-
-    // Close dropdown with slight delay
-    setTimeout(() => {
-      setDropdownOpen(false)
-      setDropdownAnimating(false)
-    }, 100)
-
-    // Change mood/tense after fade out
-    setTimeout(() => {
-      setSelectedMood(mood)
-      setSelectedTense(tense)
-      
-      // Fade back in
-      setTimeout(() => {
-        setFormsVisible(true)
-        setIsMoodTenseSwitching(false)
-      }, 50)
-    }, 150)
+    setSelectedMood(mood)
+    setSelectedTense(tense)
+    setDropdownOpen(false)
   }
 
   // Toggle audio preference with animation
@@ -652,24 +627,11 @@ const loadWordTranslations = async () => {
     return { singular, plural, other }
   }
 
-  // NEW: Handle translation change with animation
-  const handleTranslationChange = async (newTranslationId) => {
+  // Handle translation change
+  const handleTranslationChange = (newTranslationId) => {
     if (newTranslationId === selectedTranslationId) return
 
-    // Start animation
-    setIsTranslationSwitching(true)
-    setFormsVisible(false)
-
-    // Short delay for fade out
-    setTimeout(() => {
-      setSelectedTranslationId(newTranslationId)
-      
-      // Fade back in
-      setTimeout(() => {
-        setFormsVisible(true)
-        setIsTranslationSwitching(false)
-      }, 50)
-    }, 150)
+    setSelectedTranslationId(newTranslationId)
   }
 
   // Render conjugation forms with filtering and helpful messages
@@ -700,9 +662,7 @@ const loadWordTranslations = async () => {
     console.log('🎭 RENDER: Is compound tense:', compound)
 
     return (
-      <div className={`space-y-1 transition-all duration-300 ease-in-out ${
-        formsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-2'
-      }`}>
+      <div className="space-y-1">
         {/* Singular Section */}
         {singular.length > 0 && (
           <>
@@ -870,15 +830,13 @@ const loadWordTranslations = async () => {
               </label>
               <div className="relative">
                 <div 
-                  className={`p-3 border-2 border-teal-600 bg-white rounded-lg font-semibold text-teal-600 cursor-pointer flex items-center justify-between min-h-12 transition-all duration-200 hover:border-teal-700 hover:shadow-md active:scale-[0.98] ${
-                    dropdownAnimating ? 'pointer-events-none opacity-75' : ''
-                  }`}
+                  className="p-3 border-2 border-teal-600 bg-white rounded-lg font-semibold text-teal-600 cursor-pointer flex items-center justify-between min-h-12 transition-all duration-200 hover:border-teal-700 hover:shadow-md active:scale-[0.98]"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                 >
                   <span className="transition-colors duration-200">{getCurrentSelectionText()}</span>
                   <span
                     className={`transform transition-all duration-300 ease-out ${
-                      dropdownOpen ? 'rotate-0 scale-110' : '-rotate-90 scale-100'
+                      dropdownOpen ? 'rotate-0' : 'rotate-90'
                     }`}
                   >
                     ▼
@@ -886,17 +844,16 @@ const loadWordTranslations = async () => {
                 </div>
                 
                 {dropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto animate-in slide-in-from-top-4 duration-300 fade-in">
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto animate-in slide-in-from-top-2 duration-200">
                     {/* Group by mood */}
                       {sortMoods(Object.keys(conjugations)).map((mood, moodIndex) => (
                         <div key={mood} className="border-b border-gray-100 last:border-b-0">
                           <div className={`px-4 py-2 bg-gray-50 font-semibold text-sm text-gray-700 border-b border-gray-200 transition-colors duration-200 hover:bg-gray-100`}>
                             {mood.charAt(0).toUpperCase() + mood.slice(1)}
                           </div>
-                          {sortTenses(mood, Object.keys(conjugations[mood])).map((tense, tenseIndex) => {
+                          {sortTenses(mood, Object.keys(conjugations[mood])).map((tense) => {
                             const option = availableOptions.find(opt => opt.mood === mood && opt.tense === tense)
                             const isSelected = mood === selectedMood && tense === selectedTense
-                            const animationDelay = (moodIndex * 3 + tenseIndex) * 30 // Stagger animation
                           
                           return (
                             <div
@@ -904,13 +861,12 @@ const loadWordTranslations = async () => {
                               className={`px-5 py-3 cursor-pointer text-sm flex items-center gap-3 transition-all duration-200 hover:bg-gray-50 hover:transform hover:translate-x-1 active:bg-gray-100 ${
                                 isSelected ? 'bg-green-50 text-green-700 font-semibold border-l-4 border-green-500' : 'text-gray-600'
                               }`}
-                              style={{ animationDelay: `${animationDelay}ms` }}
                               onClick={() => handleDropdownSelect(mood, tense)}
                             >
                               <span className="text-lg transition-transform duration-200 hover:scale-110">{option?.regularity}</span>
                               <span className="transition-all duration-200">{option?.displayTense}</span>
                               {isSelected && (
-                                <span className="ml-auto text-green-600 animate-in spin-in-180 duration-300">✓</span>
+                                <span className="ml-auto text-green-600">✓</span>
                               )}
                             </div>
                           )
@@ -947,7 +903,7 @@ const loadWordTranslations = async () => {
                       onClick={handleFormalityToggle}
                       className={`w-full h-10 border-2 rounded-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg active:scale-95 transform hover:scale-105 ${
                         selectedFormality === 'formal'
-                          ? 'border-purple-500 bg-purple-500 text-white shadow-md animate-pulse'
+                          ? 'border-purple-500 bg-purple-500 text-white shadow-md'
                           : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:border-purple-300'
                       }`}
                       title={
@@ -961,9 +917,7 @@ const loadWordTranslations = async () => {
                         height="22"
                         viewBox="0 0 24 24"
                         fill="currentColor"
-                        className={`drop-shadow-sm transition-all duration-300 ${
-                          selectedFormality === 'formal' ? 'animate-bounce' : 'hover:scale-110'
-                        }`}
+                        className="drop-shadow-sm transition-all duration-300 hover:scale-110"
                       >
                         {/* British Royal Crown SVG */}
                         {/* Crown base band */}
@@ -1045,17 +999,6 @@ const loadWordTranslations = async () => {
 
           {/* Content with loading overlay */}
           <div className="flex-1 overflow-y-auto p-5 relative">
-            {/* Loading overlay for translation switching */}
-            {(isTranslationSwitching || isMoodTenseSwitching) && (
-              <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10 animate-in fade-in duration-200">
-                <div className="flex items-center gap-3 bg-white rounded-lg shadow-lg p-4 border">
-                  <div className="animate-spin h-6 w-6 border-2 border-teal-600 border-t-transparent rounded-full"></div>
-                  <span className="text-teal-600 font-medium">
-                    {isTranslationSwitching ? 'Switching translation...' : 'Changing conjugation...'}
-                  </span>
-                </div>
-              </div>
-            )}
 
             {isLoading ? (
               <div className="text-center py-8">
