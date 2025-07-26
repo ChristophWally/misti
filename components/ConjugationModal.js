@@ -83,6 +83,10 @@ export default function ConjugationModal({
   const [wordTranslations, setWordTranslations] = useState([])
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
 
+  // Animation states for translation switching
+  const [isTranslationSwitching, setIsTranslationSwitching] = useState(false)
+  const [formsVisible, setFormsVisible] = useState(true)
+
   // Extract tag values from tag array
   const extractTagValue = (tags, category) => {
     if (!tags || !Array.isArray(tags)) return null
@@ -627,11 +631,21 @@ const loadWordTranslations = async () => {
     return { singular, plural, other }
   }
 
-  // Handle translation change
+  // Handle translation change with fade animation
   const handleTranslationChange = (newTranslationId) => {
     if (newTranslationId === selectedTranslationId) return
 
-    setSelectedTranslationId(newTranslationId)
+    setIsTranslationSwitching(true)
+    setFormsVisible(false)
+
+    setTimeout(() => {
+      setSelectedTranslationId(newTranslationId)
+
+      setTimeout(() => {
+        setFormsVisible(true)
+        setIsTranslationSwitching(false)
+      }, 50)
+    }, 150)
   }
 
   // Render conjugation forms with filtering and helpful messages
@@ -662,7 +676,9 @@ const loadWordTranslations = async () => {
     console.log('🎭 RENDER: Is compound tense:', compound)
 
     return (
-      <div className="space-y-1">
+      <div className={`space-y-1 transition-all duration-300 ease-in-out ${
+        formsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-2'
+      }`}>
         {/* Singular Section */}
         {singular.length > 0 && (
           <>
@@ -844,7 +860,7 @@ const loadWordTranslations = async () => {
                 </div>
                 
                 {dropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto animate-in slide-in-from-top-2 duration-200">
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto origin-top animate-in zoom-in-95 slide-in-from-top-2 duration-200 ease-out">
                     {/* Group by mood */}
                       {sortMoods(Object.keys(conjugations)).map((mood, moodIndex) => (
                         <div key={mood} className="border-b border-gray-100 last:border-b-0">
@@ -999,6 +1015,14 @@ const loadWordTranslations = async () => {
 
           {/* Content with loading overlay */}
           <div className="flex-1 overflow-y-auto p-5 relative">
+            {isTranslationSwitching && (
+              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin h-6 w-6 border-2 border-teal-600 border-t-transparent rounded-full"></div>
+                  <span className="text-teal-600 font-medium">Switching translation...</span>
+                </div>
+              </div>
+            )}
 
             {isLoading ? (
               <div className="text-center py-8">
