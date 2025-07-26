@@ -83,9 +83,8 @@ export default function ConjugationModal({
   const [wordTranslations, setWordTranslations] = useState([])
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
 
-  // Animation states for translation switching
-  const [isTranslationSwitching, setIsTranslationSwitching] = useState(false)
-  const [formsVisible, setFormsVisible] = useState(true)
+  // Quick scratch/erase animation state
+  const [isContentChanging, setIsContentChanging] = useState(false)
 
   // Extract tag values from tag array
   const extractTagValue = (tags, category) => {
@@ -326,16 +325,21 @@ const loadWordTranslations = async () => {
     })
   }
 
-  // Handle dropdown selection
+  // Handle dropdown selection with quick fade
   const handleDropdownSelect = (mood, tense) => {
     if (mood === selectedMood && tense === selectedTense) {
       setDropdownOpen(false)
       return
     }
 
-    setSelectedMood(mood)
-    setSelectedTense(tense)
+    setIsContentChanging(true)
     setDropdownOpen(false)
+
+    setTimeout(() => {
+      setSelectedMood(mood)
+      setSelectedTense(tense)
+      setIsContentChanging(false)
+    }, 150)
   }
 
   // Toggle audio preference with animation
@@ -631,20 +635,14 @@ const loadWordTranslations = async () => {
     return { singular, plural, other }
   }
 
-  // Handle translation change with fade animation
+  // Handle translation change with quick scratch effect
   const handleTranslationChange = (newTranslationId) => {
     if (newTranslationId === selectedTranslationId) return
 
-    setIsTranslationSwitching(true)
-    setFormsVisible(false)
-
+    setIsContentChanging(true)
     setTimeout(() => {
       setSelectedTranslationId(newTranslationId)
-
-      setTimeout(() => {
-        setFormsVisible(true)
-        setIsTranslationSwitching(false)
-      }, 50)
+      setIsContentChanging(false)
     }, 150)
   }
 
@@ -676,9 +674,7 @@ const loadWordTranslations = async () => {
     console.log('🎭 RENDER: Is compound tense:', compound)
 
     return (
-      <div className={`space-y-1 transition-all duration-300 ease-in-out ${
-        formsVisible ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform translate-y-2'
-      }`}>
+      <div className="space-y-1">
         {/* Singular Section */}
         {singular.length > 0 && (
           <>
@@ -861,7 +857,10 @@ const loadWordTranslations = async () => {
                 </div>
                 
                 {dropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto origin-top animate-in zoom-in-95 slide-in-from-top-2 duration-200 ease-out">
+                  <div
+                    className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto transform transition-all duration-200 ease-out scale-100 opacity-100"
+                    style={{ transformOrigin: 'top', animation: 'dropdown-expand 200ms ease-out' }}
+                  >
                     {/* Group by mood */}
                       {sortMoods(Object.keys(conjugations)).map((mood, moodIndex) => (
                         <div key={mood} className="border-b border-gray-100 last:border-b-0">
@@ -1016,14 +1015,6 @@ const loadWordTranslations = async () => {
 
           {/* Content with loading overlay */}
           <div className="flex-1 overflow-y-auto p-5 relative">
-            {isTranslationSwitching && (
-              <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
-                <div className="flex items-center gap-3">
-                  <div className="animate-spin h-6 w-6 border-2 border-teal-600 border-t-transparent rounded-full"></div>
-                  <span className="text-teal-600 font-medium">Switching translation...</span>
-                </div>
-              </div>
-            )}
 
             {isLoading ? (
               <div className="text-center py-8">
@@ -1031,7 +1022,11 @@ const loadWordTranslations = async () => {
                 <p className="text-gray-600">Loading conjugations...</p>
               </div>
             ) : (
-              renderConjugationForms()
+              <div className={`transition-all duration-150 ${
+                isContentChanging ? 'opacity-0 transform scale-95' : 'opacity-100 transform scale-100'
+              }`}>
+                {renderConjugationForms()}
+              </div>
             )}
           </div>
         </div>

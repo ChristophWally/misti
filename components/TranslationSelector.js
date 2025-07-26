@@ -103,7 +103,10 @@ export default function TranslationSelector({
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden origin-top animate-in zoom-in-95 slide-in-from-top-2 duration-200 ease-out">
+          <div
+            className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden transform transition-all duration-200 ease-out scale-100 opacity-100"
+            style={{ transformOrigin: 'top', animation: 'dropdown-expand 200ms ease-out' }}
+          >
             {sortedTranslations.map((translation, index) => {
               const isSelected = selectedTranslationId === translation.id
               const isPrimary = translation.display_priority === 1
