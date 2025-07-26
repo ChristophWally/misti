@@ -12,6 +12,7 @@ export default function TranslationSelector({
   className = ''
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [visible, setVisible] = useState(false)
   const dropdownRef = useRef(null)
 
   const sortedTranslations = translations.sort((a, b) => a.display_priority - b.display_priority)
@@ -21,7 +22,7 @@ export default function TranslationSelector({
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false)
+        if (isOpen) toggleDropdown()
       }
     }
 
@@ -29,20 +30,25 @@ export default function TranslationSelector({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Simple toggle
-  const handleToggle = () => {
-    setIsOpen(!isOpen)
+  const toggleDropdown = () => {
+    if (isOpen) {
+      setIsOpen(false)
+      setTimeout(() => setVisible(false), 200)
+    } else {
+      setVisible(true)
+      setIsOpen(true)
+    }
   }
 
   // Simple selection
   const handleSelect = (translationId) => {
     if (translationId === selectedTranslationId) {
-      setIsOpen(false)
+      toggleDropdown()
       return
     }
 
     onTranslationChange(translationId)
-    setIsOpen(false)
+    toggleDropdown()
   }
 
   // Parse context metadata into visual tags
@@ -82,7 +88,7 @@ export default function TranslationSelector({
 
       <div className="relative">
         <button
-          onClick={handleToggle}
+          onClick={toggleDropdown}
           className="w-full p-3 bg-white border-2 border-teal-600 rounded-lg font-medium text-left flex items-center justify-between transition-all duration-300 ease-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 active:scale-[0.98] hover:shadow-lg hover:border-teal-700 hover:scale-[1.02]"
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -96,19 +102,18 @@ export default function TranslationSelector({
             )}
           </div>
           <span className={`transform transition-all duration-300 ease-out text-teal-600 ml-2 ${
-            isOpen ? 'rotate-0' : 'rotate-90'
+            isOpen ? 'rotate-0' : '-rotate-90'
           }`}>
             ▼
           </span>
         </button>
 
-        {isOpen && (
+        {visible && (
           <div
-            className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden transform transition-all duration-200 ease-out scale-100 opacity-100"
+            className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden transform transition-all duration-200 ease-out"
             style={{
-              // Custom keyframe for smoother dropdown expansion
               transformOrigin: 'top',
-              animation: 'dropdown-expand 200ms ease-out'
+              animation: `${isOpen ? 'dropdown-expand' : 'dropdown-collapse'} 200ms ease-out`
             }}
           >
             {sortedTranslations.map((translation, index) => {

@@ -79,6 +79,7 @@ export default function ConjugationModal({
   const [selectedGender, setSelectedGender] = useState('male')
   const [selectedFormality, setSelectedFormality] = useState('informal')
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [dropdownVisible, setDropdownVisible] = useState(false)
   const [selectedTranslationId, setSelectedTranslationId] = useState(null)
   const [wordTranslations, setWordTranslations] = useState([])
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
@@ -325,15 +326,25 @@ const loadWordTranslations = async () => {
     })
   }
 
+  const toggleDropdown = () => {
+    if (dropdownOpen) {
+      setDropdownOpen(false)
+      setTimeout(() => setDropdownVisible(false), 200)
+    } else {
+      setDropdownVisible(true)
+      setDropdownOpen(true)
+    }
+  }
+
   // Handle dropdown selection with quick fade
   const handleDropdownSelect = (mood, tense) => {
     if (mood === selectedMood && tense === selectedTense) {
-      setDropdownOpen(false)
+      toggleDropdown()
       return
     }
 
     setIsContentChanging(true)
-    setDropdownOpen(false)
+    toggleDropdown()
 
     setTimeout(() => {
       setSelectedMood(mood)
@@ -843,23 +854,26 @@ const loadWordTranslations = async () => {
               <div className="relative">
                 <div 
                   className="p-3 border-2 border-teal-600 bg-white rounded-lg font-semibold text-teal-600 cursor-pointer flex items-center justify-between min-h-12 transition-all duration-200 hover:border-teal-700 hover:shadow-md active:scale-[0.98]"
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  onClick={toggleDropdown}
                 >
                   <span className="transition-colors duration-200">{getCurrentSelectionText()}</span>
                   <span
                     className={`transform transition-all duration-300 ease-out ${
                       /* Closed → arrow points right, open ↓ */
-                      dropdownOpen ? 'rotate-0' : 'rotate-90'
+                      dropdownOpen ? 'rotate-0' : '-rotate-90'
                     }`}
                   >
                     ▼
                   </span>
                 </div>
                 
-                {dropdownOpen && (
+                {dropdownVisible && (
                   <div
-                    className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto transform transition-all duration-200 ease-out scale-100 opacity-100"
-                    style={{ transformOrigin: 'top', animation: 'dropdown-expand 200ms ease-out' }}
+                    className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-xl z-10 max-h-80 overflow-y-auto transform transition-all duration-200 ease-out"
+                    style={{
+                      transformOrigin: 'top',
+                      animation: `${dropdownOpen ? 'dropdown-expand' : 'dropdown-collapse'} 200ms ease-out`
+                    }}
                   >
                     {/* Group by mood */}
                       {sortMoods(Object.keys(conjugations)).map((mood, moodIndex) => (
