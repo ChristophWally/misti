@@ -852,6 +852,7 @@ const loadWordTranslations = async () => {
                   <span className="transition-colors duration-200">{getCurrentSelectionText()}</span>
                   <span
                     className={`transform transition-all duration-300 ease-out ${
+                      /* Closed → arrow points right, open ↓ */
                       dropdownOpen ? 'rotate-0' : 'rotate-90'
                     }`}
                   >
