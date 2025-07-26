@@ -657,6 +657,78 @@ const loadWordTranslations = async () => {
     }, 150)
   }
 
+  const getConjugationColors = (wordTags) => {
+    if (wordTags?.includes('are-conjugation')) {
+      return { primary: '#14b8a6', name: '-are' }
+    }
+    if (wordTags?.includes('ere-conjugation')) {
+      return { primary: '#06b6d4', name: '-ere' }
+    }
+    if (
+      wordTags?.includes('ire-conjugation') ||
+      wordTags?.includes('ire-isc-conjugation')
+    ) {
+      const name = wordTags?.includes('ire-isc-conjugation') ? '-isc' : '-ire'
+      return { primary: '#2dd4bf', name }
+    }
+    return { primary: '#14b8a6', name: '-verb' }
+  }
+
+  const renderTag = (tag, index) => {
+    const base =
+      'text-xs px-2 py-1 rounded-full font-semibold border inline-block'
+    const style = tag.filled
+      ? {
+          backgroundColor: tag.color || '#e5e7eb',
+          color: '#fff',
+          borderColor: tag.color || '#e5e7eb'
+        }
+      : {
+          color: tag.color || '#374151',
+          borderColor: tag.color || '#d1d5db',
+          backgroundColor: 'transparent'
+        }
+    return (
+      <span key={index} className={base} style={style}>
+        {tag.text}
+      </span>
+    )
+  }
+
+  const renderConjugationTags = () => {
+    const colors = getConjugationColors(word?.tags || [])
+    const tags = []
+
+    // Conjugation type (filled)
+    tags.push({ text: colors.name, filled: true, color: colors.primary })
+
+    // Irregularity (filled red)
+    if (word?.tags?.includes('irregular-pattern')) {
+      tags.push({ text: '⚠️ IRREG', filled: true, color: '#ef4444' })
+    }
+
+    // Auxiliary (outlined)
+    if (word?.tags?.includes('avere-auxiliary')) {
+      tags.push({ text: 'avere', filled: false })
+    } else if (word?.tags?.includes('essere-auxiliary')) {
+      tags.push({ text: 'essere', filled: false })
+    }
+
+    // Reflexive (outlined)
+    if (word?.tags?.includes('reflexive-verb')) {
+      tags.push({ text: 'reflexive', filled: false })
+    }
+
+    // Transitivity (outlined)
+    if (word?.tags?.includes('transitive-verb')) {
+      tags.push({ text: 'transitive', filled: false })
+    } else if (word?.tags?.includes('intransitive-verb')) {
+      tags.push({ text: 'intransitive', filled: false })
+    }
+
+    return tags.map((tag, index) => renderTag(tag, index))
+  }
+
   // Render conjugation forms with filtering and helpful messages
   const renderConjugationForms = () => {
     const currentForms = getFormsForSelectedTranslation()
@@ -815,37 +887,25 @@ const loadWordTranslations = async () => {
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-br from-teal-500 to-cyan-600">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-white">
-                📝 Conjugations: {word?.italian}
+                Conjugations: {word?.italian}
               </h2>
-              {/* Word Tags */}
-              <div className="flex gap-1 ml-2">
-                {word?.tags?.includes('are-conjugation') && (
-                  <span className="text-sm bg-white bg-opacity-20 text-white px-2 py-1 rounded-full font-semibold">
-                    🔸 -are
-                  </span>
-                )}
-                {word?.tags?.includes('avere-auxiliary') && (
-                  <span className="text-sm bg-white bg-opacity-20 text-white px-2 py-1 rounded-full font-semibold">
-                    🤝 avere
-                  </span>
-                )}
-                {word?.tags?.includes('transitive-verb') && (
-                  <span className="text-sm bg-white bg-opacity-20 text-white px-2 py-1 rounded-full font-semibold">
-                    ➡️ trans
-                  </span>
-                )}
-              </div>
-            </div>
-            <button 
-              onClick={onClose}
-              className="text-white hover:text-cyan-200 text-xl transition-colors duration-200"
-            >
-              ✕
-            </button>
           </div>
+          <button
+            onClick={onClose}
+            className="text-white hover:text-cyan-200 text-xl transition-colors duration-200"
+          >
+            ✕
+          </button>
+        </div>
 
-          {/* Controls */}
-          <div className="p-4 border-b bg-gray-50 flex gap-5">
+        <div className="px-4 py-3 border-b bg-gray-50">
+          <div className="flex flex-wrap gap-2">
+            {renderConjugationTags()}
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="p-4 border-b bg-gray-50 flex gap-5">
             {/* Left: Dropdown */}
             <div className="flex-1">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
