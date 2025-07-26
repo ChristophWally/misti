@@ -83,7 +83,7 @@ export default function ConjugationModal({
   const [wordTranslations, setWordTranslations] = useState([])
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
 
-  // Quick scratch/erase animation state
+  // Quick scratch/erase animation state to fade forms out and back in
   const [isContentChanging, setIsContentChanging] = useState(false)
 
   // Extract tag values from tag array
