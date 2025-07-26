@@ -9,6 +9,7 @@ import AudioButton from './AudioButton'
 import ConjugationModal from './ConjugationModal'
 import { checkPremiumAudio } from '../lib/audio-utils'
 import { renderRestrictionIndicators } from '../lib/restriction-utils'
+import { getConjugationColors } from '../lib/conjugation-colors'
 
 export default function WordCard({ word, onAddToDeck, className = '' }) {
   const [showForms, setShowForms] = useState(false)
@@ -131,9 +132,24 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       regional: { display: '🗺️ REG', class: 'bg-green-500 text-white', essential: true, description: 'Regional dialects and variants' },
 
       // SECONDARY TAGS - Detailed grammatical information
-      'are-conjugation': { display: '🔸 -are', class: 'bg-gray-200 text-gray-700', essential: false, description: 'First conjugation group' },
-      'ere-conjugation': { display: '🔹 -ere', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Second conjugation group' },
-      'ire-conjugation': { display: '🔶 -ire', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Third conjugation group' },
+      'are-conjugation': { 
+        display: '🔸 -are', 
+        class: 'bg-gray-200 text-gray-700', 
+        essential: false, 
+        description: 'First conjugation group' 
+      },
+      'ere-conjugation': { 
+        display: '🔹 -ere', 
+        class: 'bg-gray-200 text-gray-700', 
+        essential: false, 
+        description: 'Second conjugation group' 
+      },
+      'ire-conjugation': { 
+        display: '🔶 -ire', 
+        class: 'bg-gray-200 text-gray-700', 
+        essential: false, 
+        description: 'Third conjugation group' 
+      },
 
       // Auxiliary Verbs (detailed)
       'avere-auxiliary': { display: '🤝 avere', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Uses avere in compound tenses' },
@@ -250,6 +266,22 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       'bg-gray-200 text-gray-700': 'border bg-transparent text-gray-700 border-gray-400'
     }
     return map[cls] || cls
+  }
+
+  const getConjugationTagColor = (tagKey, wordTags, originalClass) => {
+    if (wordTags?.includes('are-conjugation') && tagKey === 'are-conjugation') {
+      return 'border bg-transparent text-teal-600 border-teal-600'
+    }
+    if (wordTags?.includes('ere-conjugation') && tagKey === 'ere-conjugation') {
+      return 'border bg-transparent text-cyan-500 border-cyan-500'
+    }
+    if (
+      (wordTags?.includes('ire-conjugation') || wordTags?.includes('ire-isc-conjugation')) &&
+      (tagKey === 'ire-conjugation' || tagKey === 'ire-isc-conjugation')
+    ) {
+      return 'border bg-transparent text-teal-400 border-teal-400'
+    }
+    return outlinedClass(originalClass)
   }
 
   // Extract gender and irregularity tags for header
@@ -545,7 +577,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {bottomTags.map((tag, index) => (
               <span
                 key={index}
-                className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${outlinedClass(tag.class)}`}
+                className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${getConjugationTagColor(tag.tag, word.tags, tag.class)}`}
                 title={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}

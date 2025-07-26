@@ -9,6 +9,7 @@ import AudioButton from './AudioButton'
 import SectionHeading from './SectionHeading'
 import { VariantCalculator } from '../lib/variant-calculator'
 import TranslationSelector from './TranslationSelector'
+import { getConjugationColors } from '../lib/conjugation-colors'
 
 // Desired display order for moods and tenses
 const moodOrder = [
@@ -86,6 +87,68 @@ export default function ConjugationModal({
 
   // Quick scratch/erase animation state to fade forms out and back in
   const [isContentChanging, setIsContentChanging] = useState(false)
+
+  const conjugationColors = getConjugationColors(word?.tags || [])
+
+  const getConjugationType = (tags) => {
+    if (tags?.includes('are-conjugation')) return '-are'
+    if (tags?.includes('ere-conjugation')) return '-ere'
+    if (tags?.includes('ire-isc-conjugation')) return window.innerWidth < 768 ? '-isc' : '-isc'
+    if (tags?.includes('ire-conjugation')) return '-ire'
+    return '-are'
+  }
+
+  const getAuxiliaryTag = (tags) => {
+    const isMobile = window.innerWidth < 768
+    if (tags?.includes('avere-auxiliary')) {
+      return (
+        <span className="border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm">
+          {isMobile ? 'ave' : 'avere'}
+        </span>
+      )
+    }
+    if (tags?.includes('essere-auxiliary')) {
+      return (
+        <span className="border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm">
+          {isMobile ? 'ess' : 'essere'}
+        </span>
+      )
+    }
+    if (tags?.includes('both-auxiliary')) {
+      return (
+        <span className="border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm">
+          {isMobile ? 'both' : 'both'}
+        </span>
+      )
+    }
+    return null
+  }
+
+  const getTransitivityTag = (tags) => {
+    const isMobile = window.innerWidth < 768
+    if (tags?.includes('transitive-verb')) {
+      return (
+        <span className="border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm">
+          {isMobile ? 'tr' : 'transitive'}
+        </span>
+      )
+    }
+    if (tags?.includes('intransitive-verb')) {
+      return (
+        <span className="border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm">
+          {isMobile ? 'intr' : 'intransitive'}
+        </span>
+      )
+    }
+    if (tags?.includes('both-transitivity')) {
+      return (
+        <span className="border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm">
+          {isMobile ? 'both' : 'both'}
+        </span>
+      )
+    }
+    return null
+  }
 
   // Extract tag values from tag array
   const extractTagValue = (tags, category) => {
@@ -812,36 +875,51 @@ const loadWordTranslations = async () => {
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b bg-gradient-to-br from-teal-500 to-cyan-600">
+          <div
+            className="flex items-center justify-between p-4 border-b"
+            style={{ background: `linear-gradient(to right, ${conjugationColors.primary}, #14b8a6)` }}
+          >
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-white">
-                📝 Conjugations: {word?.italian}
+                Conjugations: {word?.italian}
               </h2>
-              {/* Word Tags */}
-              <div className="flex gap-1 ml-2">
-                {word?.tags?.includes('are-conjugation') && (
-                  <span className="text-sm bg-white bg-opacity-20 text-white px-2 py-1 rounded-full font-semibold">
-                    🔸 -are
-                  </span>
-                )}
-                {word?.tags?.includes('avere-auxiliary') && (
-                  <span className="text-sm bg-white bg-opacity-20 text-white px-2 py-1 rounded-full font-semibold">
-                    🤝 avere
-                  </span>
-                )}
-                {word?.tags?.includes('transitive-verb') && (
-                  <span className="text-sm bg-white bg-opacity-20 text-white px-2 py-1 rounded-full font-semibold">
-                    ➡️ trans
-                  </span>
-                )}
-              </div>
             </div>
-            <button 
-              onClick={onClose}
-              className="text-white hover:text-cyan-200 text-xl transition-colors duration-200"
-            >
+            <button onClick={onClose} className="text-white hover:text-cyan-200 text-xl">
               ✕
             </button>
+          </div>
+
+          {/* New Tags Section */}
+          <div className="p-3 border-b bg-gray-50">
+            <div className="flex flex-wrap gap-2">
+              {/* Conjugation Type Tag */}
+              <span
+                className="px-3 py-1 rounded-full text-white font-semibold text-sm"
+                style={{ backgroundColor: conjugationColors.primary }}
+              >
+                {getConjugationType(word?.tags)}
+              </span>
+
+              {/* Irregularity */}
+              {word?.tags?.includes('irregular-pattern') && (
+                <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                  {window.innerWidth < 768 ? '⚠️' : '⚠️ IRREG'}
+                </span>
+              )}
+
+              {/* Auxiliary */}
+              {getAuxiliaryTag(word?.tags)}
+
+              {/* Reflexive */}
+              {word?.tags?.includes('reflexive-verb') && (
+                <span className="border border-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm">
+                  {window.innerWidth < 768 ? 'refl' : 'reflexive'}
+                </span>
+              )}
+
+              {/* Transitivity */}
+              {getTransitivityTag(word?.tags)}
+            </div>
           </div>
 
           {/* Controls */}
@@ -1176,7 +1254,7 @@ function ConjugationRow({
             italianText={audioText}
             audioFilename={form.audio_filename}
             size="lg"
-            colorClass={colors.audio}
+            colorClass={conjugationColors.primary}
           />
           <button className="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center text-lg font-semibold hover:bg-emerald-700 transition-all duration-200 hover:shadow-md active:transform active:scale-95">
             +
