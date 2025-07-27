@@ -168,6 +168,7 @@ These tags capture the specific grammatical properties of individual conjugated 
 **Future Tense System** - Simple and compound future expressions
 - `futuro-semplice` (18 forms) - Simple future (parlerò, andrò)
 - `futuro-anteriore` (18 forms) - Future perfect (avrò parlato)
+- `futuro-progressivo` (18 forms) - Future continuous (starò parlando)
 
 **Subjunctive Mood System** - Subjective and hypothetical expressions
 - `congiuntivo-presente` (18 forms) - Present subjunctive (che io parli)
@@ -181,6 +182,9 @@ These tags capture the specific grammatical properties of individual conjugated 
 
 **Imperative Mood System** - Command and instruction forms
 - `imperativo-presente` (14 forms) - Present imperative (parla!, parlate!)
+
+**Negative Indicative System** - Negated versions of indicative tenses
+- `indicativo-negativo` forms include "non" before the verb across all tenses
 
 **Non-Finite Forms** - Verbal forms without person/number specification
 - `infinito-presente` (3 forms) - Present infinitive (parlare, andare)
@@ -399,7 +403,7 @@ CREATE TABLE word_forms (
   
   -- Mood validation for verb forms
   CONSTRAINT valid_form_mood CHECK (form_mood IS NULL OR form_mood IN (
-    'indicativo', 'congiuntivo', 'condizionale', 'imperativo', 
+    'indicativo', 'indicativo-negativo', 'congiuntivo', 'condizionale', 'imperativo',
     'infinito', 'participio', 'gerundio'
   )),
   
@@ -410,7 +414,7 @@ CREATE TABLE word_forms (
     'congiuntivo-presente', 'congiuntivo-imperfetto', 'congiuntivo-passato', 'congiuntivo-trapassato',
     'condizionale-presente', 'condizionale-passato', 'imperativo-presente',
     'infinito-presente', 'infinito-passato', 'participio-presente', 'participio-passato',
-    'gerundio-presente', 'gerundio-passato'
+    'gerundio-presente', 'gerundio-passato', 'futuro-progressivo'
   )),
   
   -- Person validation

@@ -13,6 +13,7 @@ import TranslationSelector from './TranslationSelector'
 // Desired display order for moods and tenses
 const moodOrder = [
   'indicativo',
+  'indicativo-negativo',
   'congiuntivo',
   'condizionale',
   'imperativo',
@@ -32,7 +33,21 @@ const tenseOrderMap = {
     'passato-remoto',
     'trapassato-remoto',
     'futuro-semplice',
-    'futuro-anteriore'
+    'futuro-anteriore',
+    'futuro-progressivo'
+  ],
+  'indicativo-negativo': [
+    'presente',
+    'passato-prossimo',
+    'imperfetto',
+    'trapassato-prossimo',
+    'presente-progressivo',
+    'passato-progressivo',
+    'passato-remoto',
+    'trapassato-remoto',
+    'futuro-semplice',
+    'futuro-anteriore',
+    'futuro-progressivo'
   ],
   congiuntivo: [
     'congiuntivo-presente',
@@ -92,7 +107,7 @@ export default function ConjugationModal({
     if (!tags || !Array.isArray(tags)) return null
     
     if (category === 'mood') {
-      const moodTags = ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio']
+      const moodTags = ['indicativo', 'indicativo-negativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio']
       return tags.find(tag => moodTags.includes(tag)) || null
     }
     
@@ -108,6 +123,7 @@ export default function ConjugationModal({
         'trapassato-remoto',
         'futuro-semplice',
         'futuro-anteriore',
+        'futuro-progressivo',
         'congiuntivo-presente',
         'congiuntivo-passato',
         'congiuntivo-imperfetto',
@@ -266,7 +282,11 @@ const loadWordTranslations = async () => {
           tense,
           regularity,
           count: forms.length,
-          displayMood: mood.charAt(0).toUpperCase() + mood.slice(1),
+          displayMood: mood
+            .replace('-', ' ')
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' '),
           displayTense: tense.replace('-', ' ').split(' ').map(word => 
             word.charAt(0).toUpperCase() + word.slice(1)
           ).join(' ')
@@ -380,10 +400,12 @@ const loadWordTranslations = async () => {
   // Check if compound tense
   const isCompoundTense = () => {
     const currentForms = getCurrentForms()
-    return currentForms.some(form =>
-      form.tags?.includes('compound') &&
-      !form.tags?.includes('presente-progressivo') &&
-      !form.tags?.includes('passato-progressivo')
+    return currentForms.some(
+      form =>
+        form.tags?.includes('compound') &&
+        !form.tags?.includes('presente-progressivo') &&
+        !form.tags?.includes('passato-progressivo') &&
+        !form.tags?.includes('futuro-progressivo')
     )
   }
 
@@ -401,7 +423,8 @@ const loadWordTranslations = async () => {
         word?.tags?.includes('essere-auxiliary') &&
         form.tags?.includes('compound') &&
         !form.tags?.includes('presente-progressivo') &&
-        !form.tags?.includes('passato-progressivo')
+        !form.tags?.includes('passato-progressivo') &&
+        !form.tags?.includes('futuro-progressivo')
 
       // Pronoun changes matter for ANY verb when audio includes pronouns
       const pronounChanges =
@@ -443,7 +466,8 @@ const loadWordTranslations = async () => {
         word?.tags?.includes('essere-auxiliary') &&
         form.tags?.includes('compound') &&
         !form.tags?.includes('presente-progressivo') &&
-        !form.tags?.includes('passato-progressivo')
+        !form.tags?.includes('passato-progressivo') &&
+        !form.tags?.includes('futuro-progressivo')
 
       if (audioPreference === 'form-only') {
         // Form-only mode: show lui/lei for forms without gender variants
@@ -506,7 +530,8 @@ const loadWordTranslations = async () => {
       word?.tags?.includes('essere-auxiliary') &&
       displayForm.tags?.includes('compound') &&
       !displayForm.tags?.includes('presente-progressivo') &&
-      !displayForm.tags?.includes('passato-progressivo')
+      !displayForm.tags?.includes('passato-progressivo') &&
+      !displayForm.tags?.includes('futuro-progressivo')
 
     if (audioPreference === 'form-only' && !hasGenderVariants) {
       console.log('📝 Form-only mode, no gender variants:', translation)
@@ -1135,6 +1160,7 @@ function ConjugationRow({
       form.tags?.includes('compound') &&
       !form.tags?.includes('presente-progressivo') &&
       !form.tags?.includes('passato-progressivo') &&
+      !form.tags?.includes('futuro-progressivo') &&
       (wordTags?.includes('essere-auxiliary') || form.base_form_id)
 
     // Check if this is a 3rd person form that changes pronouns
