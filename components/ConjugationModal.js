@@ -306,10 +306,7 @@ const loadWordTranslations = async () => {
             .split(' ')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' '),
-          displayTense:
-            ['indicativo-negativo', 'imperativo-negativo'].includes(mood)
-              ? `${baseDisplayTense} (Neg.)`
-              : baseDisplayTense
+          displayTense: baseDisplayTense
         })
       })
     })
