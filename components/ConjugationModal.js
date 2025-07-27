@@ -25,29 +25,29 @@ const moodOrder = [
 const tenseOrderMap = {
   indicativo: [
     'presente',
-    'passato-prossimo',
-    'imperfetto',
-    'trapassato-prossimo',
     'presente-progressivo',
+    'imperfetto',
     'passato-progressivo',
+    'passato-prossimo',
+    'trapassato-prossimo',
     'passato-remoto',
     'trapassato-remoto',
     'futuro-semplice',
-    'futuro-anteriore',
-    'futuro-progressivo'
+    'futuro-progressivo',
+    'futuro-anteriore'
   ],
   'indicativo-negativo': [
     'presente',
-    'passato-prossimo',
-    'imperfetto',
-    'trapassato-prossimo',
     'presente-progressivo',
+    'imperfetto',
     'passato-progressivo',
+    'passato-prossimo',
+    'trapassato-prossimo',
     'passato-remoto',
     'trapassato-remoto',
     'futuro-semplice',
-    'futuro-anteriore',
-    'futuro-progressivo'
+    'futuro-progressivo',
+    'futuro-anteriore'
   ],
   congiuntivo: [
     'congiuntivo-presente',
@@ -277,6 +277,12 @@ const loadWordTranslations = async () => {
         if (hasIrregular && hasRegular) regularity = '🔄'
         else if (hasIrregular) regularity = '⚠️'
         
+        const baseDisplayTense = tense
+          .replace('-', ' ')
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+
         options.push({
           mood,
           tense,
@@ -287,9 +293,10 @@ const loadWordTranslations = async () => {
             .split(' ')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' '),
-          displayTense: tense.replace('-', ' ').split(' ').map(word => 
-            word.charAt(0).toUpperCase() + word.slice(1)
-          ).join(' ')
+          displayTense:
+            mood === 'indicativo-negativo'
+              ? `${baseDisplayTense} (Neg.)`
+              : baseDisplayTense
         })
       })
     })
