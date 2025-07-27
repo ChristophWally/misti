@@ -17,6 +17,7 @@ const moodOrder = [
   'congiuntivo',
   'condizionale',
   'imperativo',
+  'imperativo-negativo',
   'infinito',
   'participio',
   'gerundio'
@@ -60,6 +61,7 @@ const tenseOrderMap = {
     'condizionale-passato'
   ],
   imperativo: ['imperativo-presente'],
+  'imperativo-negativo': ['imperativo-negativo'],
   infinito: ['infinito-presente', 'infinito-passato'],
   participio: ['participio-presente', 'participio-passato'],
   gerundio: ['gerundio-presente', 'gerundio-passato']
@@ -107,7 +109,17 @@ export default function ConjugationModal({
     if (!tags || !Array.isArray(tags)) return null
     
     if (category === 'mood') {
-      const moodTags = ['indicativo', 'indicativo-negativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio']
+      const moodTags = [
+        'indicativo',
+        'indicativo-negativo',
+        'congiuntivo',
+        'condizionale',
+        'imperativo',
+        'imperativo-negativo',
+        'infinito',
+        'participio',
+        'gerundio'
+      ]
       return tags.find(tag => moodTags.includes(tag)) || null
     }
     
@@ -131,6 +143,7 @@ export default function ConjugationModal({
         'condizionale-presente',
         'condizionale-passato',
         'imperativo-presente',
+        'imperativo-negativo',
         'infinito-presente',
         'infinito-passato',
         'participio-presente',
@@ -294,7 +307,7 @@ const loadWordTranslations = async () => {
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' '),
           displayTense:
-            mood === 'indicativo-negativo'
+            ['indicativo-negativo', 'imperativo-negativo'].includes(mood)
               ? `${baseDisplayTense} (Neg.)`
               : baseDisplayTense
         })
