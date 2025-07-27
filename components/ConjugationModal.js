@@ -17,7 +17,6 @@ const moodOrder = [
   'congiuntivo',
   'condizionale',
   'imperativo',
-  'imperativo-negativo',
   'infinito',
   'participio',
   'gerundio'
@@ -60,8 +59,7 @@ const tenseOrderMap = {
     'condizionale-presente',
     'condizionale-passato'
   ],
-  imperativo: ['imperativo-presente'],
-  'imperativo-negativo': ['imperativo-negativo'],
+  imperativo: ['imperativo-presente', 'imperativo-negativo'],
   infinito: ['infinito-presente', 'infinito-passato'],
   participio: ['participio-presente', 'participio-passato'],
   gerundio: ['gerundio-presente', 'gerundio-passato']
@@ -115,7 +113,6 @@ export default function ConjugationModal({
         'congiuntivo',
         'condizionale',
         'imperativo',
-        'imperativo-negativo',
         'infinito',
         'participio',
         'gerundio'

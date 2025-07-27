@@ -182,9 +182,7 @@ These tags capture the specific grammatical properties of individual conjugated 
 
 **Imperative Mood System** - Command and instruction forms
 - `imperativo-presente` (14 forms) - Present imperative (parla!, parlate!)
-
-**Negative Imperative System** - Commands in the negative
-- `imperativo-negativo` forms like "non parlare" for "don't speak"
+- `imperativo-negativo` (14 forms) - Negative imperative (non parlare)
 
 **Negative Indicative System** - Negated versions of indicative tenses
 - `indicativo-negativo` forms include "non" before the verb across all tenses
@@ -407,7 +405,7 @@ CREATE TABLE word_forms (
   -- Mood validation for verb forms
   CONSTRAINT valid_form_mood CHECK (form_mood IS NULL OR form_mood IN (
     'indicativo', 'indicativo-negativo', 'congiuntivo', 'condizionale', 'imperativo',
-    'imperativo-negativo', 'infinito', 'participio', 'gerundio'
+    'infinito', 'participio', 'gerundio'
   )),
   
   -- Tense validation
