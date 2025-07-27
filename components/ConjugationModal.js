@@ -877,7 +877,7 @@ const loadWordTranslations = async () => {
       <div 
         className={`
           fixed inset-y-0 right-0 bg-white shadow-xl z-50
-          w-full md:w-3/4 lg:w-2/3 xl:w-1/2 max-w-4xl
+          w-full md:w-11/12 lg:w-2/3 xl:w-1/2 max-w-4xl
           transition-transform duration-300 ease-in-out
           ${isOpen ? 'transform translate-x-0' : 'transform translate-x-full'}
         `}
