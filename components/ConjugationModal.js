@@ -558,12 +558,22 @@ const loadWordTranslations = async () => {
           .replace(/^He\/she\b/, 'He')
           .replace(/\bhimself\/herself\b/gi, 'himself')
           .replace(/^Himself\/herself\b/, 'Himself')
+          // Fallback when translation doesn't use he/she placeholders
+          .replace(/\b[Ss]he\b/g, match =>
+            match === 'She' ? 'He' : 'he'
+          )
+          .replace(/\bherself\b/gi, 'himself')
       } else {
         translation = translation
           .replace(/\bhe\/she\b/gi, 'she')
           .replace(/^He\/she\b/, 'She')
           .replace(/\bhimself\/herself\b/gi, 'herself')
           .replace(/^Himself\/herself\b/, 'Herself')
+          // Fallback when translation doesn't use he/she placeholders
+          .replace(/\b[Hh]e\b/g, match =>
+            match === 'He' ? 'She' : 'she'
+          )
+          .replace(/\bhimself\b/gi, 'herself')
       }
       console.log('✨ Final gendered translation:', translation)
     }
