@@ -9,6 +9,7 @@ import AudioButton from './AudioButton'
 import SectionHeading from './SectionHeading'
 import { VariantCalculator } from '../lib/variant-calculator'
 import TranslationSelector from './TranslationSelector'
+import { AuxiliaryPatternService } from '../lib/auxiliary-pattern-service'
 
 // Desired display order for moods and tenses
 const moodOrder = [
@@ -98,6 +99,7 @@ export default function ConjugationModal({
   const [selectedTranslationId, setSelectedTranslationId] = useState(null)
   const [wordTranslations, setWordTranslations] = useState([])
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
+  const [auxiliaryService] = useState(() => new AuxiliaryPatternService(supabase))
 
   // Quick scratch/erase animation state to fade forms out and back in
   const [isContentChanging, setIsContentChanging] = useState(false)
@@ -176,11 +178,29 @@ export default function ConjugationModal({
     return grouped
   }
 
+  // Get auxiliary type for selected translation
+  const getAuxiliaryForTranslation = (translationId) => {
+    if (!translationId) return 'avere'
+
+    const translation = wordTranslations.find(t => t.id === translationId)
+    const auxiliary = translation?.context_metadata?.auxiliary
+
+    console.log('🔍 Auxiliary lookup:', {
+      translationId,
+      translation: translation?.translation,
+      auxiliary,
+      metadata: translation?.context_metadata
+    })
+
+    return auxiliary || 'avere'
+  }
+
   // Load conjugations for the selected word
 const loadConjugations = async () => {
   setIsLoading(true)
   try {
-    
+    console.log('🔄 Loading conjugations for:', word.italian)
+
     const { data, error } = await supabase
       .from('word_forms')
       .select(`
@@ -204,10 +224,10 @@ const loadConjugations = async () => {
       .eq('form_type', 'conjugation')
       .order('tags')
 
-
     if (error) throw error
-    
-    
+
+    console.log('📊 Raw forms loaded:', data?.length || 0)
+
     const processedData = (data || []).map(form => {
       const result = {
         ...form,
@@ -220,23 +240,156 @@ const loadConjugations = async () => {
           word_translation: ft.word_translations || null
         }))
       }
-
       return result
     })
 
-    // Generate all forms (stored + calculated variants)
-    const allForms = VariantCalculator.getAllForms(processedData, word.tags || [])
+    // Generate all forms (stored + calculated variants + dynamic compounds)
+    let allForms = VariantCalculator.getAllForms(processedData, word.tags || [])
 
+    // 🚀 NEW: Add dynamic compound generation
+    if (selectedTranslationId && wordTranslations.length > 0) {
+      const dynamicCompounds = await generateDynamicCompounds(processedData)
+      allForms = [...allForms, ...dynamicCompounds]
+      console.log('✨ Dynamic compounds generated:', dynamicCompounds.length)
+    }
 
     const groupedConjugations = groupConjugationsByMoodTense(allForms)
     setConjugations(groupedConjugations)
-    
+
   } catch (error) {
     console.error('❌ Error loading conjugations:', error)
   } finally {
     setIsLoading(false)
   }
 }
+
+  // Generate dynamic compound forms based on selected translation
+  const generateDynamicCompounds = async (storedForms) => {
+    if (!selectedTranslationId) return []
+
+    const auxiliaryType = getAuxiliaryForTranslation(selectedTranslationId)
+    console.log('🔧 Generating compounds with auxiliary:', auxiliaryType)
+
+    // Find building blocks (participles and gerunds)
+    const participle = storedForms.find(f =>
+      f.tags?.includes('participio-passato') ||
+      (f.tags?.includes('participio') && !f.tags?.includes('presente'))
+    )
+    const gerund = storedForms.find(f =>
+      f.tags?.includes('gerundio-presente') ||
+      (f.tags?.includes('gerundio') && !f.tags?.includes('passato'))
+    )
+
+    if (!participle && !gerund) {
+      console.log('⚠️ No building blocks found for dynamic generation')
+      return []
+    }
+
+    const generatedForms = []
+
+    // Generate compound tenses that use participles
+    if (participle) {
+      const perfectTenses = [
+        'passato-prossimo',
+        'trapassato-prossimo',
+        'futuro-anteriore',
+        'congiuntivo-passato',
+        'congiuntivo-trapassato',
+        'condizionale-passato'
+      ]
+
+      for (const tense of perfectTenses) {
+        for (const person of ['prima-persona', 'seconda-persona', 'terza-persona']) {
+          for (const plurality of ['singolare', 'plurale']) {
+            // Get translation for this person/plurality combination
+            const personTranslation = getTranslationForPersonPlurality(participle, person, plurality)
+
+            const generated = await auxiliaryService.generateCompoundForm(
+              auxiliaryType,
+              tense,
+              person,
+              plurality,
+              participle.form_text,
+              personTranslation
+            )
+
+            if (generated) {
+              // Add form_translations assignments from the participle
+              generated.form_translations = participle.form_translations || []
+              generatedForms.push(generated)
+            }
+          }
+        }
+      }
+    }
+
+    // Generate progressive tenses that use gerunds
+    if (gerund) {
+      const progressiveTenses = [
+        'presente-progressivo',
+        'passato-progressivo',
+        'futuro-progressivo'
+      ]
+
+      for (const tense of progressiveTenses) {
+        for (const person of ['prima-persona', 'seconda-persona', 'terza-persona']) {
+          for (const plurality of ['singolare', 'plurale']) {
+            // Get translation for this person/plurality combination  
+            const personTranslation = getTranslationForPersonPlurality(gerund, person, plurality)
+
+            // Progressive tenses always use 'stare' regardless of main auxiliary
+            const generated = await auxiliaryService.generateCompoundForm(
+              'avere', // Use avere column which contains stare patterns for progressive
+              tense,
+              person,
+              plurality,
+              gerund.form_text,
+              personTranslation
+            )
+
+            if (generated) {
+              // Add form_translations assignments from the gerund
+              generated.form_translations = gerund.form_translations || []
+              generatedForms.push(generated)
+            }
+          }
+        }
+      }
+    }
+
+    console.log('🎯 Generated forms:', generatedForms.length)
+    return generatedForms
+  }
+
+  // Get appropriate translation for person/plurality combination
+  const getTranslationForPersonPlurality = (buildingBlock, person, plurality) => {
+    // Find form_translation for selected translation
+    const assignment = buildingBlock.form_translations?.find(
+      ft => ft.word_translation_id === selectedTranslationId
+    )
+
+    if (assignment) {
+      // Transform base translation based on person/plurality
+      let translation = assignment.translation
+
+      // Simple transformation - you can enhance this later
+      if (person === 'prima-persona') {
+        translation = translation.replace(/he\/she/gi, 'I').replace(/^He\/she/, 'I')
+      } else if (person === 'seconda-persona') {
+        translation = translation.replace(/he\/she/gi, 'you').replace(/^He\/she/, 'You')
+      } else if (person === 'terza-persona') {
+        if (plurality === 'plurale') {
+          translation = translation.replace(/he\/she/gi, 'they').replace(/^He\/she/, 'They')
+        }
+        // Keep he/she for singular third person - will be handled by gender toggle
+      }
+
+      return translation
+    }
+
+    // Fallback to building block translation
+    return buildingBlock.translation || 'compound form'
+  }
 
   // Load all translations for the current word
 const loadWordTranslations = async () => {
@@ -702,6 +855,8 @@ const loadWordTranslations = async () => {
     setIsContentChanging(true)
     setTimeout(() => {
       setSelectedTranslationId(newTranslationId)
+      // 🚀 NEW: Reload conjugations with new auxiliary
+      loadConjugations()
       setIsContentChanging(false)
     }, 150)
   }
