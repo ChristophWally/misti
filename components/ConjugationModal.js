@@ -854,8 +854,6 @@ const loadWordTranslations = async () => {
     setIsContentChanging(true)
     setTimeout(() => {
       setSelectedTranslationId(newTranslationId)
-      // 🚀 NEW: Reload conjugations with new auxiliary
-      loadConjugations()
       setIsContentChanging(false)
     }, 150)
   }
@@ -1039,10 +1037,15 @@ const loadWordTranslations = async () => {
 
   useEffect(() => {
     if (isOpen && word) {
-      loadConjugations()
       loadWordTranslations()
     }
   }, [isOpen, word])
+
+  useEffect(() => {
+    if (isOpen && word && selectedTranslationId) {
+      loadConjugations()
+    }
+  }, [isOpen, word, selectedTranslationId])
 
   useEffect(() => {
     // Set default tense when mood changes
