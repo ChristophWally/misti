@@ -202,28 +202,19 @@ const loadConjugations = async () => {
     console.log('🔄 Loading conjugations for:', word.italian)
 
     const { data, error } = await supabase
-      .from('word_forms')
-      .select(`
-        *,
-        word_audio_metadata!audio_metadata_id(
-          audio_filename,
-          azure_voice_name,
-          duration_seconds
-        ),
-        form_translations (
-          word_translation_id,
-          translation,
-          assignment_method,
-          word_translations (
-            id,
-            translation
-          )
-        )
-      `)
-      .eq('word_id', word.id)
-      .eq('form_type', 'conjugation')
-      .order('tags')
-
+  .from('word_forms')
+  .select(`
+    *,
+    form_translations (
+      word_translation_id,
+      translation,
+      assignment_method
+    )
+  `)
+  .eq('word_id', word.id)
+  .eq('form_type', 'conjugation')
+  .order('tags')
+    
     if (error) throw error
 
     console.log('📊 Raw forms loaded:', data?.length || 0)
