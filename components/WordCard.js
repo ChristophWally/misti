@@ -283,6 +283,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   // Show first 2 translations, rest are "additional"
   const visibleTranslations = translations.slice(0, 2)
   const additionalTranslations = translations.slice(2)
+  const fallback = translations[0]?.translation || ''
 
   // Format context hint for display
   const formatContextHint = (contextInfo, usageNotes) => {
@@ -456,7 +457,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
               </div>
               <div className="flex items-center mr-2">
                 <span className="text-base text-gray-900 font-medium">
-                  {word.english}
+                  {fallback}
                 </span>
               </div>
               <div className="flex-1"></div>
