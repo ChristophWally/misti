@@ -200,6 +200,8 @@ const loadConjugations = async () => {
   setIsLoading(true)
   try {
     console.log('🔄 Loading conjugations for:', word.italian)
+    console.log('🔍 DIAGNOSTIC: selectedTranslationId:', selectedTranslationId)
+    console.log('🔍 DIAGNOSTIC: wordTranslations length:', wordTranslations.length)
 
     const { data, error } = await supabase
   .from('word_forms')
@@ -261,14 +263,20 @@ const loadConjugations = async () => {
     const auxiliaryType = getAuxiliaryForTranslation(selectedTranslationId)
     console.log('🔧 Generating compounds with auxiliary:', auxiliaryType)
 
-    // Find building blocks (participles and gerunds)
+    // Find clean building blocks (not person-specific compound forms)
     const participle = storedForms.find(f =>
-      f.tags?.includes('participio-passato') ||
-      (f.tags?.includes('participio') && !f.tags?.includes('presente'))
+      f.tags?.includes('participio-passato') &&
+      f.tags?.includes('simple') &&
+      !f.tags?.includes('io') &&
+      !f.tags?.includes('tu') &&
+      !f.tags?.includes('lui')
     )
     const gerund = storedForms.find(f =>
-      f.tags?.includes('gerundio-presente') ||
-      (f.tags?.includes('gerundio') && !f.tags?.includes('passato'))
+      f.tags?.includes('gerundio-presente') &&
+      f.tags?.includes('simple') &&
+      !f.tags?.includes('io') &&
+      !f.tags?.includes('tu') &&
+      !f.tags?.includes('lui')
     )
 
     if (!participle && !gerund) {
