@@ -201,15 +201,10 @@ const loadConjugations = async () => {
   try {
     console.log('🔄 Loading conjugations for:', word.italian)
 
-const { data, error } = await supabase
+    const { data, error } = await supabase
   .from('word_forms')
   .select(`
     *,
-    word_audio_metadata!audio_metadata_id(
-      audio_filename,
-      azure_voice_name,
-      duration_seconds
-    ),
     form_translations (
       word_translation_id,
       translation,
@@ -219,7 +214,6 @@ const { data, error } = await supabase
   .eq('word_id', word.id)
   .eq('form_type', 'conjugation')
   .order('tags')
-
     
     if (error) throw error
 
