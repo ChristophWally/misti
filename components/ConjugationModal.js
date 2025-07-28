@@ -392,7 +392,7 @@ const loadConjugations = async () => {
 
   // Load all translations for the current word
 const loadWordTranslations = async () => {
-  if (!word?.id) return
+  if (!word?.id) return []
 
   setIsLoadingTranslations(true)
   try {
@@ -418,10 +418,11 @@ const loadWordTranslations = async () => {
       const primary = translations.find(t => t.display_priority === 1) || translations[0]
       setSelectedTranslationId(primary.id)
     }
-
+    return translations
   } catch (error) {
     console.error('Error loading word translations:', error)
     setWordTranslations([])
+    return []
   } finally {
     setIsLoadingTranslations(false)
   }
@@ -1043,8 +1044,9 @@ const loadWordTranslations = async () => {
 
   useEffect(() => {
     if (isOpen && word) {
-      loadConjugations()
-      loadWordTranslations()
+      loadWordTranslations().then(() => {
+        loadConjugations()
+      })
     }
   }, [isOpen, word])
 
