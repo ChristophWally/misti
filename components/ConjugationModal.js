@@ -854,8 +854,6 @@ const loadWordTranslations = async () => {
     setIsContentChanging(true)
     setTimeout(() => {
       setSelectedTranslationId(newTranslationId)
-      // 🚀 NEW: Reload conjugations with new auxiliary
-      loadConjugations()
       setIsContentChanging(false)
     }, 150)
   }
@@ -1039,10 +1037,17 @@ const loadWordTranslations = async () => {
 
   useEffect(() => {
     if (isOpen && word) {
-      loadConjugations()
-      loadWordTranslations()
+      loadWordTranslations().then(() => {
+        loadConjugations()
+      })
     }
   }, [isOpen, word])
+
+  useEffect(() => {
+    if (selectedTranslationId && wordTranslations.length > 0) {
+      loadConjugations()
+    }
+  }, [selectedTranslationId])
 
   useEffect(() => {
     // Set default tense when mood changes
