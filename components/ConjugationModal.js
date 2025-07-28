@@ -574,7 +574,7 @@ const loadWordTranslations = async () => {
       'condizionale-passato',
       'presente-progressivo',
       'passato-progressivo',
-      'futuro-progressivo',
+      'futuro-progressivo'
     ]
     return compoundTenses.includes(selectedTense)
   }
