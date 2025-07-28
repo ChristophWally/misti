@@ -278,7 +278,15 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   ]
 
   // Get translations - use processedTranslations from EnhancedDictionarySystem
-  const translations = word.processedTranslations || []
+  const translations =
+    word.processedTranslations ||
+    (word.word_translations || []).map(t => ({
+      id: t.id,
+      translation: t.translation,
+      isPrimary: t.display_priority === 1,
+      contextInfo: null,
+      usageNotes: t.usage_notes
+    })) || []
 
   // Show first 2 translations, rest are "additional"
   const visibleTranslations = translations.slice(0, 2)
