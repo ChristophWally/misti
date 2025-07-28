@@ -200,6 +200,8 @@ const loadConjugations = async () => {
   setIsLoading(true)
   try {
     console.log('🔄 Loading conjugations for:', word.italian)
+    console.log('🔍 DIAGNOSTIC: selectedTranslationId:', selectedTranslationId)
+    console.log('🔍 DIAGNOSTIC: wordTranslations length:', wordTranslations.length)
 
     const { data, error } = await supabase
   .from('word_forms')
