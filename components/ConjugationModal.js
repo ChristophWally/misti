@@ -565,14 +565,18 @@ const loadWordTranslations = async () => {
 
   // Check if compound tense
   const isCompoundTense = () => {
-    const currentForms = getCurrentForms()
-    return currentForms.some(
-      form =>
-        form.tags?.includes('compound') &&
-        !form.tags?.includes('presente-progressivo') &&
-        !form.tags?.includes('passato-progressivo') &&
-        !form.tags?.includes('futuro-progressivo')
-    )
+    const compoundTenses = [
+      'passato-prossimo',
+      'trapassato-prossimo',
+      'futuro-anteriore',
+      'congiuntivo-passato',
+      'congiuntivo-trapassato',
+      'condizionale-passato',
+      'presente-progressivo',
+      'passato-progressivo',
+      'futuro-progressivo',
+    ]
+    return compoundTenses.includes(selectedTense)
   }
 
   // Check if the CURRENT translation actually changes with gender toggle
