@@ -288,6 +288,15 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       usageNotes: t.usage_notes
     })) || []
 
+  console.log('WordCard debug:', {
+  italian: word.italian,
+  hasProcessed: !!word.processedTranslations,
+  hasRaw: !!word.word_translations,
+  processedCount: word.processedTranslations?.length || 0,
+  rawCount: word.word_translations?.length || 0,
+  finalCount: translations.length
+});
+
   // Show first 2 translations, rest are "additional"
   const visibleTranslations = translations.slice(0, 2)
   const additionalTranslations = translations.slice(2)
