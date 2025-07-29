@@ -775,10 +775,19 @@ const loadWordTranslations = async () => {
     })))
 
     const assignment = form.form_translations?.find(
-      (ft) => ft.word_translation_id === selectedTranslationId
+      ft => ft.word_translation_id === selectedTranslationId
     )
 
-    const result = assignment?.translation || assignment?.word_translation?.translation || form.translation
+    // If this is a dynamically generated form, prefer the form's own translation
+    if (form.is_generated && form.translation) {
+      console.log('✨ Generated form translation used:', form.translation)
+      return form.translation
+    }
+
+    const result =
+      assignment?.translation ||
+      assignment?.word_translation?.translation ||
+      form.translation
     console.log('✅ Selected translation result:', result)
     return result
   }
