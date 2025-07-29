@@ -157,6 +157,11 @@ export default function ConjugationModal({
       const pronounTags = ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro']
       return tags.find(tag => pronounTags.includes(tag)) || null
     }
+
+    if (category === 'person') {
+      const personTags = ['prima-persona', 'seconda-persona', 'terza-persona']
+      return tags.find(tag => personTags.includes(tag)) || null
+    }
     
     return null
   }
@@ -735,11 +740,14 @@ const loadWordTranslations = async () => {
   // Get pronoun display based on audio preference and gender toggle
   const getPronounDisplay = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
+    const person = extractTagValue(form.tags, 'person')
 
     // Handle formality first
     if (selectedFormality === 'formal') {
-      if (pronoun === 'tu') return 'Lei'
-      if (pronoun === 'voi') return 'Loro'
+      if (pronoun === 'tu' || (person === 'seconda-persona' && form.tags?.includes('singolare')))
+        return 'Lei'
+      if (pronoun === 'voi' || (person === 'seconda-persona' && form.tags?.includes('plurale')))
+        return 'Loro'
     }
 
     // For 3rd person pronouns
@@ -891,29 +899,32 @@ const loadWordTranslations = async () => {
   // Get the appropriate form to display based on gender toggle AND formality
   const getDisplayFormWithFormality = (baseForm) => {
     const pronoun = extractTagValue(baseForm.tags, 'pronoun')
+    const person = extractTagValue(baseForm.tags, 'person')
 
     // Handle formality mapping first
     if (selectedFormality === 'formal') {
       // Map 2nd person to 3rd person forms when formal
-      if (pronoun === 'tu') {
+      if (pronoun === 'tu' || (person === 'seconda-persona' && baseForm.tags?.includes('singolare'))) {
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
         const thirdPersonForm = allForms.find(
           (form) =>
             !form.tags?.includes('calculated-variant') &&
-            (extractTagValue(form.tags, 'pronoun') === 'lui' ||
-              extractTagValue(form.tags, 'pronoun') === 'lei')
+            ((extractTagValue(form.tags, 'pronoun') === 'lui' ||
+              extractTagValue(form.tags, 'pronoun') === 'lei') ||
+              (extractTagValue(form.tags, 'person') === 'terza-persona' && form.tags?.includes('singolare')))
         )
         if (thirdPersonForm) {
           return getDisplayForm(thirdPersonForm)
         }
       }
 
-      if (pronoun === 'voi') {
+      if (pronoun === 'voi' || (person === 'seconda-persona' && baseForm.tags?.includes('plurale'))) {
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
         const thirdPersonPluralForm = allForms.find(
           (form) =>
             !form.tags?.includes('calculated-variant') &&
-            extractTagValue(form.tags, 'pronoun') === 'loro'
+            (extractTagValue(form.tags, 'pronoun') === 'loro' ||
+              (extractTagValue(form.tags, 'person') === 'terza-persona' && form.tags?.includes('plurale')))
         )
         if (thirdPersonPluralForm) {
           return getDisplayForm(thirdPersonPluralForm)
