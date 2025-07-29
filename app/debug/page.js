@@ -88,30 +88,58 @@ export default function DebugPage() {
     return { participle, gerund }
   }
 
-  // Test auxiliary patterns table
+  // Test auxiliary patterns table - ENHANCED RLS DIAGNOSTIC
   const testAuxiliaryPatterns = async () => {
     addLog('Testing auxiliary_patterns table...', 'info')
     
     try {
-      const { data: patterns, error } = await supabase
+      // Test 1: Basic select
+      addLog('🔍 Test 1: Basic select from auxiliary_patterns', 'info')
+      const { data: patterns, error, status, statusText } = await supabase
         .from('auxiliary_patterns')
         .select('*')
         .limit(5)
 
+      addLog(`📊 Response status: ${status} ${statusText}`, 'info')
+
       if (error) {
         addLog(`❌ Auxiliary patterns error: ${error.message}`, 'error')
+        addLog(`📋 Error details: ${JSON.stringify(error)}`, 'error')
+        
+        // Check if it's an RLS error
+        if (error.message.includes('row-level security') || error.message.includes('RLS') || error.code === '42501') {
+          addLog('🔒 This looks like an RLS (Row Level Security) issue!', 'error')
+        }
+        
         return []
       }
 
       if (!patterns || patterns.length === 0) {
-        addLog('❌ No auxiliary patterns found in database', 'error')
+        addLog('❌ No auxiliary patterns found - table exists but is empty', 'error')
+        
+        // Test 2: Try to count rows (different permission)
+        addLog('🔍 Test 2: Trying to count rows in auxiliary_patterns', 'info')
+        const { count, error: countError } = await supabase
+          .from('auxiliary_patterns')
+          .select('*', { count: 'exact', head: true })
+
+        if (countError) {
+          addLog(`❌ Count error: ${countError.message}`, 'error')
+        } else {
+          addLog(`📊 Total rows in table: ${count}`, 'info')
+        }
+        
         return []
       }
 
       addLog(`✅ Found ${patterns.length} auxiliary patterns`, 'success')
+      patterns.forEach((pattern, i) => {
+        addLog(`  ${i + 1}. ${pattern.compound_tense_tag} ${pattern.person} ${pattern.plurality}: ${pattern.avere_auxiliary} / ${pattern.essere_auxiliary}`, 'info')
+      })
       return patterns
     } catch (error) {
       addLog(`❌ Auxiliary patterns exception: ${error.message}`, 'error')
+      addLog(`📋 Exception details: ${JSON.stringify(error)}`, 'error')
       return []
     }
   }
