@@ -899,22 +899,42 @@ const loadWordTranslations = async () => {
   // Get the appropriate form to display based on gender toggle AND formality
   const getDisplayFormWithFormality = (baseForm) => {
     const pronoun = extractTagValue(baseForm.tags, 'pronoun')
+    const person = extractTagValue(baseForm.tags, 'person')
+
+    const getAux = (form) =>
+      extractTagValue(form.tags, 'aux') ||
+      (/^(ho|hai|ha|abbiamo|avete|hanno)\b/i.test(form.form_text)
+        ? 'avere'
+        : /^(sono|sei|è|siamo|siete)\b/i.test(form.form_text)
+        ? 'essere'
+        : undefined)
 
     // Handle formality mapping first
     if (selectedFormality === 'formal') {
       // Map 2nd person to 3rd person forms when formal
-      if (pronoun === 'tu') {
+      const isSecondSingular =
+        pronoun === 'tu' ||
+        (pronoun == null &&
+          person === 'seconda-persona' &&
+          baseForm.tags?.includes('singolare'))
+
+      if (isSecondSingular) {
+        const aux = getAux(baseForm)
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
-        const thirdPersonSingularForm = allForms.find(
-          (form) =>
-            !form.tags?.includes('calculated-variant') &&
-            (extractTagValue(form.tags, 'pronoun') === 'lui' ||
-              extractTagValue(form.tags, 'pronoun') === 'lei') &&
-            // CRITICAL: Ensure it has the same auxiliary compatibility
-            form.form_translations?.some(
-              ft => ft.word_translation_id === selectedTranslationId
-            )
-        )
+        const thirdPersonSingularForm = allForms.find((form) => {
+          if (form.tags?.includes('calculated-variant')) return false
+
+          const pron = extractTagValue(form.tags, 'pronoun')
+          const byPronoun = pron && /^(lui\/?lei?|lei|lui)$/i.test(pron)
+          const byPerson =
+            !pron &&
+            extractTagValue(form.tags, 'person') === 'terza-persona' &&
+            form.tags?.includes('singolare')
+
+          const auxMatch = getAux(form) === aux
+
+          return (byPronoun || byPerson) && auxMatch
+        })
 
         if (thirdPersonSingularForm) {
           console.log(
@@ -924,17 +944,29 @@ const loadWordTranslations = async () => {
         }
       }
 
-      if (pronoun === 'voi') {
+      const isSecondPlural =
+        pronoun === 'voi' ||
+        (pronoun == null &&
+          person === 'seconda-persona' &&
+          baseForm.tags?.includes('plurale'))
+
+      if (isSecondPlural) {
+        const aux = getAux(baseForm)
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
-        const thirdPersonPluralForm = allForms.find(
-          (form) =>
-            !form.tags?.includes('calculated-variant') &&
-            extractTagValue(form.tags, 'pronoun') === 'loro' &&
-            // CRITICAL: Ensure it has the same auxiliary compatibility
-            form.form_translations?.some(
-              ft => ft.word_translation_id === selectedTranslationId
-            )
-        )
+        const thirdPersonPluralForm = allForms.find((form) => {
+          if (form.tags?.includes('calculated-variant')) return false
+
+          const pron = extractTagValue(form.tags, 'pronoun')
+          const byPronoun = pron === 'loro'
+          const byPerson =
+            !pron &&
+            extractTagValue(form.tags, 'person') === 'terza-persona' &&
+            form.tags?.includes('plurale')
+
+          const auxMatch = getAux(form) === aux
+
+          return (byPronoun || byPerson) && auxMatch
+        })
 
         if (thirdPersonPluralForm) {
           console.log(
