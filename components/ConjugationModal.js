@@ -905,16 +905,25 @@ const loadWordTranslations = async () => {
       // Map 2nd person to 3rd person forms when formal
       if (pronoun === 'tu') {
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
-        const thirdPersonSingularForm = allForms.find(
+        let thirdPersonSingularForm = allForms.find(
           (form) =>
             !form.tags?.includes('calculated-variant') &&
             (extractTagValue(form.tags, 'pronoun') === 'lui' ||
               extractTagValue(form.tags, 'pronoun') === 'lei') &&
-            // CRITICAL: Ensure it has the same auxiliary compatibility
             form.form_translations?.some(
               ft => ft.word_translation_id === selectedTranslationId
             )
         )
+
+        if (!thirdPersonSingularForm) {
+          // Fallback when no translation-specific form is found
+          thirdPersonSingularForm = allForms.find(
+            (form) =>
+              !form.tags?.includes('calculated-variant') &&
+              (extractTagValue(form.tags, 'pronoun') === 'lui' ||
+                extractTagValue(form.tags, 'pronoun') === 'lei')
+          )
+        }
 
         if (thirdPersonSingularForm) {
           console.log(
@@ -926,15 +935,23 @@ const loadWordTranslations = async () => {
 
       if (pronoun === 'voi') {
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
-        const thirdPersonPluralForm = allForms.find(
+        let thirdPersonPluralForm = allForms.find(
           (form) =>
             !form.tags?.includes('calculated-variant') &&
             extractTagValue(form.tags, 'pronoun') === 'loro' &&
-            // CRITICAL: Ensure it has the same auxiliary compatibility
             form.form_translations?.some(
               ft => ft.word_translation_id === selectedTranslationId
             )
         )
+
+        if (!thirdPersonPluralForm) {
+          // Fallback when no translation-specific form is found
+          thirdPersonPluralForm = allForms.find(
+            (form) =>
+              !form.tags?.includes('calculated-variant') &&
+              extractTagValue(form.tags, 'pronoun') === 'loro'
+          )
+        }
 
         if (thirdPersonPluralForm) {
           console.log(
