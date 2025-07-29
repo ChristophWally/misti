@@ -508,28 +508,87 @@ const loadWordTranslations = async () => {
   // Filter forms to those relevant for the selected translation
   const getFormsForSelectedTranslation = () => {
     const baseForms = getCurrentForms()
+    console.log(
+      `\u{1F50D} DISPLAY: Base forms for ${selectedMood}/${selectedTense}:`,
+      baseForms.length
+    )
+    console.log('\u{1F50D} DISPLAY: Selected translation ID:', selectedTranslationId)
+
     if (!selectedTranslationId) {
+      console.log('\u26A0\uFE0F DISPLAY: No translation selected, showing all forms')
       return baseForms
     }
 
-    const filtered = baseForms.filter(form =>
+    // Filter forms that have assignments for the selected translation
+    const formsWithAssignments = baseForms.filter(form =>
       form.form_translations?.some(
         ft => ft.word_translation_id === selectedTranslationId
       )
     )
 
-    // Deduplicate by pronoun and text to avoid double forms from generation
-    const uniqueMap = new Map()
-    filtered.forEach(form => {
-      const pronoun = extractTagValue(form.tags, 'pronoun') || ''
-      const tense = extractTagValue(form.tags, 'tense') || ''
-      const key = `${pronoun}-${tense}-${form.form_text}`
-      if (!uniqueMap.has(key)) {
-        uniqueMap.set(key, form)
-      }
-    })
+    console.log(
+      '\u{1F4CB} DISPLAY: Forms with assignments:',
+      formsWithAssignments.length
+    )
 
-    return Array.from(uniqueMap.values())
+    // CRITICAL FIX: For compound tenses, prioritize generated forms over stored forms
+    const isCompoundTense =
+      selectedTense === 'passato-prossimo' ||
+      selectedTense === 'trapassato-prossimo' ||
+      selectedTense === 'futuro-anteriore' ||
+      selectedTense === 'congiuntivo-passato' ||
+      selectedTense === 'congiuntivo-trapassato' ||
+      selectedTense === 'condizionale-passato' ||
+      selectedTense === 'presente-progressivo' ||
+      selectedTense === 'passato-progressivo' ||
+      selectedTense === 'futuro-progressivo'
+
+    if (isCompoundTense) {
+      console.log(
+        '\u{1F527} DISPLAY: Compound tense - prioritizing generated forms'
+      )
+
+      // For compound tenses: prefer generated forms, only use stored as fallback
+      const generatedForms = formsWithAssignments.filter(form => form.is_generated)
+      const storedForms = formsWithAssignments.filter(form => !form.is_generated)
+
+      console.log('\u2728 DISPLAY: Generated forms:', generatedForms.length)
+      console.log('\u{1F4C4} DISPLAY: Stored forms:', storedForms.length)
+
+      if (generatedForms.length > 0) {
+        // Use generated forms and filter out any stored forms that would duplicate
+        const generatedPronouns = new Set(
+          generatedForms.map(form => extractTagValue(form.tags, 'pronoun'))
+        )
+
+        const nonDuplicateStored = storedForms.filter(form => {
+          const pronoun = extractTagValue(form.tags, 'pronoun')
+          return !generatedPronouns.has(pronoun)
+        })
+
+        const result = [...generatedForms, ...nonDuplicateStored]
+        console.log('\u{1F3AF} DISPLAY: Final compound forms:', result.length)
+        return result
+      } else {
+        // Fallback to stored forms if no generated forms available
+        console.log(
+          '\u26A0\uFE0F DISPLAY: No generated forms, using stored as fallback'
+        )
+        return storedForms
+      }
+    } else {
+      console.log('\u{1F4DD} DISPLAY: Simple tense - using stored forms')
+
+      // For simple tenses: prefer stored forms
+      const storedForms = formsWithAssignments.filter(form => !form.is_generated)
+
+      if (storedForms.length > 0) {
+        return storedForms
+      } else {
+        // Fallback to any available forms
+        return formsWithAssignments
+      }
+    }
   }
 
   // Order forms by pronoun sequence
