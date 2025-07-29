@@ -7,9 +7,19 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import AudioButton from './AudioButton'
 import SectionHeading from './SectionHeading'
-import { VariantCalculator } from '../lib/variant-calculator'
+import { VariantCalculator, calculateVariants } from '../lib/variant-calculator'
 import TranslationSelector from './TranslationSelector'
 import { AuxiliaryPatternService } from '../lib/auxiliary-pattern-service'
+
+// Helper utilities for dynamic compound generation
+const mascEnding = (aux, isPlural) =>
+  aux === 'essere' ? (isPlural ? 'i' : 'o') : 'o'
+
+const buildPastParticiple = (base, aux, number) => {
+  if (!base.endsWith('o')) return base
+  const root = base.slice(0, -1)
+  return root + mascEnding(aux, number === 'plurale')
+}
 
 // Desired display order for moods and tenses
 const moodOrder = [
@@ -258,7 +268,14 @@ const loadConjugations = async () => {
       if (dynamicCompounds && dynamicCompounds.length > 0) {
         // CRITICAL FIX: Clear any old generated forms before adding new ones
         allForms = allForms.filter(form => !form.is_generated)
-        allForms = [...allForms, ...dynamicCompounds]
+
+        const withVariants = dynamicCompounds.flatMap(f =>
+          f.tags?.includes('compound')
+            ? [f, ...calculateVariants(f)]
+            : [f]
+        )
+
+        allForms = [...allForms, ...withVariants]
         console.log('✨ Dynamic compounds generated:', dynamicCompounds.length)
         console.log('🎯 Total forms after generation:', allForms.length)
       }
@@ -321,12 +338,18 @@ const loadConjugations = async () => {
             // Get translation for this person/plurality combination
             const personTranslation = getTranslationForPersonPlurality(participle, person, plurality)
 
+            const baseParticiple = buildPastParticiple(
+              participle.form_text,
+              auxiliaryType,
+              plurality
+            )
+
             const generated = await auxiliaryService.generateCompoundForm(
-              auxiliaryType, // Use the passed auxiliary type
+              auxiliaryType,
               tense,
               person,
               plurality,
-              participle.form_text,
+              baseParticiple,
               personTranslation
             )
 
@@ -343,6 +366,24 @@ const loadConjugations = async () => {
               if (pronounTag) {
                 generated.tags.push(pronounTag)
               }
+              // Ensure tagging for VariantCalculator
+              generated.tags = [
+                ...(generated.tags || []),
+                'compound',
+                plurality
+              ]
+              generated.variant_type = null
+
+              if (
+                auxiliaryType === 'essere' &&
+                !word.tags?.includes('essere-auxiliary')
+              ) {
+                word.tags = [...(word.tags || []), 'essere-auxiliary']
+              }
+
+              generated.auxiliary_type = auxiliaryType
+              generated.word_tags = [...(word.tags || [])]
+
               generatedForms.push(generated)
             }
           }
@@ -387,6 +428,23 @@ const loadConjugations = async () => {
               if (pronounTag) {
                 generated.tags.push(pronounTag)
               }
+              generated.tags = [
+                ...(generated.tags || []),
+                'compound',
+                plurality
+              ]
+              generated.variant_type = null
+
+              if (
+                auxiliaryType === 'essere' &&
+                !word.tags?.includes('essere-auxiliary')
+              ) {
+                word.tags = [...(word.tags || []), 'essere-auxiliary']
+              }
+
+              generated.auxiliary_type = 'avere'
+              generated.word_tags = [...(word.tags || [])]
+
               generatedForms.push(generated)
             }
           }
