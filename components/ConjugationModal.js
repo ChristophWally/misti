@@ -204,19 +204,19 @@ const loadConjugations = async () => {
     console.log('🔍 DIAGNOSTIC: wordTranslations length:', wordTranslations.length)
 
     const { data, error } = await supabase
-  .from('word_forms')
-  .select(`
-    *,
-    form_translations (
-      word_translation_id,
-      translation,
-      assignment_method
-    )
-  `)
-  .eq('word_id', word.id)
-  .eq('form_type', 'conjugation')
-  .order('tags')
-    
+      .from('word_forms')
+      .select(`
+        *,
+        form_translations (
+          word_translation_id,
+          translation,
+          assignment_method
+        )
+      `)
+      .eq('word_id', word.id)
+      .eq('form_type', 'conjugation')
+      .order('tags')
+
     if (error) throw error
 
     console.log('📊 Raw forms loaded:', data?.length || 0)
@@ -236,14 +236,29 @@ const loadConjugations = async () => {
       return result
     })
 
-    // Generate all forms (stored + calculated variants + dynamic compounds)
+    // STEP 1: Start with stored forms + calculated variants (NO dynamic compounds yet)
     let allForms = VariantCalculator.getAllForms(processedData, word.tags || [])
+    console.log('✅ Base forms (stored + variants):', allForms.length)
 
-    // 🚀 NEW: Add dynamic compound generation
+    // STEP 2: Generate dynamic compounds ONLY if translation is selected
     if (selectedTranslationId && wordTranslations.length > 0) {
-      const dynamicCompounds = await generateDynamicCompounds(processedData)
-      allForms = [...allForms, ...dynamicCompounds]
-      console.log('✨ Dynamic compounds generated:', dynamicCompounds.length)
+      console.log('🚀 Generating dynamic compounds for translation:', selectedTranslationId)
+
+      // CRITICAL FIX: Ensure we use the CURRENT selectedTranslationId
+      const currentAuxiliary = getAuxiliaryForTranslation(selectedTranslationId)
+      console.log('🎯 Current auxiliary for generation:', currentAuxiliary)
+
+      const dynamicCompounds = await generateDynamicCompounds(processedData, currentAuxiliary)
+
+      if (dynamicCompounds && dynamicCompounds.length > 0) {
+        // CRITICAL FIX: Clear any old generated forms before adding new ones
+        allForms = allForms.filter(form => !form.is_generated)
+        allForms = [...allForms, ...dynamicCompounds]
+        console.log('✨ Dynamic compounds generated:', dynamicCompounds.length)
+        console.log('🎯 Total forms after generation:', allForms.length)
+      }
+    } else {
+      console.log('⚠️ Skipping dynamic generation - translation not selected or no translations loaded')
     }
 
     const groupedConjugations = groupConjugationsByMoodTense(allForms)
@@ -257,11 +272,8 @@ const loadConjugations = async () => {
 }
 
   // Generate dynamic compound forms based on selected translation
-  const generateDynamicCompounds = async (storedForms) => {
-    if (!selectedTranslationId) return []
-
-    const auxiliaryType = getAuxiliaryForTranslation(selectedTranslationId)
-    console.log('🔧 Generating compounds with auxiliary:', auxiliaryType)
+  const generateDynamicCompounds = async (storedForms, auxiliaryType) => {
+    console.log('🔧 generateDynamicCompounds called with auxiliary:', auxiliaryType)
 
     // Find clean building blocks (not person-specific compound forms)
     const participle = storedForms.find(f =>
@@ -288,6 +300,7 @@ const loadConjugations = async () => {
 
     // Generate compound tenses that use participles
     if (participle) {
+      console.log('🧱 Using participle:', participle.form_text)
       const perfectTenses = [
         'passato-prossimo',
         'trapassato-prossimo',
@@ -304,7 +317,7 @@ const loadConjugations = async () => {
             const personTranslation = getTranslationForPersonPlurality(participle, person, plurality)
 
             const generated = await auxiliaryService.generateCompoundForm(
-              auxiliaryType,
+              auxiliaryType, // Use the passed auxiliary type
               tense,
               person,
               plurality,
@@ -322,8 +335,9 @@ const loadConjugations = async () => {
       }
     }
 
-    // Generate progressive tenses that use gerunds
+    // Generate progressive tenses that use gerunds (always use 'stare')
     if (gerund) {
+      console.log('🧱 Using gerund:', gerund.form_text)
       const progressiveTenses = [
         'presente-progressivo',
         'passato-progressivo',
@@ -336,7 +350,7 @@ const loadConjugations = async () => {
             // Get translation for this person/plurality combination  
             const personTranslation = getTranslationForPersonPlurality(gerund, person, plurality)
 
-            // Progressive tenses always use 'stare' regardless of main auxiliary
+            // Progressive tenses always use 'stare' patterns regardless of main auxiliary
             const generated = await auxiliaryService.generateCompoundForm(
               'avere', // Use avere column which contains stare patterns for progressive
               tense,
@@ -1040,9 +1054,11 @@ const loadWordTranslations = async () => {
   useEffect(() => {
     if (isOpen && word) {
       loadConjugations()
-      loadWordTranslations()
+      if (selectedTranslationId === null) {
+        loadWordTranslations()
+      }
     }
-  }, [isOpen, word])
+  }, [isOpen, word, selectedTranslationId]) // CRITICAL: Add selectedTranslationId dependency
 
   useEffect(() => {
     // Set default tense when mood changes
