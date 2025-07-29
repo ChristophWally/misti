@@ -527,20 +527,7 @@ export default function DebugPage() {
           </div>
         </div>
 
-        {/* Instructions */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-blue-800 mb-2">📋 What This Will Show</h3>
-          <div className="text-sm text-blue-700 space-y-2">
-            <p><strong>Expected for "finire":</strong></p>
-            <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>2 translations loaded (one with avere, one with essere)</li>
-              <li>Participle "finito" found with correct tags</li>
-              <li>Auxiliary lookup working for selected translation</li>
-              <li>Compound forms generated (like "ho finito")</li>
-            </ul>
-            <p className="mt-2"><strong>If something's wrong:</strong> The debug logs will show exactly where it breaks.</p>
-          </div>
-        </div>
+
       </div>
     </div>
   )
