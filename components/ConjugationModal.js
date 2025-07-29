@@ -11,6 +11,16 @@ import { VariantCalculator, calculateVariants } from '../lib/variant-calculator'
 import TranslationSelector from './TranslationSelector'
 import { AuxiliaryPatternService } from '../lib/auxiliary-pattern-service'
 
+// Helper utilities for dynamic compound generation
+const mascEnding = (aux, isPlural) =>
+  aux === 'essere' ? (isPlural ? 'i' : 'o') : 'o'
+
+const buildPastParticiple = (base, aux, number) => {
+  if (!base.endsWith('o')) return base
+  const root = base.slice(0, -1)
+  return root + mascEnding(aux, number === 'plurale')
+}
+
 // Desired display order for moods and tenses
 const moodOrder = [
   'indicativo',
@@ -259,18 +269,11 @@ const loadConjugations = async () => {
         // CRITICAL FIX: Clear any old generated forms before adding new ones
         allForms = allForms.filter(form => !form.is_generated)
 
-        const withVariants = dynamicCompounds
-          .map(f => {
-            if (
-              !f.tags?.includes('calculated-variant') &&
-              f.tags?.includes('compound') &&
-              word.tags?.includes('essere-auxiliary')
-            ) {
-              return [f, ...calculateVariants(f, word.tags || [])]
-            }
-            return [f]
-          })
-          .flat()
+        const withVariants = dynamicCompounds.flatMap(f =>
+          f.tags?.includes('compound')
+            ? [f, ...calculateVariants(f)]
+            : [f]
+        )
 
         allForms = [...allForms, ...withVariants]
         console.log('✨ Dynamic compounds generated:', dynamicCompounds.length)
@@ -335,12 +338,18 @@ const loadConjugations = async () => {
             // Get translation for this person/plurality combination
             const personTranslation = getTranslationForPersonPlurality(participle, person, plurality)
 
+            const baseParticiple = buildPastParticiple(
+              participle.form_text,
+              auxiliaryType,
+              plurality
+            )
+
             const generated = await auxiliaryService.generateCompoundForm(
-              auxiliaryType, // Use the passed auxiliary type
+              auxiliaryType,
               tense,
               person,
               plurality,
-              participle.form_text,
+              baseParticiple,
               personTranslation
             )
 
@@ -371,6 +380,9 @@ const loadConjugations = async () => {
               ) {
                 word.tags = [...(word.tags || []), 'essere-auxiliary']
               }
+
+              generated.auxiliary_type = auxiliaryType
+              generated.word_tags = [...(word.tags || [])]
 
               generatedForms.push(generated)
             }
@@ -429,6 +441,9 @@ const loadConjugations = async () => {
               ) {
                 word.tags = [...(word.tags || []), 'essere-auxiliary']
               }
+
+              generated.auxiliary_type = 'avere'
+              generated.word_tags = [...(word.tags || [])]
 
               generatedForms.push(generated)
             }
