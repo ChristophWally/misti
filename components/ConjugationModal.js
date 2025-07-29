@@ -868,8 +868,7 @@ const loadWordTranslations = async () => {
     setIsContentChanging(true)
     setTimeout(() => {
       setSelectedTranslationId(newTranslationId)
-      // 🚀 NEW: Reload conjugations with new auxiliary
-      loadConjugations()
+      // Conjugations will reload via useEffect when the state updates
       setIsContentChanging(false)
     }, 150)
   }
@@ -1053,7 +1052,9 @@ const loadWordTranslations = async () => {
 
   useEffect(() => {
     if (isOpen && word) {
-      loadConjugations()
+      if (selectedTranslationId !== null) {
+        loadConjugations()
+      }
       if (selectedTranslationId === null) {
         loadWordTranslations()
       }
