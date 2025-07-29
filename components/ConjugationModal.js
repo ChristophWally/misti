@@ -980,7 +980,11 @@ const loadWordTranslations = async () => {
         const aux = getAux(baseForm)
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
         const thirdPersonSingularForm = allForms.find((form) => {
-          if (form.tags?.includes('calculated-variant')) return false
+          // keep **only** the variant that matches the current gender toggle
+          const sameVariant = baseForm.variant_type === form.variant_type // null ↔︎ null, fem‑sing ↔︎ fem‑sing
+
+          // you can bail early to save work
+          if (!sameVariant) return false
 
           const pron = extractTagValue(form.tags, 'pronoun')
           const byPronoun = pron && /^(lui\/?lei?|lei|lui)$/i.test(pron)
@@ -1012,7 +1016,11 @@ const loadWordTranslations = async () => {
         const aux = getAux(baseForm)
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
         const thirdPersonPluralForm = allForms.find((form) => {
-          if (form.tags?.includes('calculated-variant')) return false
+          // keep **only** the variant that matches the current gender toggle
+          const sameVariant = baseForm.variant_type === form.variant_type // null ↔︎ null, fem-sing ↔︎ fem-sing
+
+          // you can bail early to save work
+          if (!sameVariant) return false
 
           const pron = extractTagValue(form.tags, 'pronoun')
           const byPronoun = pron === 'loro'
