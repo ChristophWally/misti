@@ -88,12 +88,21 @@ export default function DebugPage() {
     return { participle, gerund }
   }
 
-  // Test auxiliary patterns table - ENHANCED RLS DIAGNOSTIC
+  // Test auxiliary patterns table - COMPREHENSIVE RLS DIAGNOSTIC
   const testAuxiliaryPatterns = async () => {
     addLog('Testing auxiliary_patterns table...', 'info')
     
     try {
-      // Test 1: Basic select
+      // Get current user context
+      const { data: user, error: userError } = await supabase.auth.getUser()
+      if (userError) {
+        addLog(`🔍 User context error: ${userError.message}`, 'warning')
+      } else {
+        addLog(`🔍 Current user: ${user?.user?.email || 'Anonymous'}`, 'info')
+        addLog(`🔍 User ID: ${user?.user?.id || 'None'}`, 'info')
+      }
+
+      // Test 1: Basic select with detailed logging
       addLog('🔍 Test 1: Basic select from auxiliary_patterns', 'info')
       const { data: patterns, error, status, statusText } = await supabase
         .from('auxiliary_patterns')
@@ -104,18 +113,21 @@ export default function DebugPage() {
 
       if (error) {
         addLog(`❌ Auxiliary patterns error: ${error.message}`, 'error')
-        addLog(`📋 Error details: ${JSON.stringify(error)}`, 'error')
+        addLog(`📋 Error code: ${error.code}`, 'error')
+        addLog(`📋 Error hint: ${error.hint || 'None'}`, 'error')
+        addLog(`📋 Error details: ${error.details || 'None'}`, 'error')
         
         // Check if it's an RLS error
         if (error.message.includes('row-level security') || error.message.includes('RLS') || error.code === '42501') {
-          addLog('🔒 This looks like an RLS (Row Level Security) issue!', 'error')
+          addLog('🔒 CONFIRMED: This is an RLS (Row Level Security) issue!', 'error')
         }
         
         return []
       }
 
       if (!patterns || patterns.length === 0) {
-        addLog('❌ No auxiliary patterns found - table exists but is empty', 'error')
+        addLog('❌ Query successful but returned 0 rows - likely RLS blocking access', 'error')
+        addLog('🔒 DIAGNOSIS: Table has data (56 rows) but RLS policies prevent access', 'error')
         
         // Test 2: Try to count rows (different permission)
         addLog('🔍 Test 2: Trying to count rows in auxiliary_patterns', 'info')
@@ -126,7 +138,28 @@ export default function DebugPage() {
         if (countError) {
           addLog(`❌ Count error: ${countError.message}`, 'error')
         } else {
-          addLog(`📊 Total rows in table: ${count}`, 'info')
+          addLog(`📊 Total rows returned by count: ${count}`, 'info')
+          if (count === 0) {
+            addLog('🔒 Count also returns 0 - RLS is blocking ALL access to this table', 'error')
+          }
+        }
+
+        // Test 3: Try specific query that should work
+        addLog('🔍 Test 3: Trying specific query for passato-prossimo', 'info')
+        const { data: specificData, error: specificError } = await supabase
+          .from('auxiliary_patterns')
+          .select('compound_tense_tag, avere_auxiliary, essere_auxiliary')
+          .eq('compound_tense_tag', 'passato-prossimo')
+          .eq('person', 'prima-persona')
+          .eq('plurality', 'singolare')
+          .single()
+
+        if (specificError) {
+          addLog(`❌ Specific query error: ${specificError.message}`, 'error')
+        } else if (specificData) {
+          addLog(`✅ Specific query worked: ${JSON.stringify(specificData)}`, 'success')
+        } else {
+          addLog('❌ Specific query returned null', 'error')
         }
         
         return []
