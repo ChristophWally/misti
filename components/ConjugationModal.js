@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import AudioButton from './AudioButton'
 import SectionHeading from './SectionHeading'
-import { VariantCalculator } from '../lib/variant-calculator'
+import { VariantCalculator, calculateVariants } from '../lib/variant-calculator'
 import TranslationSelector from './TranslationSelector'
 import { AuxiliaryPatternService } from '../lib/auxiliary-pattern-service'
 
@@ -258,7 +258,21 @@ const loadConjugations = async () => {
       if (dynamicCompounds && dynamicCompounds.length > 0) {
         // CRITICAL FIX: Clear any old generated forms before adding new ones
         allForms = allForms.filter(form => !form.is_generated)
-        allForms = [...allForms, ...dynamicCompounds]
+
+        const withVariants = dynamicCompounds
+          .map(f => {
+            if (
+              !f.tags?.includes('calculated-variant') &&
+              f.tags?.includes('compound') &&
+              word.tags?.includes('essere-auxiliary')
+            ) {
+              return [f, ...calculateVariants(f, word.tags || [])]
+            }
+            return [f]
+          })
+          .flat()
+
+        allForms = [...allForms, ...withVariants]
         console.log('✨ Dynamic compounds generated:', dynamicCompounds.length)
         console.log('🎯 Total forms after generation:', allForms.length)
       }
@@ -343,6 +357,21 @@ const loadConjugations = async () => {
               if (pronounTag) {
                 generated.tags.push(pronounTag)
               }
+              // Ensure tagging for VariantCalculator
+              generated.tags = [
+                ...(generated.tags || []),
+                'compound',
+                plurality
+              ]
+              generated.variant_type = null
+
+              if (
+                auxiliaryType === 'essere' &&
+                !word.tags?.includes('essere-auxiliary')
+              ) {
+                word.tags = [...(word.tags || []), 'essere-auxiliary']
+              }
+
               generatedForms.push(generated)
             }
           }
@@ -387,6 +416,20 @@ const loadConjugations = async () => {
               if (pronounTag) {
                 generated.tags.push(pronounTag)
               }
+              generated.tags = [
+                ...(generated.tags || []),
+                'compound',
+                plurality
+              ]
+              generated.variant_type = null
+
+              if (
+                auxiliaryType === 'essere' &&
+                !word.tags?.includes('essere-auxiliary')
+              ) {
+                word.tags = [...(word.tags || []), 'essere-auxiliary']
+              }
+
               generatedForms.push(generated)
             }
           }
