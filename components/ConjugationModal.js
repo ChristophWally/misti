@@ -899,11 +899,18 @@ const loadWordTranslations = async () => {
   // Get the appropriate form to display based on gender toggle AND formality
   const getDisplayFormWithFormality = (baseForm) => {
     const pronoun = extractTagValue(baseForm.tags, 'pronoun')
+    const person = extractTagValue(baseForm.tags, 'person')
 
     // Handle formality mapping first
     if (selectedFormality === 'formal') {
       // Map 2nd person to 3rd person forms when formal
-      if (pronoun === 'tu') {
+      const isSecondSingular =
+        pronoun === 'tu' ||
+        (pronoun == null &&
+          person === 'seconda-persona' &&
+          baseForm.tags?.includes('singolare'))
+
+      if (isSecondSingular) {
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
         const thirdPersonSingularForm = allForms.find(
           (form) =>
@@ -911,9 +918,10 @@ const loadWordTranslations = async () => {
             (extractTagValue(form.tags, 'pronoun') === 'lui' ||
               extractTagValue(form.tags, 'pronoun') === 'lei') &&
             // CRITICAL: Ensure it has the same auxiliary compatibility
-            form.form_translations?.some(
-              ft => ft.word_translation_id === selectedTranslationId
-            )
+            (!form.form_translations ||
+              form.form_translations.some(
+                ft => ft.word_translation_id === selectedTranslationId
+              ))
         )
 
         if (thirdPersonSingularForm) {
@@ -924,16 +932,23 @@ const loadWordTranslations = async () => {
         }
       }
 
-      if (pronoun === 'voi') {
+      const isSecondPlural =
+        pronoun === 'voi' ||
+        (pronoun == null &&
+          person === 'seconda-persona' &&
+          baseForm.tags?.includes('plurale'))
+
+      if (isSecondPlural) {
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
         const thirdPersonPluralForm = allForms.find(
           (form) =>
             !form.tags?.includes('calculated-variant') &&
             extractTagValue(form.tags, 'pronoun') === 'loro' &&
             // CRITICAL: Ensure it has the same auxiliary compatibility
-            form.form_translations?.some(
-              ft => ft.word_translation_id === selectedTranslationId
-            )
+            (!form.form_translations ||
+              form.form_translations.some(
+                ft => ft.word_translation_id === selectedTranslationId
+              ))
         )
 
         if (thirdPersonPluralForm) {
