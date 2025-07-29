@@ -980,12 +980,10 @@ const loadWordTranslations = async () => {
         const aux = getAux(baseForm)
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
         const thirdPersonSingularForm = allForms.find((form) => {
-          // keep **only** the variant that matches the current gender toggle
-          const sameVariant = baseForm.variant_type === form.variant_type // null ↔︎ null, fem‑sing ↔︎ fem‑sing
+          // ①  same gender variant (null, fem‑sing, fem‑plur, …)
+          if (form.variant_type !== baseForm.variant_type) return false
 
-          // you can bail early to save work
-          if (!sameVariant) return false
-
+          // ②  accept any spelling of the 3ᵗᵉˢ pronoun
           const pron = extractTagValue(form.tags, 'pronoun')
           const byPronoun = pron && /^(lui\/?lei?|lei|lui)$/i.test(pron)
           const byPerson =
@@ -993,9 +991,10 @@ const loadWordTranslations = async () => {
             extractTagValue(form.tags, 'person') === 'terza-persona' &&
             form.tags?.includes('singolare')
 
-          const auxMatch = getAux(form) === aux
+          if (!(byPronoun || byPerson)) return false
 
-          return (byPronoun || byPerson) && auxMatch
+          // ③  stay on the same auxiliary track
+          return getAux(form) === getAux(baseForm)
         })
 
         if (thirdPersonSingularForm) {
@@ -1016,22 +1015,18 @@ const loadWordTranslations = async () => {
         const aux = getAux(baseForm)
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
         const thirdPersonPluralForm = allForms.find((form) => {
-          // keep **only** the variant that matches the current gender toggle
-          const sameVariant = baseForm.variant_type === form.variant_type // null ↔︎ null, fem-sing ↔︎ fem-sing
-
-          // you can bail early to save work
-          if (!sameVariant) return false
+          if (form.variant_type !== baseForm.variant_type) return false
 
           const pron = extractTagValue(form.tags, 'pronoun')
-          const byPronoun = pron === 'loro'
+          const byPronoun = pron && /^loro$/i.test(pron)
           const byPerson =
             !pron &&
             extractTagValue(form.tags, 'person') === 'terza-persona' &&
             form.tags?.includes('plurale')
 
-          const auxMatch = getAux(form) === aux
+          if (!(byPronoun || byPerson)) return false
 
-          return (byPronoun || byPerson) && auxMatch
+          return getAux(form) === getAux(baseForm)
         })
 
         if (thirdPersonPluralForm) {
