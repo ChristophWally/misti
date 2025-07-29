@@ -328,6 +328,16 @@ const loadConjugations = async () => {
             if (generated) {
               // Add form_translations assignments from the participle
               generated.form_translations = participle.form_translations || []
+              // Attach pronoun tag for correct display
+              const pronounMap = {
+                'prima-persona': { singolare: 'io', plurale: 'noi' },
+                'seconda-persona': { singolare: 'tu', plurale: 'voi' },
+                'terza-persona': { singolare: 'lui', plurale: 'loro' }
+              }
+              const pronounTag = pronounMap[person]?.[plurality]
+              if (pronounTag) {
+                generated.tags.push(pronounTag)
+              }
               generatedForms.push(generated)
             }
           }
@@ -363,6 +373,15 @@ const loadConjugations = async () => {
             if (generated) {
               // Add form_translations assignments from the gerund
               generated.form_translations = gerund.form_translations || []
+              const pronounMap = {
+                'prima-persona': { singolare: 'io', plurale: 'noi' },
+                'seconda-persona': { singolare: 'tu', plurale: 'voi' },
+                'terza-persona': { singolare: 'lui', plurale: 'loro' }
+              }
+              const pronounTag = pronounMap[person]?.[plurality]
+              if (pronounTag) {
+                generated.tags.push(pronounTag)
+              }
               generatedForms.push(generated)
             }
           }
@@ -489,26 +508,28 @@ const loadWordTranslations = async () => {
   // Filter forms to those relevant for the selected translation
   const getFormsForSelectedTranslation = () => {
     const baseForms = getCurrentForms()
-    console.log(`🔍 Step 1: Base forms for ${selectedMood}/${selectedTense}:`, baseForms.length)
-    console.log('🔍 DEBUG: Selected translation ID:', selectedTranslationId)
-
     if (!selectedTranslationId) {
-      console.log('⚠️ No translation selected, showing all forms')
       return baseForms
     }
 
-    // Filter forms that have assignments for the selected translation
-    const translationFilteredForms = baseForms.filter(form => {
-      const hasAssignment = form.form_translations?.some(
-        assignment => assignment.word_translation_id === selectedTranslationId
+    const filtered = baseForms.filter(form =>
+      form.form_translations?.some(
+        ft => ft.word_translation_id === selectedTranslationId
       )
-      return hasAssignment
+    )
+
+    // Deduplicate by pronoun and text to avoid double forms from generation
+    const uniqueMap = new Map()
+    filtered.forEach(form => {
+      const pronoun = extractTagValue(form.tags, 'pronoun') || ''
+      const tense = extractTagValue(form.tags, 'tense') || ''
+      const key = `${pronoun}-${tense}-${form.form_text}`
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, form)
+      }
     })
 
-    console.log('✅ Translation filtered forms:', translationFilteredForms.length)
-
-    // Return only the base forms. Gender variants are applied dynamically
-    return translationFilteredForms
+    return Array.from(uniqueMap.values())
   }
 
   // Order forms by pronoun sequence
