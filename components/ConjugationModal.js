@@ -7,8 +7,19 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import AudioButton from './AudioButton'
 import SectionHeading from './SectionHeading'
-import { VariantCalculator } from '../lib/variant-calculator'
+import { VariantCalculator, calculateVariants } from '../lib/variant-calculator'
 import TranslationSelector from './TranslationSelector'
+import { AuxiliaryPatternService } from '../lib/auxiliary-pattern-service'
+
+// Helper utilities for dynamic compound generation
+const mascEnding = (aux, isPlural) =>
+  aux === 'essere' ? (isPlural ? 'i' : 'o') : 'o'
+
+const buildPastParticiple = (base, aux, number) => {
+  if (!base.endsWith('o')) return base
+  const root = base.slice(0, -1)
+  return root + mascEnding(aux, number === 'plurale')
+}
 
 // Desired display order for moods and tenses
 const moodOrder = [
@@ -98,6 +109,7 @@ export default function ConjugationModal({
   const [selectedTranslationId, setSelectedTranslationId] = useState(null)
   const [wordTranslations, setWordTranslations] = useState([])
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
+  const [auxiliaryService] = useState(() => new AuxiliaryPatternService(supabase))
 
   // Quick scratch/erase animation state to fade forms out and back in
   const [isContentChanging, setIsContentChanging] = useState(false)
@@ -155,6 +167,11 @@ export default function ConjugationModal({
       const pronounTags = ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro']
       return tags.find(tag => pronounTags.includes(tag)) || null
     }
+
+    if (category === 'person') {
+      const personTags = ['prima-persona', 'seconda-persona', 'terza-persona']
+      return tags.find(tag => personTags.includes(tag)) || null
+    }
     
     return null
   }
@@ -176,38 +193,49 @@ export default function ConjugationModal({
     return grouped
   }
 
+  // Get auxiliary type for selected translation
+  const getAuxiliaryForTranslation = (translationId) => {
+    if (!translationId) return 'avere'
+
+    const translation = wordTranslations.find(t => t.id === translationId)
+    const auxiliary = translation?.context_metadata?.auxiliary
+
+    console.log('🔍 Auxiliary lookup:', {
+      translationId,
+      translation: translation?.translation,
+      auxiliary,
+      metadata: translation?.context_metadata
+    })
+
+    return auxiliary || 'avere'
+  }
+
   // Load conjugations for the selected word
 const loadConjugations = async () => {
   setIsLoading(true)
   try {
-    
+    console.log('🔄 Loading conjugations for:', word.italian)
+    console.log('🔍 DIAGNOSTIC: selectedTranslationId:', selectedTranslationId)
+    console.log('🔍 DIAGNOSTIC: wordTranslations length:', wordTranslations.length)
+
     const { data, error } = await supabase
       .from('word_forms')
       .select(`
         *,
-        word_audio_metadata!audio_metadata_id(
-          audio_filename,
-          azure_voice_name,
-          duration_seconds
-        ),
         form_translations (
           word_translation_id,
           translation,
-          assignment_method,
-          word_translations (
-            id,
-            translation
-          )
+          assignment_method
         )
       `)
       .eq('word_id', word.id)
       .eq('form_type', 'conjugation')
       .order('tags')
 
-
     if (error) throw error
-    
-    
+
+    console.log('📊 Raw forms loaded:', data?.length || 0)
+
     const processedData = (data || []).map(form => {
       const result = {
         ...form,
@@ -220,23 +248,266 @@ const loadConjugations = async () => {
           word_translation: ft.word_translations || null
         }))
       }
-
       return result
     })
 
-    // Generate all forms (stored + calculated variants)
-    const allForms = VariantCalculator.getAllForms(processedData, word.tags || [])
+    // STEP 1: Start with stored forms + calculated variants (NO dynamic compounds yet)
+    let allForms = VariantCalculator.getAllForms(processedData, word.tags || [])
+    console.log('✅ Base forms (stored + variants):', allForms.length)
 
+    // STEP 2: Generate dynamic compounds ONLY if translation is selected
+    if (selectedTranslationId && wordTranslations.length > 0) {
+      console.log('🚀 Generating dynamic compounds for translation:', selectedTranslationId)
+
+      // CRITICAL FIX: Ensure we use the CURRENT selectedTranslationId
+      const currentAuxiliary = getAuxiliaryForTranslation(selectedTranslationId)
+      console.log('🎯 Current auxiliary for generation:', currentAuxiliary)
+
+      const dynamicCompounds = await generateDynamicCompounds(processedData, currentAuxiliary)
+
+      if (dynamicCompounds && dynamicCompounds.length > 0) {
+        // CRITICAL FIX: Clear any old generated forms before adding new ones
+        allForms = allForms.filter(form => !form.is_generated)
+
+        const withVariants = dynamicCompounds.flatMap(f =>
+          f.tags?.includes('compound')
+            ? [f, ...calculateVariants(f)]
+            : [f]
+        )
+
+        allForms = [...allForms, ...withVariants]
+        console.log('✨ Dynamic compounds generated:', dynamicCompounds.length)
+        console.log('🎯 Total forms after generation:', allForms.length)
+      }
+    } else {
+      console.log('⚠️ Skipping dynamic generation - translation not selected or no translations loaded')
+    }
 
     const groupedConjugations = groupConjugationsByMoodTense(allForms)
     setConjugations(groupedConjugations)
-    
+
   } catch (error) {
     console.error('❌ Error loading conjugations:', error)
   } finally {
     setIsLoading(false)
   }
 }
+
+  // Generate dynamic compound forms based on selected translation
+  const generateDynamicCompounds = async (storedForms, auxiliaryType) => {
+    console.log('🔧 generateDynamicCompounds called with auxiliary:', auxiliaryType)
+
+    // Find clean building blocks (not person-specific compound forms)
+    const participle = storedForms.find(f =>
+      f.tags?.includes('participio-passato') &&
+      f.tags?.includes('simple') &&
+      !f.tags?.includes('io') &&
+      !f.tags?.includes('tu') &&
+      !f.tags?.includes('lui')
+    )
+    const gerund = storedForms.find(f =>
+      f.tags?.includes('gerundio-presente') &&
+      f.tags?.includes('simple') &&
+      !f.tags?.includes('io') &&
+      !f.tags?.includes('tu') &&
+      !f.tags?.includes('lui')
+    )
+
+    if (!participle && !gerund) {
+      console.log('⚠️ No building blocks found for dynamic generation')
+      return []
+    }
+
+    const generatedForms = []
+
+    // Generate compound tenses that use participles
+    if (participle) {
+      console.log('🧱 Using participle:', participle.form_text)
+      const perfectTenses = [
+        'passato-prossimo',
+        'trapassato-prossimo',
+        'futuro-anteriore',
+        'congiuntivo-passato',
+        'congiuntivo-trapassato',
+        'condizionale-passato'
+      ]
+
+      for (const tense of perfectTenses) {
+        for (const person of ['prima-persona', 'seconda-persona', 'terza-persona']) {
+          for (const plurality of ['singolare', 'plurale']) {
+            // Get translation for this person/plurality combination
+            const personTranslation = getTranslationForPersonPlurality(participle, person, plurality)
+
+            const baseParticiple = buildPastParticiple(
+              participle.form_text,
+              auxiliaryType,
+              plurality
+            )
+
+            const generated = await auxiliaryService.generateCompoundForm(
+              auxiliaryType,
+              tense,
+              person,
+              plurality,
+              baseParticiple,
+              personTranslation
+            )
+
+            if (generated) {
+              // Add form_translations assignments from the participle
+              generated.form_translations = participle.form_translations || []
+              // Attach pronoun tag for correct display
+              const pronounMap = {
+                'prima-persona': { singolare: 'io', plurale: 'noi' },
+                'seconda-persona': { singolare: 'tu', plurale: 'voi' },
+                'terza-persona': { singolare: 'lui', plurale: 'loro' }
+              }
+              const pronounTag = pronounMap[person]?.[plurality]
+              if (pronounTag) {
+                generated.tags.push(pronounTag)
+              }
+              // Ensure tagging for VariantCalculator
+              generated.tags = [
+                ...(generated.tags || []),
+                'compound',
+                plurality
+              ]
+              generated.variant_type = null
+
+              if (
+                auxiliaryType === 'essere' &&
+                !word.tags?.includes('essere-auxiliary')
+              ) {
+                word.tags = [...(word.tags || []), 'essere-auxiliary']
+              }
+
+              generated.auxiliary_type = auxiliaryType
+              generated.word_tags = [...(word.tags || [])]
+
+              generatedForms.push(generated)
+            }
+          }
+        }
+      }
+    }
+
+    // Generate progressive tenses that use gerunds (always use 'stare')
+    if (gerund) {
+      console.log('🧱 Using gerund:', gerund.form_text)
+      const progressiveTenses = [
+        'presente-progressivo',
+        'passato-progressivo',
+        'futuro-progressivo'
+      ]
+
+      for (const tense of progressiveTenses) {
+        for (const person of ['prima-persona', 'seconda-persona', 'terza-persona']) {
+          for (const plurality of ['singolare', 'plurale']) {
+            // Get translation for this person/plurality combination  
+            const personTranslation = getTranslationForPersonPlurality(gerund, person, plurality)
+
+            // Progressive tenses always use 'stare' patterns regardless of main auxiliary
+            const generated = await auxiliaryService.generateCompoundForm(
+              'avere', // Use avere column which contains stare patterns for progressive
+              tense,
+              person,
+              plurality,
+              gerund.form_text,
+              personTranslation
+            )
+
+            if (generated) {
+              // Add form_translations assignments from the gerund
+              generated.form_translations = gerund.form_translations || []
+              const pronounMap = {
+                'prima-persona': { singolare: 'io', plurale: 'noi' },
+                'seconda-persona': { singolare: 'tu', plurale: 'voi' },
+                'terza-persona': { singolare: 'lui', plurale: 'loro' }
+              }
+              const pronounTag = pronounMap[person]?.[plurality]
+              if (pronounTag) {
+                generated.tags.push(pronounTag)
+              }
+              generated.tags = [
+                ...(generated.tags || []),
+                'compound',
+                plurality
+              ]
+              generated.variant_type = null
+
+              if (
+                auxiliaryType === 'essere' &&
+                !word.tags?.includes('essere-auxiliary')
+              ) {
+                word.tags = [...(word.tags || []), 'essere-auxiliary']
+              }
+
+              generated.auxiliary_type = 'avere'
+              generated.word_tags = [...(word.tags || [])]
+
+              generatedForms.push(generated)
+            }
+          }
+        }
+      }
+    }
+
+    console.log('🎯 Generated forms:', generatedForms.length)
+    return generatedForms
+  }
+
+  // Get appropriate translation for person/plurality combination
+  const getTranslationForPersonPlurality = (buildingBlock, person, plurality) => {
+    // Find form_translation for selected translation
+    const assignment = buildingBlock.form_translations?.find(
+      ft => ft.word_translation_id === selectedTranslationId
+    )
+
+    if (assignment) {
+      let baseTranslation = assignment.translation
+
+      // ENHANCED: Build proper compound translation based on auxiliary + participle
+      const currentAuxiliary = getAuxiliaryForTranslation(
+        selectedTranslationId,
+        wordTranslations
+      )
+
+      if (currentAuxiliary === 'avere') {
+        // AVERE compounds: "have/has + past participle"
+        if (person === 'prima-persona') {
+          return plurality === 'singolare'
+            ? `I have ${baseTranslation}`
+            : `we have ${baseTranslation}`
+        } else if (person === 'seconda-persona') {
+          return plurality === 'singolare'
+            ? `you have ${baseTranslation}`
+            : `you all have ${baseTranslation}`
+        } else if (person === 'terza-persona') {
+          return plurality === 'singolare'
+            ? `he/she has ${baseTranslation}`
+            : `they have ${baseTranslation}`
+        }
+      } else {
+        // ESSERE compounds: "am/is/are + past participle"
+        if (person === 'prima-persona') {
+          return plurality === 'singolare'
+            ? `I am ${baseTranslation}`
+            : `we are ${baseTranslation}`
+        } else if (person === 'seconda-persona') {
+          return plurality === 'singolare'
+            ? `you are ${baseTranslation}`
+            : `you all are ${baseTranslation}`
+        } else if (person === 'terza-persona') {
+          return plurality === 'singolare'
+            ? `he/she is ${baseTranslation}`
+            : `they are ${baseTranslation}`
+        }
+      }
+    }
+
+    // Fallback
+    return buildingBlock.translation || 'compound form'
+  }
 
   // Load all translations for the current word
 const loadWordTranslations = async () => {
@@ -323,26 +594,87 @@ const loadWordTranslations = async () => {
   // Filter forms to those relevant for the selected translation
   const getFormsForSelectedTranslation = () => {
     const baseForms = getCurrentForms()
-    console.log(`🔍 Step 1: Base forms for ${selectedMood}/${selectedTense}:`, baseForms.length)
-    console.log('🔍 DEBUG: Selected translation ID:', selectedTranslationId)
+    console.log(
+      `\u{1F50D} DISPLAY: Base forms for ${selectedMood}/${selectedTense}:`,
+      baseForms.length
+    )
+    console.log('\u{1F50D} DISPLAY: Selected translation ID:', selectedTranslationId)
 
     if (!selectedTranslationId) {
-      console.log('⚠️ No translation selected, showing all forms')
+      console.log('\u26A0\uFE0F DISPLAY: No translation selected, showing all forms')
       return baseForms
     }
 
     // Filter forms that have assignments for the selected translation
-    const translationFilteredForms = baseForms.filter(form => {
-      const hasAssignment = form.form_translations?.some(
-        assignment => assignment.word_translation_id === selectedTranslationId
+    const formsWithAssignments = baseForms.filter(form =>
+      form.form_translations?.some(
+        ft => ft.word_translation_id === selectedTranslationId
       )
-      return hasAssignment
-    })
+    )
 
-    console.log('✅ Translation filtered forms:', translationFilteredForms.length)
+    console.log(
+      '\u{1F4CB} DISPLAY: Forms with assignments:',
+      formsWithAssignments.length
+    )
 
-    // Return only the base forms. Gender variants are applied dynamically
-    return translationFilteredForms
+    // CRITICAL FIX: For compound tenses, prioritize generated forms over stored forms
+    const isCompoundTense =
+      selectedTense === 'passato-prossimo' ||
+      selectedTense === 'trapassato-prossimo' ||
+      selectedTense === 'futuro-anteriore' ||
+      selectedTense === 'congiuntivo-passato' ||
+      selectedTense === 'congiuntivo-trapassato' ||
+      selectedTense === 'condizionale-passato' ||
+      selectedTense === 'presente-progressivo' ||
+      selectedTense === 'passato-progressivo' ||
+      selectedTense === 'futuro-progressivo'
+
+    if (isCompoundTense) {
+      console.log(
+        '\u{1F527} DISPLAY: Compound tense - prioritizing generated forms'
+      )
+
+      // For compound tenses: prefer generated forms, only use stored as fallback
+      const generatedForms = formsWithAssignments.filter(form => form.is_generated)
+      const storedForms = formsWithAssignments.filter(form => !form.is_generated)
+
+      console.log('\u2728 DISPLAY: Generated forms:', generatedForms.length)
+      console.log('\u{1F4C4} DISPLAY: Stored forms:', storedForms.length)
+
+      if (generatedForms.length > 0) {
+        // Use generated forms and filter out any stored forms that would duplicate
+        const generatedPronouns = new Set(
+          generatedForms.map(form => extractTagValue(form.tags, 'pronoun'))
+        )
+
+        const nonDuplicateStored = storedForms.filter(form => {
+          const pronoun = extractTagValue(form.tags, 'pronoun')
+          return !generatedPronouns.has(pronoun)
+        })
+
+        const result = [...generatedForms, ...nonDuplicateStored]
+        console.log('\u{1F3AF} DISPLAY: Final compound forms:', result.length)
+        return result
+      } else {
+        // Fallback to stored forms if no generated forms available
+        console.log(
+          '\u26A0\uFE0F DISPLAY: No generated forms, using stored as fallback'
+        )
+        return storedForms
+      }
+    } else {
+      console.log('\u{1F4DD} DISPLAY: Simple tense - using stored forms')
+
+      // For simple tenses: prefer stored forms
+      const storedForms = formsWithAssignments.filter(form => !form.is_generated)
+
+      if (storedForms.length > 0) {
+        return storedForms
+      } else {
+        // Fallback to any available forms
+        return formsWithAssignments
+      }
+    }
   }
 
   // Order forms by pronoun sequence
@@ -466,11 +798,14 @@ const loadWordTranslations = async () => {
   // Get pronoun display based on audio preference and gender toggle
   const getPronounDisplay = (form) => {
     const pronoun = extractTagValue(form.tags, 'pronoun')
+    const person = extractTagValue(form.tags, 'person')
 
     // Handle formality first
     if (selectedFormality === 'formal') {
-      if (pronoun === 'tu') return 'Lei'
-      if (pronoun === 'voi') return 'Loro'
+      if (pronoun === 'tu' || (person === 'seconda-persona' && form.tags?.includes('singolare')))
+        return 'Lei'
+      if (pronoun === 'voi' || (person === 'seconda-persona' && form.tags?.includes('plurale')))
+        return 'Loro'
     }
 
     // For 3rd person pronouns
@@ -506,10 +841,19 @@ const loadWordTranslations = async () => {
     })))
 
     const assignment = form.form_translations?.find(
-      (ft) => ft.word_translation_id === selectedTranslationId
+      ft => ft.word_translation_id === selectedTranslationId
     )
 
-    const result = assignment?.translation || assignment?.word_translation?.translation || form.translation
+    // If this is a dynamically generated form, prefer the form's own translation
+    if (form.is_generated && form.translation) {
+      console.log('✨ Generated form translation used:', form.translation)
+      return form.translation
+    }
+
+    const result =
+      assignment?.translation ||
+      assignment?.word_translation?.translation ||
+      form.translation
     console.log('✅ Selected translation result:', result)
     return result
   }
@@ -613,31 +957,82 @@ const loadWordTranslations = async () => {
   // Get the appropriate form to display based on gender toggle AND formality
   const getDisplayFormWithFormality = (baseForm) => {
     const pronoun = extractTagValue(baseForm.tags, 'pronoun')
+    const person = extractTagValue(baseForm.tags, 'person')
+
+    const getAux = (form) =>
+      extractTagValue(form.tags, 'aux') ||
+      (/^(ho|hai|ha|abbiamo|avete|hanno)\b/i.test(form.form_text)
+        ? 'avere'
+        : /^(sono|sei|è|siamo|siete)\b/i.test(form.form_text)
+        ? 'essere'
+        : undefined)
 
     // Handle formality mapping first
     if (selectedFormality === 'formal') {
       // Map 2nd person to 3rd person forms when formal
-      if (pronoun === 'tu') {
+      const isSecondSingular =
+        pronoun === 'tu' ||
+        (pronoun == null &&
+          person === 'seconda-persona' &&
+          baseForm.tags?.includes('singolare'))
+
+      if (isSecondSingular) {
+        const aux = getAux(baseForm)
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
-        const thirdPersonForm = allForms.find(
-          (form) =>
-            !form.tags?.includes('calculated-variant') &&
-            (extractTagValue(form.tags, 'pronoun') === 'lui' ||
-              extractTagValue(form.tags, 'pronoun') === 'lei')
-        )
-        if (thirdPersonForm) {
-          return getDisplayForm(thirdPersonForm)
+        const thirdPersonSingularForm = allForms.find((form) => {
+          // ①  same gender variant (null, fem‑sing, fem‑plur, …)
+          if (form.variant_type !== baseForm.variant_type) return false
+
+          // ②  accept any spelling of the 3ᵗᵉˢ pronoun
+          const pron = extractTagValue(form.tags, 'pronoun')
+          const byPronoun = pron && /^(lui\/?lei?|lei|lui)$/i.test(pron)
+          const byPerson =
+            !pron &&
+            extractTagValue(form.tags, 'person') === 'terza-persona' &&
+            form.tags?.includes('singolare')
+
+          if (!(byPronoun || byPerson)) return false
+
+          // ③  stay on the same auxiliary track
+          return getAux(form) === getAux(baseForm)
+        })
+
+        if (thirdPersonSingularForm) {
+          console.log(
+            `\ud83c\udfdb\ufe0f Formal mapping: tu \u2192 Lei using form: ${thirdPersonSingularForm.form_text}`
+          )
+          return getDisplayForm(thirdPersonSingularForm)
         }
       }
 
-      if (pronoun === 'voi') {
+      const isSecondPlural =
+        pronoun === 'voi' ||
+        (pronoun == null &&
+          person === 'seconda-persona' &&
+          baseForm.tags?.includes('plurale'))
+
+      if (isSecondPlural) {
+        const aux = getAux(baseForm)
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
-        const thirdPersonPluralForm = allForms.find(
-          (form) =>
-            !form.tags?.includes('calculated-variant') &&
-            extractTagValue(form.tags, 'pronoun') === 'loro'
-        )
+        const thirdPersonPluralForm = allForms.find((form) => {
+          if (form.variant_type !== baseForm.variant_type) return false
+
+          const pron = extractTagValue(form.tags, 'pronoun')
+          const byPronoun = pron && /^loro$/i.test(pron)
+          const byPerson =
+            !pron &&
+            extractTagValue(form.tags, 'person') === 'terza-persona' &&
+            form.tags?.includes('plurale')
+
+          if (!(byPronoun || byPerson)) return false
+
+          return getAux(form) === getAux(baseForm)
+        })
+
         if (thirdPersonPluralForm) {
+          console.log(
+            `\ud83c\udfdb\ufe0f Formal mapping: voi \u2192 Loro using form: ${thirdPersonPluralForm.form_text}`
+          )
           return getDisplayForm(thirdPersonPluralForm)
         }
       }
@@ -702,6 +1097,7 @@ const loadWordTranslations = async () => {
     setIsContentChanging(true)
     setTimeout(() => {
       setSelectedTranslationId(newTranslationId)
+      // Conjugations will reload via useEffect when the state updates
       setIsContentChanging(false)
     }, 150)
   }
@@ -885,10 +1281,14 @@ const loadWordTranslations = async () => {
 
   useEffect(() => {
     if (isOpen && word) {
-      loadConjugations()
-      loadWordTranslations()
+      if (selectedTranslationId !== null) {
+        loadConjugations()
+      }
+      if (selectedTranslationId === null) {
+        loadWordTranslations()
+      }
     }
-  }, [isOpen, word])
+  }, [isOpen, word, selectedTranslationId]) // CRITICAL: Add selectedTranslationId dependency
 
   useEffect(() => {
     // Set default tense when mood changes

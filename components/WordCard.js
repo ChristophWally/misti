@@ -278,11 +278,20 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   ]
 
   // Get translations - use processedTranslations from EnhancedDictionarySystem
-  const translations = word.processedTranslations || []
+  const translations =
+    word.processedTranslations ||
+    (word.word_translations || []).map(t => ({
+      id: t.id,
+      translation: t.translation,
+      isPrimary: t.display_priority === 1,
+      contextInfo: null,
+      usageNotes: t.usage_notes
+    })) || []
 
   // Show first 2 translations, rest are "additional"
   const visibleTranslations = translations.slice(0, 2)
   const additionalTranslations = translations.slice(2)
+  const fallbackTranslation = translations[0]?.translation || ''
 
   // Format context hint for display
   const formatContextHint = (contextInfo, usageNotes) => {
@@ -456,7 +465,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
               </div>
               <div className="flex items-center mr-2">
                 <span className="text-base text-gray-900 font-medium">
-                  {word.english}
+                  {fallbackTranslation}
                 </span>
               </div>
               <div className="flex-1"></div>
