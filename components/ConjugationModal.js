@@ -899,34 +899,47 @@ const loadWordTranslations = async () => {
   // Get the appropriate form to display based on gender toggle AND formality
   const getDisplayFormWithFormality = (baseForm) => {
     const pronoun = extractTagValue(baseForm.tags, 'pronoun')
-    const person = extractTagValue(baseForm.tags, 'person')
 
     // Handle formality mapping first
     if (selectedFormality === 'formal') {
       // Map 2nd person to 3rd person forms when formal
-      if (pronoun === 'tu' || (person === 'seconda-persona' && baseForm.tags?.includes('singolare'))) {
+      if (pronoun === 'tu') {
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
-        const thirdPersonForm = allForms.find(
+        const thirdPersonSingularForm = allForms.find(
           (form) =>
             !form.tags?.includes('calculated-variant') &&
-            ((extractTagValue(form.tags, 'pronoun') === 'lui' ||
-              extractTagValue(form.tags, 'pronoun') === 'lei') ||
-              (extractTagValue(form.tags, 'person') === 'terza-persona' && form.tags?.includes('singolare')))
+            (extractTagValue(form.tags, 'pronoun') === 'lui' ||
+              extractTagValue(form.tags, 'pronoun') === 'lei') &&
+            // CRITICAL: Ensure it has the same auxiliary compatibility
+            form.form_translations?.some(
+              ft => ft.word_translation_id === selectedTranslationId
+            )
         )
-        if (thirdPersonForm) {
-          return getDisplayForm(thirdPersonForm)
+
+        if (thirdPersonSingularForm) {
+          console.log(
+            `\ud83c\udfdb\ufe0f Formal mapping: tu \u2192 Lei using form: ${thirdPersonSingularForm.form_text}`
+          )
+          return getDisplayForm(thirdPersonSingularForm)
         }
       }
 
-      if (pronoun === 'voi' || (person === 'seconda-persona' && baseForm.tags?.includes('plurale'))) {
+      if (pronoun === 'voi') {
         const allForms = conjugations[selectedMood]?.[selectedTense] || []
         const thirdPersonPluralForm = allForms.find(
           (form) =>
             !form.tags?.includes('calculated-variant') &&
-            (extractTagValue(form.tags, 'pronoun') === 'loro' ||
-              (extractTagValue(form.tags, 'person') === 'terza-persona' && form.tags?.includes('plurale')))
+            extractTagValue(form.tags, 'pronoun') === 'loro' &&
+            // CRITICAL: Ensure it has the same auxiliary compatibility
+            form.form_translations?.some(
+              ft => ft.word_translation_id === selectedTranslationId
+            )
         )
+
         if (thirdPersonPluralForm) {
+          console.log(
+            `\ud83c\udfdb\ufe0f Formal mapping: voi \u2192 Loro using form: ${thirdPersonPluralForm.form_text}`
+          )
           return getDisplayForm(thirdPersonPluralForm)
         }
       }
