@@ -401,25 +401,48 @@ const loadConjugations = async () => {
     )
 
     if (assignment) {
-      // Transform base translation based on person/plurality
-      let translation = assignment.translation
+      let baseTranslation = assignment.translation
 
-      // Simple transformation - you can enhance this later
-      if (person === 'prima-persona') {
-        translation = translation.replace(/he\/she/gi, 'I').replace(/^He\/she/, 'I')
-      } else if (person === 'seconda-persona') {
-        translation = translation.replace(/he\/she/gi, 'you').replace(/^He\/she/, 'You')
-      } else if (person === 'terza-persona') {
-        if (plurality === 'plurale') {
-          translation = translation.replace(/he\/she/gi, 'they').replace(/^He\/she/, 'They')
+      // ENHANCED: Build proper compound translation based on auxiliary + participle
+      const currentAuxiliary = getAuxiliaryForTranslation(
+        selectedTranslationId,
+        wordTranslations
+      )
+
+      if (currentAuxiliary === 'avere') {
+        // AVERE compounds: "have/has + past participle"
+        if (person === 'prima-persona') {
+          return plurality === 'singolare'
+            ? `I have ${baseTranslation}`
+            : `we have ${baseTranslation}`
+        } else if (person === 'seconda-persona') {
+          return plurality === 'singolare'
+            ? `you have ${baseTranslation}`
+            : `you all have ${baseTranslation}`
+        } else if (person === 'terza-persona') {
+          return plurality === 'singolare'
+            ? `he/she has ${baseTranslation}`
+            : `they have ${baseTranslation}`
         }
-        // Keep he/she for singular third person - will be handled by gender toggle
+      } else {
+        // ESSERE compounds: "am/is/are + past participle"
+        if (person === 'prima-persona') {
+          return plurality === 'singolare'
+            ? `I am ${baseTranslation}`
+            : `we are ${baseTranslation}`
+        } else if (person === 'seconda-persona') {
+          return plurality === 'singolare'
+            ? `you are ${baseTranslation}`
+            : `you all are ${baseTranslation}`
+        } else if (person === 'terza-persona') {
+          return plurality === 'singolare'
+            ? `he/she is ${baseTranslation}`
+            : `they are ${baseTranslation}`
+        }
       }
-
-      return translation
     }
 
-    // Fallback to building block translation
+    // Fallback
     return buildingBlock.translation || 'compound form'
   }
 
