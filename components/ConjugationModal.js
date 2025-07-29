@@ -1205,14 +1205,10 @@ const loadWordTranslations = async () => {
 
   useEffect(() => {
     if (isOpen && word) {
-      if (selectedTranslationId !== null) {
-        loadConjugations()
-      }
-      if (selectedTranslationId === null) {
-        loadWordTranslations()
-      }
+      loadConjugations()
+      loadWordTranslations()
     }
-  }, [isOpen, word, selectedTranslationId]) // CRITICAL: Add selectedTranslationId dependency
+  }, [isOpen, word, selectedTranslationId])
 
   useEffect(() => {
     // Set default tense when mood changes
