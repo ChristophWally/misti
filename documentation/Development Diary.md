@@ -2,6 +2,40 @@
 
 *Italian Learning Application Development Journey*
 
+# Misti Development Log - Translation Selector Integration
+
+**Date:** July 21, 2025
+**Duration:** Short update
+**Status:** ✅ Completed
+**Branch:** work
+
+### What I Accomplished Today
+- Added translation selector UI to ConjugationModal to choose among multiple English meanings.
+- Implemented loading of translation metadata with form counts.
+- Updated DictionaryPanel to use loadWordsWithTranslations.
+
+### How I Did It
+- Created state hooks and loading function for translations.
+- Inserted TranslationSelector component conditionally in the modal.
+- Verified build with `npm run build`.
+
+# Misti Development Log - Translation Selector Filtering Update
+
+**Date:** July 21, 2025 - Evening
+**Duration:** Short follow-up
+**Status:** ✅ Completed
+**Branch:** work
+
+### What I Accomplished Today
+- Simplified translation loading and removed form counts from the UI.
+- Added logic to filter conjugation forms by the selected translation.
+- Display a helpful message when no forms exist for a mood/tense.
+
+### How I Did It
+- Refactored `ConjugationModal` to fetch translations once and set the default selection.
+- Streamlined `TranslationSelector` to always show all available meanings.
+- Confirmed interface updates with manual checks.
+
 # Misti Development Log - Bugfix Session: Tag System & Animation Restoration
 
 **Date:** July 11, 2025  
