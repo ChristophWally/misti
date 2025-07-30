@@ -5,7 +5,7 @@
 // Use this to diagnose why the analysis isn't finding known issues
 
 import { useState } from 'react'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../../lib/supabase'
 
 export default function AnalysisDebugPage() {
   const [debugLogs, setDebugLogs] = useState([])
