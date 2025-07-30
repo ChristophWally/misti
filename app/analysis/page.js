@@ -345,35 +345,70 @@ export default function AnalysisPage() {
             {analysisResults.specificVerbResult && (
               <div className="mb-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  🎯 Analysis for "{analysisResults.specificVerbResult.verb}"
+                  🎯 EPIC Analysis for "{analysisResults.specificVerbResult.verb}"
                 </h3>
                 
-                {Object.values(analysisResults.specificVerbResult.gaps).every(gapArray => gapArray.length === 0) ? (
+                {/* Check if any EPIC alignment issues exist */}
+                {(!analysisResults.specificVerbResult.epicAlignment.missingForms.length &&
+                  !analysisResults.specificVerbResult.epicAlignment.deprecatedForms.length &&
+                  !analysisResults.specificVerbResult.epicAlignment.alignmentIssues.length) ? (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex items-center">
                       <span className="text-green-600 text-xl mr-2">✅</span>
                       <span className="text-green-800 font-semibold">
-                        No gaps found! This verb appears to be complete.
+                        EPIC compliant! This verb aligns with EPIC 002 specifications.
                       </span>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {Object.entries(analysisResults.specificVerbResult.gaps).map(([gapType, gaps]) => 
-                      gaps.length > 0 && (
-                        <div key={gapType} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                          <h4 className="font-semibold text-gray-800 mb-2 capitalize">
-                            {gapType.replace(/([A-Z])/g, ' $1')} Issues:
-                          </h4>
-                          <div className="space-y-2">
-                            {gaps.map((gap, gapIndex) => (
-                              <div key={gapIndex} className="text-sm text-gray-700">
-                                • {gap.description || gap.type}
-                              </div>
-                            ))}
-                          </div>
+                    {/* Missing EPIC Forms */}
+                    {analysisResults.specificVerbResult.epicAlignment.missingForms.length > 0 && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-red-800 mb-2">Missing EPIC Required Forms:</h4>
+                        <div className="space-y-2">
+                          {analysisResults.specificVerbResult.epicAlignment.missingForms[0].missingForms.map((form, index) => (
+                            <div key={index} className="text-sm text-red-700">
+                              • <strong>{form.category}:</strong> {form.description}
+                              <div className="text-xs text-red-600 ml-4">Impact: {form.impact}</div>
+                            </div>
+                          ))}
                         </div>
-                      )
+                      </div>
+                    )}
+
+                    {/* Deprecated Forms */}
+                    {analysisResults.specificVerbResult.epicAlignment.deprecatedForms.length > 0 && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-yellow-800 mb-2">Deprecated Forms (Should Remove):</h4>
+                        <div className="space-y-2">
+                          {analysisResults.specificVerbResult.epicAlignment.deprecatedForms[0].deprecatedForms.map((form, index) => (
+                            <div key={index} className="text-sm text-yellow-700">
+                              • <strong>"{form.formText}"</strong> - Tags: [{form.deprecatedTags.join(', ')}]
+                              <div className="text-xs text-yellow-600 ml-4">{form.recommendation}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Alignment Issues */}
+                    {analysisResults.specificVerbResult.epicAlignment.alignmentIssues.length > 0 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-blue-800 mb-2">EPIC Alignment Issues:</h4>
+                        <div className="space-y-2">
+                          {analysisResults.specificVerbResult.epicAlignment.alignmentIssues.map((issue, index) => (
+                            <div key={index} className="text-sm text-blue-700">
+                              • <strong>{issue.issue}:</strong> {issue.description}
+                              {issue.forms && (
+                                <div className="text-xs text-blue-600 ml-4">
+                                  Affected forms: {issue.forms.length}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
