@@ -1043,12 +1043,12 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     plurality: 'singolare',
     avere_auxiliary: 'starei',
     essere_auxiliary: 'starei',
-    avere_phonetic: 'stah-reh-ee',
-    essere_phonetic: 'stah-reh-ee',
+    avere_phonetic: 'stah-REH-ee',
+    essere_phonetic: 'stah-REH-ee',
     avere_ipa: '/staˈrei/',
     essere_ipa: '/staˈrei/',
     stare_auxiliary: 'starei',
-    stare_phonetic: 'stah-reh-ee',
+    stare_phonetic: 'stah-REH-ee',
     stare_ipa: '/staˈrei/'
   },
   {
@@ -1059,12 +1059,12 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     plurality: 'singolare',
     avere_auxiliary: 'staresti',
     essere_auxiliary: 'staresti',
-    avere_phonetic: 'stah-reh-stee',
-    essere_phonetic: 'stah-reh-stee',
+    avere_phonetic: 'stah-REH-stee',
+    essere_phonetic: 'stah-REH-stee',
     avere_ipa: '/staˈresti/',
     essere_ipa: '/staˈresti/',
     stare_auxiliary: 'staresti',
-    stare_phonetic: 'stah-reh-stee',
+    stare_phonetic: 'stah-REH-stee',
     stare_ipa: '/staˈresti/'
   },
   {
@@ -1075,12 +1075,12 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     plurality: 'singolare',
     avere_auxiliary: 'starebbe',
     essere_auxiliary: 'starebbe',
-    avere_phonetic: 'stah-reh-beh',
-    essere_phonetic: 'stah-reh-beh',
+    avere_phonetic: 'stah-REH-beh',
+    essere_phonetic: 'stah-REH-beh',
     avere_ipa: '/staˈrebbe/',
     essere_ipa: '/staˈrebbe/',
     stare_auxiliary: 'starebbe',
-    stare_phonetic: 'stah-reh-beh',
+    stare_phonetic: 'stah-REH-beh',
     stare_ipa: '/staˈrebbe/'
   },
   {
