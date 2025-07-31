@@ -9,15 +9,15 @@ export interface AuxiliaryPattern {
   tense: string;
   person: string;
   plurality: string;
-  avere_auxiliary: string;
-  essere_auxiliary: string;
-  avere_phonetic: string;
-  essere_phonetic: string;
-  avere_ipa: string;
-  essere_ipa: string;
-  stare_auxiliary?: string; // For progressive tenses
-  stare_phonetic?: string;
-  stare_ipa?: string;
+  avere_auxiliary?: string;   // Required for compound perfect tenses
+  essere_auxiliary?: string;  // Required for compound perfect tenses
+  avere_phonetic?: string;    // Required for compound perfect tenses
+  essere_phonetic?: string;   // Required for compound perfect tenses
+  avere_ipa?: string;         // Required for compound perfect tenses
+  essere_ipa?: string;        // Required for compound perfect tenses
+  stare_auxiliary?: string;   // Required for progressive tenses only
+  stare_phonetic?: string;    // Required for progressive tenses only
+  stare_ipa?: string;         // Required for progressive tenses only
 }
 
 /**
@@ -633,10 +633,10 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     essere_ipa: '/esˈsendo/'
   },
 
-  // ==========================================
-  // PROGRESSIVE TENSES (using STARE)
-  // Note: Progressive tenses use stare patterns stored in avere column
-  // ==========================================
+// ==========================================
+// PROGRESSIVE TENSES (using STARE)
+// Note: Progressive tenses only use "stare" auxiliaries
+// ==========================================
 
   // PRESENTE PROGRESSIVO (Present Progressive)
   {
@@ -645,12 +645,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'prima-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'sto', // Note: Using avere column for stare patterns
-    essere_auxiliary: 'sto', // Same for both - progressives always use stare
-    avere_phonetic: 'stoh',
-    essere_phonetic: 'stoh',
-    avere_ipa: '/sto/',
-    essere_ipa: '/sto/',
     stare_auxiliary: 'sto',
     stare_phonetic: 'stoh',
     stare_ipa: '/sto/'
@@ -661,12 +655,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'seconda-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'stai',
-    essere_auxiliary: 'stai',
-    avere_phonetic: 'STAH-ee',
-    essere_phonetic: 'STAH-ee',
-    avere_ipa: '/stai/',
-    essere_ipa: '/stai/',
     stare_auxiliary: 'stai',
     stare_phonetic: 'STAH-ee',
     stare_ipa: '/stai/'
@@ -677,12 +665,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'terza-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'sta',
-    essere_auxiliary: 'sta',
-    avere_phonetic: 'stah',
-    essere_phonetic: 'stah',
-    avere_ipa: '/sta/',
-    essere_ipa: '/sta/',
     stare_auxiliary: 'sta',
     stare_phonetic: 'stah',
     stare_ipa: '/sta/'
@@ -693,12 +675,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'prima-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'stiamo',
-    essere_auxiliary: 'stiamo',
-    avere_phonetic: 'STEE-ah-moh',
-    essere_phonetic: 'STEE-ah-moh',
-    avere_ipa: '/ˈstjamo/',
-    essere_ipa: '/ˈstjamo/',
     stare_auxiliary: 'stiamo',
     stare_phonetic: 'STEE-ah-moh',
     stare_ipa: '/ˈstjamo/'
@@ -709,12 +685,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'seconda-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'state',
-    essere_auxiliary: 'state',
-    avere_phonetic: 'STAH-teh',
-    essere_phonetic: 'STAH-teh',
-    avere_ipa: '/ˈstate/',
-    essere_ipa: '/ˈstate/',
     stare_auxiliary: 'state',
     stare_phonetic: 'STAH-teh',
     stare_ipa: '/ˈstate/'
@@ -725,12 +695,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'terza-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'stanno',
-    essere_auxiliary: 'stanno',
-    avere_phonetic: 'STAH-noh',
-    essere_phonetic: 'STAH-noh',
-    avere_ipa: '/ˈstanno/',
-    essere_ipa: '/ˈstanno/',
     stare_auxiliary: 'stanno',
     stare_phonetic: 'STAH-noh',
     stare_ipa: '/ˈstanno/'
@@ -743,12 +707,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'imperfetto',
     person: 'prima-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'stavo',
-    essere_auxiliary: 'stavo',
-    avere_phonetic: 'STAH-voh',
-    essere_phonetic: 'STAH-voh',
-    avere_ipa: '/ˈstavo/',
-    essere_ipa: '/ˈstavo/',
     stare_auxiliary: 'stavo',
     stare_phonetic: 'STAH-voh',
     stare_ipa: '/ˈstavo/'
@@ -759,12 +717,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'imperfetto',
     person: 'seconda-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'stavi',
-    essere_auxiliary: 'stavi',
-    avere_phonetic: 'STAH-vee',
-    essere_phonetic: 'STAH-vee',
-    avere_ipa: '/ˈstavi/',
-    essere_ipa: '/ˈstavi/',
     stare_auxiliary: 'stavi',
     stare_phonetic: 'STAH-vee',
     stare_ipa: '/ˈstavi/'
@@ -775,12 +727,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'imperfetto',
     person: 'terza-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'stava',
-    essere_auxiliary: 'stava',
-    avere_phonetic: 'STAH-vah',
-    essere_phonetic: 'STAH-vah',
-    avere_ipa: '/ˈstava/',
-    essere_ipa: '/ˈstava/',
     stare_auxiliary: 'stava',
     stare_phonetic: 'STAH-vah',
     stare_ipa: '/ˈstava/'
@@ -791,12 +737,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'imperfetto',
     person: 'prima-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'stavamo',
-    essere_auxiliary: 'stavamo',
-    avere_phonetic: 'stah-VAH-moh',
-    essere_phonetic: 'stah-VAH-moh',
-    avere_ipa: '/staˈvamo/',
-    essere_ipa: '/staˈvamo/',
     stare_auxiliary: 'stavamo',
     stare_phonetic: 'stah-VAH-moh',
     stare_ipa: '/staˈvamo/'
@@ -807,12 +747,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'imperfetto',
     person: 'seconda-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'stavate',
-    essere_auxiliary: 'stavate',
-    avere_phonetic: 'stah-VAH-teh',
-    essere_phonetic: 'stah-VAH-teh',
-    avere_ipa: '/staˈvate/',
-    essere_ipa: '/staˈvate/',
     stare_auxiliary: 'stavate',
     stare_phonetic: 'stah-VAH-teh',
     stare_ipa: '/staˈvate/'
@@ -823,12 +757,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'imperfetto',
     person: 'terza-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'stavano',
-    essere_auxiliary: 'stavano',
-    avere_phonetic: 'STAH-vah-noh',
-    essere_phonetic: 'STAH-vah-noh',
-    avere_ipa: '/ˈstavano/',
-    essere_ipa: '/ˈstavano/',
     stare_auxiliary: 'stavano',
     stare_phonetic: 'STAH-vah-noh',
     stare_ipa: '/ˈstavano/'
@@ -841,12 +769,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'futuro',
     person: 'prima-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'starò',
-    essere_auxiliary: 'starò',
-    avere_phonetic: 'stah-rOH',
-    essere_phonetic: 'stah-rOH',
-    avere_ipa: '/staˈro/',
-    essere_ipa: '/staˈro/',
     stare_auxiliary: 'starò',
     stare_phonetic: 'stah-rOH',
     stare_ipa: '/staˈro/'
@@ -857,12 +779,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'futuro',
     person: 'seconda-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'starai',
-    essere_auxiliary: 'starai',
-    avere_phonetic: 'stah-rAH-ee',
-    essere_phonetic: 'stah-rAH-ee',
-    avere_ipa: '/staˈrai/',
-    essere_ipa: '/staˈrai/',
     stare_auxiliary: 'starai',
     stare_phonetic: 'stah-rAH-ee',
     stare_ipa: '/staˈrai/'
@@ -873,12 +789,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'futuro',
     person: 'terza-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'starà',
-    essere_auxiliary: 'starà',
-    avere_phonetic: 'stah-rAH',
-    essere_phonetic: 'stah-rAH',
-    avere_ipa: '/staˈra/',
-    essere_ipa: '/staˈra/',
     stare_auxiliary: 'starà',
     stare_phonetic: 'stah-rAH',
     stare_ipa: '/staˈra/'
@@ -889,12 +799,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'futuro',
     person: 'prima-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'staremo',
-    essere_auxiliary: 'staremo',
-    avere_phonetic: 'stah-REH-moh',
-    essere_phonetic: 'stah-REH-moh',
-    avere_ipa: '/staˈremo/',
-    essere_ipa: '/staˈremo/',
     stare_auxiliary: 'staremo',
     stare_phonetic: 'stah-REH-moh',
     stare_ipa: '/staˈremo/'
@@ -905,12 +809,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'futuro',
     person: 'seconda-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'starete',
-    essere_auxiliary: 'starete',
-    avere_phonetic: 'stah-REH-teh',
-    essere_phonetic: 'stah-REH-teh',
-    avere_ipa: '/staˈrete/',
-    essere_ipa: '/staˈrete/',
     stare_auxiliary: 'starete',
     stare_phonetic: 'stah-REH-teh',
     stare_ipa: '/staˈrete/'
@@ -921,12 +819,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'futuro',
     person: 'terza-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'staranno',
-    essere_auxiliary: 'staranno',
-    avere_phonetic: 'stah-RAHN-noh',
-    essere_phonetic: 'stah-RAHN-noh',
-    avere_ipa: '/staˈranno/',
-    essere_ipa: '/staˈranno/',
     stare_auxiliary: 'staranno',
     stare_phonetic: 'stah-RAHN-noh',
     stare_ipa: '/staˈranno/'
@@ -941,12 +833,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'prima-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'stia',
-    essere_auxiliary: 'stia',
-    avere_phonetic: 'STEE-ah',
-    essere_phonetic: 'STEE-ah',
-    avere_ipa: '/ˈstja/',
-    essere_ipa: '/ˈstja/',
     stare_auxiliary: 'stia',
     stare_phonetic: 'STEE-ah',
     stare_ipa: '/ˈstja/'
@@ -957,12 +843,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'seconda-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'stia',
-    essere_auxiliary: 'stia',
-    avere_phonetic: 'STEE-ah',
-    essere_phonetic: 'STEE-ah',
-    avere_ipa: '/ˈstja/',
-    essere_ipa: '/ˈstja/',
     stare_auxiliary: 'stia',
     stare_phonetic: 'STEE-ah',
     stare_ipa: '/ˈstja/'
@@ -973,12 +853,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'terza-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'stia',
-    essere_auxiliary: 'stia',
-    avere_phonetic: 'STEE-ah',
-    essere_phonetic: 'STEE-ah',
-    avere_ipa: '/ˈstja/',
-    essere_ipa: '/ˈstja/',
     stare_auxiliary: 'stia',
     stare_phonetic: 'STEE-ah',
     stare_ipa: '/ˈstja/'
@@ -989,12 +863,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'prima-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'stiamo',
-    essere_auxiliary: 'stiamo',
-    avere_phonetic: 'STEE-ah-moh',
-    essere_phonetic: 'STEE-ah-moh',
-    avere_ipa: '/ˈstjamo/',
-    essere_ipa: '/ˈstjamo/',
     stare_auxiliary: 'stiamo',
     stare_phonetic: 'STEE-ah-moh',
     stare_ipa: '/ˈstjamo/'
@@ -1005,12 +873,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'seconda-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'stiate',
-    essere_auxiliary: 'stiate',
-    avere_phonetic: 'STEE-ah-teh',
-    essere_phonetic: 'STEE-ah-teh',
-    avere_ipa: '/ˈstjate/',
-    essere_ipa: '/ˈstjate/',
     stare_auxiliary: 'stiate',
     stare_phonetic: 'STEE-ah-teh',
     stare_ipa: '/ˈstjate/'
@@ -1021,12 +883,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'terza-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'stiano',
-    essere_auxiliary: 'stiano',
-    avere_phonetic: 'STEE-ah-noh',
-    essere_phonetic: 'STEE-ah-noh',
-    avere_ipa: '/ˈstjano/',
-    essere_ipa: '/ˈstjano/',
     stare_auxiliary: 'stiano',
     stare_phonetic: 'STEE-ah-noh',
     stare_ipa: '/ˈstjano/'
@@ -1041,12 +897,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'prima-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'starei',
-    essere_auxiliary: 'starei',
-    avere_phonetic: 'stah-REH-ee',
-    essere_phonetic: 'stah-REH-ee',
-    avere_ipa: '/staˈrei/',
-    essere_ipa: '/staˈrei/',
     stare_auxiliary: 'starei',
     stare_phonetic: 'stah-REH-ee',
     stare_ipa: '/staˈrei/'
@@ -1057,12 +907,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'seconda-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'staresti',
-    essere_auxiliary: 'staresti',
-    avere_phonetic: 'stah-REH-stee',
-    essere_phonetic: 'stah-REH-stee',
-    avere_ipa: '/staˈresti/',
-    essere_ipa: '/staˈresti/',
     stare_auxiliary: 'staresti',
     stare_phonetic: 'stah-REH-stee',
     stare_ipa: '/staˈresti/'
@@ -1073,12 +917,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'terza-persona',
     plurality: 'singolare',
-    avere_auxiliary: 'starebbe',
-    essere_auxiliary: 'starebbe',
-    avere_phonetic: 'stah-REH-beh',
-    essere_phonetic: 'stah-REH-beh',
-    avere_ipa: '/staˈrebbe/',
-    essere_ipa: '/staˈrebbe/',
     stare_auxiliary: 'starebbe',
     stare_phonetic: 'stah-REH-beh',
     stare_ipa: '/staˈrebbe/'
@@ -1089,12 +927,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'prima-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'staremmo',
-    essere_auxiliary: 'staremmo',
-    avere_phonetic: 'stah-REH-moh',
-    essere_phonetic: 'stah-REH-moh',
-    avere_ipa: '/staˈremmo/',
-    essere_ipa: '/staˈremmo/',
     stare_auxiliary: 'staremmo',
     stare_phonetic: 'stah-REH-moh',
     stare_ipa: '/staˈremmo/'
@@ -1105,12 +937,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'seconda-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'stareste',
-    essere_auxiliary: 'stareste',
-    avere_phonetic: 'stah-REH-steh',
-    essere_phonetic: 'stah-REH-steh',
-    avere_ipa: '/staˈreste/',
-    essere_ipa: '/staˈreste/',
     stare_auxiliary: 'stareste',
     stare_phonetic: 'stah-REH-steh',
     stare_ipa: '/staˈreste/'
@@ -1121,12 +947,6 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     tense: 'presente',
     person: 'terza-persona',
     plurality: 'plurale',
-    avere_auxiliary: 'starebbero',
-    essere_auxiliary: 'starebbero',
-    avere_phonetic: 'stah-REH-beh-roh',
-    essere_phonetic: 'stah-REH-beh-roh',
-    avere_ipa: '/staˈrebbero/',
-    essere_ipa: '/staˈrebbero/',
     stare_auxiliary: 'starebbero',
     stare_phonetic: 'stah-REH-beh-roh',
     stare_ipa: '/staˈrebbero/'
