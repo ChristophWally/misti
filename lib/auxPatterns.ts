@@ -943,12 +943,12 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     plurality: 'singolare',
     avere_auxiliary: 'stia',
     essere_auxiliary: 'stia',
-    avere_phonetic: 'stee-ah',
-    essere_phonetic: 'stee-ah',
+    avere_phonetic: 'STEE-ah',
+    essere_phonetic: 'STEE-ah',
     avere_ipa: '/ˈstja/',
     essere_ipa: '/ˈstja/',
     stare_auxiliary: 'stia',
-    stare_phonetic: 'stee-ah',
+    stare_phonetic: 'STEE-ah',
     stare_ipa: '/ˈstja/'
   },
   {
@@ -959,12 +959,12 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     plurality: 'singolare',
     avere_auxiliary: 'stia',
     essere_auxiliary: 'stia',
-    avere_phonetic: 'stee-ah',
-    essere_phonetic: 'stee-ah',
+    avere_phonetic: 'STEE-ah',
+    essere_phonetic: 'STEE-ah',
     avere_ipa: '/ˈstja/',
     essere_ipa: '/ˈstja/',
     stare_auxiliary: 'stia',
-    stare_phonetic: 'stee-ah',
+    stare_phonetic: 'STEE-ah',
     stare_ipa: '/ˈstja/'
   },
   {
@@ -975,12 +975,12 @@ export const AUXILIARY_PATTERNS: AuxiliaryPattern[] = [
     plurality: 'singolare',
     avere_auxiliary: 'stia',
     essere_auxiliary: 'stia',
-    avere_phonetic: 'stee-ah',
-    essere_phonetic: 'stee-ah',
+    avere_phonetic: 'STEE-ah',
+    essere_phonetic: 'STEE-ah',
     avere_ipa: '/ˈstja/',
     essere_ipa: '/ˈstja/',
     stare_auxiliary: 'stia',
-    stare_phonetic: 'stee-ah',
+    stare_phonetic: 'STEE-ah',
     stare_ipa: '/ˈstja/'
   },
   {
