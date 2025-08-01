@@ -212,18 +212,22 @@ export default function AnalysisPage() {
             {/* Summary Statistics */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">📈 Analysis Summary</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="bg-blue-50 p-4 rounded-lg text-center">
                   <div className="text-2xl font-bold text-blue-600">{analysisResults.analyzedVerbs}</div>
                   <div className="text-sm text-blue-800">Verbs Analyzed</div>
                 </div>
                 <div className="bg-red-50 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-red-600">{analysisResults.summary?.totalGaps || 0}</div>
-                  <div className="text-sm text-red-800">Total Gaps Found</div>
+                  <div className="text-2xl font-bold text-red-600">{analysisResults.summary?.totalIssues || 0}</div>
+                  <div className="text-sm text-red-800">Total Issues</div>
                 </div>
                 <div className="bg-orange-50 p-4 rounded-lg text-center">
                   <div className="text-2xl font-bold text-orange-600">{analysisResults.summary?.criticalIssues || 0}</div>
                   <div className="text-sm text-orange-800">Critical Issues</div>
+                </div>
+                <div className="bg-purple-50 p-4 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-purple-600">{analysisResults.summary?.crossTableIssuesCount || 0}</div>
+                  <div className="text-sm text-purple-800">Cross-Table Issues</div>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg text-center">
                   <div className="text-2xl font-bold text-green-600">{analysisResults.summary?.verbsNeedingAttention || 0}</div>
@@ -256,18 +260,18 @@ export default function AnalysisPage() {
             )}
 
             {/* Missing Building Blocks */}
-            {analysisResults.missingBuildingBlocks && analysisResults.missingBuildingBlocks.length > 0 && (
+            {analysisResults.epicAlignmentIssues && analysisResults.epicAlignmentIssues.filter(issue => issue.issue === 'missing-building-blocks').length > 0 && (
               <div className="mb-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-4">🧱 Missing Building Blocks (Critical)</h3>
                 <div className="space-y-4">
-                  {analysisResults.missingBuildingBlocks.map((item, index) => (
+                  {analysisResults.epicAlignmentIssues.filter(issue => issue.issue === 'missing-building-blocks').map((item, index) => (
                     <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-4">
                       <h4 className="font-semibold text-red-800 mb-2">
                         {item.verb.italian} ({item.verb.tags?.join(', ')})
                       </h4>
                       <div className="space-y-2">
-                        {item.gaps.map((gap, gapIndex) => (
-                          <div key={gapIndex} className={`p-3 rounded border ${getSeverityColor(gap.severity)}`}>
+                        {item.forms.map((gap, gapIndex) => (
+                          <div key={gapIndex} className={`p-3 rounded border ${getSeverityColor(gap.priority)}`}>
                             <div className="font-medium">{gap.description}</div>
                             <div className="text-sm mt-1">{gap.impact}</div>
                           </div>
@@ -291,25 +295,25 @@ export default function AnalysisPage() {
                       </h4>
                       <p className="text-sm text-orange-700 mb-3">{item.priorityReason}</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {item.buildingBlockGaps.length > 0 && (
+                        {item.missingBuildingBlocks && item.missingBuildingBlocks.length > 0 && (
                           <div>
                             <h5 className="font-medium text-orange-800 mb-1">Building Block Issues:</h5>
                             <ul className="text-sm text-orange-700 space-y-1">
-                              {item.buildingBlockGaps.map((gap, gapIndex) => (
+                              {item.missingBuildingBlocks.map((gap, gapIndex) => (
                                 <li key={gapIndex}>• {gap.description}</li>
                               ))}
                             </ul>
                           </div>
                         )}
-                        {item.conjugationGaps.length > 0 && (
+                        {item.missingEpicForms && item.missingEpicForms.length > 0 && (
                           <div>
                             <h5 className="font-medium text-orange-800 mb-1">Conjugation Issues:</h5>
                             <ul className="text-sm text-orange-700 space-y-1">
-                              {item.conjugationGaps.slice(0, 3).map((gap, gapIndex) => (
+                              {item.missingEpicForms.slice(0, 3).map((gap, gapIndex) => (
                                 <li key={gapIndex}>• {gap.description}</li>
                               ))}
-                              {item.conjugationGaps.length > 3 && (
-                                <li>• ... and {item.conjugationGaps.length - 3} more</li>
+                              {item.missingEpicForms.length > 3 && (
+                                <li>• ... and {item.missingEpicForms.length - 3} more</li>
                               )}
                             </ul>
                           </div>
@@ -341,6 +345,28 @@ export default function AnalysisPage() {
               </div>
             )}
 
+            {/* Cross-Table Issues */}
+            {analysisResults.crossTableIssues && analysisResults.crossTableIssues.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">🔗 Cross-Table Issues</h3>
+                <div className="space-y-4">
+                  {analysisResults.crossTableIssues.map((item, index) => (
+                    <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-800 mb-2">{item.verb.italian}</h4>
+                      <div className="space-y-2">
+                        {item.issues.map((issue, issueIndex) => (
+                          <div key={issueIndex} className={`p-3 rounded border ${getSeverityColor(issue.priority)}`}>
+                            <div className="font-medium">{issue.description}</div>
+                            <div className="text-sm mt-1">Type: {issue.type}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Specific Verb Results */}
             {analysisResults.specificVerbResult && (
               <div className="mb-8">
@@ -359,16 +385,16 @@ export default function AnalysisPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {Object.entries(analysisResults.specificVerbResult.gaps).map(([gapType, gaps]) => 
-                      gaps.length > 0 && (
+                    {Object.entries(analysisResults.specificVerbResult.gaps).map(([gapType, gaps]) =>
+                      gaps && gaps.length > 0 && (
                         <div key={gapType} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                           <h4 className="font-semibold text-gray-800 mb-2 capitalize">
-                            {gapType.replace(/([A-Z])/g, ' $1')} Issues:
+                            {gapType.replace(/([A-Z])/g, ' $1').replace(/([a-z])([A-Z])/g, '$1 $2')} Issues:
                           </h4>
                           <div className="space-y-2">
                             {gaps.map((gap, gapIndex) => (
                               <div key={gapIndex} className="text-sm text-gray-700">
-                                • {gap.description || gap.type}
+                                • {gap.description || gap.type || JSON.stringify(gap)}
                               </div>
                             ))}
                           </div>
