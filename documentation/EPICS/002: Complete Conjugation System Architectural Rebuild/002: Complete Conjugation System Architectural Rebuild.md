@@ -7,9 +7,9 @@
 
 ## Executive Summary
 
-The current conjugation system has evolved into a fragmented architecture through incremental patches and feature additions. We are implementing a complete ground-up rebuild using a translation-centric architecture that will provide consistent behavior, optimal performance, and proper linguistic modeling of Italian verb conjugation complexity.
+The current conjugation system has evolved into a fragmented architecture through incremental patches and feature additions. We are implementing a complete ground-up rebuild using a **materialization-centric architecture** that establishes the foundational data structure and validation systems for future form materialization, enabling consistent behavior, optimal performance, and proper linguistic modeling of Italian verb conjugation complexity.
 
-This rebuild addresses critical system limitations including inconsistent auxiliary selection, broken gender variants, unreliable translation assignments, and scattered form generation logic. The new architecture centers on the principle that **semantic meaning drives grammatical behavior**, making translation selection the primary driver of all conjugation features.
+This rebuild addresses critical system limitations including inconsistent auxiliary selection, broken gender variants, unreliable translation assignments, and scattered form generation logic. The new architecture centers on the principle that **semantic meaning drives grammatical behavior**, making translation selection the primary driver of all conjugation features. **This EPIC focuses on establishing the architectural foundations and validation systems with existing dictionary verbs, while the full materialization engine will be built in a later EPIC as part of a website-based admin process.**
 
 ## The Architectural Problem We're Solving
 
@@ -23,13 +23,13 @@ Our existing conjugation system suffers from architectural inconsistencies that 
 
 The core issues we've identified include:
 
-**Inconsistent Form Generation:** Some forms are stored in the database while others are generated dynamically, leading to different behavior patterns depending on which type of form a user encounters. Stored forms have different tag structures than generated forms, causing features like gender variants to work unpredictably.
+**Inconsistent Form Materialization:** Some forms are stored in the database while others are generated dynamically, leading to different behavior patterns depending on which type of form a user encounters. Stored forms have different tag structures than generated forms, causing features like gender variants to work unpredictably. **Forms have no database identity when generated → can't track SRS progress, audio files need permanent IDs for association, and learning analytics become impossible without persistent form entities.**
 
-**Auxiliary Selection Confusion:** The original system assumes each verb uses a single auxiliary (avere or essere) across all meanings. However, Italian verbs like "finire" require different auxiliaries depending on their specific translation. "Finire" as "to finish" (transitive) uses avere, while "finire" as "to end" (intransitive) uses essere. Our current architecture cannot handle this translation-specific auxiliary selection.
+**Auxiliary Selection Confusion:** The original system assumes each verb uses a single auxiliary (avere or essere) across all meanings. However, Italian verbs like "finire" require different auxiliaries depending on their specific translation. "Finire" as "to finish" (transitive) uses avere, while "finire" as "to end" (intransitive) uses essere. Our current architecture cannot handle this translation-specific auxiliary selection, and **translation assignment logic becomes too complex in a generation approach.**
 
 **Broken Gender Variant Logic:** Gender variants for essere compound forms work inconsistently because the system checks for word-level tags rather than understanding the relationship between translation selection and auxiliary requirements. When forms are generated dynamically, they lack the proper tags that the variant calculator expects.
 
-**Translation Assignment Reliability:** The current system struggles to assign appropriate English translations to specific Italian forms, particularly for complex cases like reciprocal reflexive verbs where the same form "si lavano" might mean "they wash themselves" or "they wash each other" depending on semantic context.
+**Translation Assignment Reliability:** The current system struggles to assign appropriate English translations to specific Italian forms, particularly for complex cases like reciprocal reflexive verbs where the same form "si lavano" might mean "they wash themselves" or "they wash each other" depending on semantic context. **One Italian form can have multiple English meanings ("finisce" = "finishes/ends/runs out"), and one meaning can be realized by multiple forms ("to finish" = "finisco/ho finito/finirò").**
 
 **Scattered Code Logic:** Form filtering, gender calculations, auxiliary selection, and translation assignments are handled in different parts of the codebase with different assumptions, creating a maintenance nightmare and unpredictable user experience.
 
@@ -45,17 +45,21 @@ Italian verb conjugation presents several complex linguistic phenomena that our 
 
 **Formality and Pronoun Relationships:** The formal register maps second person forms to third person conjugations ("tu vai" becomes "Lei va"), but the relationship between stored forms and formal variants must be systematically maintained.
 
-## The Translation-Centric Architecture Solution
+## The Materialization-Centric Architecture Solution
 
 ### Core Architectural Principle
 
 Our new architecture is built on the foundational insight that **semantic meaning drives grammatical behavior**. Rather than trying to encode complex grammatical rules at the word or form level, we recognize that the user's choice of translation meaning determines all subsequent grammatical behavior including auxiliary selection, gender agreement, and form filtering.
 
+**The materialization-centric approach** establishes the data structure foundations for future form materialization, ensuring every form will have a persistent database identity for SRS progress tracking, audio file association, and learning analytics. **This makes form_translations the intelligent many-to-many center** that handles the complex relationships between Italian forms and English meanings.
+
+**This EPIC establishes the architectural foundations with existing dictionary verbs for validation and testing, while the full materialization engine will be implemented in a later EPIC through a website-based admin process where core details are entered and brought into the database.**
+
 This principle creates a clean separation of concerns where:
 - **Word-level data** contains inherent properties that never change (conjugation class, irregularity patterns)
 - **Translation-level metadata** contains semantic and grammatical information specific to each meaning
-- **Form-level data** contains the actual conjugated text and pronunciation information
-- **Dynamic generation logic** combines these elements based on user selection
+- **Form-level data** provides the foundation for future materialized conjugated text with database identity
+- **Form_translations intelligence layer** manages the many-to-many relationships between forms and meanings
 
 ### Three-Layer Data Architecture
 
@@ -72,32 +76,32 @@ const WORD_LEVEL_TAGS = {
 ```
 
 **Layer 2: Translation Metadata (Dynamic)**
-These properties change based on which meaning the user has selected and drive all grammatical behavior:
+These properties change based on which meaning the user has selected and drive all form materialization:
 ```javascript
 const TRANSLATION_LEVEL_METADATA = {
-  auxiliary: 'avere' | 'essere',  // Determines compound tense formation
-  usage: 'reciprocal' | 'direct-reflexive' | 'intransitive',  // Semantic type
+  auxiliary: 'avere' | 'essere',  // Determines which compound forms to materialize
+  usage: 'reciprocal' | 'direct-reflexive' | 'intransitive',  // Drives filtering logic
   plurality: 'plural-only' | 'singular-only' | 'any',  // Form constraints
   gender_usage: 'male-only' | 'female-only' | 'neutral',  // Subject constraints
-  semantic_type: 'self-directed' | 'mutual-action' | 'general-action'
+  semantic_type: 'self-directed' | 'mutual-action' | 'general-action'  // Pedagogical display only
 }
 ```
 
-**Layer 3: Form Generation (Computed)**
-These elements are generated dynamically by combining auxiliary patterns with building blocks:
+**Layer 3: Materialized Forms (Pre-computed)**
+These elements are materialized and stored with persistent database identity:
 ```javascript
 const FORM_LEVEL_TAGS = {
   grammatical: ['presente', 'passato-prossimo', 'compound', 'singolare', 'plurale'],
   persons: ['first-person', 'second-person', 'third-person'],  // Language-agnostic
   formType: ['conjugation', 'infinito', 'participio', 'gerundio'],
   variants: ['fem-sing', 'masc-plur', 'fem-plur'],
-  generation: ['generated', 'calculated-variant']
+  generation: ['materialized', 'calculated-variant']
 }
 ```
 
 ### Complete Form Inventory
 
-Based on comprehensive analysis of Italian grammar, our system will handle exactly 26 distinct verb form categories organized across 7 grammatical modes:
+Based on comprehensive analysis of Italian grammar, our system will handle exactly **26 distinct verb form categories** organized across 7 grammatical modes:
 
 **Simple Tenses (Stored in Database):**
 - Indicativo: Presente, Imperfetto, Passato Remoto, Futuro Semplice (24 total forms)
@@ -113,32 +117,32 @@ The following table provides the definitive specification for all verb forms tha
 | Learning Order | Pedagogical Section | Mood | Tense/Form | Type | Construction | Source | Word Level Tags | Translation Level Tags | Form Level Tags | Clitic Rules |
 |----------------|---------------------|------|------------|------|--------------|--------|-----------------|-------------------|-----------------|--------------|
 | **1** | **Indicative** | Indicativo | Presente | Simple | Base conjugation | Stored | `conjugation-class`, `irregularity-flags` | `auxiliary`, `transitivity`, `semantic-type` | `indicative`, `present`, `simple`, `{person}`, `{number}` | Before verb |
-| **3** | **Indicative** | Indicativo | Passato Prossimo | Compound | Auxiliary + participle | Generated | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `indicative`, `perfect`, `compound`, `{person}`, `{number}`, `generated` | Pronoun + aux + PP |
+| **3** | **Indicative** | Indicativo | Passato Prossimo | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `indicative`, `perfect`, `compound`, `{person}`, `{number}`, `materialized` | Pronoun + aux + PP |
 | **4** | **Indicative** | Indicativo | Imperfetto | Simple | Base conjugation | Stored | `conjugation-class`, `irregularity-flags` | `auxiliary`, `transitivity`, `semantic-type` | `indicative`, `imperfect`, `simple`, `{person}`, `{number}` | Before verb |
 | **6** | **Indicative** | Indicativo | Futuro Semplice | Simple | Base conjugation | Stored | `conjugation-class`, `irregularity-flags` | `auxiliary`, `transitivity`, `semantic-type` | `indicative`, `future`, `simple`, `{person}`, `{number}` | Before verb |
-| **8** | **Indicative** | Indicativo | Trapassato Prossimo | Compound | Auxiliary + participle | Generated | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `indicative`, `pluperfect`, `compound`, `{person}`, `{number}`, `generated` | Pronoun + aux + PP |
+| **8** | **Indicative** | Indicativo | Trapassato Prossimo | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `indicative`, `pluperfect`, `compound`, `{person}`, `{number}`, `materialized` | Pronoun + aux + PP |
 | **20** | **Indicative** | Indicativo | Passato Remoto | Simple | Base conjugation | Stored | `conjugation-class`, `irregularity-flags` | `auxiliary`, `transitivity`, `semantic-type` | `indicative`, `past-historic`, `simple`, `{person}`, `{number}` | Before verb |
-| **22** | **Indicative** | Indicativo | Futuro Anteriore | Compound | Auxiliary + participle | Generated | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `indicative`, `future-perfect`, `compound`, `{person}`, `{number}`, `generated` | Pronoun + aux + PP |
-| **23** | **Indicative** | Indicativo | Trapassato Remoto | Compound | Auxiliary + participle | Generated | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `indicative`, `past-anterior`, `compound`, `{person}`, `{number}`, `generated` | Pronoun + aux + PP |
+| **22** | **Indicative** | Indicativo | Futuro Anteriore | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `indicative`, `future-perfect`, `compound`, `{person}`, `{number}`, `materialized` | Pronoun + aux + PP |
+| **23** | **Indicative** | Indicativo | Trapassato Remoto | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `indicative`, `past-anterior`, `compound`, `{person}`, `{number}`, `materialized` | Pronoun + aux + PP |
 | **10** | **Subjunctive** | Congiuntivo | Presente | Simple | Base conjugation | Stored | `conjugation-class`, `irregularity-flags` | `auxiliary`, `transitivity`, `semantic-type` | `subjunctive`, `present`, `simple`, `{person}`, `{number}` | Before verb |
 | **11** | **Subjunctive** | Congiuntivo | Imperfetto | Simple | Base conjugation | Stored | `conjugation-class`, `irregularity-flags` | `auxiliary`, `transitivity`, `semantic-type` | `subjunctive`, `imperfect`, `simple`, `{person}`, `{number}` | Before verb |
-| **13** | **Subjunctive** | Congiuntivo | Passato | Compound | Auxiliary + participle | Generated | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `subjunctive`, `perfect`, `compound`, `{person}`, `{number}`, `generated` | Pronoun + aux + PP |
-| **21** | **Subjunctive** | Congiuntivo | Trapassato | Compound | Auxiliary + participle | Generated | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `subjunctive`, `pluperfect`, `compound`, `{person}`, `{number}`, `generated` | Pronoun + aux + PP |
+| **13** | **Subjunctive** | Congiuntivo | Passato | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `subjunctive`, `perfect`, `compound`, `{person}`, `{number}`, `materialized` | Pronoun + aux + PP |
+| **21** | **Subjunctive** | Congiuntivo | Trapassato | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `subjunctive`, `pluperfect`, `compound`, `{person}`, `{number}`, `materialized` | Pronoun + aux + PP |
 | **7** | **Conditional** | Condizionale | Presente | Simple | Base conjugation | Stored | `conjugation-class`, `irregularity-flags` | `auxiliary`, `transitivity`, `semantic-type` | `conditional`, `present`, `simple`, `{person}`, `{number}` | Before verb |
-| **12** | **Conditional** | Condizionale | Passato | Compound | Auxiliary + participle | Generated | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `conditional`, `perfect`, `compound`, `{person}`, `{number}`, `generated` | Pronoun + aux + PP |
+| **12** | **Conditional** | Condizionale | Passato | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `usage-constraints`, `plurality-restrictions` | `conditional`, `perfect`, `compound`, `{person}`, `{number}`, `materialized` | Pronoun + aux + PP |
 | **2** | **Imperative** | Imperativo | Presente | Simple | Base conjugation | Stored | `conjugation-class`, `irregularity-flags`, `imperative-irregularities` | `semantic-type`, `clitic-behavior` | `imperative`, `present`, `simple`, `{person}`, `{number}` | Enclitic attachment (affirm.), pronoun + infinitive/verb (neg.) |
-| **24** | **Imperative** | Imperativo | Passato | Compound | Auxiliary + participle | Generated | `conjugation-class`, `irregularity-flags` | `auxiliary`, `semantic-type`, `clitic-behavior` | `imperative`, `perfect`, `compound`, `{person}`, `{number}`, `generated` | Standard compound rules |
-| **5** | **Progressive** | Indicativo | Presente Progressivo | Progressive | Stare + gerund | Generated | `conjugation-class`, `irregularity-flags` | `semantic-type`, `clitic-behavior` | `indicative`, `present-progressive`, `progressive`, `{person}`, `{number}`, `generated` | Pronoun + stare + gerund |
-| **9** | **Progressive** | Indicativo | Imperfetto Progressivo | Progressive | Stare + gerund | Generated | `conjugation-class`, `irregularity-flags` | `semantic-type`, `clitic-behavior` | `indicative`, `past-progressive`, `progressive`, `{person}`, `{number}`, `generated` | Pronoun + stare + gerund |
-| **14** | **Progressive** | Indicativo | Futuro Progressivo | Progressive | Stare + gerund | Generated | `conjugation-class`, `irregularity-flags` | `semantic-type`, `clitic-behavior` | `indicative`, `future-progressive`, `progressive`, `{person}`, `{number}`, `generated` | Pronoun + stare + gerund |
-| **18** | **Progressive** | Congiuntivo | Presente Progressivo | Progressive | Stare + gerund | Generated | `conjugation-class`, `irregularity-flags` | `semantic-type`, `clitic-behavior` | `subjunctive`, `present-progressive`, `progressive`, `{person}`, `{number}`, `generated` | Pronoun + stare + gerund |
-| **19** | **Progressive** | Condizionale | Presente Progressivo | Progressive | Stare + gerund | Generated | `conjugation-class`, `irregularity-flags` | `semantic-type`, `clitic-behavior` | `conditional`, `present-progressive`, `progressive`, `{person}`, `{number}`, `generated` | Pronoun + stare + gerund |
+| **24** | **Imperative** | Imperativo | Passato | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `semantic-type`, `clitic-behavior` | `imperative`, `perfect`, `compound`, `{person}`, `{number}`, `materialized` | Standard compound rules |
+| **5** | **Progressive** | Indicativo | Presente Progressivo | Progressive | Stare + gerund | Materialized | `conjugation-class`, `irregularity-flags` | `semantic-type`, `clitic-behavior` | `indicative`, `present-progressive`, `progressive`, `{person}`, `{number}`, `materialized` | Pronoun + stare + gerund |
+| **9** | **Progressive** | Indicativo | Imperfetto Progressivo | Progressive | Stare + gerund | Materialized | `conjugation-class`, `irregularity-flags` | `semantic-type`, `clitic-behavior` | `indicative`, `past-progressive`, `progressive`, `{person}`, `{number}`, `materialized` | Pronoun + stare + gerund |
+| **14** | **Progressive** | Indicativo | Futuro Progressivo | Progressive | Stare + gerund | Materialized | `conjugation-class`, `irregularity-flags` | `semantic-type`, `clitic-behavior` | `indicative`, `future-progressive`, `progressive`, `{person}`, `{number}`, `materialized` | Pronoun + stare + gerund |
+| **18** | **Progressive** | Congiuntivo | Presente Progressivo | Progressive | Stare + gerund | Materialized | `conjugation-class`, `irregularity-flags` | `semantic-type`, `clitic-behavior` | `subjunctive`, `present-progressive`, `progressive`, `{person}`, `{number}`, `materialized` | Pronoun + stare + gerund |
+| **19** | **Progressive** | Condizionale | Presente Progressivo | Progressive | Stare + gerund | Materialized | `conjugation-class`, `irregularity-flags` | `semantic-type`, `clitic-behavior` | `conditional`, `present-progressive`, `progressive`, `{person}`, `{number}`, `materialized` | Pronoun + stare + gerund |
 | **15** | **Infinitive** | Infinito | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags` | `transitivity`, `semantic-type` | `infinitive`, `present`, `simple` | Enclitic attachment |
-| **25** | **Infinitive** | Infinito | Passato | Compound | Auxiliary + participle | Generated | `conjugation-class`, `irregularity-flags` | `auxiliary`, `semantic-type` | `infinitive`, `perfect`, `compound`, `generated` | Pronoun-auxiliary + PP |
+| **25** | **Infinitive** | Infinito | Passato | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `semantic-type` | `infinitive`, `perfect`, `compound`, `materialized` | Pronoun-auxiliary + PP |
 | **26** | **Participle** | Participio | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags` | `semantic-type` | `participle`, `present`, `simple` | N/A |
 | **16** | **Participle** | Participio | Passato | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags`, `irregular-participle` | `semantic-type` | `participle`, `past`, `simple`, `building-block` | Building block for compounds |
 | **17** | **Gerund** | Gerundio | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags`, `irregular-gerund` | `semantic-type` | `gerund`, `present`, `simple`, `building-block` | Building block for progressives |
-| **27** | **Gerund** | Gerundio | Passato | Compound | Auxiliary + participle | Generated | `conjugation-class`, `irregularity-flags` | `auxiliary`, `semantic-type` | `gerund`, `perfect`, `compound`, `generated` | Pronoun-auxiliary + PP |
+| **27** | **Gerund** | Gerundio | Passato | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `semantic-type` | `gerund`, `perfect`, `compound`, `materialized` | Pronoun-auxiliary + PP |
 
 ## Database Impact → "No structural change"
 
@@ -147,21 +151,25 @@ The following table provides the definitive specification for all verb forms tha
 + No schema migrations. All logic stays in the existing tables:
 + • dictionary            (verbs)
 + • word_translations     (per‐meaning metadata) 
-+ • word_forms            (simple forms, irregular blocks)
-+ • form_translations     (EN strings)
++ • word_forms            (materialized forms with persistent IDs)
++ • form_translations     (intelligent many-to-many center)
 +
 + Changes are limited to **data and tag clean‐up** within those tables.
++ Direct word_forms → dictionary relationship established via explicit foreign key.
 ```
 
 ## Where the data moves
 
 | Need                                                           | Where to keep it                                                                              |
 | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| 74 auxiliary "stem" patterns *(io ho / sono · tu hai / sei ...)* | **Static TypeScript file** `src/lib/auxPatterns.ts` (loaded into an in‐memory `Map`)          |
+| Auxiliary patterns for dev-time materialization *(io ho / sono · tu hai / sei ...)* | **Static TypeScript file** `src/lib/auxPatterns.ts` (development tool only, not runtime cache)          |
 | Irregular PP / gerund / imperative blocks                      | Already in **`word_forms`** → add `tags -> 'irregular'` or `irregular=true` column if helpful |
 | Word‐level flags (impersonal, modal, defective...)               | Re‐use `word.tags` JSONB field; no new table                                                  |
-| Translation‐level metadata (auxiliary, usage, plurality etc.)  | Stay in `word_translations.context_metadata` JSONB; update values in‐place with a data patch  |
+| Translation‐level metadata (auxiliary, usage, plurality etc.)  | Stay in `word_translations.context_metadata` JSONB; **plus explicit form_ids array showing which forms this translation uses**  |
+| Form‐level auxiliary tags | **`word_forms.tags`** must include explicit auxiliary markers: `avere-auxiliary`, `essere-auxiliary`, `stare-auxiliary` |
 | Form‐level universal tags                                      | patch existing `word_forms.tags` in bulk (e.g. snake‐case → kebab‐case)                       |
+| Audio filename strategy | Store as NULL now, plan `sha256(form_id).mp3` hashing for future migration |
+| Translation-to-form mapping | **`word_translations`** contains `form_ids` array pointing to specific forms this translation should display |
 
 Bulk updates can be run with simple `UPDATE ... jsonb_set()` scripts or a once‐off ETL.
 
@@ -169,59 +177,353 @@ Bulk updates can be run with simple `UPDATE ... jsonb_set()` scripts or a once�
 
 ### ConjugationEngine: The Central Orchestrator
 
-The new system centers around a single `ConjugationEngine` class that handles all aspects of conjugation generation, filtering, and presentation:
+The new system centers around a single `ConjugationEngine` class that handles all aspects of conjugation display, filtering, and presentation. The key architectural improvement is that **translations point to their specific forms** rather than forms pointing to translations, creating a more intuitive data flow that matches user mental models.
 
 ```javascript
 class ConjugationEngine {
   constructor(supabaseClient) {
     this.supabase = supabaseClient
-    this.auxiliaryService = new AuxiliaryPatternService() // No DB, uses static patterns
+    // Note: Runtime operations focus on SELECT and validation
     this.tagMerger = new TagMerger()
     this.variantCalculator = new VariantCalculator()
     this.formFilterer = new FormFilterer()
+    this.validator = new ConjugationValidator()
   }
 
-  // Primary method - generates complete conjugation set for a verb/translation
-  async generateAllConjugations(word, selectedTranslationId) {
-    // 1. Load all data in single comprehensive query
-    const verbData = await this.loadCompleteVerbData(word.id)
+  // Primary method - retrieves forms specified by selected translation
+  async getTranslationForms(word, selectedTranslationId) {
+    // 1. Load translation with its specific form_ids array
+    const selectedTranslation = await this.loadTranslationWithForms(selectedTranslationId)
     
-    // 2. Extract selected translation metadata
-    const selectedTranslation = verbData.translations.find(t => t.id === selectedTranslationId)
+    // 2. Retrieve only the forms this translation specifies
+    const translationForms = await this.loadSpecificForms(selectedTranslation.form_ids)
     
-    // 3. Generate compound forms based on translation auxiliary requirements
-    const compoundForms = await this.generateCompoundForms(verbData.storedForms, selectedTranslation)
+    // 3. Validate forms have correct auxiliary tags for this translation
+    const validationResults = await this.validator.validateAuxiliaryConsistency(
+      translationForms, 
+      selectedTranslation.context_metadata.auxiliary
+    )
     
     // 4. Apply consistent tagging to all forms
-    const taggedForms = this.applyUniformTagging([...verbData.storedForms, ...compoundForms], word, selectedTranslation)
+    const taggedForms = this.applyUniformTagging(translationForms, word, selectedTranslation)
     
-    // 5. Calculate gender variants for essere forms
-    const formsWithVariants = this.calculateAllVariants(taggedForms, selectedTranslation)
+    // 5. Calculate gender variants for essere forms (limited to base word clitics only)
+    const formsWithVariants = this.calculateBaseVariants(taggedForms, selectedTranslation)
     
-    // 6. Filter forms based on translation constraints
+    // 6. Apply translation-specific constraints (usage drives filtering)
     const filteredForms = this.filterForTranslationConstraints(formsWithVariants, selectedTranslation)
     
     // 7. Group and sort for consistent presentation
-    return this.groupAndSortForms(filteredForms)
+    return {
+      forms: this.groupAndSortForms(filteredForms),
+      validation: validationResults,
+      translationInfo: selectedTranslation
+    }
+  }
+
+  // Load translation with explicit form references
+  async loadTranslationWithForms(translationId) {
+    const query = `
+      SELECT wt.*, 
+             wt.form_ids as specified_forms,
+             json_agg(wf.*) as form_details
+      FROM word_translations wt
+      LEFT JOIN word_forms wf ON wf.id = ANY(wt.form_ids)
+      WHERE wt.id = ?
+      GROUP BY wt.id
+    `
+    return await this.supabase.rpc('executeQuery', { query, params: [translationId] })
   }
 }
 ```
 
-### ConjugationEngine adjustments
+### Translation-Form Relationship Architecture
 
-```diff
-class AuxiliaryPatternService {
-- constructor(supabase) { ... fetch from DB ... }
-+ constructor() {
-+   this.cache = AUX_PATTERNS   // imported static Map
-+ }
-  
-  getPattern(mood, tense, person, number) { ... }
+This architectural design elegantly handles two distinct scenarios that occur in Italian verb conjugation, demonstrating why the translation-to-form direction is superior to the alternative approach.
+
+**Scenario 1: Multiple Translations, Same Auxiliary (Form Set Reuse)**
+
+Consider a verb like "correre" which can mean both "to run" and "to dash." Both meanings are transitive and use the avere auxiliary, so they share the same underlying forms but need different English translations.
+
+```javascript
+// Both translations point to the same form set
+const correTranslations = {
+  translation1: {
+    id: 'correre_run',
+    translation: 'to run',
+    auxiliary: 'avere',
+    form_ids: [101, 102, 103, 104, 105, 106], // ho corso, hai corso, ha corso...
+    en_captions: {
+      101: 'I have run',
+      102: 'you have run', 
+      103: 'he/she has run'
+      // ... specific English for each form
+    }
+  },
+  translation2: {
+    id: 'correre_dash', 
+    translation: 'to dash',
+    auxiliary: 'avere',
+    form_ids: [101, 102, 103, 104, 105, 106], // Same forms!
+    en_captions: {
+      101: 'I have dashed',
+      102: 'you have dashed',
+      103: 'he/she has dashed'
+      // ... different English for same forms
+    }
+  }
 }
 ```
 
-* **Irregular look‐up** = `SELECT * FROM word_forms WHERE word_id = $1 AND tags ? 'irregular'` (no new table).
-* **TagMerger** maps old → new tag names on the fly—no live migration required for day‐one.
+In this scenario, when users switch between "to run" and "to dash," the Italian conjugation grid remains identical, but the English captions update to reflect the different meaning. This is exactly the behavior your UI should exhibit.
+
+**Scenario 2: Multiple Translations, Different Auxiliary (Distinct Form Sets)**
+
+Consider "finire" which requires different auxiliaries based on meaning: "to finish" (transitive, avere) versus "to end" (intransitive, essere). These translations point to completely different form sets.
+
+```javascript
+const finireTranslations = {
+  transitive: {
+    id: 'finire_finish',
+    translation: 'to finish', 
+    auxiliary: 'avere',
+    form_ids: [201, 202, 203, 204, 205, 206], // ho finito, hai finito, ha finito...
+    usage: 'transitive'
+  },
+  intransitive: {
+    id: 'finire_end',
+    translation: 'to end',
+    auxiliary: 'essere', 
+    form_ids: [301, 302, 303, 304, 305, 306], // sono finito, sei finito, è finito...
+    usage: 'intransitive'
+  }
+}
+```
+
+When users switch between these meanings, they get entirely different conjugation grids because the underlying grammatical behavior has changed. The avere forms become essere forms, demonstrating a fundamental semantic shift.
+
+**Why Translation-to-Form Direction Works Better**
+
+This architectural choice provides several critical advantages that make the system more maintainable and intuitive:
+
+**Explicit Relationship Modeling:** Each translation explicitly declares which forms it uses, making the relationship transparent rather than requiring complex filtering logic. There is no ambiguity about which forms belong to which meaning.
+
+**Efficient Query Performance:** Instead of loading all forms and then filtering by auxiliary tags, the system loads only the specific forms needed for the selected translation. This reduces database load and improves response times.
+
+**Semantic Consistency:** The relationship direction matches the user's mental model where selecting a meaning determines which forms appear. Users think "I want to learn 'to finish'" and expect to see the appropriate conjugation set.
+
+**Validation Clarity:** The system can validate that all forms in a translation's form_ids array have consistent auxiliary tags, catching data integrity issues early rather than discovering them during runtime filtering.
+
+### Word Conjugation Validator (Admin Tools)
+
+The admin tools validator becomes significantly more powerful with explicit auxiliary tags and the translation-to-form relationship architecture. This validation system ensures data integrity across the complex relationships that make Italian conjugation work correctly.
+
+```javascript
+class ConjugationValidator {
+  constructor() {
+    this.gapAnalyzer = new FormGapAnalyzer()
+    this.linguisticChecker = new LinguisticAccuracyChecker()
+    this.architecturalValidator = new ArchitecturalComplianceChecker()
+    this.auxiliaryValidator = new AuxiliaryConsistencyChecker()
+  }
+  
+  async validateVerbCompleteness(verbId, selectedTranslation) {
+    const validationResults = {
+      formCompleteness: await this.validateFormCompleteness(verbId),
+      tagCompliance: await this.validateTagCompliance(verbId),
+      auxiliaryTagConsistency: await this.validateExplicitAuxiliaryTags(verbId),
+      translationFormMapping: await this.validateTranslationFormReferences(verbId),
+      translationMetadata: await this.validateTranslationMetadata(verbId),
+      cliticCompliance: await this.validateCliticScope(verbId),
+      architecturalReadiness: await this.validateArchitecturalReadiness(verbId)
+    }
+    
+    return {
+      overallCompliance: this.calculateComplianceScore(validationResults),
+      issues: this.identifyIssues(validationResults),
+      recommendations: this.generateRecommendations(validationResults)
+    }
+  }
+  
+  // Validate explicit auxiliary tags on forms
+  async validateExplicitAuxiliaryTags(verbId) {
+    const forms = await this.getStoredForms(verbId)
+    const validationIssues = []
+    
+    for (const form of forms) {
+      // Check that compound forms have explicit auxiliary tags
+      if (this.isCompoundForm(form)) {
+        const hasAuxiliaryTag = form.tags.some(tag => 
+          ['avere-auxiliary', 'essere-auxiliary', 'stare-auxiliary'].includes(tag)
+        )
+        
+        if (!hasAuxiliaryTag) {
+          validationIssues.push({
+            formId: form.id,
+            issue: 'Missing explicit auxiliary tag',
+            form: form.italian_form,
+            suggestion: 'Add appropriate auxiliary tag based on form structure'
+          })
+        }
+        
+        // Validate auxiliary tag matches form structure
+        const auxiliaryMismatch = this.checkAuxiliaryTagAccuracy(form)
+        if (auxiliaryMismatch) {
+          validationIssues.push(auxiliaryMismatch)
+        }
+      }
+    }
+    
+    return {
+      passed: validationIssues.length === 0,
+      issues: validationIssues,
+      message: 'All compound forms must have explicit auxiliary tags'
+    }
+  }
+  
+  // Validate translation-to-form reference integrity  
+  async validateTranslationFormReferences(verbId) {
+    const translations = await this.getTranslations(verbId)
+    const allForms = await this.getStoredForms(verbId)
+    const validationIssues = []
+    
+    for (const translation of translations) {
+      // Check that form_ids array exists and is populated
+      if (!translation.form_ids || translation.form_ids.length === 0) {
+        validationIssues.push({
+          translationId: translation.id,
+          issue: 'Missing form_ids array',
+          translation: translation.translation,
+          suggestion: 'Add form_ids array specifying which forms this translation uses'
+        })
+        continue
+      }
+      
+      // Validate all referenced forms exist
+      for (const formId of translation.form_ids) {
+        const referencedForm = allForms.find(f => f.id === formId)
+        if (!referencedForm) {
+          validationIssues.push({
+            translationId: translation.id,
+            formId: formId,
+            issue: 'Referenced form does not exist',
+            suggestion: 'Remove invalid form_id or create missing form'
+          })
+        }
+      }
+      
+      // Validate auxiliary consistency between translation and forms
+      const auxiliaryConsistency = await this.validateTranslationAuxiliaryConsistency(
+        translation, allForms
+      )
+      if (!auxiliaryConsistency.consistent) {
+        validationIssues.push(auxiliaryConsistency.issue)
+      }
+    }
+    
+    return {
+      passed: validationIssues.length === 0,
+      issues: validationIssues,
+      message: 'All translations must have valid form_ids arrays with consistent auxiliary tags'
+    }
+  }
+  
+  // Check auxiliary consistency between translation metadata and form tags
+  async validateTranslationAuxiliaryConsistency(translation, allForms) {
+    const translationAuxiliary = translation.context_metadata?.auxiliary
+    const referencedForms = allForms.filter(f => translation.form_ids.includes(f.id))
+    
+    for (const form of referencedForms) {
+      if (this.isCompoundForm(form)) {
+        const expectedAuxiliaryTag = `${translationAuxiliary}-auxiliary`
+        const hasCorrectTag = form.tags.includes(expectedAuxiliaryTag)
+        
+        if (!hasCorrectTag) {
+          return {
+            consistent: false,
+            issue: {
+              translationId: translation.id,
+              formId: form.id,
+              issue: `Form auxiliary tag mismatch`,
+              details: `Translation specifies '${translationAuxiliary}' but form lacks '${expectedAuxiliaryTag}' tag`,
+              suggestion: `Add '${expectedAuxiliaryTag}' tag to form or update translation auxiliary`
+            }
+          }
+        }
+      }
+    }
+    
+    return { consistent: true }
+  }
+  
+  // Helper method to determine if form is compound based on structure
+  isCompoundForm(form) {
+    // Compound forms contain auxiliary verbs + participles
+    const compoundPatterns = [
+      /^(ho|hai|ha|abbiamo|avete|hanno)\s+\w+$/, // avere compounds
+      /^(sono|sei|è|siamo|siete|sono)\s+\w+$/, // essere compounds  
+      /^(sto|stai|sta|stiamo|state|stanno)\s+\w+$/ // stare progressives
+    ]
+    
+    return compoundPatterns.some(pattern => pattern.test(form.italian_form))
+  }
+  
+  // Validate auxiliary tag matches actual form structure
+  checkAuxiliaryTagAccuracy(form) {
+    const formText = form.italian_form
+    const auxiliaryTags = form.tags.filter(tag => tag.endsWith('-auxiliary'))
+    
+    // Check avere auxiliary forms
+    if (auxiliaryTags.includes('avere-auxiliary')) {
+      const hasAvereAux = /^(ho|hai|ha|abbiamo|avete|hanno)\s/.test(formText)
+      if (!hasAvereAux) {
+        return {
+          formId: form.id,
+          issue: 'Auxiliary tag mismatch',
+          form: formText,
+          details: 'Form tagged as avere-auxiliary but does not contain avere auxiliary verb',
+          suggestion: 'Update auxiliary tag to match form structure'
+        }
+      }
+    }
+    
+    // Check essere auxiliary forms  
+    if (auxiliaryTags.includes('essere-auxiliary')) {
+      const hasEssereAux = /^(sono|sei|è|siamo|siete|sono)\s/.test(formText)
+      if (!hasEssereAux) {
+        return {
+          formId: form.id,
+          issue: 'Auxiliary tag mismatch', 
+          form: formText,
+          details: 'Form tagged as essere-auxiliary but does not contain essere auxiliary verb',
+          suggestion: 'Update auxiliary tag to match form structure'
+        }
+      }
+    }
+    
+    // Check stare auxiliary forms
+    if (auxiliaryTags.includes('stare-auxiliary')) {
+      const hasStareAux = /^(sto|stai|sta|stiamo|state|stanno)\s/.test(formText)
+      if (!hasStareAux) {
+        return {
+          formId: form.id,
+          issue: 'Auxiliary tag mismatch',
+          form: formText, 
+          details: 'Form tagged as stare-auxiliary but does not contain stare auxiliary verb',
+          suggestion: 'Update auxiliary tag to match form structure'
+        }
+      }
+    }
+    
+    return null // No mismatch found
+  }
+}
+
+### Materialization Strategy
+
+**Translation-Driven Compound Generation:** Forms are materialized based on translation auxiliary requirements, not blanket both-auxiliary approach. This creates much more efficient storage by avoiding unused forms, ensures linguistic accuracy by only creating semantically purposeful forms, and scales better since verbs with one auxiliary type don't bloat the database.
+
+**Development-Time vs Runtime Separation:** The `auxPatterns.ts` becomes a static development tool used only during materialization, not a runtime cache. This ensures runtime operations are pure SELECTs for sub-200ms performance, maintains separation between offline generation and runtime display, and simplifies testing and validation of pattern completeness.
 
 ### Performance Optimization Strategy
 
@@ -230,29 +532,19 @@ class AuxiliaryPatternService {
 SELECT 
   w.*,
   json_agg(DISTINCT wt.*) as translations,
-  json_agg(DISTINCT wf.*) as stored_forms,
+  json_agg(DISTINCT wf.*) as materialized_forms,
   json_agg(DISTINCT ft.*) as form_translations
 FROM dictionary w
 LEFT JOIN word_translations wt ON w.id = wt.word_id
-LEFT JOIN word_forms wf ON w.id = wf.word_id  
+LEFT JOIN word_forms wf ON w.id = wf.word_id  -- Direct relationship established
 LEFT JOIN form_translations ft ON wf.id = ft.form_id
 WHERE w.id = ?
 GROUP BY w.id
 ```
 
-**Auxiliary Pattern Caching:** Since auxiliary patterns are universal (the same 74 patterns work for every Italian verb), they can be loaded once and cached in memory:
-```javascript
-// Static import from TypeScript file
-import { AUX_PATTERNS } from './auxPatterns'
+**Explicit Auxiliary Tag Strategy:** Each form in `word_forms` stores explicit auxiliary tags (`avere-auxiliary`, `essere-auxiliary`, `stare-auxiliary`) rather than requiring runtime inference from form text. This eliminates front-end computational burden, provides immediate auxiliary identification for filtering operations, ensures reliable auxiliary detection without text parsing, and creates cleaner separation between data storage and display logic.
 
-class AuxiliaryPatternCache {
-  static getPattern(mood, tense, person, number) {
-    return AUX_PATTERNS.get(`${mood}-${tense}-${person}-${number}`)
-  }
-}
-```
-
-**Memory-Efficient Form Generation:** Rather than pre-generating all possible forms, we generate only the forms needed for the current translation selection, reducing memory usage and improving response time.
+**Memory-Efficient Form Retrieval:** Rather than generating forms dynamically, the system retrieves only the materialized forms needed for the current translation selection, reducing memory usage and improving response time.
 
 ### Universal Terminology Implementation
 
@@ -274,21 +566,63 @@ This approach requires updating existing database content to use universal terms
 
 ## Handling Complex Linguistic Phenomena
 
-### Clitic Handling & Agreement
+### Clitic Handling & Agreement - Current Scope and Future Architecture
 
-Reflexive pronouns and object clitics represent one of the most sophisticated aspects of Italian grammar that our system must model accurately. The placement, ordering, and agreement of these pronouns varies systematically based on tense type, mood, and polarity (affirmative vs negative).
+**Current Scope: Base Word Clitics Only**
 
-**Complete Clitic Placement Rules:**
+In this EPIC, we store only clitics that are inherent parts of the base word in the database:
+- **Reflexive base forms**: "mi lavo", "ti lavi", "si lava" (simple tenses)
+- **Reflexive compounds**: "mi sono lavato/a", "ti sei lavato/a" (compound tenses with essere)
 
-| Context | Pronoun Position | PP Agreement | Example |
-|---------|------------------|--------------|---------|
-| Simple tenses | Before verb | N/A | mi lavo, ti lavi, si lavano |
-| Compound (avere) | Pronoun + auxiliary + PP | Agree only if direct object pronoun precedes | li ho visti, le ho viste |
-| Compound (essere/reflexive) | Pronoun + auxiliary + PP | PP agrees with subject | mi sono lavato/a, si sono lavati/e |
-| Progressive | Pronoun before stare | Gerund invariable | mi sto lavando, si sta preparando |
-| Positive imperative | Verb-pronoun enclitic | N/A | lavati!, preparatevi!, vattene! |
-| Negative imperative | non + pronoun + infinitive | N/A | non lavarti, non preparatevi |
-| Gerundio passato (reflexive) | Pronoun-essendo + PP | PP agrees with subject | essendosi lavati/e, essendomi preparato/a |
+**Future Scope: Dynamic Clitic Generation**
+
+All other clitic constructions will be generated dynamically on the front-end in future development:
+- **Complex enclitic attachment**: "lavati!", "preparatevi!", "vattene!"
+- **Multiple clitic combinations**: "me lo dai", "se li lava", "gliene parla"
+- **Negative imperative constructions**: "non lavarti", "non preparatevi"
+- **Progressive clitic positioning**: "mi sto lavando", "si sta preparando"
+
+**Architectural Foundation for Future Expansion**
+
+The current architecture establishes the foundation for future clitic generation through:
+
+```javascript
+// Current: Base clitics stored in word_forms
+const BASE_REFLEXIVE_FORMS = {
+  'lavarsi_present_1sg': 'mi lavo',
+  'lavarsi_present_2sg': 'ti lavi',
+  'lavarsi_perfect_1sg': 'mi sono lavato/a'
+}
+
+// Future: Dynamic clitic engine (not in current scope)
+class CliticEngine {
+  generateImperativeClitics(baseForm, clitics) {
+    // Future implementation for "lava" + "ti" → "lavati"
+  }
+  
+  generateComplexClitics(baseForm, cliticChain) {
+    // Future implementation for multiple clitic combinations
+  }
+  
+  handleNegativeImperatives(baseForm, clitics) {
+    // Future implementation for "non" + pronoun + infinitive patterns
+  }
+}
+```
+
+**Complete Clitic Placement Rules (for future reference):**
+
+| Context | Pronoun Position | PP Agreement | Example | Current Status |
+|---------|------------------|--------------|---------|----------------|
+| Simple reflexive tenses | Before verb | N/A | mi lavo, ti lavi, si lavano | **STORED** |
+| Compound reflexive (essere) | Pronoun + auxiliary + PP | PP agrees with subject | mi sono lavato/a, si sono lavati/e | **STORED** |
+| Compound (avere) | Pronoun + auxiliary + PP | Agree only if direct object pronoun precedes | li ho visti, le ho viste | **FUTURE** |
+| Progressive | Pronoun before stare | Gerund invariable | mi sto lavando, si sta preparando | **FUTURE** |
+| Positive imperative | Verb-pronoun enclitic | N/A | lavati!, preparatevi!, vattene! | **FUTURE** |
+| Negative imperative | non + pronoun + infinitive | N/A | non lavarti, non preparatevi | **FUTURE** |
+| Gerundio passato (reflexive) | Pronoun-essendo + PP | PP agrees with subject | essendosi lavati/e, essendomi preparato/a | **FUTURE** |
+
+**Negative Construction Scope:** The system explicitly excludes negative imperatives ("non parlare") and all negative polarity constructions from materialization. These are syntactic transformations, not morphological conjugations, and the UI can prepend "non" dynamically without database complexity.
 
 **Object Clitic Ordering Rules:**
 When multiple clitics appear together, they follow strict ordering patterns:
@@ -325,9 +659,9 @@ Each interpretation requires different translation metadata:
 {
   translation: "wash themselves",
   auxiliary: "essere",
-  usage: "direct-reflexive", 
+  usage: "direct-reflexive",  // Drives filtering logic
   plurality: "any",
-  semantic_type: "self-directed",
+  semantic_type: "self-directed",  // Pedagogical display only
   clitic_behavior: "standard-reflexive"
 }
 
@@ -335,38 +669,38 @@ Each interpretation requires different translation metadata:
 {
   translation: "wash each other",
   auxiliary: "essere",
-  usage: "reciprocal",
+  usage: "reciprocal",  // Drives filtering logic
   plurality: "plural-only",  // Critical constraint!
-  semantic_type: "mutual-action",
+  semantic_type: "mutual-action",  // Pedagogical display only
   clitic_behavior: "standard-reflexive"
 }
 ```
 
-The system automatically filters forms based on these constraints. When "wash each other" is selected, singular forms like "si lava" are hidden because reciprocal actions require multiple participants.
+The system automatically filters materialized forms based on these constraints. When "wash each other" is selected, singular forms like "si lava" are hidden because reciprocal actions require multiple participants.
 
-### Stored Forms Architecture: Irregularity Handling
+### Materialized Forms Architecture: Irregularity Handling
 
-**Core Architectural Principle:** All base masculine forms, including irregularities, are stored directly in your existing `word_forms` table rather than generated through morphological rules. This eliminates the complexity of irregular pattern management and ensures linguistic accuracy.
+**Core Architectural Principle:** All base masculine forms, including irregularities, are materialized and stored directly in your existing `word_forms` table rather than generated through morphological rules. This eliminates the complexity of irregular pattern management and ensures linguistic accuracy.
 
-**What's Stored in word_forms:**
+**What's Materialized in word_forms:**
 - All simple tenses for all persons (presente, imperfetto, passato remoto, futuro semplice, etc.)
+- All compound tenses based on translation auxiliary requirements (passato prossimo, trapassato prossimo, etc.)
+- All progressive tenses using stare auxiliary (presente progressivo, imperfetto progressivo, etc.)
 - All irregular forms including: irregular past participles (fatto, detto, posto), irregular gerunds (facendo, dicendo), irregular imperatives (fa', da', sta')
-- Building block forms marked with `building-block` tags for compound generation
+- Building block forms marked with `building-block` tags for compound materialization
 
 **What's Generated Dynamically:**
-- Compound tenses: auxiliary patterns + stored participles → "ho fatto", "sono andato"
-- Progressive tenses: stare patterns + stored gerunds → "sto facendo", "sta andando" 
-- Gender variants: stored masculine forms → calculated feminine variants ("andato" → "andata")
+- Gender variants: materialized masculine forms → calculated feminine variants ("andato" → "andata")
+- Formal variants: materialized tu forms → Lei equivalents with proper capitalization
 
 **Simplified ConjugationEngine Logic:**
-The engine becomes a **form combiner** rather than a **morphological generator**:
+The engine becomes a **form retriever and filter** rather than a **morphological generator**:
 ```javascript
-// Instead of complex irregular lookups:
-const participle = await this.getStoredParticiple(wordId) // "fatto" already stored
-const auxiliary = this.getAuxiliaryPattern('avere', 'present', 'first-person', 'singular') // "ho"
-const compound = `${auxiliary} ${participle}` // "ho fatto"
+// Instead of complex generation:
+const materializedForms = await this.getMaterializedForms(wordId, selectedTranslation.auxiliary)
+const filteredForms = this.applyTranslationConstraints(materializedForms, selectedTranslation.usage)
 
-// No morphological rules needed - just combination logic
+// No morphological rules needed - just filtering and variant calculation
 ```
 
 ### Imperative Mood Complexity
@@ -435,7 +769,7 @@ Verbs that require different auxiliaries based on meaning are handled through tr
 }
 ```
 
-When users switch between these translations in the interface, the system automatically regenerates all compound forms using the appropriate auxiliary, providing consistent "ho finito" vs "sono finito" behavior.
+When users switch between these translations in the interface, the system automatically retrieves the appropriate materialized compound forms, providing consistent "ho finito" vs "sono finito" behavior.
 
 ### Advanced Tense Constructions
 
@@ -449,7 +783,7 @@ While not common in everyday usage, Italian grammar permits double-compound cons
 "sarò stato lavorando" (I will have been working)
 ```
 
-**Implementation Decision:** The current specification excludes double-compound tenses as they rarely appear in pedagogical contexts. However, the architecture supports their future addition through auxiliary pattern stacking if educational needs require them.
+**Implementation Decision:** The current specification excludes double-compound tenses as they rarely appear in pedagogical contexts. However, the architecture supports their future addition through materialization if educational needs require them.
 
 **Passive Voice Constructions:**
 Passive voice uses "essere" or "venire" + past participle patterns:
@@ -461,7 +795,7 @@ Passive voice uses "essere" or "venire" + past participle patterns:
 "viene fatto" (it gets done)
 ```
 
-**Implementation Decision:** Passive voice constructions are considered out of scope for the initial release but represent a natural extension of the existing auxiliary + participle architecture.
+**Implementation Decision:** Passive voice constructions are considered out of scope for the initial release but represent a natural extension of the existing materialization architecture.
 
 ### Gender Agreement Complexity
 
@@ -481,11 +815,11 @@ The system automatically enables/disables gender toggles based on the selected t
 
 ### Dynamic Pronunciation Generation
 
-When our system generates compound forms, gender variants, or applies clitic attachment, the phonetic representation and IPA transcription must be updated accordingly. This requires sophisticated understanding of Italian phonological processes that go beyond simple text concatenation.
+When our system calculates gender variants or applies clitic attachment to materialized forms, the phonetic representation and IPA transcription must be updated accordingly. This requires sophisticated understanding of Italian phonological processes that go beyond simple text concatenation.
 
 **Core Phonetic Transformation Principles:**
 
-Italian pronunciation follows systematic rules that our system must model when generating new forms from stored base forms. Consider how "andato" [anˈdato] becomes "andata" [anˈdata] - not just the orthographic change of -o to -a, but the actual vowel sound shift in the pronunciation.
+Italian pronunciation follows systematic rules that our system must model when generating new forms from materialized base forms. Consider how "andato" [anˈdato] becomes "andata" [anˈdata] - not just the orthographic change of -o to -a, but the actual vowel sound shift in the pronunciation.
 
 **Gender Variant Phonetic Rules:**
 ```javascript
@@ -502,12 +836,8 @@ const PHONETIC_GENDER_PATTERNS = {
 }
 ```
 
-**Compound Form Phonetic Assembly:**
-When generating compound forms like "sono andato", the system must consider:
-- **Auxiliary pronunciation:** "sono" [ˈsono] 
-- **Participle pronunciation:** "andato" [anˈdato]
-- **Stress patterns:** Primary stress remains on participle, auxiliary unstressed
-- **Liaison effects:** Any phonetic blending between auxiliary and participle
+**Materialized Form Phonetic Assembly:**
+Materialized compound forms like "sono andato" have their phonetic representation stored directly with the form, eliminating the need for dynamic assembly and ensuring accuracy.
 
 **Clitic Attachment Phonetic Changes:**
 Reflexive pronoun attachment creates systematic phonetic modifications:
@@ -533,12 +863,12 @@ const CLITIC_PHONETIC_RULES = {
 
 ### Stress Pattern Maintenance
 
-Italian stress patterns must be preserved or correctly shifted when forms are generated:
+Italian stress patterns must be preserved or correctly shifted when forms are calculated:
 
-**Compound Stress Rules:**
-- **Simple tenses:** Stress follows stored pattern from `word_forms`
-- **Compound tenses:** Primary stress on participle, auxiliary unstressed
-- **Progressive tenses:** Primary stress on gerund, auxiliary (stare) unstressed
+**Materialized Stress Rules:**
+- **Simple tenses:** Stress follows stored pattern from materialized `word_forms`
+- **Compound tenses:** Stress pattern stored with each materialized compound form
+- **Progressive tenses:** Stress pattern stored with each materialized progressive form
 - **Clitic forms:** Stress typically shifts to accommodate attached pronouns
 
 **Stress Shift Examples:**
@@ -556,7 +886,7 @@ Italian stress patterns must be preserved or correctly shifted when forms are ge
 The International Phonetic Alphabet representations require precise handling of Italian phonological features:
 
 **Vowel Quality Maintenance:**
-Italian has seven distinct vowel qualities that must be preserved in generated forms:
+Italian has seven distinct vowel qualities that must be preserved in calculated forms:
 - **Closed e/o:** [e], [o] in stressed syllables
 - **Open e/o:** [ɛ], [ɔ] in stressed syllables  
 - **Unstressed reduction:** Typically closed variants [e], [o]
@@ -569,8 +899,8 @@ const GEMINATION_RULES = {
   'fa\' + lo': '/fa/ + /lo/ → /ˈfallo/', // Geminate l
   'da\' + ci': '/da/ + /tʃi/ → /ˈdattʃi/', // Geminate t
   
-  // Compound forms typically preserve original gemination
-  'ho fatto': '/o/ + /ˈfatto/ → /o ˈfatto/' // Preserve participle gemination
+  // Materialized forms preserve original gemination
+  'ho fatto': '/o/ + /ˈfatto/ → /o ˈfatto/' // Preserve stored gemination
 }
 ```
 
@@ -590,18 +920,12 @@ class PronunciationEngine {
     this.stressCalculator = new StressPatternCalculator()
   }
   
-  // Generate pronunciation for compound forms
-  generateCompoundPronunciation(auxiliaryForm, participleForm) {
-    const auxPhonetic = auxiliaryForm.phonetic_form
-    const auxIPA = auxiliaryForm.ipa
-    const partPhonetic = participleForm.phonetic_form  
-    const partIPA = participleForm.ipa
-    
-    // Apply liaison and stress rules
-    const combinedPhonetic = this.phoneticRules.combineWithLiaison(auxPhonetic, partPhonetic)
-    const combinedIPA = this.ipaTranscriber.combineWithStress(auxIPA, partIPA)
-    
-    return { phonetic: combinedPhonetic, ipa: combinedIPA }
+  // Retrieve pronunciation for materialized forms (already stored)
+  getMaterializedPronunciation(materializedForm) {
+    return {
+      phonetic: materializedForm.phonetic_form,
+      ipa: materializedForm.ipa
+    }
   }
   
   // Generate pronunciation for gender variants
@@ -642,7 +966,7 @@ The conjugation system rebuild provides an opportunity to systematically review 
 
 Before implementing the new architecture, we need to understand the completeness and accuracy of our existing data across four critical dimensions:
 
-**Form Coverage Completeness:** Many verbs in our `word_forms` table may have incomplete conjugation sets. Some verbs might be missing specific tenses (particularly passato remoto or congiuntivo forms), while others might lack important building blocks like past participles or gerunds needed for compound generation.
+**Form Coverage Completeness:** Many verbs in our `word_forms` table may have incomplete conjugation sets. Some verbs might be missing specific tenses (particularly passato remoto or congiuntivo forms), while others might lack important building blocks like past participles or gerunds needed for compound materialization.
 
 **Translation Quality and Consistency:** The `form_translations` table assignments may contain inconsistencies where similar forms across different verbs have divergent English translations, or where translations don't properly reflect the semantic context specified in the selected word translation.
 
@@ -654,7 +978,7 @@ Before implementing the new architecture, we need to understand the completeness
 
 **Phase 1: Gap Identification and Prioritization**
 
-The first step involves comprehensive analysis to identify which forms are missing from high-priority verbs. We'll focus initially on the most pedagogically important verbs - those tagged with frequency markers like `freq-top100`, `freq-top500`, or CEFR levels `A1` through `B2`.
+The first step involves comprehensive analysis to identify which forms are missing from high-priority verbs. **We'll use existing dictionary verbs for test data validation rather than selecting frequency-based subset,** leveraging known data set with existing translations, eliminating need for verb selection criteria or new data entry, and validating architecture with real complexity.
 
 **Missing Form Detection Algorithm:**
 ```javascript
@@ -667,7 +991,11 @@ class FormGapAnalyzer {
       missingTenses: this.findMissingTenses(requiredForms, existingForms),
       missingPersons: this.findMissingPersons(requiredForms, existingForms),
       missingBuildingBlocks: this.findMissingBuildingBlocks(existingForms),
-      incompletePhonetics: this.findPhoneticsGaps(existingForms)
+      incompletePhonetics: this.findPhoneticsGaps(existingForms),
+      // Special validation for reflexive-verb tagged verbs
+      missingReflexivePronouns: this.findMissingReflexivePronouns(existingForms, verb),
+      // Special handling for invariable forms
+      invariableForms: this.validateInvariableForms(existingForms, verb)
     }
     
     return this.prioritizeGaps(gaps, verb.frequency_priority)
@@ -687,11 +1015,29 @@ class FormGapAnalyzer {
     
     return baseRequirements
   }
+  
+  // Special validation for invariable forms like infinito-passato and gerundio-passato
+  validateInvariableForms(existingForms, verb) {
+    const invariableForms = existingForms.filter(f => 
+      f.tags.includes('infinito-passato') || f.tags.includes('gerundio-passato')
+    )
+    
+    // These forms should have person=invariable, not standard 6-person validation
+    return invariableForms.filter(f => !f.tags.includes('person-invariable'))
+  }
+  
+  // Progressive form token recognition including stare auxiliary
+  validateProgressiveForms(existingForms) {
+    const progressiveForms = existingForms.filter(f => f.tags.includes('progressive'))
+    const stareTokenRegex = /\b(sto|stai|sta|stiamo|state|stanno)\b/
+    
+    return progressiveForms.filter(f => !stareTokenRegex.test(f.italian_form))
+  }
 }
 ```
 
 **Building Block Priority System:**
-Certain forms are more critical than others because they serve as building blocks for compound generation:
+Certain forms are more critical than others because they serve as building blocks for compound materialization:
 - **Past Participles:** Essential for all compound tenses (passato prossimo, trapassato prossimo, etc.)
 - **Gerunds:** Required for progressive constructions (presente progressivo, etc.)  
 - **Irregular Imperatives:** Needed for command forms and clitic attachment
@@ -792,14 +1138,14 @@ const STANDARDIZED_FORM_TAGS = {
   tense: ['presente', 'imperfetto', 'passato-remoto', 'futuro-semplice', 'passato-prossimo', /* etc */],
   
   // Person and number - exactly one of each for finite forms
-  person: ['prima-persona', 'seconda-persona', 'terza-persona'],
+  person: ['prima-persona', 'seconda-persona', 'terza-persona', 'person-invariable'],
   number: ['singolare', 'plurale'],
   
   // Form type classification - exactly one required
   form_type: ['simple', 'compound', 'progressive'],
   
   // Special markers - optional
-  special: ['irregular', 'building-block', 'calculated-variant', 'generated']
+  special: ['irregular', 'building-block', 'calculated-variant', 'materialized']
 }
 ```
 
@@ -812,13 +1158,13 @@ const STANDARDIZED_TRANSLATION_METADATA = {
   transitivity: 'transitive' | 'intransitive',
   
   // Optional constraint fields
-  usage?: 'direct-reflexive' | 'reciprocal' | 'intransitive',
+  usage?: 'direct-reflexive' | 'reciprocal' | 'intransitive',  // Drives filtering logic
   plurality?: 'plural-only' | 'singular-only' | 'any',
   gender_usage?: 'male-only' | 'female-only' | 'neutral',
   register?: 'formal' | 'informal' | 'neutral',
   
   // Semantic classification
-  semantic_type?: 'self-directed' | 'mutual-action' | 'general-action' | 'state-change',
+  semantic_type?: 'self-directed' | 'mutual-action' | 'general-action' | 'state-change',  // Pedagogical display only
   semantic_domain?: 'body-care' | 'social-interaction' | 'motion' | 'communication'
 }
 ```
@@ -850,7 +1196,7 @@ ORDER BY
 
 **Phase B: Linguistic Expert Review and Form Creation (Weeks 2-3)**
 
-Priority verbs identified in Phase A undergo expert linguistic review with standardized form creation:
+Priority verbs identified in Phase A undergo expert linguistic review with standardized form materialization:
 
 1. **Native Speaker Verification:** Each form is verified by native Italian speakers for accuracy
 2. **Pedagogical Appropriateness:** Forms are reviewed for teaching value and complexity level
@@ -967,100 +1313,308 @@ class LinguisticAccuracyChecker {
     return { valid: true }
   }
 }
+```
 
-### Scope Clarifications and Future Enhancements
+### Front-End Validation Page Implementation
 
-**Current Scope Boundaries:**
+**Browser-Based Form Completeness Checker:** Instead of CI-only validation, the system includes a browser-based validation interface that provides immediate visual feedback during development, easier debugging of missing forms, allows non-technical stakeholders to validate data quality, and integrates testing approach.
 
-**Negative Imperative Clitic Complexity:** The system handles basic negative imperative construction (non + infinitive for 2nd singular, non + imperative for other persons) but does not implement the complex clitic placement variations for persons other than 2nd singular. These edge cases represent advanced grammatical sophistication beyond the core learning objectives of the conjugation system.
+```javascript
+class FormCompletenessValidator {
+  constructor() {
+    this.gapAnalyzer = new FormGapAnalyzer()
+    this.linguisticChecker = new LinguisticAccuracyChecker()
+  }
+  
+  async validateVerbCompleteness(verbId) {
+    const gaps = await this.gapAnalyzer.analyzeVerbCompleteness(verbId)
+    const linguisticIssues = await this.linguisticChecker.verifyReflexiveConstraints(verbId)
+    
+    return {
+      completeness: gaps,
+      linguisticAccuracy: linguisticIssues,
+      overallScore: this.calculateCompletenessScore(gaps, linguisticIssues)
+    }
+  }
+  
+  renderValidationInterface() {
+    // Browser-based UI for immediate validation feedback
+    return this.createValidationDashboard()
+  }
+}
+```
 
-**Impersonal Constructions:**
-- **Inherently Impersonal Verbs:** IN SCOPE - Weather verbs (piovere, nevicare), temporal verbs (albeggiare), and necessity verbs (bisognare, occorrere) are handled through word-level `impersonal-verb` tags that restrict conjugation to 3rd person singular forms.
-- **Si Impersonale Construction:** OUT OF SCOPE for initial release - This syntactic construction (e.g., "si parla italiano") represents a separate grammatical layer from verb conjugation. The construction uses standard 3rd person singular verb forms with si placement rules that belong in a future syntax engine rather than the morphological conjugation system.
-- **Si Passivante (Passive Si):** OUT OF SCOPE for initial release - This construction involves both impersonal si patterns and passive voice semantics, requiring subject-verb agreement logic that extends beyond core conjugation patterns.
+### Scope Clarifications and Future Enhancement Architecture
 
-**Register and Dialectal Variations:**
-- **Contracted Clitic Forms:** OUT OF SCOPE - Colloquial contractions like "s'è" (si è), "c'ha" (ci ha) represent phonetic processes in rapid speech. If casual register support is added in future releases, these would be handled as display variants rather than separate conjugation forms.
-- **Regional Irregularities:** OUT OF SCOPE - The system implements standard Italian morphological patterns. Dialectal variations in conjugation (such as regional passato remoto patterns) fall outside the pedagogical scope focused on standard Italian language learning.
+**Current EPIC Scope: Foundation and Validation**
 
-**Future Enhancement Opportunities:**
+This EPIC establishes the architectural foundations and validation systems for the conjugation rebuild while focusing on existing dictionary verbs. The scope is carefully defined to create incremental, future-proof development:
 
-The translation-centric architecture creates natural extension points for these advanced constructions. Si impersonale patterns could be implemented as a syntactic layer that works with existing conjugation forms. Register variations could be added as display alternatives that transform standard forms according to phonetic rules. These enhancements would extend the system's sophistication without requiring changes to the core conjugation engine architecture.
+**IN SCOPE for Current EPIC:**
+- **Architectural Foundation**: Establish materialization-centric data structure and relationships
+- **Validation System**: Build comprehensive word conjugation validator in admin tools section
+- **Base Word Clitics**: Store only inherent reflexive forms (mi lavo, mi sono lavato)
+- **Translation Metadata**: Complete auxiliary and usage assignments in existing data
+- **Test Data Validation**: Validate architectural compliance with existing dictionary verbs
+- **Gender Variant Foundations**: Establish calculation rules for base masculine forms
+- **Direct Relationships**: Create explicit word_forms → dictionary foreign key connections
+
+**EXCLUDED from Current EPIC (Future Engine Development):**
+
+**1. Full Materialization Engine**
+- **Current**: Validation and foundations with existing forms
+- **Future**: Website-based admin process for entering core details and database materialization
+- **Architecture Impact**: Direct materialization API endpoints, bulk form generation workflows
+
+**2. Dynamic Clitic Generation**
+- **Current**: Only base word reflexive clitics stored (mi lavo, mi sono lavato)
+- **Future**: Front-end generation of complex clitic constructions
+- **Examples Excluded**: "lavati!", "me lo dai", "gliene parla", "non lavarti"
+- **Architecture Impact**: CliticEngine class, attachment rules, phonetic transformations
+
+**3. Negative Form Constructions**
+- **Current**: No negative forms stored or generated
+- **Future**: Front-end generation of negative patterns
+- **Examples Excluded**: "non parlo", "non lavati", "non ho parlato"
+- **Architecture Impact**: Negation engine, syntactic transformation rules
+
+**4. Advanced Clitic Combinations**
+- **Current**: Single reflexive pronouns only
+- **Future**: Multi-clitic chains and object pronoun combinations
+- **Examples Excluded**: "te lo do", "se li lava", "me ne vado"
+- **Architecture Impact**: Clitic ordering rules, phonetic fusion patterns
+
+**5. Imperative Clitic Attachment**
+- **Current**: Base imperative forms stored without attached pronouns
+- **Future**: Dynamic enclitic generation for positive imperatives
+- **Examples Excluded**: "parlami!", "fallo!", "vattene!"
+- **Architecture Impact**: Enclitic attachment engine, stress pattern modifications
+
+**6. Progressive Clitic Positioning**
+- **Current**: No progressive forms with complex clitic placement
+- **Future**: Dynamic positioning for progressive constructions
+- **Examples Excluded**: "mi sto lavando", "se lo sta dicendo"
+- **Architecture Impact**: Progressive clitic engine, gerund invariability rules
+
+**Future-Proofing: Grammar Constructions Affected by Current Scope**
+
+The architectural decisions in this EPIC directly impact these future grammar constructions:
+
+**A. Clitic-Dependent Constructions**
+```javascript
+// Current foundation enables future expansion
+const FUTURE_CLITIC_CONSTRUCTIONS = {
+  imperativeEnclisis: {
+    current: 'lava' (stored),
+    future: 'lavati!' (generated),
+    foundation: 'Imperative forms in word_forms provide base for attachment'
+  },
+  
+  cliticChains: {
+    current: 'mi lavo' (stored),
+    future: 'me lo dai' (generated),
+    foundation: 'Single clitic patterns establish ordering principles'
+  },
+  
+  negativeImperatives: {
+    current: 'lava' (stored),
+    future: 'non lavarti' (generated),
+    foundation: 'Infinitive forms available for negative construction'
+  }
+}
+```
+
+**B. Auxiliary-Dependent Constructions**
+```javascript
+const FUTURE_AUXILIARY_CONSTRUCTIONS = {
+  passiveVoice: {
+    current: 'participle + essere metadata',
+    future: 'è stato fatto, viene fatto',
+    foundation: 'Essere auxiliary patterns + past participles'
+  },
+  
+  doubleCompounds: {
+    current: 'compound tense patterns',
+    future: 'sarei stato andando',
+    foundation: 'Auxiliary stacking rules derived from current patterns'
+  },
+  
+  causativeConstructions: {
+    current: 'fare + infinitive separately',
+    future: 'farsi lavare, farlo fare',
+    foundation: 'Infinitive forms + clitic attachment rules'
+  }
+}
+```
+
+**C. Mood-Dependent Constructions**
+```javascript
+const FUTURE_MOOD_CONSTRUCTIONS = {
+  conditionalPeriods: {
+    current: 'conditional forms stored',
+    future: 'se fossi... sarei... constructions',
+    foundation: 'Subjunctive + conditional forms provide building blocks'
+  },
+  
+  subjunctiveSequences: {
+    current: 'subjunctive forms stored',
+    future: 'temporal sequence rules (che io abbia parlato)',
+    foundation: 'Compound subjunctive forms establish sequence patterns'
+  },
+  
+  modalConstructions: {
+    current: 'modal verbs + infinitives separately',
+    future: 'devo lavarmi, voglio farlo',
+    foundation: 'Modal patterns + clitic positioning rules'
+  }
+}
+```
+
+**D. Register and Pragmatic Constructions**
+```javascript
+const FUTURE_REGISTER_CONSTRUCTIONS = {
+  formalityVariations: {
+    current: 'Lei forms mapped to tu',
+    future: 'Complex formal clitic patterns (Le piace, La prego)',
+    foundation: 'Formal mapping principles established'
+  },
+  
+  regionalVariations: {
+    current: 'Standard Italian forms',
+    future: 'Regional clitic placement (northern vs southern)',
+    foundation: 'Standard patterns provide comparison baseline'
+  },
+  
+  colloquialContractions: {
+    current: 'Full phonetic forms',
+    future: 'c\'ha, s\'è, contracted speech patterns',
+    foundation: 'Phonetic representation system supports contractions'
+  }
+}
+```
+
+**E. Syntactic Integration Points**
+```javascript
+const FUTURE_SYNTACTIC_INTEGRATION = {
+  siImpersonale: {
+    current: 'Third person forms stored',
+    future: 'si parla italiano, si dice che...',
+    foundation: '3sg forms + si placement rules'
+  },
+  
+  siPassivante: {
+    current: 'Passive participles available',
+    future: 'si vendono case, si è venduta',
+    foundation: 'Agreement rules + passive constructions'
+  },
+  
+  relativeClauses: {
+    current: 'Subjunctive forms available',
+    future: 'la persona che sia venuta, complex relatives',
+    foundation: 'Subjunctive + relative pronoun integration'
+  }
+}
+```
+
+**Incremental Development Strategy**
+
+Each excluded construction can be added incrementally without architectural changes:
+
+1. **Phase 1 (Current)**: Foundation validation with base forms
+2. **Phase 2**: Materialization engine for core forms
+3. **Phase 3**: Basic clitic generation (reflexives, imperatives)
+4. **Phase 4**: Complex clitic combinations and negative constructions
+5. **Phase 5**: Advanced syntactic integration (si constructions, passives)
+6. **Phase 6**: Register variations and pragmatic features
+
+The architecture ensures that each phase builds naturally on previous foundations without requiring refactoring of core systems.
 
 ## Implementation Phases
 
 **Phase 1: Foundation and Data Analysis (Week 1)**
-- Extract auxiliary patterns into static file `src/lib/auxPatterns.ts`
-- **NEW:** Run comprehensive data gap analysis using FormGapAnalyzer to identify missing forms across high-priority verbs
+- Extract auxiliary patterns into static file `src/lib/auxPatterns.ts` (development tool only)
+- **NEW:** Run comprehensive data gap analysis using FormGapAnalyzer to identify missing forms across existing dictionary verbs (not new materialization)
 - **NEW:** Execute automated tag audit to identify inconsistencies in existing `word_forms.tags` and `dictionary.tags`
 - Tag existing irregular forms (PP / gerund / imperatives) with 'irregular' in existing `word_forms`
-- **NEW:** Build PronunciationEngine foundation with phonetic transformation rules for gender variants and compound forms
-- Build ConjugationEngine class with all core methods
-- Implement auxiliary pattern caching system with performance monitoring
+- **NEW:** Build PronunciationEngine foundation with phonetic transformation rules for gender variants (base word clitics only)
+- Build ConjugationEngine class with validation and filtering methods for existing forms
+- Establish direct word_forms → dictionary relationship via explicit foreign key
+- **NEW:** Build comprehensive word conjugation validator in admin tools section of website
 - Build comprehensive irregular participle/gerund lookup system using existing `word_forms`
 
-**Phase 2: Advanced Linguistic Logic and Data Backfill (Week 2)**  
-- **NEW:** Execute systematic form backfill for top 100 frequency verbs, creating missing participio-passato and gerundio-presente forms
-- **NEW:** Implement comprehensive phonetic and IPA generation for compound forms, gender variants, and clitic attachment
-- Implement CliticOrchestrator module for reflexive pronoun handling
-- Implement dynamic compound form generation with full clitic support and accurate pronunciation
-- Build translation constraint filtering system including plurality restrictions
-- Create gender variant calculation integrated with clitic agreement rules and phonetic transformations
+**Phase 2: Validation System and Limited Clitic Support (Week 2)**  
+- **NEW:** Complete word conjugation validator implementation in admin tools with compliance checking
+- **NEW:** Implement validation for base word clitic scope (only mi lavo, mi sono lavato patterns)
+- **NEW:** Build architectural readiness checker for future materialization engine
+- Implement CliticOrchestrator module for base reflexive pronoun handling only
+- Build translation constraint filtering system including plurality restrictions (usage drives filtering)
+- Create gender variant calculation for base masculine forms with limited clitic support
 - **NEW:** Execute translation metadata enhancement for auxiliary assignments and usage constraints in `word_translations.context_metadata`
-- Create comprehensive unit tests including **reflexive/clitic permutation matrix**:
-  - Simple vs compound tense clitic placement with phonetic accuracy
-  - Positive vs negative imperative pronoun attachment 
-  - Progressive tense clitic positioning
-  - Past participle agreement with various clitic combinations
-  - Reciprocal vs reflexive semantic distinction validation
-  - Phonetic and IPA accuracy for all generated forms
+- **NEW:** Add special validation for reflexive-verb tagged verbs and invariable forms (infinito-passato, gerundio-passato)
+- **NEW:** Implement progressive form token recognition including stare auxiliary patterns
+- Create comprehensive unit tests including **base reflexive/clitic validation matrix**:
+  - Base reflexive forms validation (mi lavo, mi sono lavato)
+  - Exclusion validation (no enclitic attachment, no complex clitics)
+  - Negative form exclusion validation
+  - Translation constraint validation for reflexive vs reciprocal distinctions
+  - Phonetic and IPA accuracy for base gender variants only
 
-**Phase 3: UI Integration and Data Quality Validation (Week 3)**
-- Replace existing ConjugationModal with new engine including dynamic pronunciation support
-- **NEW:** Implement real-time data quality validation using LinguisticAccuracyChecker for reflexive constraints and auxiliary consistency
-- Implement consistent dropdown ordering across all verbs
-- Add translation selection with real-time auxiliary switching and clitic repositioning
-- **NEW:** Integrate pronunciation playback for dynamically generated forms using enhanced audio system
-- Implement imperative mood complexity (irregular forms, enclitic attachment, negative patterns)
+**Phase 3: UI Integration and Comprehensive Validation (Week 3)**
+- Replace existing ConjugationModal with new engine using existing forms and validation
+- **NEW:** Integrate word conjugation validator into admin tools interface with real-time compliance reporting
+- **NEW:** Implement comprehensive validation dashboard showing architectural readiness across all verbs
+- Implement consistent dropdown ordering across all verbs using existing forms
+- Add translation selection with auxiliary-based form filtering (existing forms only)
+- **NEW:** Integrate pronunciation playback for existing forms and limited calculated variants
+- Implement imperative mood support with base forms only (no enclitic attachment)
 - Add orthographic refinement layer (apostrophe handling, capitalization, hyphenation)
 - Integrate formality mapping logic with proper pronoun capitalization
 - Ensure WCAG 2.2 AA compliance with proper ARIA labels and keyboard navigation
-- Implement screen reader support for complex clitic constructions
+- Implement screen reader support for base clitic constructions only
 - Create proper loading states and comprehensive error handling
+- **NEW:** Implement audio filename strategy with NULL storage and future sha256(form_id).mp3 hashing plan
 
-**Phase 4: Complete Data Migration and System Validation (Week 4)**
+**Phase 4: Complete Foundation Validation and Future-Proofing (Week 4)**
 - **NEW:** Execute comprehensive tag standardization migration across all tables using TagMigrationValidator
-- **NEW:** Complete linguistic expert review and form creation for priority verbs using standardized workflow
-- **NEW:** Deploy automated data quality assurance framework with continuous validation rules
+- **NEW:** Complete linguistic expert review and validation for existing dictionary verbs using standardized workflow
+- **NEW:** Deploy automated data quality assurance framework with continuous validation rules in admin tools
+- **NEW:** Build materialization readiness reporting system showing which verbs are ready for future engine
 - Add feature flag system for gradual rollout with A/B testing capability  
 - Update existing tags in place with data clean-up scripts for `word_forms.tags` and `word_translations.context_metadata`
 - Implement comprehensive performance monitoring with alerting (>300ms query threshold)
 - Deploy blue-green deployment system with instant rollback capability
-- Migrate all existing verbs to new architecture with validation checkpoints
-- **NEW:** Execute end-to-end pronunciation accuracy testing for all generated forms and variants
-- Create complete developer documentation including JSDoc, ERD diagrams, and API README
-- Comprehensive testing with parlare, finire, reflexive verbs including clitic accuracy validation and pronunciation verification
-- Final stakeholder review gates (linguist, pedagogy lead, QA, platform ops)
+- Validate architectural compliance across all existing verbs with detailed reporting
+- **NEW:** Document future materialization engine requirements and integration points
+- **NEW:** Execute end-to-end pronunciation accuracy testing for existing forms and limited variants
+- Create complete developer documentation including JSDoc, ERD diagrams, API README, and future expansion guide
+- Comprehensive testing with parlare, finire, reflexive verbs including base clitic validation and pronunciation verification
+- Final stakeholder review gates (linguist, pedagogy lead, QA, platform ops) with future roadmap approval
 
 ## Success Criteria and Validation
 
 ### Technical Validation
 
-**Consistency Testing:** All verbs (parlare, finire, reflexive verbs) show identical dropdown organization and behavior patterns. No verb-specific special cases or inconsistent interfaces.
+**Consistency Testing:** All existing verbs (parlare, finire, reflexive verbs) show identical dropdown organization and behavior patterns. No verb-specific special cases or inconsistent interfaces.
 
-**Performance Requirements:** Conjugation modal opens in under 200ms with all forms generated and displayed. Translation switching completes in under 100ms. System alerts trigger if any operation exceeds 300ms threshold.
+**Performance Requirements:** Conjugation modal opens in under 200ms with translation-specific forms retrieved directly through form_ids arrays. Translation switching completes in under 100ms by loading only the forms specified by the new translation. System alerts trigger if any operation exceeds 300ms threshold.
 
-**Translation Accuracy:** Each form displays contextually appropriate English translations that maintain semantic consistency with the selected meaning. No mixing of reflexive/reciprocal translations.
+**Translation-Form Relationship Integrity:** Each translation's form_ids array correctly references existing forms with appropriate auxiliary tags. No orphaned references or missing forms. When users switch translations, the system loads exactly the forms specified by that translation without requiring additional filtering logic.
 
-**Auxiliary Correctness:** Translation switching properly changes auxiliaries (avere ↔ essere) with all compound forms regenerating correctly. Gender variants appear/disappear appropriately based on auxiliary selection.
+**Explicit Auxiliary Tag Accuracy:** ≥99% of compound forms contain correct explicit auxiliary tags (avere-auxiliary, essere-auxiliary, stare-auxiliary) that match their actual form structure. No reliance on runtime text parsing to determine auxiliary type. Validation system catches auxiliary tag mismatches with 100% accuracy.
 
-**Clitic and Reflexive Accuracy:** ≥99% of randomly sampled reflexive forms render with correct pronoun placement and past participle agreement. All imperative forms display proper enclitic attachment. Negative imperatives use correct infinitive constructions.
+**Translation Auxiliary Consistency:** For each translation, all forms in its form_ids array have auxiliary tags that match the translation's context_metadata.auxiliary value. No inconsistencies between translation-level auxiliary specification and form-level auxiliary tags.
 
-**Orthographic Precision:** All forms display proper Italian orthography including apostrophe placement, formal pronoun capitalization, and systematic hyphenation in compound constructions.
+**Base Clitic Accuracy:** ≥99% of stored reflexive forms (mi lavo, mi sono lavato) render with correct pronoun placement and past participle agreement. Complex clitics and enclitic attachment excluded from scope. Validation system correctly identifies and flags any non-base clitic constructions.
 
-**NEW: Pronunciation Accuracy:** ≥98% of dynamically generated forms (compounds, gender variants, clitic attachments) display phonetic representations and IPA transcriptions that match expert linguistic review. Stress patterns are preserved correctly across all morphological transformations.
+**Orthographic Precision:** All existing forms display proper Italian orthography including apostrophe placement, formal pronoun capitalization, and systematic hyphenation in stored constructions.
 
-**NEW: Data Completeness:** All existing verbs in the dictionary table have complete building block forms (past participle, gerund) where needed for compound generation. No gaps remain that would prevent the conjugation system from functioning with any currently stored verb.
+**NEW: Admin Tools Validator Accuracy:** Word conjugation validator in admin tools section identifies architectural compliance issues across all dictionary verbs with ≥95% accuracy in detecting missing building blocks, tag inconsistencies, auxiliary tag problems, and translation-form reference integrity issues.
+
+**NEW: Translation-Form Mapping Validation:** Validation system verifies that every translation has a populated form_ids array, all referenced forms exist, and auxiliary tags are consistent between translations and their referenced forms. Zero tolerance for orphaned references or auxiliary mismatches.
+
+**NEW: Architectural Readiness Assessment:** ≥90% of existing dictionary verbs pass comprehensive architectural readiness validation including explicit auxiliary tags, translation-form mappings, and structural compliance. Clear remediation paths provided for non-compliant verbs.
+
+**NEW: Scope Compliance Verification:** Validation system correctly identifies and flags any non-base clitics, negative forms, or complex constructions that exceed current scope boundaries, maintaining strict adherence to architectural limitations.
 
 ### User Experience Validation
 
@@ -1070,11 +1624,13 @@ The translation-centric architecture creates natural extension points for these 
 
 **Translation Quality:** Users see coherent, contextually appropriate translations that help them understand the specific meaning they've selected rather than generic or confused mixed translations.
 
-**Accessibility Compliance:** All UI components pass WCAG 2.2 AA standards. Screen readers announce clitic constructions intelligibly. Keyboard navigation works seamlessly through all dropdown menus and toggles.
+**Accessibility Compliance:** All UI components pass WCAG 2.2 AA standards. Screen readers announce base clitic constructions intelligibly. Keyboard navigation works seamlessly through all dropdown menus and toggles.
 
-**NEW: Audio Integration:** Generated compound forms and gender variants play accurate pronunciation through the audio system. Users hear correct phonetic realizations of complex constructions like "si sono lavati" vs "si sono lavate."
+**NEW: Admin Interface Usability:** Word conjugation validator in admin tools provides clear, actionable feedback on compliance issues with intuitive remediation workflows for non-technical stakeholders.
 
-### Data Integrity and Migration Validation
+**NEW: Future-Proofing Clarity:** Documentation clearly explains current scope limitations and future expansion pathways, setting appropriate user expectations for incremental development.
+
+### Data Integrity and Validation
 
 **Data Consistency:** All updated tags conform to the new enumerations (validated by the ConjugationEngine at runtime); no rows moved between tables, no schema drift.
 
@@ -1082,25 +1638,35 @@ The translation-centric architecture creates natural extension points for these 
 
 **Metadata Schema Validation:** All translation metadata conforms to enumerated value schemas with backward compatibility versioning preventing data drift.
 
-**Performance Monitoring Integration:** Live instrumentation tracks generation time, cache hit/miss ratios, and database latency with automated alerting for performance regressions.
+**Performance Monitoring Integration:** Live instrumentation tracks retrieval time, cache hit/miss ratios, and database latency with automated alerting for performance regressions.
 
 **NEW: Linguistic Quality Assurance:** All reflexive verb translations pass plurality constraint validation. Auxiliary assignments for state-change vs action verbs match Italian grammatical requirements. Form-to-translation assignments maintain semantic coherence across all verb meanings.
 
-**NEW: Phonetic System Validation:** Dynamic pronunciation generation produces outputs that pass native speaker validation. IPA transcriptions conform to international standards for Italian phonology. Stress pattern calculations match authoritative pronunciation dictionaries.
+**NEW: Foundation Completeness:** All existing dictionary verbs have required building blocks (past participle, gerund) for future materialization. No gaps remain that would prevent the materialization engine from functioning with any currently stored verb.
+
+**NEW: Scope Boundary Validation:** Automated validation confirms that only base word clitics are stored, no negative forms exist in data, and complex constructions are properly excluded from current scope.
+
+**NEW: Direct Relationship Validation:** Explicit foreign key relationship from word_forms to dictionary ensures efficient form lookup without unnecessary complexity through translation paths.
+
+**NEW: Future Engine Readiness:** Comprehensive documentation and validation frameworks establish clear requirements and integration points for the future materialization engine development.
 
 ## Long-term Architectural Benefits
 
 ### Scalability and Maintainability
 
-The translation-centric architecture creates a maintainable foundation that can grow with the application's needs. Adding new verbs requires only creating appropriate translation metadata in your existing `word_translations` table - all generation logic works uniformly. Adding new languages requires only new UI display mappings - the universal grammatical terminology supports any language's conjugation patterns.
+The materialization-centric architecture creates a maintainable foundation that can grow with the application's needs. Adding new verbs requires only creating appropriate translation metadata in your existing `word_translations` table and materializing the required forms - all retrieval logic works uniformly. Adding new languages requires only new UI display mappings - the universal grammatical terminology supports any language's conjugation patterns.
 
 ### Linguistic Accuracy
 
-By modeling the actual relationship between semantic meaning and grammatical behavior, the system teaches students to think like native speakers who start with communicative intent and then select appropriate linguistic forms. This approach scales to handle increasingly sophisticated linguistic phenomena without architectural changes.
+By modeling the actual relationship between semantic meaning and grammatical behavior through pre-materialized forms, the system teaches students to think like native speakers who start with communicative intent and then select appropriate linguistic forms. This approach scales to handle increasingly sophisticated linguistic phenomena without architectural changes.
 
 ### Performance Optimization
 
-The single comprehensive query approach combined with auxiliary pattern caching creates optimal database performance. Memory usage remains efficient by generating only needed forms rather than pre-computing all possibilities. The architecture supports progressive enhancement with offline caching for frequently accessed verbs.
+The single comprehensive query approach combined with materialized form storage creates optimal database performance. Memory usage remains efficient by retrieving only needed forms rather than generating all possibilities. The architecture supports progressive enhancement with offline caching for frequently accessed verbs.
+
+### SRS Integration Readiness
+
+With every form having persistent database identity through materialization, the system is naturally prepared for SRS integration. Client-side variants can post to base_form_id when the SRS system arrives, maintaining clear architectural principles while avoiding premature design.
 
 ## Risk Mitigation and Operational Safeguards
 
@@ -1134,4 +1700,4 @@ The single comprehensive query approach combined with auxiliary pattern caching 
 
 ---
 
-**This EPIC represents a fundamental architectural evolution that will provide the reliable, maintainable, and linguistically accurate conjugation system that Misti requires for long-term success. The translation-centric approach solves current system limitations while creating a scalable foundation for future language learning features.**
+**This EPIC represents a fundamental architectural foundation that will enable the reliable, maintainable, and linguistically accurate conjugation system that Misti requires for long-term success. The materialization-centric approach establishes comprehensive validation systems and data structures with existing dictionary verbs while creating a scalable foundation for future materialization engine development and advanced grammatical features. The admin tools validator ensures architectural compliance and readiness for incremental expansion through carefully scoped future EPICs.**
