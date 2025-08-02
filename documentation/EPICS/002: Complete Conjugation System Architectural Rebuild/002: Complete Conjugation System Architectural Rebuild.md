@@ -1529,66 +1529,19 @@ Each excluded construction can be added incrementally without architectural chan
 
 The architecture ensures that each phase builds naturally on previous foundations without requiring refactoring of core systems.
 
-## Implementation Phases
+## Implementation Timeline and Dependencies
 
-**Phase 1: Foundation and Data Analysis (Week 1)**
-- Extract auxiliary patterns into static file `src/lib/auxPatterns.ts` (development tool only)
-- **NEW:** Run comprehensive data gap analysis using FormGapAnalyzer to identify missing forms across existing dictionary verbs (not new materialization)
-- **NEW:** Execute automated tag audit to identify inconsistencies in existing `word_forms.tags` and `dictionary.tags`
-- Tag existing irregular forms (PP / gerund / imperatives) with 'irregular' in existing `word_forms`
-- **NEW:** Build PronunciationEngine foundation with phonetic transformation rules for gender variants (base word clitics only)
-- Build ConjugationEngine class with validation and filtering methods for existing forms
-- Establish direct word_forms → dictionary relationship via explicit foreign key
-- **NEW:** Build comprehensive word conjugation validator in admin tools section of website
-- Build comprehensive irregular participle/gerund lookup system using existing `word_forms`
+### Week 1: Foundation and Architecture (Stories 002.001, 002.002)
+These stories establish the core data architecture and universal terminology migration. Story 002.001 creates the foundation data structures, while Story 002.002 implements the crucial translation-to-form relationship architecture that drives all subsequent functionality.
 
-**Phase 2: Validation System and Limited Clitic Support (Week 2)**  
-- **NEW:** Complete word conjugation validator implementation in admin tools with compliance checking
-- **NEW:** Implement validation for base word clitic scope (only mi lavo, mi sono lavato patterns)
-- **NEW:** Build architectural readiness checker for future materialization engine
-- Implement CliticOrchestrator module for base reflexive pronoun handling only
-- Build translation constraint filtering system including plurality restrictions (usage drives filtering)
-- Create gender variant calculation for base masculine forms with limited clitic support
-- **NEW:** Execute translation metadata enhancement for auxiliary assignments and usage constraints in `word_translations.context_metadata`
-- **NEW:** Add special validation for reflexive-verb tagged verbs and invariable forms (infinito-passato, gerundio-passato)
-- **NEW:** Implement progressive form token recognition including stare auxiliary patterns
-- Create comprehensive unit tests including **base reflexive/clitic validation matrix**:
-  - Base reflexive forms validation (mi lavo, mi sono lavato)
-  - Exclusion validation (no enclitic attachment, no complex clitics)
-  - Negative form exclusion validation
-  - Translation constraint validation for reflexive vs reciprocal distinctions
-  - Phonetic and IPA accuracy for base gender variants only
+### Week 2: Data Enhancement and Validation Tools (Stories 002.003, 002.004)
+Story 002.003 completes the translation metadata and form backfill work, while Story 002.004 creates the admin tools interface that will be essential for ongoing data quality management.
 
-**Phase 3: UI Integration and Comprehensive Validation (Week 3)**
-- Replace existing ConjugationModal with new engine using existing forms and validation
-- **NEW:** Integrate word conjugation validator into admin tools interface with real-time compliance reporting
-- **NEW:** Implement comprehensive validation dashboard showing architectural readiness across all verbs
-- Implement consistent dropdown ordering across all verbs using existing forms
-- Add translation selection with auxiliary-based form filtering (existing forms only)
-- **NEW:** Integrate pronunciation playback for existing forms and limited calculated variants
-- Implement imperative mood support with base forms only (no enclitic attachment)
-- Add orthographic refinement layer (apostrophe handling, capitalization, hyphenation)
-- Integrate formality mapping logic with proper pronoun capitalization
-- Ensure WCAG 2.2 AA compliance with proper ARIA labels and keyboard navigation
-- Implement screen reader support for base clitic constructions only
-- Create proper loading states and comprehensive error handling
-- **NEW:** Implement audio filename strategy with NULL storage and future sha256(form_id).mp3 hashing plan
+### Week 3: Core Implementation and Validation Systems (Stories 002.005, 002.006)
+Story 002.005 implements the base clitic functionality within strict scope boundaries, while Story 002.006 builds the comprehensive validation systems that ensure linguistic accuracy.
 
-**Phase 4: Complete Foundation Validation and Future-Proofing (Week 4)**
-- **NEW:** Execute comprehensive tag standardization migration across all tables using TagMigrationValidator
-- **NEW:** Complete linguistic expert review and validation for existing dictionary verbs using standardized workflow
-- **NEW:** Deploy automated data quality assurance framework with continuous validation rules in admin tools
-- **NEW:** Build materialization readiness reporting system showing which verbs are ready for future engine
-- Add feature flag system for gradual rollout with A/B testing capability  
-- Update existing tags in place with data clean-up scripts for `word_forms.tags` and `word_translations.context_metadata`
-- Implement comprehensive performance monitoring with alerting (>300ms query threshold)
-- Deploy blue-green deployment system with instant rollback capability
-- Validate architectural compliance across all existing verbs with detailed reporting
-- **NEW:** Document future materialization engine requirements and integration points
-- **NEW:** Execute end-to-end pronunciation accuracy testing for existing forms and limited variants
-- Create complete developer documentation including JSDoc, ERD diagrams, API README, and future expansion guide
-- Comprehensive testing with parlare, finire, reflexive verbs including base clitic validation and pronunciation verification
-- Final stakeholder review gates (linguist, pedagogy lead, QA, platform ops) with future roadmap approval
+### Week 4: Integration and Deployment (Stories 002.007, 002.008, 002.009, 002.010)
+The final week focuses on UI integration, tag migration, accessibility compliance, and safe deployment with comprehensive validation.
 
 ## Success Criteria and Validation
 

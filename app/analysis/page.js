@@ -1,7 +1,7 @@
 'use client'
 
 // app/analysis/page.js
-// Web-Based Form Gap Analysis Interface for Story 002.001
+// Web-Based Form Gap Analysis Interface for Story 002.001: Foundation Data Architecture and Universal Terminology Migration
 // Run verb form analysis directly in the browser - no CLI needed
 
 import { useState } from 'react'
