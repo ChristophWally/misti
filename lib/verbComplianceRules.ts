@@ -530,9 +530,17 @@ export interface SystemComplianceReport {
  * Export all compliance rules for validation engine consumption
  */
 export const VERB_COMPLIANCE_RULES = {
-  wordLevel: WORD_LEVEL_REQUIRED_TAGS,
+  // Include both required and deprecated tag sets for word-level validation
+  wordLevel: {
+    ...WORD_LEVEL_REQUIRED_TAGS,
+    deprecatedTags: WORD_LEVEL_DEPRECATED_TAGS
+  },
   translationLevel: TRANSLATION_LEVEL_REQUIRED_METADATA,
-  formLevel: FORM_LEVEL_REQUIRED_TAGS,
+  // Form-level rules now expose deprecated tags as well
+  formLevel: {
+    ...FORM_LEVEL_REQUIRED_TAGS,
+    deprecatedTags: FORM_LEVEL_DEPRECATED_TAGS
+  },
   crossTable: CROSS_TABLE_VALIDATION_RULES,
   buildingBlocks: EPIC_BUILDING_BLOCK_REQUIREMENTS,
   scopeBoundaries: EPIC_SCOPE_BOUNDARY_RULES,
