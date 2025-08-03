@@ -38,7 +38,7 @@ export interface VerbData {
     word_type: string;
     tags: string[];
     created_at: string;
-  };
+  } | null;
   translations: Array<{
     id: string;
     translation: string;
@@ -310,7 +310,7 @@ export class ConjugationComplianceValidator {
       }
 
       return {
-        word: {}, // Will be populated by caller
+        word: null, // Will be populated by caller
         translations: translations || [],
         forms: forms || [],
         formTranslations: formTranslations
