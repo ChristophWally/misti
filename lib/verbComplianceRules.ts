@@ -545,7 +545,7 @@ export const VERB_COMPLIANCE_RULES = {
   thresholds: COMPLIANCE_THRESHOLDS
 };
 
-console.log('✅ Verb Compliance Rules loaded');
+console.log('✅ EPIC 002 Verb Compliance Rules loaded');
 console.log(`📊 Monitoring ${Object.keys(VERB_COMPLIANCE_RULES.wordLevel).length} word-level rule sets`);
 console.log(`📊 Monitoring ${Object.keys(VERB_COMPLIANCE_RULES.translationLevel).length} translation-level rule sets`);
 console.log(`📊 Monitoring ${Object.keys(VERB_COMPLIANCE_RULES.formLevel).length} form-level rule sets`);
