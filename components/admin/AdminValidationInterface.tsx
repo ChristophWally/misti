@@ -2,16 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, CheckCircle, AlertTriangle, XCircle, Settings, BarChart3, RefreshCw, Download, Play, Pause } from 'lucide-react';
+import { ConjugationComplianceValidator, ValidationOptions } from '../../lib/conjugationComplianceValidator';
+import { createClient } from '@supabase/supabase-js';
 
-// This would normally be imported from your validation system
-// import { ConjugationComplianceValidator } from '../lib/conjugationComplianceValidator';
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const AdminValidationInterface = () => {
   const [selectedVerb, setSelectedVerb] = useState('');
   const [validationResult, setValidationResult] = useState(null);
   const [systemAnalysis, setSystemAnalysis] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
-  const [validationOptions, setValidationOptions] = useState({
+  const [validationOptions, setValidationOptions] = useState<ValidationOptions>({
     includeDeprecatedCheck: true,
     includeCrossTableAnalysis: true,
     includeTerminologyValidation: true,
@@ -21,130 +26,34 @@ const AdminValidationInterface = () => {
   });
   const [activeTab, setActiveTab] = useState('single-verb');
 
-  // Mock validation data for demonstration
-  const mockVerbResult = {
-    verbId: '123',
-    verbItalian: 'parlare',
-    overallScore: 85,
-    complianceStatus: 'needs-work',
-    wordLevelIssues: [
-      {
-        ruleId: 'missing-transitivity-potential',
-        severity: 'high',
-        message: 'Missing transitivity potential classification',
-        currentValue: ['are-conjugation', 'freq-top100'],
-        expectedValue: 'One of: always-transitive, always-intransitive, both-possible',
-        manualSteps: ['Analyze verb usage patterns', 'Add appropriate transitivity tag'],
-        epicContext: 'Translation-level auxiliary assignment validation depends on word-level transitivity'
-      }
-    ],
-    translationLevelIssues: [
-      {
-        ruleId: 'missing-form-ids-array',
-        severity: 'critical',
-        message: 'Translation "to speak" missing form_ids array',
-        currentValue: 'undefined',
-        expectedValue: 'Array of form IDs this translation uses',
-        manualSteps: ['Identify which forms belong to this translation meaning', 'Create form_ids array with appropriate form IDs'],
-        epicContext: 'Translation-to-form relationship - core architecture requirement'
-      }
-    ],
-    formLevelIssues: [
-      {
-        ruleId: 'legacy-person-terms',
-        severity: 'critical',
-        message: 'Form "io parlo" uses legacy person terms',
-        currentValue: ['io'],
-        expectedValue: ['first-person'],
-        autoFix: 'Replace with universal terms: io → first-person',
-        epicContext: 'Multi-language support requires universal terminology'
-      }
-    ],
-    crossTableIssues: [],
-    missingBuildingBlocks: ['participio-passato'],
-    deprecatedContent: [],
-    autoFixableIssues: [
-      {
-        ruleId: 'legacy-person-terms',
-        severity: 'critical',
-        message: 'Form "io parlo" uses legacy person terms',
-        autoFix: 'Replace with universal terms: io → first-person'
-      }
-    ],
-    manualInterventionRequired: [
-      {
-        ruleId: 'missing-form-ids-array',
-        severity: 'critical',
-        message: 'Translation "to speak" missing form_ids array',
-        manualSteps: ['Identify which forms belong to this translation meaning', 'Create form_ids array with appropriate form IDs']
-      }
-    ],
-    migrationReadiness: false,
-    priorityLevel: 'high',
-    estimatedFixTime: '25 minutes'
-  };
-
-  const mockSystemAnalysis = {
-    totalVerbs: 150,
-    analyzedVerbs: 50,
-    complianceDistribution: {
-      compliant: 12,
-      needsWork: 28,
-      criticalIssues: 8,
-      blocksMigration: 2
-    },
-    overallScore: {
-      overall: 72,
-      critical: 88,
-      blockers: 2,
-      warnings: 36,
-      verbsCompliant: 12,
-      verbsNeedingWork: 38
-    },
-    topIssues: [
-      { ruleId: 'missing-form-ids-array', count: 35, impact: 'Breaks translation-to-form relationship architecture' },
-      { ruleId: 'legacy-person-terms', count: 28, impact: 'Prevents multi-language expansion' },
-      { ruleId: 'missing-auxiliary-assignment', count: 22, impact: 'Prevents compound tense materialization' }
-    ],
-    autoFixableCount: 156,
-    estimatedWorkRequired: '12 hours',
-    migrationReadiness: {
-      ready: false,
-      blockers: ['2 verbs have critical migration-blocking issues', '15 verbs missing essential building blocks'],
-      recommendations: ['Address migration-blocking issues immediately', 'Run automated fixes for 156 auto-fixable issues']
-    }
-  };
-
   const handleVerbValidation = async () => {
     if (!selectedVerb.trim()) return;
-    
-    setIsValidating(true);
-    
-    // Simulate validation delay
-    setTimeout(() => {
-      setValidationResult(mockVerbResult);
-      setIsValidating(false);
-    }, 1500);
 
-    // Real implementation would be:
-    // const validator = new ConjugationComplianceValidator(supabaseClient);
-    // const result = await validator.validateSpecificVerb(selectedVerb);
-    // setValidationResult(result);
+    setIsValidating(true);
+    try {
+      const validator = new ConjugationComplianceValidator(supabase);
+      const result = await validator.validateSpecificVerb(selectedVerb);
+      setValidationResult(result);
+    } catch (error) {
+      console.error('Validation error:', error);
+      setValidationResult(null);
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   const handleSystemAnalysis = async () => {
     setIsValidating(true);
-    
-    // Simulate system analysis delay
-    setTimeout(() => {
-      setSystemAnalysis(mockSystemAnalysis);
+    try {
+      const validator = new ConjugationComplianceValidator(supabase);
+      const result = await validator.validateConjugationSystem(validationOptions);
+      setSystemAnalysis(result);
+    } catch (error) {
+      console.error('System analysis error:', error);
+      setSystemAnalysis(null);
+    } finally {
       setIsValidating(false);
-    }, 3000);
-
-    // Real implementation would be:
-    // const validator = new ConjugationComplianceValidator(supabaseClient);
-    // const result = await validator.validateConjugationSystem(validationOptions);
-    // setSystemAnalysis(result);
+    }
   };
 
   const getStatusIcon = (status) => {
@@ -689,7 +598,7 @@ const AdminValidationInterface = () => {
               </label>
               <select
                 value={validationOptions.priorityFilter}
-                onChange={(e) => setValidationOptions(prev => ({ ...prev, priorityFilter: e.target.value }))}
+                onChange={(e) => setValidationOptions(prev => ({ ...prev, priorityFilter: e.target.value as 'high-only' | 'all' }))}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All verbs</option>
