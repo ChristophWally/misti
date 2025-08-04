@@ -27,17 +27,22 @@ const AdminValidationInterface = () => {
   const [activeTab, setActiveTab] = useState('single-verb');
 
   const handleVerbValidation = async () => {
+    console.log('🔍 Starting validation for:', selectedVerb);
     if (!selectedVerb.trim()) return;
 
     setIsValidating(true);
     try {
+      console.log('🔧 Creating validator...');
       const validator = new ConjugationComplianceValidator(supabase);
+      console.log('📊 Running validation...');
       const result = await validator.validateSpecificVerb(selectedVerb);
+      console.log('✅ Validation result:', result);
       setValidationResult(result);
     } catch (error) {
-      console.error('Validation error:', error);
+      console.error('❌ Validation error:', error);
       setValidationResult(null);
     } finally {
+      console.log('🏁 Validation finished');
       setIsValidating(false);
     }
   };
