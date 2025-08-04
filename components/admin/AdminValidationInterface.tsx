@@ -21,6 +21,19 @@ const AdminValidationInterface = () => {
   });
   const [activeTab, setActiveTab] = useState('single-verb');
 
+  const addDebugLog = (message: string, data?: any) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugLog(prev => [...prev, `[${timestamp}] ${message}`]);
+    if (data) {
+      setDebugData(prev => ({ ...prev, [message]: data }));
+    }
+  };
+
+  const clearDebugLog = () => {
+    setDebugLog([]);
+    setDebugData({});
+  };
+
   // Mock validation data for demonstration
   const mockVerbResult = {
     verbId: '123',
