@@ -1096,12 +1096,12 @@ export class ConjugationComplianceValidator {
   /**
    * Validate specific verb with comprehensive debugging
    */
+
   async validateSpecificVerbWithDebug(verbItalian: string, debugLog: (msg: string) => void): Promise<VerbComplianceReport | null> {
     debugLog(`🔍 Starting validation for: ${verbItalian}`);
 
     try {
       debugLog('📥 Connecting to database...');
-
       const { data: word, error } = await this.supabase
         .from('dictionary')
         .select('*')
@@ -1109,22 +1109,29 @@ export class ConjugationComplianceValidator {
         .eq('word_type', 'VERB')
         .single();
 
-      if (error) {
-        debugLog(`❌ Database error: ${error.message}`);
-        debugLog(`❌ Error code: ${error.code}`);
-        debugLog(`❌ Error details: ${JSON.stringify(error.details)}`);
-        return null;
-      }
-
-      if (!word) {
-        debugLog(`❌ Verb "${verbItalian}" not found in database`);
+      if (error || !word) {
+        debugLog(`❌ Verb not found: ${error?.message}`);
         return null;
       }
 
       debugLog(`✅ Found verb: ${word.italian} (ID: ${word.id})`);
       debugLog(`📊 Word tags: ${JSON.stringify(word.tags)}`);
 
-      // Load complete verb data with debugging
+      // DETAILED WORD TAG ANALYSIS
+      debugLog('🔍 WORD LEVEL ANALYSIS:');
+      const requiredWordTags = {
+        conjugationClass: ['are-conjugation', 'ere-conjugation', 'ire-conjugation', 'ire-isc-conjugation'],
+        transitivity: ['always-transitive', 'always-intransitive', 'both-possible'],
+        frequency: ['freq-top100', 'freq-top200', 'freq-top500', 'freq-top1000', 'freq-top5000'],
+        cefr: ['CEFR-A1', 'CEFR-A2', 'CEFR-B1', 'CEFR-B2', 'CEFR-C1', 'CEFR-C2']
+      };
+
+      for (const [category, options] of Object.entries(requiredWordTags)) {
+        const found = word.tags.filter(tag => options.includes(tag));
+        debugLog(`  ${category}: ${found.length > 0 ? '✅ ' + found.join(', ') : '❌ MISSING - expected one of: ' + options.join(', ')}`);
+      }
+
+      // DETAILED TRANSLATIONS ANALYSIS
       debugLog('📥 Loading translations...');
       const { data: translations, error: translationsError } = await this.supabase
         .from('word_translations')
@@ -1137,7 +1144,26 @@ export class ConjugationComplianceValidator {
       }
 
       debugLog(`✅ Loaded ${translations?.length || 0} translations`);
+      debugLog('🔍 TRANSLATIONS ANALYSIS:');
 
+      if (!translations || translations.length === 0) {
+        debugLog('  ❌ NO TRANSLATIONS FOUND - verb needs at least one translation');
+      } else {
+        for (let i = 0; i < translations.length; i++) {
+          const t = translations[i];
+          debugLog(`  Translation ${i + 1}: "${t.translation}"`);
+          debugLog(`    ID: ${t.id}`);
+          debugLog(`    Priority: ${t.display_priority || 'undefined'}`);
+
+          const metadata = t.context_metadata || {};
+          debugLog(`    Auxiliary: ${metadata.auxiliary || '❌ MISSING (required: avere/essere)'}`);
+          debugLog(`    Transitivity: ${metadata.transitivity || '❌ MISSING (required: transitive/intransitive)'}`);
+          debugLog(`    Usage: ${metadata.usage || 'undefined'}`);
+          debugLog(`    Form IDs: ${t.form_ids ? JSON.stringify(t.form_ids) : '❌ MISSING (required: array of form IDs)'}`);
+        }
+      }
+
+      // DETAILED FORMS ANALYSIS
       debugLog('📥 Loading forms...');
       const { data: forms, error: formsError } = await this.supabase
         .from('word_forms')
@@ -1150,9 +1176,139 @@ export class ConjugationComplianceValidator {
       }
 
       debugLog(`✅ Loaded ${forms?.length || 0} forms`);
+      debugLog('🔍 COMPREHENSIVE FORMS ANALYSIS:');
 
-      // Create the report
-      debugLog('🔧 Creating compliance report...');
+      const expectedForms = [
+        { mood: 'indicativo', tense: 'presente', persons: 6, compound: false },
+        { mood: 'indicativo', tense: 'passato-prossimo', persons: 6, compound: true },
+        { mood: 'indicativo', tense: 'imperfetto', persons: 6, compound: false },
+        { mood: 'indicativo', tense: 'futuro-semplice', persons: 6, compound: false },
+        { mood: 'indicativo', tense: 'trapassato-prossimo', persons: 6, compound: true },
+        { mood: 'indicativo', tense: 'passato-remoto', persons: 6, compound: false },
+        { mood: 'indicativo', tense: 'futuro-anteriore', persons: 6, compound: true },
+        { mood: 'indicativo', tense: 'trapassato-remoto', persons: 6, compound: true },
+        { mood: 'congiuntivo', tense: 'congiuntivo-presente', persons: 6, compound: false },
+        { mood: 'congiuntivo', tense: 'congiuntivo-imperfetto', persons: 6, compound: false },
+        { mood: 'congiuntivo', tense: 'congiuntivo-passato', persons: 6, compound: true },
+        { mood: 'congiuntivo', tense: 'congiuntivo-trapassato', persons: 6, compound: true },
+        { mood: 'condizionale', tense: 'condizionale-presente', persons: 6, compound: false },
+        { mood: 'condizionale', tense: 'condizionale-passato', persons: 6, compound: true },
+        { mood: 'imperativo', tense: 'imperativo-presente', persons: 5, compound: false },
+        { mood: 'imperativo', tense: 'imperativo-passato', persons: 5, compound: true },
+        { mood: 'indicativo', tense: 'presente-progressivo', persons: 6, compound: true },
+        { mood: 'indicativo', tense: 'imperfetto-progressivo', persons: 6, compound: true },
+        { mood: 'indicativo', tense: 'futuro-progressivo', persons: 6, compound: true },
+        { mood: 'congiuntivo', tense: 'congiuntivo-presente-progressivo', persons: 6, compound: true },
+        { mood: 'condizionale', tense: 'condizionale-presente-progressivo', persons: 6, compound: true },
+        { mood: 'infinito', tense: 'infinito-presente', persons: 0, compound: false },
+        { mood: 'infinito', tense: 'infinito-passato', persons: 0, compound: true },
+        { mood: 'participio', tense: 'participio-presente', persons: 0, compound: false },
+        { mood: 'participio', tense: 'participio-passato', persons: 0, compound: false },
+        { mood: 'gerundio', tense: 'gerundio-presente', persons: 0, compound: false },
+        { mood: 'gerundio', tense: 'gerundio-passato', persons: 0, compound: true }
+      ];
+
+      let totalExpected = 0;
+      let totalFound = 0;
+
+      for (const expected of expectedForms) {
+        const foundForms = forms?.filter(f =>
+          f.tags?.includes(expected.mood) &&
+          f.tags?.includes(expected.tense)
+        ) || [];
+
+        const expectedCount = expected.persons || 1;
+        totalExpected += expectedCount;
+        totalFound += foundForms.length;
+
+        debugLog(`  ${expected.mood}/${expected.tense}:`);
+        debugLog(`    Expected: ${expectedCount} forms | Found: ${foundForms.length} forms`);
+
+        if (foundForms.length === 0) {
+          debugLog('    ❌ COMPLETELY MISSING');
+        } else if (foundForms.length < expectedCount) {
+          debugLog(`    ⚠️ INCOMPLETE (missing ${expectedCount - foundForms.length})`);
+          foundForms.forEach(form => {
+            const personTags = form.tags?.filter(t => t.includes('persona') || t === 'invariable') || [];
+            debugLog(`      ✅ "${form.form_text}" [${personTags.join(', ')}]`);
+          });
+        } else {
+          debugLog('    ✅ COMPLETE');
+        }
+
+        if (expected.compound && foundForms.length > 0) {
+          const withAuxTags = foundForms.filter(f =>
+            f.tags?.some(t => ['avere-auxiliary', 'essere-auxiliary', 'stare-auxiliary'].includes(t))
+          );
+          debugLog(`    Auxiliary tags: ${withAuxTags.length}/${foundForms.length} forms have auxiliary tags`);
+        }
+      }
+
+      debugLog(`📊 FORMS SUMMARY: ${totalFound}/${totalExpected} total forms (${Math.round(totalFound / totalExpected * 100)}% complete)`);
+
+      // BUILDING BLOCKS ANALYSIS
+      debugLog('🔍 BUILDING BLOCKS ANALYSIS:');
+      const buildingBlocks = [
+        { name: 'Past Participle', mood: 'participio', tense: 'participio-passato', required: true },
+        { name: 'Present Gerund', mood: 'gerundio', tense: 'gerundio-presente', required: true },
+        { name: 'Present Infinitive', mood: 'infinito', tense: 'infinito-presente', required: true }
+      ];
+
+      for (const block of buildingBlocks) {
+        const found = forms?.find(f =>
+          f.tags?.includes(block.mood) &&
+          f.tags?.includes(block.tense)
+        );
+
+        if (found) {
+          debugLog(`  ✅ ${block.name}: "${found.form_text}"`);
+          if (block.required && !found.tags?.includes('building-block')) {
+            debugLog("    ⚠️ Missing 'building-block' tag");
+          }
+        } else {
+          debugLog(`  ❌ ${block.name}: MISSING`);
+        }
+      }
+
+      // FORM-TRANSLATION RELATIONSHIPS
+      debugLog('🔍 FORM-TRANSLATION RELATIONSHIPS:');
+      const formIds = (forms || []).map(f => f.id);
+      const { data: formTranslations } = await this.supabase
+        .from('form_translations')
+        .select('*')
+        .in('form_id', formIds);
+      debugLog(`  Form-Translation assignments: ${formTranslations?.length || 0}`);
+
+      if (translations) {
+        for (let i = 0; i < translations.length; i++) {
+          const t = translations[i];
+          if (t.form_ids && Array.isArray(t.form_ids)) {
+            debugLog(`  Translation ${i + 1} "${t.translation}":`);
+            debugLog(`    References ${t.form_ids.length} form IDs: ${JSON.stringify(t.form_ids)}`);
+
+            const existingFormIds = (forms || []).map(f => f.id);
+            const missingRefs = t.form_ids.filter(id => !existingFormIds.includes(id));
+            const validRefs = t.form_ids.filter(id => existingFormIds.includes(id));
+
+            debugLog(`    Valid references: ${validRefs.length}/${t.form_ids.length}`);
+            if (missingRefs.length > 0) {
+              debugLog(`    ❌ Missing form IDs: ${JSON.stringify(missingRefs)}`);
+            }
+          } else {
+            debugLog(`  Translation ${i + 1} "${t.translation}": ❌ NO FORM IDS ARRAY`);
+          }
+        }
+      }
+
+      const allReferencedFormIds = translations?.flatMap(t => t.form_ids || []) || [];
+      const orphanedForms = forms?.filter(f => !allReferencedFormIds.includes(f.id)) || [];
+      if (orphanedForms.length > 0) {
+        debugLog(`  ⚠️ Orphaned forms (not referenced by translations): ${orphanedForms.length}`);
+        orphanedForms.slice(0, 5).forEach(form => {
+          debugLog(`    "${form.form_text}" (ID: ${form.id})`);
+        });
+      }
+
       const report: VerbComplianceReport = {
         verbId: word.id,
         verbItalian: word.italian,
@@ -1172,60 +1328,16 @@ export class ConjugationComplianceValidator {
         estimatedFixTime: '0 minutes'
       };
 
-      // Word level validation
-      debugLog('🔍 Validating word level...');
-      try {
-        report.wordLevelIssues = this.validateWordLevel(word);
-        debugLog(`✅ Word level: ${report.wordLevelIssues.length} issues found`);
-      } catch (error) {
-        debugLog(`❌ Word level validation failed: ${error.message}`);
-        report.wordLevelIssues = [];
-      }
+      report.wordLevelIssues = this.validateWordLevelDetailed(word);
+      report.translationLevelIssues = this.validateTranslationLevelDetailed(translations || []);
+      report.formLevelIssues = this.validateFormLevelDetailed(forms || [], true);
+      report.missingBuildingBlocks = this.validateBuildingBlocksDetailed(forms || []);
 
-      // Translation level validation
-      debugLog('🔍 Validating translation level...');
-      try {
-        report.translationLevelIssues = this.validateTranslationLevel(translations || []);
-        debugLog(`✅ Translation level: ${report.translationLevelIssues.length} issues found`);
-      } catch (error) {
-        debugLog(`❌ Translation level validation failed: ${error.message}`);
-        report.translationLevelIssues = [];
-      }
+      this.calculateVerbCompliance(report);
 
-      // Form level validation
-      debugLog('🔍 Validating form level...');
-      try {
-        report.formLevelIssues = this.validateFormLevel(forms || [], true);
-        debugLog(`✅ Form level: ${report.formLevelIssues.length} issues found`);
-      } catch (error) {
-        debugLog(`❌ Form level validation failed: ${error.message}`);
-        report.formLevelIssues = [];
-      }
-
-      // Building blocks validation
-      debugLog('🔍 Validating building blocks...');
-      try {
-        report.missingBuildingBlocks = this.validateBuildingBlocks(forms || []);
-        debugLog(`✅ Building blocks: ${report.missingBuildingBlocks.length} missing`);
-      } catch (error) {
-        debugLog(`❌ Building blocks validation failed: ${error.message}`);
-        report.missingBuildingBlocks = [];
-      }
-
-      // Calculate final compliance
-      debugLog('🔍 Calculating compliance score...');
-      try {
-        this.calculateVerbCompliance(report);
-        debugLog(`✅ Final score: ${report.overallScore}% (${report.complianceStatus})`);
-      } catch (error) {
-        debugLog(`❌ Compliance calculation failed: ${error.message}`);
-        report.overallScore = 0;
-        report.complianceStatus = 'critical-issues';
-      }
-
+      debugLog(`✅ Final score: ${report.overallScore}% (${report.complianceStatus})`);
       debugLog('🎉 Validation completed successfully!');
       return report;
-
     } catch (error) {
       debugLog(`❌ Unexpected error: ${error.message}`);
       debugLog(`❌ Stack: ${error.stack}`);
@@ -1233,6 +1345,128 @@ export class ConjugationComplianceValidator {
     }
   }
 
+  private validateWordLevelDetailed(word: any): ComplianceIssue[] {
+    const issues: ComplianceIssue[] = [];
+    const tags = word.tags || [];
+
+    const conjugationClasses = ['are-conjugation', 'ere-conjugation', 'ire-conjugation', 'ire-isc-conjugation'];
+    const foundConjugation = tags.filter(tag => conjugationClasses.includes(tag));
+    if (foundConjugation.length === 0) {
+      issues.push({
+        ruleId: 'missing-conjugation-class',
+        severity: 'critical',
+        message: 'Missing conjugation class tag',
+        currentValue: tags,
+        expectedValue: 'Exactly one of: ' + conjugationClasses.join(', '),
+        manualSteps: [
+          `Verb "${word.italian}" needs conjugation class tag`,
+          `Based on ending: ${this.suggestConjugationClass(word.italian)}`,
+          'Add to word.tags array in dictionary table'
+        ],
+        epicContext: 'Conjugation class determines form generation patterns'
+      });
+    }
+
+    const transitivityTags = ['always-transitive', 'always-intransitive', 'both-possible'];
+    const foundTransitivity = tags.filter(tag => transitivityTags.includes(tag));
+    if (foundTransitivity.length === 0) {
+      issues.push({
+        ruleId: 'missing-transitivity',
+        severity: 'high',
+        message: 'Missing transitivity classification',
+        currentValue: tags,
+        expectedValue: 'One of: ' + transitivityTags.join(', '),
+        manualSteps: [
+          'Analyze if verb takes direct objects',
+          'Add appropriate transitivity tag to word.tags'
+        ],
+        epicContext: 'Required for auxiliary assignment validation'
+      });
+    }
+    return issues;
+  }
+
+  private validateTranslationLevelDetailed(translations: any[]): ComplianceIssue[] {
+    const issues: ComplianceIssue[] = [];
+
+    if (translations.length === 0) {
+      issues.push({
+        ruleId: 'no-translations',
+        severity: 'critical',
+        message: 'No translations found',
+        currentValue: 0,
+        expectedValue: 'At least 1 translation required',
+        manualSteps: [
+          'Add record to word_translations table',
+          'Set translation to English meaning',
+          'Set context_metadata.auxiliary to avere/essere',
+          'Set form_ids array with relevant form IDs'
+        ],
+        epicContext: 'Translation-driven architecture requires meaning definitions'
+      });
+      return issues;
+    }
+
+    for (let i = 0; i < translations.length; i++) {
+      const t = translations[i];
+      const metadata = t.context_metadata || {};
+      if (!metadata.auxiliary) {
+        issues.push({
+          ruleId: 'missing-auxiliary',
+          severity: 'critical',
+          message: `Translation "${t.translation}" missing auxiliary`,
+          currentValue: metadata,
+          expectedValue: 'auxiliary: "avere" or "essere"',
+          manualSteps: [
+            `Edit word_translations record ID: ${t.id}`,
+            'Set context_metadata.auxiliary to "avere" or "essere"',
+            'Use "avere" for transitive, "essere" for intransitive/reflexive'
+          ],
+          epicContext: 'Auxiliary determines compound form generation'
+        });
+      }
+
+      if (!t.form_ids || !Array.isArray(t.form_ids) || t.form_ids.length === 0) {
+        issues.push({
+          ruleId: 'missing-form-ids',
+          severity: 'critical',
+          message: `Translation "${t.translation}" missing form_ids array`,
+          currentValue: t.form_ids,
+          expectedValue: 'Array of form IDs this translation uses',
+          manualSteps: [
+            `Edit word_translations record ID: ${t.id}`,
+            'Add form_ids: [array of relevant form IDs]',
+            'Include forms for all tenses this meaning uses'
+          ],
+          epicContext: 'Core architecture: translation-to-form relationship'
+        });
+      }
+    }
+    return issues;
+  }
+
+  private validateFormLevelDetailed(forms: any[], includeTerminology: boolean = true): ComplianceIssue[] {
+    return this.validateFormLevel(forms, includeTerminology);
+  }
+
+  private validateBuildingBlocksDetailed(forms: any[]): string[] {
+    const missing: string[] = [];
+    const requiredBlocks = [
+      { name: 'Past Participle', mood: 'participio', tense: 'participio-passato', impact: 'Cannot generate: passato prossimo, trapassato prossimo, futuro anteriore, condizionale passato' },
+      { name: 'Present Gerund', mood: 'gerundio', tense: 'gerundio-presente', impact: 'Cannot generate: presente progressivo, passato progressivo, futuro progressivo' },
+      { name: 'Present Infinitive', mood: 'infinito', tense: 'infinito-presente', impact: 'Cannot generate: negative imperatives, clitic attachments' }
+    ];
+    for (const block of requiredBlocks) {
+      const found = forms.find(f =>
+        f.tags?.includes(block.mood) &&
+        f.tags?.includes(block.tense)
+      );
+      if (!found) {
+        missing.push(`${block.name} (${block.mood}/${block.tense}) - ${block.impact}`);
+      }
+    }
+    return missing;
+  }
   /**
    * Quick validation for specific verb
    */
