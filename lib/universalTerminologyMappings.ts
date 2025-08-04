@@ -567,9 +567,10 @@ export const ALL_TERMINOLOGY_MAPPINGS: TerminologyMapping[] = [
  * Create fast lookup maps for bidirectional conversion
  */
 export class TerminologyConverter {
-  private italianToUniversal = new Map<string, string>();
-  private universalToItalian = new Map<string, string>();
-  private legacyToUniversal = new Map<string, string>();
+  // Internal lookup tables for fast terminology conversion
+  private italianToUniversalMap = new Map<string, string>();
+  private universalToItalianMap = new Map<string, string>();
+  private legacyToUniversalMap = new Map<string, string>();
   private categoryMaps = new Map<string, Map<string, string>>();
 
   constructor() {
@@ -579,15 +580,15 @@ export class TerminologyConverter {
   private buildLookupMaps() {
     for (const mapping of ALL_TERMINOLOGY_MAPPINGS) {
       // Italian to Universal
-      this.italianToUniversal.set(mapping.italian.toLowerCase(), mapping.universal);
+      this.italianToUniversalMap.set(mapping.italian.toLowerCase(), mapping.universal);
       
       // Universal to Italian
-      this.universalToItalian.set(mapping.universal, mapping.italian);
+      this.universalToItalianMap.set(mapping.universal, mapping.italian);
       
       // Legacy to Universal (handle multiple legacy terms)
       if (mapping.legacy) {
         for (const legacyTerm of mapping.legacy) {
-          this.legacyToUniversal.set(legacyTerm.toLowerCase(), mapping.universal);
+          this.legacyToUniversalMap.set(legacyTerm.toLowerCase(), mapping.universal);
         }
       }
       
@@ -605,8 +606,8 @@ export class TerminologyConverter {
     }
     
     console.log('✅ Terminology converter initialized');
-    console.log(`📊 ${this.italianToUniversal.size} Italian → Universal mappings`);
-    console.log(`📊 ${this.legacyToUniversal.size} Legacy → Universal mappings`);
+    console.log(`📊 ${this.italianToUniversalMap.size} Italian → Universal mappings`);
+    console.log(`📊 ${this.legacyToUniversalMap.size} Legacy → Universal mappings`);
     console.log(`📊 ${this.categoryMaps.size} category-specific maps`);
   }
 
@@ -614,21 +615,21 @@ export class TerminologyConverter {
    * Convert Italian term to universal term
    */
   italianToUniversal(italianTerm: string): string | null {
-    return this.italianToUniversal.get(italianTerm.toLowerCase()) || null;
+    return this.italianToUniversalMap.get(italianTerm.toLowerCase()) || null;
   }
 
   /**
    * Convert universal term to Italian term
    */
   universalToItalian(universalTerm: string): string | null {
-    return this.universalToItalian.get(universalTerm) || null;
+    return this.universalToItalianMap.get(universalTerm) || null;
   }
 
   /**
    * Convert legacy term to universal term
    */
   legacyToUniversal(legacyTerm: string): string | null {
-    return this.legacyToUniversal.get(legacyTerm.toLowerCase()) || null;
+    return this.legacyToUniversalMap.get(legacyTerm.toLowerCase()) || null;
   }
 
   /**
@@ -644,7 +645,7 @@ export class TerminologyConverter {
     if (fromItalian) return fromItalian;
     
     // Check if it's already universal
-    if (this.universalToItalian.has(term)) return term;
+    if (this.universalToItalianMap.has(term)) return term;
     
     // Return as-is if no conversion found (with warning)
     console.warn(`⚠️ No universal mapping found for term: "${term}"`);
@@ -682,7 +683,7 @@ export class TerminologyConverter {
    * Validate that a term exists in the mapping system
    */
   isValidTerm(term: string): boolean {
-    return this.toUniversal(term) !== term || this.universalToItalian.has(term);
+    return this.toUniversal(term) !== term || this.universalToItalianMap.has(term);
   }
 
   /**
