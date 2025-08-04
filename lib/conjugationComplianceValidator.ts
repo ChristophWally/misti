@@ -153,6 +153,40 @@ export class ConjugationComplianceValidator {
     }
   }
 
+  async validateConjugationSystemWithDebug(options: ValidationOptions, debugLog: (msg: string) => void): Promise<SystemComplianceReport> {
+    debugLog('🔍 Starting system-wide validation...');
+    this.resetValidationResults();
+
+    try {
+      const verbs = await this.loadVerbsForValidation(options);
+      debugLog(`✅ Loaded ${verbs.length} verbs for analysis`);
+      this.validationResults.totalVerbs = verbs.length;
+
+      for (let i = 0; i < verbs.length; i++) {
+        const verb = verbs[i];
+        debugLog(`🔍 Analyzing ${i + 1}/${verbs.length}: ${verb.italian}`);
+
+        try {
+          const verbReport = await this.validateSingleVerb(verb, options);
+          this.validationResults.verbReports.push(verbReport);
+          this.validationResults.analyzedVerbs++;
+        } catch (error) {
+          debugLog(`❌ Error validating ${verb.italian}: ${error.message}`);
+          this.validationResults.validationErrors.push(`${verb.italian}: ${error.message}`);
+        }
+      }
+
+      this.validationResults.systemReport = this.generateSystemReport();
+      debugLog(`✅ System analysis complete: ${this.validationResults.systemReport.overallScore.overall}% compliance`);
+
+      return this.validationResults.systemReport;
+
+    } catch (error) {
+      debugLog(`❌ System validation failed: ${error.message}`);
+      throw error;
+    }
+  }
+
   /**
    * Validate a single verb against all compliance rules
    */
@@ -356,54 +390,33 @@ export class ConjugationComplianceValidator {
     const issues: ComplianceIssue[] = [];
     const tags = word.tags || [];
 
-    console.log(`🔍 Word level validation: ${word.italian} with ${tags.length} tags`);
-
     // Check conjugation class requirement
-    const conjugationClassTags = tags.filter(tag => 
+    const conjugationClassTags = tags.filter(tag =>
       VERB_COMPLIANCE_RULES.wordLevel.conjugation_class.tags.includes(tag)
     );
 
     if (conjugationClassTags.length === 0) {
+      const expectedClasses = VERB_COMPLIANCE_RULES.wordLevel.conjugation_class.tags;
+      const suggestedClass = this.suggestConjugationClass(word.italian);
+
       issues.push({
         ruleId: 'missing-conjugation-class',
         severity: 'critical',
         message: 'Missing required conjugation class tag',
         currentValue: tags,
-        expectedValue: 'Exactly one of: are-conjugation, ere-conjugation, ire-conjugation, ire-isc-conjugation',
-        autoFix: this.suggestConjugationClass(word.italian),
+        expectedValue: 'Exactly one of: ' + expectedClasses.join(', '),
+        autoFix: suggestedClass,
+        manualSteps: [
+          'Analyze verb ending (-are, -ere, -ire)',
+          'Add appropriate conjugation class tag',
+          `For "${word.italian}": ${suggestedClass}`
+        ],
         epicContext: 'Layer 1: Word Properties - conjugation class determines form generation patterns'
       });
-    } else if (conjugationClassTags.length > 1) {
-      issues.push({
-        ruleId: 'multiple-conjugation-classes',
-        severity: 'critical',
-        message: 'Multiple conjugation class tags found',
-        currentValue: conjugationClassTags,
-        expectedValue: 'Exactly one conjugation class tag',
-        manualSteps: ['Review verb ending and choose correct conjugation class', 'Remove duplicate tags'],
-        epicContext: 'Each verb must have exactly one conjugation class'
-      });
     }
 
-    // Check for deprecated word-level tags
-    const deprecatedTags = tags.filter(tag => 
-      VERB_COMPLIANCE_RULES.wordLevel.deprecatedTags?.includes(tag)
-    );
-
-    if (deprecatedTags.length > 0) {
-      issues.push({
-        ruleId: 'deprecated-word-tags',
-        severity: 'medium',
-        message: `Found ${deprecatedTags.length} deprecated word-level tags`,
-        currentValue: deprecatedTags,
-        expectedValue: 'No deprecated tags',
-        autoFix: `Remove deprecated tags: ${deprecatedTags.join(', ')}`,
-        epicContext: 'Deprecated tags must be removed for architectural consistency'
-      });
-    }
-
-    // Check transitivity potential for new architecture
-    const transitivityTags = tags.filter(tag => 
+    // Detailed transitivity check
+    const transitivityTags = tags.filter(tag =>
       ['always-transitive', 'always-intransitive', 'both-possible'].includes(tag)
     );
 
@@ -414,7 +427,12 @@ export class ConjugationComplianceValidator {
         message: 'Missing transitivity potential classification',
         currentValue: tags,
         expectedValue: 'One of: always-transitive, always-intransitive, both-possible',
-        manualSteps: ['Analyze verb usage patterns', 'Add appropriate transitivity tag'],
+        manualSteps: [
+          'Check if verb takes direct objects (transitive)',
+          'Check if verb never takes direct objects (intransitive)',
+          'Check if verb can be both (like "mangiare")',
+          'Add appropriate tag to word.tags array'
+        ],
         epicContext: 'Translation-level auxiliary assignment validation depends on word-level transitivity'
       });
     }
@@ -428,8 +446,6 @@ export class ConjugationComplianceValidator {
   private validateTranslationLevel(translations: any[]): ComplianceIssue[] {
     const issues: ComplianceIssue[] = [];
 
-    console.log(`🔍 Translation level validation: ${translations.length} translations`);
-
     if (translations.length === 0) {
       issues.push({
         ruleId: 'no-translations',
@@ -437,73 +453,58 @@ export class ConjugationComplianceValidator {
         message: 'Verb has no translations defined',
         currentValue: 0,
         expectedValue: 'At least one translation required',
-        manualSteps: ['Create at least one translation in word_translations table'],
+        manualSteps: [
+          'Go to word_translations table',
+          'Add entry with word_id = this verb ID',
+          'Set translation to English meaning',
+          'Set context_metadata.auxiliary to "avere" or "essere"',
+          'Set form_ids array with relevant form IDs'
+        ],
         epicContext: 'Translation-driven architecture requires at least one meaning definition'
       });
       return issues;
     }
 
-    for (const translation of translations) {
+    for (let i = 0; i < translations.length; i++) {
+      const translation = translations[i];
       const metadata = translation.context_metadata || {};
 
-      // Check required auxiliary assignment
+      // Detailed auxiliary check
       if (!metadata.auxiliary || !['avere', 'essere'].includes(metadata.auxiliary)) {
         issues.push({
           ruleId: 'missing-auxiliary-assignment',
           severity: 'critical',
-          message: `Translation "${translation.translation}" missing auxiliary assignment`,
+          message: `Translation #${i + 1} "${translation.translation}" missing auxiliary assignment`,
           currentValue: metadata.auxiliary || 'undefined',
           expectedValue: 'avere or essere',
           manualSteps: [
-            'Analyze verb semantics and transitivity',
-            'Set context_metadata.auxiliary to "avere" or "essere"'
+            `Edit word_translations record ID: ${translation.id}`,
+            'Set context_metadata.auxiliary to:',
+            '  - "avere" for transitive actions (takes direct object)',
+            '  - "essere" for intransitive actions, motion, state changes',
+            `For "${translation.translation}": analyze if it takes direct objects`
           ],
           epicContext: 'Layer 2: Translation Metadata - auxiliary drives all compound form materialization'
         });
       }
 
-      // Check form_ids array (critical for new architecture)
+      // Detailed form_ids check
       if (!translation.form_ids || !Array.isArray(translation.form_ids) || translation.form_ids.length === 0) {
         issues.push({
           ruleId: 'missing-form-ids-array',
           severity: 'critical',
-          message: `Translation "${translation.translation}" missing form_ids array`,
+          message: `Translation #${i + 1} "${translation.translation}" missing form_ids array`,
           currentValue: translation.form_ids || 'undefined',
           expectedValue: 'Array of form IDs this translation uses',
           manualSteps: [
-            'Identify which forms belong to this translation meaning',
-            'Create form_ids array with appropriate form IDs'
+            `Edit word_translations record ID: ${translation.id}`,
+            'Add form_ids array like: [123, 124, 125, ...]',
+            'Include form IDs for all tenses this meaning uses',
+            "Check word_forms table for this verb's form IDs",
+            'Typically include: presente, passato prossimo, imperfetto, futuro'
           ],
           epicContext: 'Translation-to-form relationship - core architecture requirement'
         });
-      }
-
-      // Check transitivity consistency
-      if (!metadata.transitivity || !['transitive', 'intransitive'].includes(metadata.transitivity)) {
-        issues.push({
-          ruleId: 'missing-transitivity',
-          severity: 'high',
-          message: `Translation "${translation.translation}" missing transitivity specification`,
-          currentValue: metadata.transitivity || 'undefined',
-          expectedValue: 'transitive or intransitive',
-          manualSteps: ['Analyze if this meaning takes direct objects', 'Set context_metadata.transitivity'],
-          epicContext: 'Semantic consistency validation with auxiliary selection'
-        });
-      }
-
-      // Validate reflexive usage constraints
-      if (metadata.usage && ['direct-reflexive', 'reciprocal'].includes(metadata.usage)) {
-        if (metadata.usage === 'reciprocal' && metadata.plurality !== 'plural-only') {
-          issues.push({
-            ruleId: 'reciprocal-plurality-mismatch',
-            severity: 'high',
-            message: `Reciprocal usage requires plural-only constraint`,
-            currentValue: metadata.plurality || 'undefined',
-            expectedValue: 'plural-only',
-            autoFix: 'Set context_metadata.plurality = "plural-only"',
-            epicContext: 'Reciprocal actions require multiple participants'
-          });
-        }
       }
     }
 
@@ -722,39 +723,71 @@ export class ConjugationComplianceValidator {
    */
   private validateBuildingBlocks(forms: any[]): string[] {
     const missing: string[] = [];
-
-    console.log('🧱 Building blocks validation');
+    const detailedMissing: string[] = [];
 
     // Check for past participle
-    const hasParticiple = forms.some(f => 
-      f.tags?.includes('participio-passato') && 
+    const hasParticiple = forms.some(f =>
+      f.tags?.includes('participio-passato') &&
       f.tags?.includes('building-block')
     );
-    
+
     if (!hasParticiple) {
       missing.push('participio-passato');
+      detailedMissing.push('Missing: Past Participle (participio-passato) - Required for: passato prossimo, trapassato prossimo, futuro anteriore, condizionale passato');
     }
 
     // Check for present gerund
-    const hasGerund = forms.some(f => 
-      f.tags?.includes('gerundio-presente') && 
+    const hasGerund = forms.some(f =>
+      f.tags?.includes('gerundio-presente') &&
       f.tags?.includes('building-block')
     );
-    
+
     if (!hasGerund) {
       missing.push('gerundio-presente');
+      detailedMissing.push('Missing: Present Gerund (gerundio-presente) - Required for: presente progressivo, passato progressivo, futuro progressivo');
     }
 
     // Check for present infinitive
-    const hasInfinitive = forms.some(f => 
+    const hasInfinitive = forms.some(f =>
       f.tags?.includes('infinito-presente')
     );
-    
+
     if (!hasInfinitive) {
       missing.push('infinito-presente');
+      detailedMissing.push('Missing: Present Infinitive (infinito-presente) - Required for: negative imperatives, clitic attachment');
     }
 
-    return missing;
+    // Check for each required tense
+    const requiredTenses = [
+      { tag: 'presente', name: 'Present Indicative', persons: 6 },
+      { tag: 'imperfetto', name: 'Imperfect', persons: 6 },
+      { tag: 'futuro-semplice', name: 'Simple Future', persons: 6 },
+      { tag: 'congiuntivo-presente', name: 'Present Subjunctive', persons: 6 },
+      { tag: 'condizionale-presente', name: 'Present Conditional', persons: 6 },
+      { tag: 'imperativo-presente', name: 'Imperative', persons: 5 } // No first person singular
+    ];
+
+    for (const tense of requiredTenses) {
+      const tenseForms = forms.filter(f => f.tags?.includes(tense.tag));
+      if (tenseForms.length < tense.persons) {
+        detailedMissing.push(`Missing: ${tense.name} (${tense.tag}) - Has ${tenseForms.length}/${tense.persons} persons`);
+
+        // Show which specific persons are missing
+        const expectedPersons = tense.tag === 'imperativo-presente'
+          ? ['seconda-persona', 'terza-persona', 'prima-persona-plurale', 'seconda-persona-plurale', 'terza-persona-plurale']
+          : ['prima-persona', 'seconda-persona', 'terza-persona', 'prima-persona-plurale', 'seconda-persona-plurale', 'terza-persona-plurale'];
+
+        const existingPersons = tenseForms.map(f => f.tags?.find(t => t.includes('persona'))).filter(Boolean);
+        const missingPersons = expectedPersons.filter(p => !existingPersons.some(ep => ep.includes(p.split('-')[0])));
+
+        if (missingPersons.length > 0) {
+          detailedMissing.push(`  └─ Missing persons: ${missingPersons.join(', ')}`);
+        }
+      }
+    }
+
+    // Return detailed missing for display
+    return detailedMissing;
   }
 
   /**

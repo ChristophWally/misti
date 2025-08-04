@@ -63,12 +63,16 @@ const AdminValidationInterface = () => {
 
   const handleSystemAnalysis = async () => {
     setIsValidating(true);
+    setDebugLog([]); // Clear previous logs
+    addDebugLog('🔍 Starting system-wide analysis...');
     try {
       const validator = new ConjugationComplianceValidator(supabase);
-      const result = await validator.validateConjugationSystem(validationOptions);
+      const result = await validator.validateConjugationSystemWithDebug(validationOptions, addDebugLog);
       setSystemAnalysis(result);
+      addDebugLog('✅ System analysis completed');
     } catch (error) {
-      console.error('System analysis error:', error);
+      addDebugLog(`❌ System analysis failed: ${error.message}`);
+      addDebugLog(`❌ Stack: ${error.stack}`);
       setSystemAnalysis(null);
     } finally {
       setIsValidating(false);
