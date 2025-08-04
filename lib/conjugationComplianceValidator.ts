@@ -159,59 +159,86 @@ export class ConjugationComplianceValidator {
   async validateSingleVerb(word: any, options: ValidationOptions): Promise<VerbComplianceReport> {
     console.log(`🔍 Deep validation: ${word.italian}`);
 
-    // Load complete verb data
-    const verbData = await this.loadCompleteVerbData(word.id);
-    
-    const report: VerbComplianceReport = {
-      verbId: word.id,
-      verbItalian: word.italian,
-      overallScore: 0,
-      complianceStatus: 'compliant',
-      wordLevelIssues: [],
-      translationLevelIssues: [],
-      formLevelIssues: [],
-      crossTableIssues: [],
-      missingBuildingBlocks: [],
-      deprecatedContent: [],
-      autoFixableIssues: [],
-      manualInterventionRequired: [],
-      epicAlignmentNotes: [],
-      migrationReadiness: false,
-      priorityLevel: this.calculateVerbPriority(word),
-      estimatedFixTime: '0 minutes'
-    };
+    try {
+      console.log('📥 Loading complete verb data...');
+      // Load complete verb data
+      const verbData = await this.loadCompleteVerbData(word.id);
+      console.log('✅ Loaded verb data:', verbData);
 
-    // 1. Word Level Validation
-    report.wordLevelIssues = this.validateWordLevel(word);
-    
-    // 2. Translation Level Validation  
-    report.translationLevelIssues = this.validateTranslationLevel(verbData.translations);
-    
-    // 3. Form Level Validation
-    report.formLevelIssues = this.validateFormLevel(verbData.forms, options.includeTerminologyValidation);
-    
-    // 4. Cross-Table Validation
-    if (options.includeCrossTableAnalysis) {
-      report.crossTableIssues = await this.validateCrossTableRelationships(verbData);
+      const report: VerbComplianceReport = {
+        verbId: word.id,
+        verbItalian: word.italian,
+        overallScore: 0,
+        complianceStatus: 'compliant',
+        wordLevelIssues: [],
+        translationLevelIssues: [],
+        formLevelIssues: [],
+        crossTableIssues: [],
+        missingBuildingBlocks: [],
+        deprecatedContent: [],
+        autoFixableIssues: [],
+        manualInterventionRequired: [],
+        epicAlignmentNotes: [],
+        migrationReadiness: false,
+        priorityLevel: this.calculateVerbPriority(word),
+        estimatedFixTime: '0 minutes'
+      };
+
+      console.log('✅ Created base report');
+
+      // 1. Word Level Validation
+      console.log('🔍 Starting word level validation...');
+      report.wordLevelIssues = this.validateWordLevel(word);
+      console.log('✅ Word level complete:', report.wordLevelIssues.length, 'issues');
+
+      // 2. Translation Level Validation
+      console.log('🔍 Starting translation level validation...');
+      report.translationLevelIssues = this.validateTranslationLevel(verbData.translations);
+      console.log('✅ Translation level complete:', report.translationLevelIssues.length, 'issues');
+
+      // 3. Form Level Validation
+      console.log('🔍 Starting form level validation...');
+      report.formLevelIssues = this.validateFormLevel(verbData.forms, options.includeTerminologyValidation);
+      console.log('✅ Form level complete:', report.formLevelIssues.length, 'issues');
+
+      // 4. Cross-Table Validation
+      if (options.includeCrossTableAnalysis) {
+        console.log('🔍 Starting cross-table validation...');
+        report.crossTableIssues = await this.validateCrossTableRelationships(verbData);
+        console.log('✅ Cross-table complete:', report.crossTableIssues.length, 'issues');
+      }
+
+      // 5. Building Blocks Validation
+      console.log('🔍 Starting building blocks validation...');
+      report.missingBuildingBlocks = this.validateBuildingBlocks(verbData.forms);
+      console.log('✅ Building blocks complete:', report.missingBuildingBlocks.length, 'missing');
+
+      // 6. Deprecated Content Check
+      if (options.includeDeprecatedCheck) {
+        console.log('🔍 Starting deprecated content check...');
+        report.deprecatedContent = this.findDeprecatedContent(verbData);
+        console.log('✅ Deprecated content complete:', report.deprecatedContent.length, 'items');
+      }
+
+      // 7. Auto-fix identification
+      if (options.generateAutoFixes) {
+        console.log('🔍 Identifying auto-fixes...');
+        this.identifyAutoFixableIssues(report);
+        console.log('✅ Auto-fixes complete:', report.autoFixableIssues.length, 'fixable');
+      }
+
+      // 8. Calculate overall compliance
+      console.log('🔍 Calculating compliance...');
+      this.calculateVerbCompliance(report);
+      console.log('✅ Compliance calculated:', report.overallScore);
+
+      console.log('✅ Validation result:', report);
+      return report;
+
+    } catch (error) {
+      console.error(`❌ Error in validateSingleVerb for ${word.italian}:`, error);
+      throw error; // Re-throw so the calling method sees it
     }
-    
-    // 5. Building Blocks Validation
-    report.missingBuildingBlocks = this.validateBuildingBlocks(verbData.forms);
-    
-    // 6. Deprecated Content Check
-    if (options.includeDeprecatedCheck) {
-      report.deprecatedContent = this.findDeprecatedContent(verbData);
-    }
-
-    // 7. Auto-fix identification
-    if (options.generateAutoFixes) {
-      this.identifyAutoFixableIssues(report);
-    }
-
-    // 8. Calculate overall compliance
-    this.calculateVerbCompliance(report);
-
-    return report;
   }
 
   /**
@@ -1052,12 +1079,14 @@ export class ConjugationComplianceValidator {
   }
 
   /**
-   * Quick validation for specific verb
+   * Validate specific verb with comprehensive debugging
    */
-  async validateSpecificVerb(verbItalian: string): Promise<VerbComplianceReport | null> {
-    console.log(`🔍 Quick validation for: ${verbItalian}`);
+  async validateSpecificVerbWithDebug(verbItalian: string, debugLog: (msg: string) => void): Promise<VerbComplianceReport | null> {
+    debugLog(`🔍 Starting validation for: ${verbItalian}`);
 
     try {
+      debugLog('📥 Connecting to database...');
+
       const { data: word, error } = await this.supabase
         .from('dictionary')
         .select('*')
@@ -1065,10 +1094,156 @@ export class ConjugationComplianceValidator {
         .eq('word_type', 'VERB')
         .single();
 
-      if (error || !word) {
+      if (error) {
+        debugLog(`❌ Database error: ${error.message}`);
+        debugLog(`❌ Error code: ${error.code}`);
+        debugLog(`❌ Error details: ${JSON.stringify(error.details)}`);
+        return null;
+      }
+
+      if (!word) {
+        debugLog(`❌ Verb "${verbItalian}" not found in database`);
+        return null;
+      }
+
+      debugLog(`✅ Found verb: ${word.italian} (ID: ${word.id})`);
+      debugLog(`📊 Word tags: ${JSON.stringify(word.tags)}`);
+
+      // Load complete verb data with debugging
+      debugLog('📥 Loading translations...');
+      const { data: translations, error: translationsError } = await this.supabase
+        .from('word_translations')
+        .select('*')
+        .eq('word_id', word.id);
+
+      if (translationsError) {
+        debugLog(`❌ Translations error: ${translationsError.message}`);
+        return null;
+      }
+
+      debugLog(`✅ Loaded ${translations?.length || 0} translations`);
+
+      debugLog('📥 Loading forms...');
+      const { data: forms, error: formsError } = await this.supabase
+        .from('word_forms')
+        .select('*')
+        .eq('word_id', word.id);
+
+      if (formsError) {
+        debugLog(`❌ Forms error: ${formsError.message}`);
+        return null;
+      }
+
+      debugLog(`✅ Loaded ${forms?.length || 0} forms`);
+
+      // Create the report
+      debugLog('🔧 Creating compliance report...');
+      const report: VerbComplianceReport = {
+        verbId: word.id,
+        verbItalian: word.italian,
+        overallScore: 0,
+        complianceStatus: 'compliant',
+        wordLevelIssues: [],
+        translationLevelIssues: [],
+        formLevelIssues: [],
+        crossTableIssues: [],
+        missingBuildingBlocks: [],
+        deprecatedContent: [],
+        autoFixableIssues: [],
+        manualInterventionRequired: [],
+        epicAlignmentNotes: [],
+        migrationReadiness: false,
+        priorityLevel: this.calculateVerbPriority(word),
+        estimatedFixTime: '0 minutes'
+      };
+
+      // Word level validation
+      debugLog('🔍 Validating word level...');
+      try {
+        report.wordLevelIssues = this.validateWordLevel(word);
+        debugLog(`✅ Word level: ${report.wordLevelIssues.length} issues found`);
+      } catch (error) {
+        debugLog(`❌ Word level validation failed: ${error.message}`);
+        report.wordLevelIssues = [];
+      }
+
+      // Translation level validation
+      debugLog('🔍 Validating translation level...');
+      try {
+        report.translationLevelIssues = this.validateTranslationLevel(translations || []);
+        debugLog(`✅ Translation level: ${report.translationLevelIssues.length} issues found`);
+      } catch (error) {
+        debugLog(`❌ Translation level validation failed: ${error.message}`);
+        report.translationLevelIssues = [];
+      }
+
+      // Form level validation
+      debugLog('🔍 Validating form level...');
+      try {
+        report.formLevelIssues = this.validateFormLevel(forms || [], true);
+        debugLog(`✅ Form level: ${report.formLevelIssues.length} issues found`);
+      } catch (error) {
+        debugLog(`❌ Form level validation failed: ${error.message}`);
+        report.formLevelIssues = [];
+      }
+
+      // Building blocks validation
+      debugLog('🔍 Validating building blocks...');
+      try {
+        report.missingBuildingBlocks = this.validateBuildingBlocks(forms || []);
+        debugLog(`✅ Building blocks: ${report.missingBuildingBlocks.length} missing`);
+      } catch (error) {
+        debugLog(`❌ Building blocks validation failed: ${error.message}`);
+        report.missingBuildingBlocks = [];
+      }
+
+      // Calculate final compliance
+      debugLog('🔍 Calculating compliance score...');
+      try {
+        this.calculateVerbCompliance(report);
+        debugLog(`✅ Final score: ${report.overallScore}% (${report.complianceStatus})`);
+      } catch (error) {
+        debugLog(`❌ Compliance calculation failed: ${error.message}`);
+        report.overallScore = 0;
+        report.complianceStatus = 'critical-issues';
+      }
+
+      debugLog('🎉 Validation completed successfully!');
+      return report;
+
+    } catch (error) {
+      debugLog(`❌ Unexpected error: ${error.message}`);
+      debugLog(`❌ Stack: ${error.stack}`);
+      return null;
+    }
+  }
+
+  /**
+   * Quick validation for specific verb
+   */
+  async validateSpecificVerb(verbItalian: string): Promise<VerbComplianceReport | null> {
+    console.log(`🔍 Quick validation for: ${verbItalian}`);
+
+    try {
+      console.log('📥 Looking up verb in database...');
+      const { data: word, error } = await this.supabase
+        .from('dictionary')
+        .select('*')
+        .eq('italian', verbItalian)
+        .eq('word_type', 'VERB')
+        .single();
+
+      if (error) {
+        console.error(`❌ Database error:`, error);
+        return null;
+      }
+
+      if (!word) {
         console.error(`❌ Verb "${verbItalian}" not found`);
         return null;
       }
+
+      console.log(`✅ Found verb:`, word);
 
       const options: ValidationOptions = {
         includeDeprecatedCheck: true,
@@ -1077,7 +1252,11 @@ export class ConjugationComplianceValidator {
         generateAutoFixes: true
       };
 
-      return await this.validateSingleVerb(word, options);
+      console.log('🔍 Starting detailed validation...');
+      const result = await this.validateSingleVerb(word, options);
+      console.log('✅ Validation result:', result);
+
+      return result;
 
     } catch (error) {
       console.error(`❌ Error validating ${verbItalian}:`, error);
