@@ -159,59 +159,86 @@ export class ConjugationComplianceValidator {
   async validateSingleVerb(word: any, options: ValidationOptions): Promise<VerbComplianceReport> {
     console.log(`🔍 Deep validation: ${word.italian}`);
 
-    // Load complete verb data
-    const verbData = await this.loadCompleteVerbData(word.id);
-    
-    const report: VerbComplianceReport = {
-      verbId: word.id,
-      verbItalian: word.italian,
-      overallScore: 0,
-      complianceStatus: 'compliant',
-      wordLevelIssues: [],
-      translationLevelIssues: [],
-      formLevelIssues: [],
-      crossTableIssues: [],
-      missingBuildingBlocks: [],
-      deprecatedContent: [],
-      autoFixableIssues: [],
-      manualInterventionRequired: [],
-      epicAlignmentNotes: [],
-      migrationReadiness: false,
-      priorityLevel: this.calculateVerbPriority(word),
-      estimatedFixTime: '0 minutes'
-    };
+    try {
+      console.log('📥 Loading complete verb data...');
+      // Load complete verb data
+      const verbData = await this.loadCompleteVerbData(word.id);
+      console.log('✅ Loaded verb data:', verbData);
 
-    // 1. Word Level Validation
-    report.wordLevelIssues = this.validateWordLevel(word);
-    
-    // 2. Translation Level Validation  
-    report.translationLevelIssues = this.validateTranslationLevel(verbData.translations);
-    
-    // 3. Form Level Validation
-    report.formLevelIssues = this.validateFormLevel(verbData.forms, options.includeTerminologyValidation);
-    
-    // 4. Cross-Table Validation
-    if (options.includeCrossTableAnalysis) {
-      report.crossTableIssues = await this.validateCrossTableRelationships(verbData);
+      const report: VerbComplianceReport = {
+        verbId: word.id,
+        verbItalian: word.italian,
+        overallScore: 0,
+        complianceStatus: 'compliant',
+        wordLevelIssues: [],
+        translationLevelIssues: [],
+        formLevelIssues: [],
+        crossTableIssues: [],
+        missingBuildingBlocks: [],
+        deprecatedContent: [],
+        autoFixableIssues: [],
+        manualInterventionRequired: [],
+        epicAlignmentNotes: [],
+        migrationReadiness: false,
+        priorityLevel: this.calculateVerbPriority(word),
+        estimatedFixTime: '0 minutes'
+      };
+
+      console.log('✅ Created base report');
+
+      // 1. Word Level Validation
+      console.log('🔍 Starting word level validation...');
+      report.wordLevelIssues = this.validateWordLevel(word);
+      console.log('✅ Word level complete:', report.wordLevelIssues.length, 'issues');
+
+      // 2. Translation Level Validation
+      console.log('🔍 Starting translation level validation...');
+      report.translationLevelIssues = this.validateTranslationLevel(verbData.translations);
+      console.log('✅ Translation level complete:', report.translationLevelIssues.length, 'issues');
+
+      // 3. Form Level Validation
+      console.log('🔍 Starting form level validation...');
+      report.formLevelIssues = this.validateFormLevel(verbData.forms, options.includeTerminologyValidation);
+      console.log('✅ Form level complete:', report.formLevelIssues.length, 'issues');
+
+      // 4. Cross-Table Validation
+      if (options.includeCrossTableAnalysis) {
+        console.log('🔍 Starting cross-table validation...');
+        report.crossTableIssues = await this.validateCrossTableRelationships(verbData);
+        console.log('✅ Cross-table complete:', report.crossTableIssues.length, 'issues');
+      }
+
+      // 5. Building Blocks Validation
+      console.log('🔍 Starting building blocks validation...');
+      report.missingBuildingBlocks = this.validateBuildingBlocks(verbData.forms);
+      console.log('✅ Building blocks complete:', report.missingBuildingBlocks.length, 'missing');
+
+      // 6. Deprecated Content Check
+      if (options.includeDeprecatedCheck) {
+        console.log('🔍 Starting deprecated content check...');
+        report.deprecatedContent = this.findDeprecatedContent(verbData);
+        console.log('✅ Deprecated content complete:', report.deprecatedContent.length, 'items');
+      }
+
+      // 7. Auto-fix identification
+      if (options.generateAutoFixes) {
+        console.log('🔍 Identifying auto-fixes...');
+        this.identifyAutoFixableIssues(report);
+        console.log('✅ Auto-fixes complete:', report.autoFixableIssues.length, 'fixable');
+      }
+
+      // 8. Calculate overall compliance
+      console.log('🔍 Calculating compliance...');
+      this.calculateVerbCompliance(report);
+      console.log('✅ Compliance calculated:', report.overallScore);
+
+      console.log('✅ Validation result:', report);
+      return report;
+
+    } catch (error) {
+      console.error(`❌ Error in validateSingleVerb for ${word.italian}:`, error);
+      throw error; // Re-throw so the calling method sees it
     }
-    
-    // 5. Building Blocks Validation
-    report.missingBuildingBlocks = this.validateBuildingBlocks(verbData.forms);
-    
-    // 6. Deprecated Content Check
-    if (options.includeDeprecatedCheck) {
-      report.deprecatedContent = this.findDeprecatedContent(verbData);
-    }
-
-    // 7. Auto-fix identification
-    if (options.generateAutoFixes) {
-      this.identifyAutoFixableIssues(report);
-    }
-
-    // 8. Calculate overall compliance
-    this.calculateVerbCompliance(report);
-
-    return report;
   }
 
   /**
