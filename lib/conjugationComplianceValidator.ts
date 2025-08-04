@@ -1176,82 +1176,133 @@ export class ConjugationComplianceValidator {
       }
 
       debugLog(`✅ Loaded ${forms?.length || 0} forms`);
-      debugLog('🔍 COMPREHENSIVE FORMS ANALYSIS:');
+      // DETAILED FORMS ANALYSIS BY MOOD
+      debugLog('🔍 COMPREHENSIVE FORMS ANALYSIS BY MOOD:');
 
-      const expectedForms = [
-        { mood: 'indicativo', tense: 'presente', persons: 6, compound: false },
-        { mood: 'indicativo', tense: 'passato-prossimo', persons: 6, compound: true },
-        { mood: 'indicativo', tense: 'imperfetto', persons: 6, compound: false },
-        { mood: 'indicativo', tense: 'futuro-semplice', persons: 6, compound: false },
-        { mood: 'indicativo', tense: 'trapassato-prossimo', persons: 6, compound: true },
-        { mood: 'indicativo', tense: 'passato-remoto', persons: 6, compound: false },
-        { mood: 'indicativo', tense: 'futuro-anteriore', persons: 6, compound: true },
-        { mood: 'indicativo', tense: 'trapassato-remoto', persons: 6, compound: true },
-        { mood: 'congiuntivo', tense: 'congiuntivo-presente', persons: 6, compound: false },
-        { mood: 'congiuntivo', tense: 'congiuntivo-imperfetto', persons: 6, compound: false },
-        { mood: 'congiuntivo', tense: 'congiuntivo-passato', persons: 6, compound: true },
-        { mood: 'congiuntivo', tense: 'congiuntivo-trapassato', persons: 6, compound: true },
-        { mood: 'condizionale', tense: 'condizionale-presente', persons: 6, compound: false },
-        { mood: 'condizionale', tense: 'condizionale-passato', persons: 6, compound: true },
-        { mood: 'imperativo', tense: 'imperativo-presente', persons: 5, compound: false },
-        { mood: 'imperativo', tense: 'imperativo-passato', persons: 5, compound: true },
-        { mood: 'indicativo', tense: 'presente-progressivo', persons: 6, compound: true },
-        { mood: 'indicativo', tense: 'imperfetto-progressivo', persons: 6, compound: true },
-        { mood: 'indicativo', tense: 'futuro-progressivo', persons: 6, compound: true },
-        { mood: 'congiuntivo', tense: 'congiuntivo-presente-progressivo', persons: 6, compound: true },
-        { mood: 'condizionale', tense: 'condizionale-presente-progressivo', persons: 6, compound: true },
-        { mood: 'infinito', tense: 'infinito-presente', persons: 0, compound: false },
-        { mood: 'infinito', tense: 'infinito-passato', persons: 0, compound: true },
-        { mood: 'participio', tense: 'participio-presente', persons: 0, compound: false },
-        { mood: 'participio', tense: 'participio-passato', persons: 0, compound: false },
-        { mood: 'gerundio', tense: 'gerundio-presente', persons: 0, compound: false },
-        { mood: 'gerundio', tense: 'gerundio-passato', persons: 0, compound: true }
+      const moodGroups = [
+        {
+          name: 'Indicative (Indicativo)',
+          moods: ['indicativo'],
+          tenses: [
+            { tag: 'presente', name: 'Presente', persons: 6, compound: false },
+            { tag: 'imperfetto', name: 'Imperfetto', persons: 6, compound: false },
+            { tag: 'futuro-semplice', name: 'Futuro Semplice', persons: 6, compound: false },
+            { tag: 'passato-remoto', name: 'Passato Remoto', persons: 6, compound: false },
+            { tag: 'passato-prossimo', name: 'Passato Prossimo', persons: 6, compound: true },
+            { tag: 'trapassato-prossimo', name: 'Trapassato Prossimo', persons: 6, compound: true },
+            { tag: 'futuro-anteriore', name: 'Futuro Anteriore', persons: 6, compound: true },
+            { tag: 'trapassato-remoto', name: 'Trapassato Remoto', persons: 6, compound: true },
+            { tag: 'presente-progressivo', name: 'Presente Progressivo', persons: 6, compound: true },
+            { tag: 'imperfetto-progressivo', name: 'Imperfetto Progressivo', persons: 6, compound: true },
+            { tag: 'futuro-progressivo', name: 'Futuro Progressivo', persons: 6, compound: true }
+          ]
+        },
+        {
+          name: 'Subjunctive (Congiuntivo)',
+          moods: ['congiuntivo'],
+          tenses: [
+            { tag: 'congiuntivo-presente', name: 'Presente', persons: 6, compound: false },
+            { tag: 'congiuntivo-imperfetto', name: 'Imperfetto', persons: 6, compound: false },
+            { tag: 'congiuntivo-passato', name: 'Passato', persons: 6, compound: true },
+            { tag: 'congiuntivo-trapassato', name: 'Trapassato', persons: 6, compound: true },
+            { tag: 'congiuntivo-presente-progressivo', name: 'Presente Progressivo', persons: 6, compound: true }
+          ]
+        },
+        {
+          name: 'Conditional (Condizionale)',
+          moods: ['condizionale'],
+          tenses: [
+            { tag: 'condizionale-presente', name: 'Presente', persons: 6, compound: false },
+            { tag: 'condizionale-passato', name: 'Passato', persons: 6, compound: true },
+            { tag: 'condizionale-presente-progressivo', name: 'Presente Progressivo', persons: 6, compound: true }
+          ]
+        },
+        {
+          name: 'Imperative (Imperativo)',
+          moods: ['imperativo'],
+          tenses: [
+            { tag: 'imperativo-presente', name: 'Presente', persons: 5, compound: false },
+            { tag: 'imperativo-passato', name: 'Passato', persons: 5, compound: true }
+          ]
+        },
+        {
+          name: 'Non-finite Forms',
+          moods: ['infinito', 'participio', 'gerundio'],
+          tenses: [
+            { tag: 'infinito-presente', name: 'Infinito Presente', persons: 0, compound: false },
+            { tag: 'infinito-passato', name: 'Infinito Passato', persons: 0, compound: true },
+            { tag: 'participio-presente', name: 'Participio Presente', persons: 0, compound: false },
+            { tag: 'participio-passato', name: 'Participio Passato', persons: 0, compound: false },
+            { tag: 'gerundio-presente', name: 'Gerundio Presente', persons: 0, compound: false },
+            { tag: 'gerundio-passato', name: 'Gerundio Passato', persons: 0, compound: true }
+          ]
+        }
       ];
 
       let totalExpected = 0;
       let totalFound = 0;
 
-      for (const expected of expectedForms) {
-        const foundForms = forms?.filter(f =>
-          f.tags?.includes(expected.mood) &&
-          f.tags?.includes(expected.tense)
-        ) || [];
+      for (const group of moodGroups) {
+        debugLog(`\n  ${group.name}:`);
 
-        const expectedCount = expected.persons || 1;
-        totalExpected += expectedCount;
-        totalFound += foundForms.length;
+        for (const expected of group.tenses) {
+          const foundForms = forms?.filter(f =>
+            group.moods.some(mood => f.tags?.includes(mood)) &&
+            f.tags?.includes(expected.tag)
+          ) || [];
 
-        debugLog(`  ${expected.mood}/${expected.tense}:`);
-        debugLog(`    Expected: ${expectedCount} forms | Found: ${foundForms.length} forms`);
+          const expectedCount = expected.persons || 1;
+          totalExpected += expectedCount;
+          totalFound += foundForms.length;
 
-        if (foundForms.length === 0) {
-          debugLog('    ❌ COMPLETELY MISSING');
-        } else if (foundForms.length < expectedCount) {
-          debugLog(`    ⚠️ INCOMPLETE (missing ${expectedCount - foundForms.length})`);
-          foundForms.forEach(form => {
-            const personTags = form.tags?.filter(t => t.includes('persona') || t === 'invariable') || [];
-            debugLog(`      ✅ "${form.form_text}" [${personTags.join(', ')}]`);
-          });
-        } else {
-          debugLog('    ✅ COMPLETE');
-        }
+          debugLog(`    ${expected.name}:`);
+          debugLog(`      Expected: ${expectedCount} forms | Found: ${foundForms.length} forms`);
 
-        if (expected.compound && foundForms.length > 0) {
-          const withAuxTags = foundForms.filter(f =>
-            f.tags?.some(t => ['avere-auxiliary', 'essere-auxiliary', 'stare-auxiliary'].includes(t))
-          );
-          debugLog(`    Auxiliary tags: ${withAuxTags.length}/${foundForms.length} forms have auxiliary tags`);
+          if (foundForms.length === 0) {
+            debugLog('      ❌ COMPLETELY MISSING');
+          } else if (foundForms.length < expectedCount) {
+            debugLog(`      ⚠️ INCOMPLETE (missing ${expectedCount - foundForms.length})`);
+
+            if (expected.persons > 0) {
+              const personTags = ['prima-persona', 'seconda-persona', 'terza-persona'];
+              const numbers = ['singolare', 'plurale'];
+
+              debugLog('      Present persons:');
+              for (const number of numbers) {
+                for (const person of personTags) {
+                  const personForm = foundForms.find(f =>
+                    f.tags?.includes(person) && f.tags?.includes(number)
+                  );
+                  const personLabel = `${person.split('-')[0]} ${number}`;
+                  if (personForm) {
+                    debugLog(`        ✅ ${personLabel}: "${personForm.form_text}"`);
+                  } else {
+                    debugLog(`        ❌ ${personLabel}: MISSING`);
+                  }
+                }
+              }
+            }
+          } else {
+            debugLog('      ✅ COMPLETE');
+          }
+
+          if (expected.compound && foundForms.length > 0) {
+            const withAuxTags = foundForms.filter(f =>
+              f.tags?.some(t => ['avere-auxiliary', 'essere-auxiliary', 'stare-auxiliary'].includes(t))
+            );
+            debugLog(`      Auxiliary tags: ${withAuxTags.length}/${foundForms.length} forms have auxiliary tags`);
+          }
         }
       }
 
-      debugLog(`📊 FORMS SUMMARY: ${totalFound}/${totalExpected} total forms (${Math.round(totalFound / totalExpected * 100)}% complete)`);
+      debugLog(`\n📊 FORMS SUMMARY: ${totalFound}/${totalExpected} total forms (${Math.round(totalFound / totalExpected * 100)}% complete)`);
 
       // BUILDING BLOCKS ANALYSIS
       debugLog('🔍 BUILDING BLOCKS ANALYSIS:');
       const buildingBlocks = [
-        { name: 'Past Participle', mood: 'participio', tense: 'participio-passato', required: true },
-        { name: 'Present Gerund', mood: 'gerundio', tense: 'gerundio-presente', required: true },
-        { name: 'Present Infinitive', mood: 'infinito', tense: 'infinito-presente', required: true }
+        { name: 'Past Participle', mood: 'participio', tense: 'participio-passato', required: true, purpose: 'Compound tenses generation' },
+        { name: 'Present Gerund', mood: 'gerundio', tense: 'gerundio-presente', required: true, purpose: 'Progressive tenses generation' },
+        { name: 'Present Infinitive', mood: 'infinito', tense: 'infinito-presente', required: true, purpose: 'Negative imperatives, clitic attachment' }
       ];
 
       for (const block of buildingBlocks) {
@@ -1263,10 +1314,12 @@ export class ConjugationComplianceValidator {
         if (found) {
           debugLog(`  ✅ ${block.name}: "${found.form_text}"`);
           if (block.required && !found.tags?.includes('building-block')) {
-            debugLog("    ⚠️ Missing 'building-block' tag");
+            debugLog(`    ⚠️ Missing 'building-block' tag (needed for ${block.purpose})`);
+          } else if (found.tags?.includes('building-block')) {
+            debugLog(`    ✅ Has 'building-block' tag for ${block.purpose}`);
           }
         } else {
-          debugLog(`  ❌ ${block.name}: MISSING`);
+          debugLog(`  ❌ ${block.name}: MISSING (needed for ${block.purpose})`);
         }
       }
 
@@ -1279,6 +1332,7 @@ export class ConjugationComplianceValidator {
         .in('form_id', formIds);
       debugLog(`  Form-Translation assignments: ${formTranslations?.length || 0}`);
 
+      // Check translation->form direction (form_ids arrays)
       if (translations) {
         for (let i = 0; i < translations.length; i++) {
           const t = translations[i];
@@ -1300,11 +1354,28 @@ export class ConjugationComplianceValidator {
         }
       }
 
+      // Check form->translation direction (form_translations table)
+      const formsWithoutTranslations = forms?.filter(f =>
+        !formTranslations?.some(ft => ft.form_id === f.id)
+      ) || [];
+
+      if (formsWithoutTranslations.length > 0) {
+        debugLog(`  ⚠️ Forms without English translations: ${formsWithoutTranslations.length}`);
+        formsWithoutTranslations.slice(0, 5).forEach(form => {
+          debugLog(`    "${form.form_text}" (ID: ${form.id}) - no form_translations entry`);
+        });
+      }
+
+      // Only mark as truly orphaned if missing BOTH relationships
       const allReferencedFormIds = translations?.flatMap(t => t.form_ids || []) || [];
-      const orphanedForms = forms?.filter(f => !allReferencedFormIds.includes(f.id)) || [];
-      if (orphanedForms.length > 0) {
-        debugLog(`  ⚠️ Orphaned forms (not referenced by translations): ${orphanedForms.length}`);
-        orphanedForms.slice(0, 5).forEach(form => {
+      const formsWithTranslationIds = formTranslations?.map(ft => ft.form_id) || [];
+      const completelyOrphanedForms = forms?.filter(f =>
+        !allReferencedFormIds.includes(f.id) && !formsWithTranslationIds.includes(f.id)
+      ) || [];
+
+      if (completelyOrphanedForms.length > 0) {
+        debugLog(`  ❌ Completely orphaned forms (no relationships): ${completelyOrphanedForms.length}`);
+        completelyOrphanedForms.slice(0, 5).forEach(form => {
           debugLog(`    "${form.form_text}" (ID: ${form.id})`);
         });
       }
