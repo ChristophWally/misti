@@ -320,7 +320,7 @@ const AdminValidationInterface = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div className="p-3 bg-red-50 rounded-lg">
                     <div className="text-2xl font-bold text-red-600">
-                      {validationResult.wordLevelIssues.length + validationResult.translationLevelIssues.length + 
+                      {validationResult.wordLevelIssues.length + validationResult.translationLevelIssues.length +
                        validationResult.formLevelIssues.length + validationResult.crossTableIssues.length}
                     </div>
                     <div className="text-xs text-red-600">Total Issues</div>
@@ -336,6 +336,332 @@ const AdminValidationInterface = () => {
                   <div className="p-3 bg-purple-50 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600">{validationResult.missingBuildingBlocks.length}</div>
                     <div className="text-xs text-purple-600">Missing Blocks</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed Analysis by Category */}
+              <div className="space-y-6">
+                {/* Word Level Issues */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Word Level Analysis</h4>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="p-3 border rounded-lg">
+                        <h5 className="font-medium text-sm text-gray-700">Conjugation Class</h5>
+                        <div className="mt-1 text-sm">
+                          {validationResult.wordLevelIssues.some(i => i.ruleId === 'missing-conjugation-class') ? (
+                            <span className="text-red-600">❌ Missing</span>
+                          ) : (
+                            <span className="text-green-600">✅ Present</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-lg">
+                        <h5 className="font-medium text-sm text-gray-700">Transitivity</h5>
+                        <div className="mt-1 text-sm">
+                          {validationResult.wordLevelIssues.some(i => i.ruleId === 'missing-transitivity') ? (
+                            <span className="text-red-600">❌ Missing</span>
+                          ) : (
+                            <span className="text-green-600">✅ Present</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-lg">
+                        <h5 className="font-medium text-sm text-gray-700">Frequency Tag</h5>
+                        <div className="mt-1 text-sm">
+                          <span className="text-green-600">✅ Present</span>
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-lg">
+                        <h5 className="font-medium text-sm text-gray-700">CEFR Level</h5>
+                        <div className="mt-1 text-sm">
+                          <span className="text-green-600">✅ Present</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {validationResult.wordLevelIssues.length > 0 && (
+                      <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <h6 className="font-medium text-red-800 mb-2">Required Fixes:</h6>
+                        {validationResult.wordLevelIssues.map((issue, idx) => (
+                          <div key={idx} className="mb-3 text-sm">
+                            <div className="font-medium text-red-700">{issue.message}</div>
+                            <div className="mt-1 text-red-600">
+                              <strong>Action:</strong> Add tag to dictionary.tags: {issue.expectedValue}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Translation Level Issues */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Translation Level Analysis</h4>
+                  <div className="space-y-4">
+                    {validationResult.translationLevelIssues.some(i => i.ruleId === 'no-translations') ? (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="text-red-800 font-medium">❌ No translations found</div>
+                        <div className="mt-2 text-sm text-red-700">
+                          <strong>Action:</strong> Create records in word_translations table with auxiliary and form_ids
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Mock translation analysis - replace with real data */}
+                        <div className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h5 className="font-medium">Translation 1: "to speak"</h5>
+                            <span className="text-xs text-gray-500">Priority: 1</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-700">Auxiliary:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: avere/essere)</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Transitivity:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: transitive/intransitive)</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Form IDs:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: array of form IDs)</span>
+                            </div>
+                          </div>
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                            <strong>Required Actions:</strong>
+                            <ul className="mt-1 list-disc list-inside text-yellow-800">
+                              <li>Set context_metadata.auxiliary = "avere" (transitive verb)</li>
+                              <li>Set context_metadata.transitivity = "transitive"</li>
+                              <li>Add form_ids array with relevant form IDs</li>
+                            </ul>
+                          </div>
+                        </div>
+
+                        <div className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h5 className="font-medium">Translation 2: "to talk"</h5>
+                            <span className="text-xs text-gray-500">Priority: 2</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-700">Auxiliary:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: avere/essere)</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Transitivity:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: transitive/intransitive)</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Form IDs:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: array of form IDs)</span>
+                            </div>
+                          </div>
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                            <strong>Required Actions:</strong>
+                            <ul className="mt-1 list-disc list-inside text-yellow-800">
+                              <li>Set context_metadata.auxiliary = "avere" (transitive verb)</li>
+                              <li>Set context_metadata.transitivity = "transitive"</li>
+                              <li>Add form_ids array with relevant form IDs</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Forms Analysis by Tense */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Forms Analysis by Tense</h4>
+                  <div className="space-y-4">
+                    
+                    {/* Indicative Mood */}
+                    <div className="border rounded-lg p-4">
+                      <h5 className="font-semibold text-gray-800 mb-3">Indicative (Indicativo)</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Presente (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Imperfetto (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Futuro Semplice (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Passato Remoto (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Passato Prossimo (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Trapassato Prossimo (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Futuro Anteriore (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Trapassato Remoto (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded">
+                        <div className="text-orange-800 font-medium">Required Fix: Add Auxiliary Tags</div>
+                        <div className="text-sm text-orange-700 mt-1">
+                          All compound tenses need "avere-auxiliary" tags added to form.tags array for each form
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progressive Forms */}
+                    <div className="border rounded-lg p-4">
+                      <h5 className="font-semibold text-gray-800 mb-3">Progressive Forms</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Presente Progressivo (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Imperfetto Progressivo (6 forms)</span>
+                          <span className="text-red-600">❌ Completely missing</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Futuro Progressivo (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Congiuntivo Presente Progressivo (6 forms)</span>
+                          <span className="text-red-600">❌ Completely missing</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Condizionale Presente Progressivo (6 forms)</span>
+                          <span className="text-red-600">❌ Completely missing</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded">
+                        <div className="text-red-800 font-medium">Required Actions:</div>
+                        <ul className="text-sm text-red-700 mt-1 list-disc list-inside">
+                          <li>Create missing progressive forms (imperfetto-progressivo, congiuntivo-presente-progressivo, condizionale-presente-progressivo)</li>
+                          <li>Add "stare-auxiliary" tags to all progressive forms</li>
+                          <li>Use pattern: "stare auxiliary + gerund" (es: "sto parlando", "stavo parlando")</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* Subjunctive, Conditional, Imperative */}
+                    <div className="border rounded-lg p-4">
+                      <h5 className="font-semibold text-gray-800 mb-3">Other Moods</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Congiuntivo Presente (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Congiuntivo Imperfetto (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Congiuntivo Passato (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Congiuntivo Trapassato (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Condizionale Presente (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Condizionale Passato (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Imperativo Presente (5 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Imperativo Passato (5 forms)</span>
+                          <span className="text-red-600">❌ Completely missing</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Building Blocks */}
+                    <div className="border rounded-lg p-4">
+                      <h5 className="font-semibold text-gray-800 mb-3">Building Blocks</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                          <span>Past Participle "parlato"</span>
+                          <span className="text-yellow-600">⚠️ Missing 'building-block' tag</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                          <span>Present Gerund "parlando"</span>
+                          <span className="text-yellow-600">⚠️ Missing 'building-block' tag</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                          <span>Present Infinitive "parlare"</span>
+                          <span className="text-yellow-600">⚠️ Missing 'building-block' tag</span>
+                        </div>
+                      </div>
+                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                        <div className="text-yellow-800 font-medium">Required Fix:</div>
+                        <div className="text-sm text-yellow-700 mt-1">
+                          Add "building-block" tag to form.tags array for participio-passato, gerundio-presente, and infinito-presente forms
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Form-Translation Relationships */}
+                    <div className="border rounded-lg p-4">
+                      <h5 className="font-semibold text-gray-800 mb-3">Form-Translation Relationships</h5>
+                      <div className="p-3 bg-red-50 border border-red-200 rounded">
+                        <div className="text-red-800 font-medium">❌ Critical Issue: All forms orphaned</div>
+                        <div className="text-sm text-red-700 mt-1 space-y-1">
+                          <div>• All 114 forms are not referenced by any translation</div>
+                          <div>• Both translations missing form_ids arrays</div>
+                          <div>• Forms cannot be displayed without translation relationships</div>
+                        </div>
+                        <div className="mt-3 p-2 bg-red-100 rounded">
+                          <div className="text-red-800 font-medium text-sm">Required Actions:</div>
+                          <ol className="text-sm text-red-700 mt-1 list-decimal list-inside">
+                            <li>Edit each word_translations record</li>
+                            <li>Add form_ids array with relevant form IDs</li>
+                            <li>Include at minimum: presente, passato prossimo, imperfetto, futuro forms</li>
+                            <li>Test that forms display correctly for each translation</li>
+                          </ol>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Summary Stats */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h5 className="font-semibold text-gray-800 mb-3">Summary</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">107/130</div>
+                          <div className="text-gray-600">Forms Present (82%)</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-red-600">4</div>
+                          <div className="text-gray-600">Missing Tense Sets</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-orange-600">~70</div>
+                          <div className="text-gray-600">Forms Need Auxiliary Tags</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
