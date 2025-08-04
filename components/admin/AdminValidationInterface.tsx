@@ -386,13 +386,17 @@ const AdminValidationInterface = () => {
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Missing Building Blocks</h4>
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex">
-                      <XCircle className="w-5 h-5 text-red-400 mt-0.5" />
+                      <XCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
                       <div className="ml-3">
-                        <h5 className="text-red-800 font-medium">Critical for Compound Generation</h5>
-                        <p className="text-red-700 text-sm mt-1">
-                          Missing: {validationResult.missingBuildingBlocks.join(', ')}
-                        </p>
-                        <p className="text-red-600 text-xs mt-2">
+                        <h5 className="text-red-800 font-medium mb-2">Critical for Compound Generation</h5>
+                        <div className="space-y-2">
+                          {validationResult.missingBuildingBlocks.map((item, idx) => (
+                            <div key={idx} className="text-red-700 text-sm p-2 bg-red-100 rounded border-l-4 border-red-400">
+                              {item}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-red-600 text-xs mt-3">
                           These forms are essential for generating compound tenses. The new architecture cannot function without them.
                         </p>
                       </div>

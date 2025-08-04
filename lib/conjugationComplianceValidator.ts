@@ -49,11 +49,11 @@ export interface VerbData {
   forms: Array<{
     id: number;
     form_text: string;
-    translation: string;
     form_type: string;
     tags: string[];
     phonetic_form?: string;
     ipa?: string;
+    created_at?: string;
   }>;
   formTranslations: Array<{
     id: string;
@@ -316,13 +316,12 @@ export class ConjugationComplianceValidator {
    */
   private async loadCompleteVerbData(wordId: string): Promise<VerbData> {
     try {
-      // Load word forms
+      // Load word forms (removed 'translation' column that doesn't exist)
       const { data: forms, error: formsError } = await this.supabase
         .from('word_forms')
         .select(`
           id,
           form_text,
-          translation,
           form_type,
           tags,
           phonetic_form,
@@ -722,7 +721,6 @@ export class ConjugationComplianceValidator {
    * Validate building blocks for compound generation
    */
   private validateBuildingBlocks(forms: any[]): string[] {
-    const missing: string[] = [];
     const detailedMissing: string[] = [];
 
     // Check for past participle
@@ -732,8 +730,7 @@ export class ConjugationComplianceValidator {
     );
 
     if (!hasParticiple) {
-      missing.push('participio-passato');
-      detailedMissing.push('Missing: Past Participle (participio-passato) - Required for: passato prossimo, trapassato prossimo, futuro anteriore, condizionale passato');
+      detailedMissing.push('Past Participle (participio-passato) - Required for: passato prossimo, trapassato prossimo, futuro anteriore, condizionale passato');
     }
 
     // Check for present gerund
@@ -743,8 +740,7 @@ export class ConjugationComplianceValidator {
     );
 
     if (!hasGerund) {
-      missing.push('gerundio-presente');
-      detailedMissing.push('Missing: Present Gerund (gerundio-presente) - Required for: presente progressivo, passato progressivo, futuro progressivo');
+      detailedMissing.push('Present Gerund (gerundio-presente) - Required for: presente progressivo, passato progressivo, futuro progressivo');
     }
 
     // Check for present infinitive
@@ -753,8 +749,7 @@ export class ConjugationComplianceValidator {
     );
 
     if (!hasInfinitive) {
-      missing.push('infinito-presente');
-      detailedMissing.push('Missing: Present Infinitive (infinito-presente) - Required for: negative imperatives, clitic attachment');
+      detailedMissing.push('Present Infinitive (infinito-presente) - Required for: negative imperatives, clitic attachment');
     }
 
     // Check for each required tense
@@ -764,29 +759,16 @@ export class ConjugationComplianceValidator {
       { tag: 'futuro-semplice', name: 'Simple Future', persons: 6 },
       { tag: 'congiuntivo-presente', name: 'Present Subjunctive', persons: 6 },
       { tag: 'condizionale-presente', name: 'Present Conditional', persons: 6 },
-      { tag: 'imperativo-presente', name: 'Imperative', persons: 5 } // No first person singular
+      { tag: 'imperativo-presente', name: 'Imperative', persons: 5 }
     ];
 
     for (const tense of requiredTenses) {
       const tenseForms = forms.filter(f => f.tags?.includes(tense.tag));
       if (tenseForms.length < tense.persons) {
-        detailedMissing.push(`Missing: ${tense.name} (${tense.tag}) - Has ${tenseForms.length}/${tense.persons} persons`);
-
-        // Show which specific persons are missing
-        const expectedPersons = tense.tag === 'imperativo-presente'
-          ? ['seconda-persona', 'terza-persona', 'prima-persona-plurale', 'seconda-persona-plurale', 'terza-persona-plurale']
-          : ['prima-persona', 'seconda-persona', 'terza-persona', 'prima-persona-plurale', 'seconda-persona-plurale', 'terza-persona-plurale'];
-
-        const existingPersons = tenseForms.map(f => f.tags?.find(t => t.includes('persona'))).filter(Boolean);
-        const missingPersons = expectedPersons.filter(p => !existingPersons.some(ep => ep.includes(p.split('-')[0])));
-
-        if (missingPersons.length > 0) {
-          detailedMissing.push(`  └─ Missing persons: ${missingPersons.join(', ')}`);
-        }
+        detailedMissing.push(`${tense.name} (${tense.tag}) - Has ${tenseForms.length}/${tense.persons} persons`);
       }
     }
 
-    // Return detailed missing for display
     return detailedMissing;
   }
 
