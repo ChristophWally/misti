@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Search, CheckCircle, AlertTriangle, XCircle, Settings, BarChart3, RefreshCw, Download, Play, Pause } from 'lucide-react';
-import { ConjugationComplianceValidator } from '../../lib/conjugationComplianceValidator';
+import { ConjugationComplianceValidator, ValidationOptions } from '../../lib/conjugationComplianceValidator';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -15,7 +15,7 @@ const AdminValidationInterface = () => {
   const [validationResult, setValidationResult] = useState(null);
   const [systemAnalysis, setSystemAnalysis] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
-  const [validationOptions, setValidationOptions] = useState({
+  const [validationOptions, setValidationOptions] = useState<ValidationOptions>({
     includeDeprecatedCheck: true,
     includeCrossTableAnalysis: true,
     includeTerminologyValidation: true,
@@ -597,7 +597,12 @@ const AdminValidationInterface = () => {
               </label>
               <select
                 value={validationOptions.priorityFilter}
-                onChange={(e) => setValidationOptions(prev => ({ ...prev, priorityFilter: e.target.value }))}
+                onChange={(e) =>
+                  setValidationOptions(prev => ({
+                    ...prev,
+                    priorityFilter: e.target.value as 'all' | 'high-only',
+                  }))
+                }
                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All verbs</option>
