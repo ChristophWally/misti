@@ -1058,6 +1058,7 @@ export class ConjugationComplianceValidator {
     console.log(`🔍 Quick validation for: ${verbItalian}`);
 
     try {
+      console.log('📥 Looking up verb in database...');
       const { data: word, error } = await this.supabase
         .from('dictionary')
         .select('*')
@@ -1065,10 +1066,17 @@ export class ConjugationComplianceValidator {
         .eq('word_type', 'VERB')
         .single();
 
-      if (error || !word) {
+      if (error) {
+        console.error(`❌ Database error:`, error);
+        return null;
+      }
+
+      if (!word) {
         console.error(`❌ Verb "${verbItalian}" not found`);
         return null;
       }
+
+      console.log(`✅ Found verb:`, word);
 
       const options: ValidationOptions = {
         includeDeprecatedCheck: true,
@@ -1077,7 +1085,11 @@ export class ConjugationComplianceValidator {
         generateAutoFixes: true
       };
 
-      return await this.validateSingleVerb(word, options);
+      console.log('🔍 Starting detailed validation...');
+      const result = await this.validateSingleVerb(word, options);
+      console.log('✅ Validation result:', result);
+
+      return result;
 
     } catch (error) {
       console.error(`❌ Error validating ${verbItalian}:`, error);
