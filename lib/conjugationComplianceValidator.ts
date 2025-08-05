@@ -751,6 +751,89 @@ export class ConjugationComplianceValidator {
     return issues;
   }
 
+  private calculateExpectedForms(translations: any[]): { total: number, breakdown: any } {
+    // Count distinct auxiliaries
+    const auxiliaries = new Set(
+      translations.map(t => t.context_metadata?.auxiliary).filter(Boolean)
+    );
+    const auxiliaryCount = auxiliaries.size;
+
+    // Base form counts per tense category
+    const baseForms = {
+      simple: 47, // 6+6+6+6+6+6+5+1+1+1+1+1+1 (presente, imperfetto, futuro, passato-remoto, congiuntivo-presente, congiuntivo-imperfetto, condizionale-presente, imperativo-presente, infinito-presente, participio-presente, participio-passato, gerundio-presente, gerundio-passato)
+      compound: 42, // 7 compound tenses × 6 persons each
+      progressive: 30 // 5 progressive tenses × 6 persons each
+    };
+
+    // Compound and progressive forms multiply by auxiliary count
+    const multiplier = Math.max(1, auxiliaryCount);
+    
+    const expectedForms = {
+      simple: baseForms.simple,
+      compound: baseForms.compound * multiplier,
+      progressive: baseForms.progressive * multiplier,
+      total: baseForms.simple + (baseForms.compound * multiplier) + (baseForms.progressive * multiplier)
+    };
+
+    return {
+      total: expectedForms.total,
+      breakdown: {
+        auxiliaryCount,
+        auxiliaries: Array.from(auxiliaries),
+        simple: expectedForms.simple,
+        compound: expectedForms.compound,
+        progressive: expectedForms.progressive,
+        multiplier
+      }
+    };
+  }
+
+  private async analyzeFormTranslationCoverage(verbData: VerbData): Promise<any> {
+    const analysis = {
+      totalFormTranslations: verbData.formTranslations.length,
+      translationCoverage: [] as any[],
+      unassignedForms: [] as any[],
+      assignmentIssues: [] as any[]
+    };
+
+    // Calculate expected form_translations based on auxiliaries
+    const auxiliaries = new Set(
+      verbData.translations.map(t => t.context_metadata?.auxiliary).filter(Boolean)
+    );
+    const expectedPerTranslation = verbData.forms.length;
+
+    // Analyze each translation's coverage
+    for (const translation of verbData.translations) {
+      const translationFormTranslations = verbData.formTranslations.filter(ft =>
+        ft.word_translation_id === translation.id
+      );
+
+      const coverage = {
+        translation: translation.translation,
+        auxiliary: translation.context_metadata?.auxiliary,
+        expected: expectedPerTranslation,
+        actual: translationFormTranslations.length,
+        percentage: Math.round((translationFormTranslations.length / expectedPerTranslation) * 100),
+        missing: expectedPerTranslation - translationFormTranslations.length
+      };
+
+      analysis.translationCoverage.push(coverage);
+    }
+
+    // Find unassigned forms
+    const assignedFormIds = new Set(verbData.formTranslations.map(ft => ft.form_id));
+    analysis.unassignedForms = verbData.forms.filter(f => !assignedFormIds.has(f.id))
+      .map(f => ({
+        id: f.id,
+        text: f.form_text,
+        tags: f.tags,
+        mood: f.tags?.find(t => ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'].includes(t)),
+        tense: f.tags?.find(t => t.includes('presente') || t.includes('passato') || t.includes('futuro') || t.includes('imperfetto'))
+      }));
+
+    return analysis;
+  }
+
   /**
    * Validate building blocks for compound generation
    */
@@ -912,10 +995,11 @@ export class ConjugationComplianceValidator {
     const highIssues = allIssues.filter(i => i.severity === 'high').length;
     const mediumIssues = allIssues.filter(i => i.severity === 'medium').length;
 
-    // Calculate score (0-100)
-    const totalPossibleIssues = 20; // Estimated maximum issues per verb
+    // Calculate score (0-100) - Fixed calculation
+    const maxPossibleIssues = 20; // Base maximum issues per verb
     const weightedIssues = (criticalIssues * 4) + (highIssues * 2) + (mediumIssues * 1);
-    report.overallScore = Math.max(0, Math.round(((totalPossibleIssues - weightedIssues) / totalPossibleIssues) * 100));
+    const rawScore = Math.max(0, maxPossibleIssues - weightedIssues);
+    report.overallScore = Math.round((rawScore / maxPossibleIssues) * 100);
 
     // Determine compliance status
     if (criticalIssues > 0) {
@@ -932,8 +1016,8 @@ export class ConjugationComplianceValidator {
     report.migrationReadiness = criticalIssues === 0 && highIssues <= 1;
 
     // Estimate fix time
-    const autoFixTime = report.autoFixableIssues.length * 2; // 2 minutes per auto-fix
-    const manualFixTime = report.manualInterventionRequired.length * 15; // 15 minutes per manual fix
+    const autoFixTime = report.autoFixableIssues.length * 2;
+    const manualFixTime = report.manualInterventionRequired.length * 15;
     const totalMinutes = autoFixTime + manualFixTime;
     
     if (totalMinutes === 0) {
@@ -1422,6 +1506,47 @@ export class ConjugationComplianceValidator {
         });
       } else {
         debugLog(`  ✅ All translations cover forms`);
+      }
+
+      // DETAILED FORM-TRANSLATION COVERAGE ANALYSIS
+      debugLog('🔍 DETAILED FORM-TRANSLATION COVERAGE:');
+
+      const formTranslationAnalysis = await this.analyzeFormTranslationCoverage({
+        word: null,
+        translations: translations || [],
+        forms: forms || [],
+        formTranslations: formTranslations || []
+      });
+
+      const expectedForms = this.calculateExpectedForms(translations || []);
+      debugLog(`  📊 Expected forms calculation:`);
+      debugLog(`    Auxiliaries: ${expectedForms.breakdown.auxiliaries.join(', ')} (${expectedForms.breakdown.auxiliaryCount} total)`);
+      debugLog(`    Simple forms: ${expectedForms.breakdown.simple}`);
+      debugLog(`    Compound forms: ${expectedForms.breakdown.compound} (base: 42 × ${expectedForms.breakdown.multiplier})`);
+      debugLog(`    Progressive forms: ${expectedForms.breakdown.progressive} (base: 30 × ${expectedForms.breakdown.multiplier})`);
+      debugLog(`    Total expected: ${expectedForms.total}`);
+
+      debugLog(`  📊 Form-translation coverage by translation:`);
+      for (const coverage of formTranslationAnalysis.translationCoverage) {
+        debugLog(`    "${coverage.translation}" (${coverage.auxiliary}):`);
+        debugLog(`      Coverage: ${coverage.actual}/${coverage.expected} (${coverage.percentage}%)`);
+        if (coverage.missing > 0) {
+          debugLog(`      ❌ Missing ${coverage.missing} form_translations`);
+        } else {
+          debugLog(`      ✅ Complete coverage`);
+        }
+      }
+
+      if (formTranslationAnalysis.unassignedForms.length > 0) {
+        debugLog(`  ❌ Unassigned forms (${formTranslationAnalysis.unassignedForms.length}):`);
+        formTranslationAnalysis.unassignedForms.slice(0, 10).forEach(form => {
+          debugLog(`    "${form.text}" (${form.mood}/${form.tense}) - ID: ${form.id}`);
+        });
+        if (formTranslationAnalysis.unassignedForms.length > 10) {
+          debugLog(`    ... and ${formTranslationAnalysis.unassignedForms.length - 10} more`);
+        }
+      } else {
+        debugLog(`  ✅ All forms have form_translation assignments`);
       }
 
       // Remove any reference to form_ids arrays
