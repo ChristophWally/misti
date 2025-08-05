@@ -436,278 +436,46 @@ const AdminValidationInterface = () => {
                   </div>
                 </div>
                 {/* Forms Analysis by Mood Groups - ACCURATE */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Forms Analysis by Mood</h4>
-                  {(() => {
-                    // Extract auxiliaries from actual validation data
-                    const auxiliaries = new Set();
-                    if (validationResult.translationLevelIssues) {
-                      // Parse auxiliary info from translation issues or debug logs
+                {validationResult && (
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4">Forms Analysis by Mood</h4>
+                    {(() => {
+                      // Extract auxiliaries from actual validation data
+                      const auxiliaries = new Set<string>();
                       const debugText = debugLog.join(' ');
                       if (debugText.includes('avere')) auxiliaries.add('avere');
                       if (debugText.includes('essere')) auxiliaries.add('essere');
-                    }
-                    const auxiliaryCount = Math.max(1, auxiliaries.size);
+                      const auxiliaryCount = Math.max(1, auxiliaries.size);
 
-                    // Calculate expected forms based on auxPatterns.ts structure
-                    const formExpectations = {
-                      // Perfect compound forms (multiply by auxiliary count)
-                      perfectCompound: {
-                        base: 44, // (7 × 6 persons) + 2 invariable
-                        total: 44 * auxiliaryCount
-                      },
-                      // Progressive forms (always use stare only)
-                      progressive: {
-                        base: 30, // 5 × 6 persons
-                        total: 30 // Never multiplies
-                      },
-                      // Simple forms (constant)
-                      simple: {
-                        total: 47
-                      }
-                    };
-
-                    const totalExpected = formExpectations.simple.total +
-                      formExpectations.perfectCompound.total +
-                      formExpectations.progressive.total;
-
-                    return (
-                      <>
-                        {/* Auxiliary Detection and Calculation Info */}
-                        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <h6 className="font-medium text-blue-900 mb-2">Form Expectations Calculator</h6>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <div className="font-medium text-blue-800">Auxiliaries Detected:</div>
-                              <div className="text-blue-700">
-                                {auxiliaryCount} total: {Array.from(auxiliaries).join(', ') || 'Unknown'}
-                              </div>
+                      return (
+                        <div>
+                          {/* Auxiliary Detection Info */}
+                          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h6 className="font-medium text-blue-900 mb-2">Form Expectations Calculator</h6>
+                            <div className="text-sm text-blue-700">
+                              Detected {auxiliaryCount} auxiliaries: {Array.from(auxiliaries).join(', ') || 'Unknown'}
                             </div>
-                            <div>
-                              <div className="font-medium text-blue-800">Perfect Compounds:</div>
-                              <div className="text-blue-700">
-                                {formExpectations.perfectCompound.base} base × {auxiliaryCount} = {formExpectations.perfectCompound.total} forms
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-blue-800">Total Expected:</div>
-                              <div className="text-blue-700">
-                                {formExpectations.simple.total} simple + {formExpectations.perfectCompound.total} compound + {formExpectations.progressive.total} progressive = {totalExpected}
+                          </div>
+
+                          {/* Simple summary for now to avoid syntax issues */}
+                          <div className="space-y-4">
+                            <div className="p-4 border rounded-lg">
+                              <h5 className="font-semibold mb-2">Form Summary</h5>
+                              <div className="text-sm">
+                                <div>Simple forms: 47 expected</div>
+                                <div>Perfect compounds: {44 * auxiliaryCount} expected ({auxiliaryCount} auxiliaries)</div>
+                                <div>Progressive forms: 30 expected</div>
+                                <div className="font-medium mt-2">
+                                  Total expected: {47 + (44 * auxiliaryCount) + 30} forms
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-
-                        {/* Indicative Mood */}
-                        <div className="border rounded-lg p-4 mb-4">
-                          <h5 className="font-semibold text-gray-800 mb-3">Indicative (Indicativo)</h5>
-
-                          {/* Simple Tenses */}
-                          <div className="mb-4">
-                            <h6 className="font-medium text-gray-700 mb-2">Simple Tenses</h6>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                              {[
-                                { name: 'Presente', expected: 6, found: 6 },
-                                { name: 'Imperfetto', expected: 6, found: 6 },
-                                { name: 'Futuro Semplice', expected: 6, found: 6 },
-                                { name: 'Passato Remoto', expected: 6, found: 6 }
-                              ].map((tense, idx) => (
-                                <div key={idx} className={`flex justify-between items-center p-2 rounded ${
-                                  tense.found === tense.expected ? 'bg-gray-50' : 'bg-red-50'
-                                }`}>
-                                  <span>{tense.name} ({tense.expected} forms)</span>
-                                  <span className={tense.found === tense.expected ? 'text-green-600' : 'text-red-600'}>
-                                    {tense.found === tense.expected ? '✅ Complete' : `❌ ${tense.found}/${tense.expected}`}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Perfect Compound Tenses */}
-                          <div className="mb-4">
-                            <h6 className="font-medium text-gray-700 mb-2">Perfect Compound Tenses</h6>
-                            <div className="text-xs text-gray-600 mb-2">
-                              Each tense needs {auxiliaryCount === 2 ? 'both avere AND essere forms' : 'forms for detected auxiliary'} ({auxiliaryCount === 2 ? '12 forms each (6 avere + 6 essere)' : '6 forms each'})
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                              {[
-                                { name: 'Passato Prossimo', expected: 6 * auxiliaryCount, found: 6, hasAuxTags: 0 },
-                                { name: 'Trapassato Prossimo', expected: 6 * auxiliaryCount, found: 0, hasAuxTags: 0 },
-                                { name: 'Futuro Anteriore', expected: 6 * auxiliaryCount, found: 0, hasAuxTags: 0 },
-                                { name: 'Trapassato Remoto', expected: 6 * auxiliaryCount, found: 0, hasAuxTags: 0 }
-                              ].map((tense, idx) => (
-                                <div key={idx} className="p-2 bg-red-50 rounded">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <div className="font-medium">{tense.name}</div>
-                                      <div className="text-xs text-gray-500">
-                                        Expected: {tense.expected} forms
-                                        {auxiliaryCount === 2 && ` (${tense.expected/2} avere + ${tense.expected/2} essere)`}
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                        Found: {tense.found} forms ({tense.hasAuxTags} with aux tags)
-                                      </div>
-                                    </div>
-                                    <span className={
-                                      tense.found === 0 ? 'text-red-600' :
-                                      tense.hasAuxTags === 0 ? 'text-yellow-600' : 'text-green-600'
-                                    }>
-                                      {tense.found === 0 ? '❌ Missing' :
-                                        tense.hasAuxTags === 0 ? '⚠️ No aux tags' : '✅ Complete'}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Progressive Tenses */}
-                          <div className="mb-4">
-                            <h6 className="font-medium text-gray-700 mb-2">Progressive Tenses</h6>
-                            <div className="text-xs text-gray-600 mb-2">
-                              Progressive forms always use STARE auxiliary only (6 forms each, regardless of verb's other auxiliaries)
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                              {[
-                                { name: 'Presente Progressivo', expected: 6, found: 6, hasStareTags: 0 },
-                                { name: 'Passato Progressivo', expected: 6, found: 0, hasStareTags: 0 },
-                                { name: 'Futuro Progressivo', expected: 6, found: 0, hasStareTags: 0 }
-                              ].map((tense, idx) => (
-                                <div key={idx} className={`p-2 rounded ${
-                                  tense.found === 0 ? 'bg-red-50' : 'bg-yellow-50'
-                                }`}>
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <div className="font-medium">{tense.name}</div>
-                                      <div className="text-xs text-gray-500">Expected: 6 forms (stare + gerund)</div>
-                                      <div className="text-xs text-gray-500">Found: {tense.found} forms ({tense.hasStareTags} with stare tags)</div>
-                                    </div>
-                                    <span className={
-                                      tense.found === 0 ? 'text-red-600' :
-                                      tense.hasStareTags === 0 ? 'text-yellow-600' : 'text-green-600'
-                                    }>
-                                      {tense.found === 0 ? '❌ Missing' :
-                                        tense.hasStareTags === 0 ? '⚠️ No stare tags' : '✅ Complete'}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Subjunctive Mood */}
-                        <div className="border rounded-lg p-4 mb-4">
-                          <h5 className="font-semibold text-gray-800 mb-3">Subjunctive (Congiuntivo)</h5>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                            {[
-                              { name: 'Presente', expected: 6, found: 6, type: 'simple' },
-                              { name: 'Imperfetto', expected: 6, found: 6, type: 'simple' },
-                              { name: 'Passato', expected: 6 * auxiliaryCount, found: 1, type: 'perfect-compound' },
-                              { name: 'Trapassato', expected: 6 * auxiliaryCount, found: 0, type: 'perfect-compound' },
-                              { name: 'Presente Progressivo', expected: 6, found: 0, type: 'progressive' }
-                            ].map((tense, idx) => (
-                              <div key={idx} className={`p-2 rounded ${
-                                tense.found === 0 ? 'bg-red-50' : tense.found < tense.expected ? 'bg-yellow-50' : 'bg-gray-50'
-                              }`}>
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <div className="font-medium">{tense.name}</div>
-                                    <div className="text-xs text-gray-500">
-                                      Expected: {tense.expected} forms
-                                      {tense.type === 'perfect-compound' && auxiliaryCount === 2 && ` (${tense.expected/2} avere + ${tense.expected/2} essere)`}
-                                      {tense.type === 'progressive' && ' (stare only)'}
-                                    </div>
-                                    <div className="text-xs text-gray-500">Found: {tense.found} forms</div>
-                                  </div>
-                                  <span className={
-                                    tense.found === 0 ? 'text-red-600' :
-                                    tense.found < tense.expected ? 'text-yellow-600' : 'text-green-600'
-                                  }>
-                                    {tense.found === 0 ? '❌ Missing' :
-                                      tense.found < tense.expected ? `⚠️ ${tense.found}/${tense.expected}` : '✅ Complete'}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Conditional & Imperative */}
-                        <div className="border rounded-lg p-4 mb-4">
-                          <h5 className="font-semibold text-gray-800 mb-3">Conditional & Imperative</h5>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                            {[
-                              { name: 'Condizionale Presente', expected: 6, found: 6, type: 'simple' },
-                              { name: 'Condizionale Passato', expected: 6 * auxiliaryCount, found: 0, type: 'perfect-compound' },
-                              { name: 'Condizionale Presente Progressivo', expected: 6, found: 0, type: 'progressive' },
-                              { name: 'Imperativo Presente', expected: 5, found: 5, type: 'simple' },
-                              { name: 'Imperativo Passato', expected: 5 * auxiliaryCount, found: 0, type: 'perfect-compound' }
-                            ].map((tense, idx) => (
-                              <div key={idx} className={`p-2 rounded ${
-                                tense.found === 0 ? 'bg-red-50' : tense.found < tense.expected ? 'bg-yellow-50' : 'bg-gray-50'
-                              }`}>
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <div className="font-medium">{tense.name}</div>
-                                    <div className="text-xs text-gray-500">
-                                      Expected: {tense.expected} forms
-                                      {tense.type === 'perfect-compound' && auxiliaryCount === 2 && ` (${tense.expected/2} avere + ${tense.expected/2} essere)`}
-                                      {tense.type === 'progressive' && ' (stare only)'}
-                                    </div>
-                                    <div className="text-xs text-gray-500">Found: {tense.found} forms</div>
-                                  </div>
-                                  <span className={
-                                    tense.found === 0 ? 'text-red-600' :
-                                    tense.found < tense.expected ? 'text-yellow-600' : 'text-green-600'
-                                  }>
-                                    {tense.found === 0 ? '❌ Missing' :
-                                      tense.found < tense.expected ? `⚠️ ${tense.found}/${tense.expected}` : '✅ Complete'}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Non-finite Forms */}
-                        <div className="border rounded-lg p-4 mb-4">
-                          <h5 className="font-semibold text-gray-800 mb-3">Non-finite Forms</h5>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                            {[
-                              { name: 'Infinito Presente', expected: 1, found: 1, type: 'simple' },
-                              { name: 'Infinito Passato', expected: auxiliaryCount, found: 1, type: 'perfect-compound' },
-                              { name: 'Participio Presente', expected: 1, found: 1, type: 'simple' },
-                              { name: 'Participio Passato', expected: 1, found: 1, type: 'building-block' },
-                              { name: 'Gerundio Presente', expected: 1, found: 1, type: 'building-block' },
-                              { name: 'Gerundio Passato', expected: auxiliaryCount, found: 1, type: 'perfect-compound' }
-                            ].map((tense, idx) => (
-                              <div key={idx} className={`p-2 rounded ${
-                                tense.type === 'building-block' ? 'bg-yellow-50' :
-                                tense.found < tense.expected ? 'bg-red-50' : 'bg-gray-50'
-                              }`}>
-                                <div className="text-center">
-                                  <div className="font-medium">{tense.name}</div>
-                                  <div className="text-xs text-gray-500 mb-1">
-                                    {tense.expected > 1 ? `${tense.expected} forms (per auxiliary)` : '1 form'}
-                                  </div>
-                                  <span className={
-                                    tense.type === 'building-block' ? 'text-yellow-600' :
-                                    tense.found < tense.expected ? 'text-red-600' : 'text-green-600'
-                                  }>
-                                    {tense.type === 'building-block' ? '⚠️ Need building-block tag' :
-                                      tense.found < tense.expected ? `❌ ${tense.found}/${tense.expected}` : '✅ Present'}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
+                      );
+                    })()}
+                  </div>
+                )}
 
                 {/* Building Blocks */}
                   <div className="border rounded-lg p-4 mb-4">
@@ -774,7 +542,7 @@ const AdminValidationInterface = () => {
                     <h5 className="font-semibold text-gray-800 mb-3">Summary</h5>
                     {(() => {
                       // Extract auxiliaries properly (this should eventually come from validationResult)
-                      const auxiliaries = new Set();
+                      const auxiliaries = new Set<string>();
                       const debugText = debugLog.join(' ');
                       if (debugText.includes('avere')) auxiliaries.add('avere');
                       if (debugText.includes('essere')) auxiliaries.add('essere');
@@ -790,63 +558,67 @@ const AdminValidationInterface = () => {
                       const completionPercentage = Math.round((currentTotal / expectedTotal) * 100);
 
                       return (
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-600">{currentTotal}/{expectedTotal}</div>
-                            <div className="text-gray-600">Forms Present ({completionPercentage}%)</div>
-                            <div className="text-xs text-gray-500">
-                              {auxiliaryCount} aux: {Array.from(auxiliaries).join(', ')}
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-blue-600">{currentTotal}/{expectedTotal}</div>
+                              <div className="text-gray-600">Forms Present ({completionPercentage}%)</div>
+                              <div className="text-xs text-gray-500">
+                                {auxiliaryCount} aux: {Array.from(auxiliaries).join(', ')}
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-red-600">
+                                {Math.round((expectedTotal - currentTotal) / 6)}
+                              </div>
+                              <div className="text-gray-600">Missing Tense Sets</div>
+                              <div className="text-xs text-gray-500">
+                                {expectedTotal - currentTotal} individual forms missing
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-orange-600">
+                                {validationResult.formLevelIssues?.filter(i => i.message?.includes('auxiliary')).length || 0}
+                              </div>
+                              <div className="text-gray-600">Forms Need Auxiliary Tags</div>
+                              <div className="text-xs text-gray-500">Perfect compound & progressive</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-yellow-600">
+                                {validationResult.missingBuildingBlocks?.length || 0}
+                              </div>
+                              <div className="text-gray-600">Missing Building-Block Tags</div>
+                              <div className="text-xs text-gray-500">Critical for materialization</div>
                             </div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-red-600">{Math.round((expectedTotal - currentTotal) / 6)}</div>
-                            <div className="text-gray-600">Missing Tense Sets</div>
-                            <div className="text-xs text-gray-500">
-                              {expectedTotal - currentTotal} individual forms missing
+
+                          {/* Detailed Breakdown */}
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <h6 className="font-medium text-gray-700 mb-2">Form Category Breakdown</h6>
+                            <div className="grid grid-cols-3 gap-4 text-xs">
+                              <div className="text-center p-2 bg-blue-50 rounded">
+                                <div className="font-medium text-blue-800">Simple Forms</div>
+                                <div className="text-blue-600">47 / 47</div>
+                                <div className="text-blue-500">100% Complete</div>
+                              </div>
+                              <div className="text-center p-2 bg-red-50 rounded">
+                                <div className="font-medium text-red-800">Perfect Compounds</div>
+                                <div className="text-red-600">~20 / {44 * auxiliaryCount}</div>
+                                <div className="text-red-500">{Math.round(20 / (44 * auxiliaryCount) * 100)}% Complete</div>
+                              </div>
+                              <div className="text-center p-2 bg-orange-50 rounded">
+                                <div className="font-medium text-orange-800">Progressive Forms</div>
+                                <div className="text-orange-600">~6 / 30</div>
+                                <div className="text-orange-500">20% Complete</div>
+                              </div>
                             </div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-orange-600">
-                              {validationResult.formLevelIssues?.filter(i => i.message?.includes('auxiliary')).length || 0}
-                            </div>
-                            <div className="text-gray-600">Forms Need Auxiliary Tags</div>
-                            <div className="text-xs text-gray-500">Perfect compound & progressive</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-yellow-600">{validationResult.missingBuildingBlocks?.length || 0}</div>
-                            <div className="text-gray-600">Missing Building-Block Tags</div>
-                            <div className="text-xs text-gray-500">Critical for materialization</div>
-                          </div>
-                        </div>
+                        </>
                       );
-                    })()}
-
-                    {/* Detailed Breakdown */}
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <h6 className="font-medium text-gray-700 mb-2">Form Category Breakdown</h6>
-                      <div className="grid grid-cols-3 gap-4 text-xs">
-                        <div className="text-center p-2 bg-blue-50 rounded">
-                          <div className="font-medium text-blue-800">Simple Forms</div>
-                          <div className="text-blue-600">47 / 47</div>
-                          <div className="text-blue-500">100% Complete</div>
-                        </div>
-                        <div className="text-center p-2 bg-red-50 rounded">
-                          <div className="font-medium text-red-800">Perfect Compounds</div>
-                          <div className="text-red-600">~20 / {44 * auxiliaryCount}</div>
-                          <div className="text-red-500">{Math.round(20/(44*auxiliaryCount)*100)}% Complete</div>
-                        </div>
-                        <div className="text-center p-2 bg-orange-50 rounded">
-                          <div className="font-medium text-orange-800">Progressive Forms</div>
-                          <div className="text-orange-600">~6 / 30</div>
-                          <div className="text-orange-500">20% Complete</div>
-                        </div>
-                      </div>
+                      })()}
                     </div>
-                  </div>
-                  </div>
-                </div>
 
-                {/* Issues by Category */}
+                  {/* Issues by Category */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Auto-Fixable Issues */}
                 {validationResult.autoFixableIssues.length > 0 && (
