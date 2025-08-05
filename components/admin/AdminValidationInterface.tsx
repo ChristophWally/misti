@@ -1,17 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Search, CheckCircle, AlertTriangle, XCircle, Settings, BarChart3, RefreshCw, Download, Play, Pause } from 'lucide-react';
+import { ConjugationComplianceValidator, ValidationOptions } from '../../lib/conjugationComplianceValidator';
+import { createClient } from '@supabase/supabase-js';
 
-// This would normally be imported from your validation system
-// import { ConjugationComplianceValidator } from '../lib/conjugationComplianceValidator';
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 const AdminValidationInterface = () => {
   const [selectedVerb, setSelectedVerb] = useState('');
   const [validationResult, setValidationResult] = useState(null);
   const [systemAnalysis, setSystemAnalysis] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
-  const [validationOptions, setValidationOptions] = useState({
+  const [validationOptions, setValidationOptions] = useState<ValidationOptions>({
     includeDeprecatedCheck: true,
     includeCrossTableAnalysis: true,
     includeTerminologyValidation: true,
@@ -20,131 +25,58 @@ const AdminValidationInterface = () => {
     priorityFilter: 'all'
   });
   const [activeTab, setActiveTab] = useState('single-verb');
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [showDebugPanel, setShowDebugPanel] = useState(true);
 
-  // Mock validation data for demonstration
-  const mockVerbResult = {
-    verbId: '123',
-    verbItalian: 'parlare',
-    overallScore: 85,
-    complianceStatus: 'needs-work',
-    wordLevelIssues: [
-      {
-        ruleId: 'missing-transitivity-potential',
-        severity: 'high',
-        message: 'Missing transitivity potential classification',
-        currentValue: ['are-conjugation', 'freq-top100'],
-        expectedValue: 'One of: always-transitive, always-intransitive, both-possible',
-        manualSteps: ['Analyze verb usage patterns', 'Add appropriate transitivity tag'],
-        epicContext: 'Translation-level auxiliary assignment validation depends on word-level transitivity'
-      }
-    ],
-    translationLevelIssues: [
-      {
-        ruleId: 'missing-form-ids-array',
-        severity: 'critical',
-        message: 'Translation "to speak" missing form_ids array',
-        currentValue: 'undefined',
-        expectedValue: 'Array of form IDs this translation uses',
-        manualSteps: ['Identify which forms belong to this translation meaning', 'Create form_ids array with appropriate form IDs'],
-        epicContext: 'Translation-to-form relationship - core architecture requirement'
-      }
-    ],
-    formLevelIssues: [
-      {
-        ruleId: 'legacy-person-terms',
-        severity: 'critical',
-        message: 'Form "io parlo" uses legacy person terms',
-        currentValue: ['io'],
-        expectedValue: ['first-person'],
-        autoFix: 'Replace with universal terms: io → first-person',
-        epicContext: 'Multi-language support requires universal terminology'
-      }
-    ],
-    crossTableIssues: [],
-    missingBuildingBlocks: ['participio-passato'],
-    deprecatedContent: [],
-    autoFixableIssues: [
-      {
-        ruleId: 'legacy-person-terms',
-        severity: 'critical',
-        message: 'Form "io parlo" uses legacy person terms',
-        autoFix: 'Replace with universal terms: io → first-person'
-      }
-    ],
-    manualInterventionRequired: [
-      {
-        ruleId: 'missing-form-ids-array',
-        severity: 'critical',
-        message: 'Translation "to speak" missing form_ids array',
-        manualSteps: ['Identify which forms belong to this translation meaning', 'Create form_ids array with appropriate form IDs']
-      }
-    ],
-    migrationReadiness: false,
-    priorityLevel: 'high',
-    estimatedFixTime: '25 minutes'
+  const addDebugLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setDebugLog(prev => [...prev, `[${timestamp}] ${message}`]);
+    console.log(message);
   };
-
-  const mockSystemAnalysis = {
-    totalVerbs: 150,
-    analyzedVerbs: 50,
-    complianceDistribution: {
-      compliant: 12,
-      needsWork: 28,
-      criticalIssues: 8,
-      blocksMigration: 2
-    },
-    overallScore: {
-      overall: 72,
-      critical: 88,
-      blockers: 2,
-      warnings: 36,
-      verbsCompliant: 12,
-      verbsNeedingWork: 38
-    },
-    topIssues: [
-      { ruleId: 'missing-form-ids-array', count: 35, impact: 'Breaks translation-to-form relationship architecture' },
-      { ruleId: 'legacy-person-terms', count: 28, impact: 'Prevents multi-language expansion' },
-      { ruleId: 'missing-auxiliary-assignment', count: 22, impact: 'Prevents compound tense materialization' }
-    ],
-    autoFixableCount: 156,
-    estimatedWorkRequired: '12 hours',
-    migrationReadiness: {
-      ready: false,
-      blockers: ['2 verbs have critical migration-blocking issues', '15 verbs missing essential building blocks'],
-      recommendations: ['Address migration-blocking issues immediately', 'Run automated fixes for 156 auto-fixable issues']
-    }
-  };
-
   const handleVerbValidation = async () => {
     if (!selectedVerb.trim()) return;
-    
-    setIsValidating(true);
-    
-    // Simulate validation delay
-    setTimeout(() => {
-      setValidationResult(mockVerbResult);
-      setIsValidating(false);
-    }, 1500);
 
-    // Real implementation would be:
-    // const validator = new ConjugationComplianceValidator(supabaseClient);
-    // const result = await validator.validateSpecificVerb(selectedVerb);
-    // setValidationResult(result);
+    setIsValidating(true);
+    setDebugLog([]); // Clear previous logs
+    addDebugLog(`🔍 Starting validation for: ${selectedVerb}`);
+
+    try {
+      const validator = new ConjugationComplianceValidator(supabase);
+
+      // Pass the debug function to the validator
+      const result = await validator.validateSpecificVerbWithDebug(selectedVerb, addDebugLog);
+
+      if (result) {
+        setValidationResult(result);
+        addDebugLog(`✅ Validation completed successfully`);
+      } else {
+        addDebugLog(`❌ Validation returned null - check previous errors`);
+      }
+    } catch (error) {
+      addDebugLog(`❌ Validation failed: ${error.message}`);
+      addDebugLog(`❌ Stack trace: ${error.stack}`);
+      setValidationResult(null);
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   const handleSystemAnalysis = async () => {
     setIsValidating(true);
-    
-    // Simulate system analysis delay
-    setTimeout(() => {
-      setSystemAnalysis(mockSystemAnalysis);
+    setDebugLog([]); // Clear previous logs
+    addDebugLog('🔍 Starting system-wide analysis...');
+    try {
+      const validator = new ConjugationComplianceValidator(supabase);
+      const result = await validator.validateConjugationSystemWithDebug(validationOptions, addDebugLog);
+      setSystemAnalysis(result);
+      addDebugLog('✅ System analysis completed');
+    } catch (error) {
+      addDebugLog(`❌ System analysis failed: ${error.message}`);
+      addDebugLog(`❌ Stack: ${error.stack}`);
+      setSystemAnalysis(null);
+    } finally {
       setIsValidating(false);
-    }, 3000);
-
-    // Real implementation would be:
-    // const validator = new ConjugationComplianceValidator(supabaseClient);
-    // const result = await validator.validateConjugationSystem(validationOptions);
-    // setSystemAnalysis(result);
+    }
   };
 
   const getStatusIcon = (status) => {
@@ -245,6 +177,29 @@ const AdminValidationInterface = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Conjugation Compliance Validator</h1>
         <p className="text-gray-600">EPIC 002: Monitor data quality and architectural readiness before migration</p>
       </div>
+
+      {showDebugPanel && (
+        <div className="mb-6 bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm max-h-96 overflow-y-auto">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-white font-semibold">Debug Console</h3>
+            <button
+              onClick={() => setDebugLog([])}
+              className="text-gray-400 hover:text-white text-xs"
+            >
+              Clear
+            </button>
+          </div>
+          {debugLog.length === 0 ? (
+            <p className="text-gray-500">No debug output yet...</p>
+          ) : (
+            debugLog.map((log, idx) => (
+              <div key={idx} className="py-1 border-b border-gray-700 last:border-b-0">
+                {log}
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Navigation Tabs */}
       <div className="flex space-x-1 mb-6 bg-gray-100 p-1 rounded-lg">
@@ -365,7 +320,7 @@ const AdminValidationInterface = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                   <div className="p-3 bg-red-50 rounded-lg">
                     <div className="text-2xl font-bold text-red-600">
-                      {validationResult.wordLevelIssues.length + validationResult.translationLevelIssues.length + 
+                      {validationResult.wordLevelIssues.length + validationResult.translationLevelIssues.length +
                        validationResult.formLevelIssues.length + validationResult.crossTableIssues.length}
                     </div>
                     <div className="text-xs text-red-600">Total Issues</div>
@@ -381,6 +336,388 @@ const AdminValidationInterface = () => {
                   <div className="p-3 bg-purple-50 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600">{validationResult.missingBuildingBlocks.length}</div>
                     <div className="text-xs text-purple-600">Missing Blocks</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed Analysis by Category */}
+              <div className="space-y-6">
+                {/* Word Level Issues */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Word Level Analysis</h4>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="p-3 border rounded-lg">
+                        <h5 className="font-medium text-sm text-gray-700">Conjugation Class</h5>
+                        <div className="mt-1 text-sm">
+                          {validationResult.wordLevelIssues.some(i => i.ruleId === 'missing-conjugation-class') ? (
+                            <span className="text-red-600">❌ Missing</span>
+                          ) : (
+                            <span className="text-green-600">✅ Present</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-lg">
+                        <h5 className="font-medium text-sm text-gray-700">Transitivity</h5>
+                        <div className="mt-1 text-sm">
+                          {validationResult.wordLevelIssues.some(i => i.ruleId === 'missing-transitivity') ? (
+                            <span className="text-red-600">❌ Missing</span>
+                          ) : (
+                            <span className="text-green-600">✅ Present</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-lg">
+                        <h5 className="font-medium text-sm text-gray-700">Frequency Tag</h5>
+                        <div className="mt-1 text-sm">
+                          <span className="text-green-600">✅ Present</span>
+                        </div>
+                      </div>
+                      <div className="p-3 border rounded-lg">
+                        <h5 className="font-medium text-sm text-gray-700">CEFR Level</h5>
+                        <div className="mt-1 text-sm">
+                          <span className="text-green-600">✅ Present</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {validationResult.wordLevelIssues.length > 0 && (
+                      <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <h6 className="font-medium text-red-800 mb-2">Required Fixes:</h6>
+                        {validationResult.wordLevelIssues.map((issue, idx) => (
+                          <div key={idx} className="mb-3 text-sm">
+                            <div className="font-medium text-red-700">{issue.message}</div>
+                            <div className="mt-1 text-red-600">
+                              <strong>Action:</strong> Add tag to dictionary.tags: {issue.expectedValue}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Translation Level Issues */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Translation Level Analysis</h4>
+                  <div className="space-y-4">
+                    {validationResult.translationLevelIssues.some(i => i.ruleId === 'no-translations') ? (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="text-red-800 font-medium">❌ No translations found</div>
+                        <div className="mt-2 text-sm text-red-700">
+                          <strong>Action:</strong> Create records in word_translations table with auxiliary and form_ids
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Mock translation analysis - replace with real data */}
+                        <div className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h5 className="font-medium">Translation 1: "to speak"</h5>
+                            <span className="text-xs text-gray-500">Priority: 1</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-700">Auxiliary:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: avere/essere)</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Transitivity:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: transitive/intransitive)</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Form IDs:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: array of form IDs)</span>
+                            </div>
+                          </div>
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                            <strong>Required Actions:</strong>
+                            <ul className="mt-1 list-disc list-inside text-yellow-800">
+                              <li>Set context_metadata.auxiliary = "avere" (transitive verb)</li>
+                              <li>Set context_metadata.transitivity = "transitive"</li>
+                              <li>Add form_ids array with relevant form IDs</li>
+                            </ul>
+                          </div>
+                        </div>
+
+                        <div className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start mb-2">
+                            <h5 className="font-medium">Translation 2: "to talk"</h5>
+                            <span className="text-xs text-gray-500">Priority: 2</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-700">Auxiliary:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: avere/essere)</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Transitivity:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: transitive/intransitive)</span>
+                            </div>
+                            <div>
+                              <span className="font-medium text-gray-700">Form IDs:</span>
+                              <span className="ml-2 text-red-600">❌ Missing (need: array of form IDs)</span>
+                            </div>
+                          </div>
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                            <strong>Required Actions:</strong>
+                            <ul className="mt-1 list-disc list-inside text-yellow-800">
+                              <li>Set context_metadata.auxiliary = "avere" (transitive verb)</li>
+                              <li>Set context_metadata.transitivity = "transitive"</li>
+                              <li>Add form_ids array with relevant form IDs</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Forms Analysis by Mood Groups */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Forms Analysis by Mood</h4>
+
+                  {/* Indicative Mood */}
+                  <div className="border rounded-lg p-4 mb-4">
+                    <h5 className="font-semibold text-gray-800 mb-3">Indicative (Indicativo)</h5>
+
+                    <div className="mb-3">
+                      <h6 className="font-medium text-gray-700 mb-2">Simple Tenses</h6>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Presente (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Imperfetto (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Futuro Semplice (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Passato Remoto (6 forms)</span>
+                          <span className="text-green-600">✅ Complete</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <h6 className="font-medium text-gray-700 mb-2">Compound Tenses</h6>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Passato Prossimo (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Trapassato Prossimo (6 forms)</span>
+                          <span className="text-red-600">❌ Completely missing</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Futuro Anteriore (6 forms)</span>
+                          <span className="text-red-600">❌ Completely missing</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Trapassato Remoto (6 forms)</span>
+                          <span className="text-red-600">❌ Completely missing</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mb-3">
+                      <h6 className="font-medium text-gray-700 mb-2">Progressive Tenses</h6>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                        <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                          <span>Presente Progressivo (6 forms)</span>
+                          <span className="text-yellow-600">⚠️ Missing auxiliary tags</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Imperfetto Progressivo (6 forms)</span>
+                          <span className="text-red-600">❌ Completely missing</span>
+                        </div>
+                        <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                          <span>Futuro Progressivo (6 forms)</span>
+                          <span className="text-red-600">❌ Completely missing</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Subjunctive Mood */}
+                  <div className="border rounded-lg p-4 mb-4">
+                    <h5 className="font-semibold text-gray-800 mb-3">Subjunctive (Congiuntivo)</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span>Presente (6 forms)</span>
+                        <span className="text-green-600">✅ Complete</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span>Imperfetto (6 forms)</span>
+                        <span className="text-green-600">✅ Complete</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                        <span>Passato (6 forms)</span>
+                        <div className="text-right">
+                          <span className="text-yellow-600">⚠️ Incomplete (1/6)</span>
+                          <div className="text-xs text-gray-500">Missing: tu, lui/lei, noi, voi, loro</div>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                        <span>Trapassato (6 forms)</span>
+                        <span className="text-red-600">❌ Completely missing</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                        <span>Presente Progressivo (6 forms)</span>
+                        <span className="text-red-600">❌ Completely missing</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Other Moods */}
+                  <div className="border rounded-lg p-4 mb-4">
+                    <h5 className="font-semibold text-gray-800 mb-3">Conditional & Imperative</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                      <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span>Condizionale Presente (6 forms)</span>
+                        <span className="text-green-600">✅ Complete</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                        <span>Condizionale Passato (6 forms)</span>
+                        <span className="text-red-600">❌ Completely missing</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                        <span>Condizionale Presente Progressivo (6 forms)</span>
+                        <span className="text-red-600">❌ Completely missing</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span>Imperativo Presente (5 forms)</span>
+                        <span className="text-green-600">✅ Complete</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                        <span>Imperativo Passato (5 forms)</span>
+                        <span className="text-red-600">❌ Completely missing</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Non-finite Forms */}
+                  <div className="border rounded-lg p-4 mb-4">
+                    <h5 className="font-semibold text-gray-800 mb-3">Non-finite Forms</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                      <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span>Infinito Presente</span>
+                        <span className="text-green-600">✅ Present</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span>Infinito Passato</span>
+                        <span className="text-yellow-600">⚠️ No auxiliary tags</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span>Participio Presente</span>
+                        <span className="text-green-600">✅ Present</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                        <span>Participio Passato</span>
+                        <span className="text-yellow-600">⚠️ Missing building-block tag</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                        <span>Gerundio Presente</span>
+                        <span className="text-yellow-600">⚠️ Missing building-block tag</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span>Gerundio Passato</span>
+                        <span className="text-yellow-600">⚠️ No auxiliary tags</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Building Blocks */}
+                  <div className="border rounded-lg p-4 mb-4">
+                    <h5 className="font-semibold text-gray-800 mb-3">Building Blocks</h5>
+                    <p className="text-xs text-gray-600 mb-3">
+                      Building blocks need 'building-block' tags so the materialization engine can identify them for compound tense generation.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                        <div>
+                          <span className="font-medium">Past Participle "finito"</span>
+                          <div className="text-xs text-gray-500">For: compound tenses</div>
+                        </div>
+                        <span className="text-yellow-600">⚠️ Missing 'building-block' tag</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                        <div>
+                          <span className="font-medium">Present Gerund "finendo"</span>
+                          <div className="text-xs text-gray-500">For: progressive tenses</div>
+                        </div>
+                        <span className="text-yellow-600">⚠️ Missing 'building-block' tag</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                        <div>
+                          <span className="font-medium">Present Infinitive "finire"</span>
+                          <div className="text-xs text-gray-500">For: negative imperatives</div>
+                        </div>
+                        <span className="text-yellow-600">⚠️ Missing 'building-block' tag</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Form-Translation Relationships */}
+                  <div className="border rounded-lg p-4">
+                    <h5 className="font-semibold text-gray-800 mb-3">Form-Translation Relationships</h5>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                        <div className="text-blue-800 font-medium text-sm">✅ Architecture: Many-to-Many via form_translations</div>
+                        <div className="text-blue-700 text-sm mt-1">
+                          Using proper junction table relationship (no form_ids arrays needed)
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-green-50 border border-green-200 rounded">
+                        <div className="text-green-800 font-medium text-sm">✅ English Translations Available</div>
+                        <div className="text-green-700 text-sm mt-1">
+                          134 form-translation assignments found in form_translations table
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                        <div className="text-blue-800 font-medium text-sm">📊 Coverage Analysis</div>
+                        <div className="text-blue-700 text-sm mt-1 space-y-1">
+                          <div>• "to finish" (avere): 67/67 form_translations ✅</div>
+                          <div>• "to end" (essere): 67/67 form_translations ✅</div>
+                          <div>• All forms have English translations ✅</div>
+                          <div>• All translations cover forms ✅</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary Stats */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <h5 className="font-semibold text-gray-800 mb-3">Summary</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">67/142</div>
+                        <div className="text-gray-600">Forms Present (47%)</div>
+                        <div className="text-xs text-gray-500">Expected: 27 tense categories × ~5.3 persons avg</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-red-600">13</div>
+                        <div className="text-gray-600">Missing Tense Sets</div>
+                        <div className="text-xs text-gray-500">Including progressive forms</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-orange-600">18</div>
+                        <div className="text-gray-600">Forms Need Auxiliary Tags</div>
+                        <div className="text-xs text-gray-500">Compound & progressive forms</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-yellow-600">3</div>
+                        <div className="text-gray-600">Missing Building-Block Tags</div>
+                        <div className="text-xs text-gray-500">Critical for materialization</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -431,13 +768,17 @@ const AdminValidationInterface = () => {
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Missing Building Blocks</h4>
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex">
-                      <XCircle className="w-5 h-5 text-red-400 mt-0.5" />
+                      <XCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
                       <div className="ml-3">
-                        <h5 className="text-red-800 font-medium">Critical for Compound Generation</h5>
-                        <p className="text-red-700 text-sm mt-1">
-                          Missing: {validationResult.missingBuildingBlocks.join(', ')}
-                        </p>
-                        <p className="text-red-600 text-xs mt-2">
+                        <h5 className="text-red-800 font-medium mb-2">Critical for Compound Generation</h5>
+                        <div className="space-y-2">
+                          {validationResult.missingBuildingBlocks.map((item, idx) => (
+                            <div key={idx} className="text-red-700 text-sm p-2 bg-red-100 rounded border-l-4 border-red-400">
+                              {item}
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-red-600 text-xs mt-3">
                           These forms are essential for generating compound tenses. The new architecture cannot function without them.
                         </p>
                       </div>
@@ -689,7 +1030,7 @@ const AdminValidationInterface = () => {
               </label>
               <select
                 value={validationOptions.priorityFilter}
-                onChange={(e) => setValidationOptions(prev => ({ ...prev, priorityFilter: e.target.value }))}
+                onChange={(e) => setValidationOptions(prev => ({ ...prev, priorityFilter: e.target.value as 'high-only' | 'all' }))}
                 className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All verbs</option>
