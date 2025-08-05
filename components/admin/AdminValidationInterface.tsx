@@ -567,6 +567,10 @@ const AdminValidationInterface = () => {
                         <span>Trapassato (6 forms)</span>
                         <span className="text-red-600">❌ Completely missing</span>
                       </div>
+                      <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                        <span>Presente Progressivo (6 forms)</span>
+                        <span className="text-red-600">❌ Completely missing</span>
+                      </div>
                     </div>
                   </div>
 
@@ -580,6 +584,10 @@ const AdminValidationInterface = () => {
                       </div>
                       <div className="flex justify-between items-center p-2 bg-red-50 rounded">
                         <span>Condizionale Passato (6 forms)</span>
+                        <span className="text-red-600">❌ Completely missing</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-red-50 rounded">
+                        <span>Condizionale Presente Progressivo (6 forms)</span>
                         <span className="text-red-600">❌ Completely missing</span>
                       </div>
                       <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
@@ -690,14 +698,14 @@ const AdminValidationInterface = () => {
                     <h5 className="font-semibold text-gray-800 mb-3">Summary</h5>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">67/130</div>
-                        <div className="text-gray-600">Forms Present (51%)</div>
-                        <div className="text-xs text-gray-500">Expected: 26 tense categories × ~5 persons</div>
+                        <div className="text-2xl font-bold text-blue-600">67/142</div>
+                        <div className="text-gray-600">Forms Present (47%)</div>
+                        <div className="text-xs text-gray-500">Expected: 27 tense categories × ~5.3 persons avg</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-red-600">11</div>
+                        <div className="text-2xl font-bold text-red-600">13</div>
                         <div className="text-gray-600">Missing Tense Sets</div>
-                        <div className="text-xs text-gray-500">Compound & progressive tenses</div>
+                        <div className="text-xs text-gray-500">Including progressive forms</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-orange-600">18</div>
