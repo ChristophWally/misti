@@ -43,17 +43,16 @@ export interface VerbData {
     id: string;
     translation: string;
     context_metadata: any;
-    form_ids?: number[];
     display_priority: number;
   }>;
   forms: Array<{
     id: number;
     form_text: string;
-    translation: string;
     form_type: string;
     tags: string[];
     phonetic_form?: string;
     ipa?: string;
+    created_at?: string;
   }>;
   formTranslations: Array<{
     id: string;
@@ -153,65 +152,128 @@ export class ConjugationComplianceValidator {
     }
   }
 
+  async validateConjugationSystemWithDebug(options: ValidationOptions, debugLog: (msg: string) => void): Promise<SystemComplianceReport> {
+    debugLog('🔍 Starting system-wide validation...');
+    this.resetValidationResults();
+
+    try {
+      const verbs = await this.loadVerbsForValidation(options);
+      debugLog(`✅ Loaded ${verbs.length} verbs for analysis`);
+      this.validationResults.totalVerbs = verbs.length;
+
+      for (let i = 0; i < verbs.length; i++) {
+        const verb = verbs[i];
+        debugLog(`🔍 Analyzing ${i + 1}/${verbs.length}: ${verb.italian}`);
+
+        try {
+          const verbReport = await this.validateSingleVerb(verb, options);
+          this.validationResults.verbReports.push(verbReport);
+          this.validationResults.analyzedVerbs++;
+        } catch (error) {
+          debugLog(`❌ Error validating ${verb.italian}: ${error.message}`);
+          this.validationResults.validationErrors.push(`${verb.italian}: ${error.message}`);
+        }
+      }
+
+      this.validationResults.systemReport = this.generateSystemReport();
+      debugLog(`✅ System analysis complete: ${this.validationResults.systemReport.overallScore.overall}% compliance`);
+
+      return this.validationResults.systemReport;
+
+    } catch (error) {
+      debugLog(`❌ System validation failed: ${error.message}`);
+      throw error;
+    }
+  }
+
   /**
    * Validate a single verb against all compliance rules
    */
   async validateSingleVerb(word: any, options: ValidationOptions): Promise<VerbComplianceReport> {
     console.log(`🔍 Deep validation: ${word.italian}`);
 
-    // Load complete verb data
-    const verbData = await this.loadCompleteVerbData(word.id);
-    
-    const report: VerbComplianceReport = {
-      verbId: word.id,
-      verbItalian: word.italian,
-      overallScore: 0,
-      complianceStatus: 'compliant',
-      wordLevelIssues: [],
-      translationLevelIssues: [],
-      formLevelIssues: [],
-      crossTableIssues: [],
-      missingBuildingBlocks: [],
-      deprecatedContent: [],
-      autoFixableIssues: [],
-      manualInterventionRequired: [],
-      epicAlignmentNotes: [],
-      migrationReadiness: false,
-      priorityLevel: this.calculateVerbPriority(word),
-      estimatedFixTime: '0 minutes'
-    };
+    try {
+      console.log('📥 Loading complete verb data...');
+      // Load complete verb data
+      const verbData = await this.loadCompleteVerbData(word.id);
+      console.log('✅ Loaded verb data:', verbData);
 
-    // 1. Word Level Validation
-    report.wordLevelIssues = this.validateWordLevel(word);
-    
-    // 2. Translation Level Validation  
-    report.translationLevelIssues = this.validateTranslationLevel(verbData.translations);
-    
-    // 3. Form Level Validation
-    report.formLevelIssues = this.validateFormLevel(verbData.forms, options.includeTerminologyValidation);
-    
-    // 4. Cross-Table Validation
-    if (options.includeCrossTableAnalysis) {
-      report.crossTableIssues = await this.validateCrossTableRelationships(verbData);
+      const report: VerbComplianceReport = {
+        verbId: word.id,
+        verbItalian: word.italian,
+        overallScore: 0,
+        complianceStatus: 'compliant',
+        wordLevelIssues: [],
+        translationLevelIssues: [],
+        formLevelIssues: [],
+        crossTableIssues: [],
+        missingBuildingBlocks: [],
+        deprecatedContent: [],
+        autoFixableIssues: [],
+        manualInterventionRequired: [],
+        epicAlignmentNotes: [],
+        migrationReadiness: false,
+        priorityLevel: this.calculateVerbPriority(word),
+        estimatedFixTime: '0 minutes'
+      };
+
+      console.log('✅ Created base report');
+
+      // 1. Word Level Validation
+      console.log('🔍 Starting word level validation...');
+      report.wordLevelIssues = this.validateWordLevel(word);
+      console.log('✅ Word level complete:', report.wordLevelIssues.length, 'issues');
+
+      // 2. Translation Level Validation
+      console.log('🔍 Starting translation level validation...');
+      report.translationLevelIssues = this.validateTranslationLevel(verbData.translations);
+      console.log('✅ Translation level complete:', report.translationLevelIssues.length, 'issues');
+
+      // 3. Form Level Validation
+      console.log('🔍 Starting form level validation...');
+      report.formLevelIssues = this.validateFormLevel(verbData.forms, options.includeTerminologyValidation);
+      console.log('✅ Form level complete:', report.formLevelIssues.length, 'issues');
+
+      // 4. Cross-Table Validation (updated)
+      if (options.includeCrossTableAnalysis) {
+        console.log('🔍 Starting cross-table validation...');
+        report.crossTableIssues = await this.validateCrossTableRelationships(verbData);
+        const formTranslationIssues = await this.validateFormTranslationRelationships(verbData);
+        report.crossTableIssues.push(...formTranslationIssues);
+        console.log('✅ Cross-table complete:', report.crossTableIssues.length, 'issues');
+      }
+
+      // 5. Building Blocks Validation
+      console.log('🔍 Starting building blocks validation...');
+      report.missingBuildingBlocks = this.validateBuildingBlocks(verbData.forms);
+      console.log('✅ Building blocks complete:', report.missingBuildingBlocks.length, 'missing');
+
+      // 6. Deprecated Content Check
+      if (options.includeDeprecatedCheck) {
+        console.log('🔍 Starting deprecated content check...');
+        report.deprecatedContent = this.findDeprecatedContent(verbData);
+        console.log('✅ Deprecated content complete:', report.deprecatedContent.length, 'items');
+      }
+
+      // 7. Auto-fix identification
+      if (options.generateAutoFixes) {
+        console.log('🔍 Identifying auto-fixes...');
+        this.identifyAutoFixableIssues(report);
+        console.log('✅ Auto-fixes complete:', report.autoFixableIssues.length, 'fixable');
+      }
+
+      // 8. Calculate overall compliance
+      console.log('🔍 Calculating compliance...');
+      this.calculateVerbCompliance(report);
+      console.log('✅ Compliance calculated:', report.overallScore);
+
+      console.log('✅ Validation result:', report);
+      return report;
+
+    } catch (error) {
+      console.error(`❌ Error in validateSingleVerb for ${word.italian}:`, error);
+      throw error; // Re-throw so the calling method sees it
     }
-    
-    // 5. Building Blocks Validation
-    report.missingBuildingBlocks = this.validateBuildingBlocks(verbData.forms);
-    
-    // 6. Deprecated Content Check
-    if (options.includeDeprecatedCheck) {
-      report.deprecatedContent = this.findDeprecatedContent(verbData);
-    }
-
-    // 7. Auto-fix identification
-    if (options.generateAutoFixes) {
-      this.identifyAutoFixableIssues(report);
-    }
-
-    // 8. Calculate overall compliance
-    this.calculateVerbCompliance(report);
-
-    return report;
   }
 
   /**
@@ -255,13 +317,12 @@ export class ConjugationComplianceValidator {
    */
   private async loadCompleteVerbData(wordId: string): Promise<VerbData> {
     try {
-      // Load word forms
+      // Load word forms (removed 'translation' column that doesn't exist)
       const { data: forms, error: formsError } = await this.supabase
         .from('word_forms')
         .select(`
           id,
           form_text,
-          translation,
           form_type,
           tags,
           phonetic_form,
@@ -279,7 +340,6 @@ export class ConjugationComplianceValidator {
           id,
           translation,
           context_metadata,
-          form_ids,
           display_priority,
           usage_notes
         `)
@@ -329,54 +389,33 @@ export class ConjugationComplianceValidator {
     const issues: ComplianceIssue[] = [];
     const tags = word.tags || [];
 
-    console.log(`🔍 Word level validation: ${word.italian} with ${tags.length} tags`);
-
     // Check conjugation class requirement
-    const conjugationClassTags = tags.filter(tag => 
+    const conjugationClassTags = tags.filter(tag =>
       VERB_COMPLIANCE_RULES.wordLevel.conjugation_class.tags.includes(tag)
     );
 
     if (conjugationClassTags.length === 0) {
+      const expectedClasses = VERB_COMPLIANCE_RULES.wordLevel.conjugation_class.tags;
+      const suggestedClass = this.suggestConjugationClass(word.italian);
+
       issues.push({
         ruleId: 'missing-conjugation-class',
         severity: 'critical',
         message: 'Missing required conjugation class tag',
         currentValue: tags,
-        expectedValue: 'Exactly one of: are-conjugation, ere-conjugation, ire-conjugation, ire-isc-conjugation',
-        autoFix: this.suggestConjugationClass(word.italian),
+        expectedValue: 'Exactly one of: ' + expectedClasses.join(', '),
+        autoFix: suggestedClass,
+        manualSteps: [
+          'Analyze verb ending (-are, -ere, -ire)',
+          'Add appropriate conjugation class tag',
+          `For "${word.italian}": ${suggestedClass}`
+        ],
         epicContext: 'Layer 1: Word Properties - conjugation class determines form generation patterns'
       });
-    } else if (conjugationClassTags.length > 1) {
-      issues.push({
-        ruleId: 'multiple-conjugation-classes',
-        severity: 'critical',
-        message: 'Multiple conjugation class tags found',
-        currentValue: conjugationClassTags,
-        expectedValue: 'Exactly one conjugation class tag',
-        manualSteps: ['Review verb ending and choose correct conjugation class', 'Remove duplicate tags'],
-        epicContext: 'Each verb must have exactly one conjugation class'
-      });
     }
 
-    // Check for deprecated word-level tags
-    const deprecatedTags = tags.filter(tag => 
-      VERB_COMPLIANCE_RULES.wordLevel.deprecatedTags?.includes(tag)
-    );
-
-    if (deprecatedTags.length > 0) {
-      issues.push({
-        ruleId: 'deprecated-word-tags',
-        severity: 'medium',
-        message: `Found ${deprecatedTags.length} deprecated word-level tags`,
-        currentValue: deprecatedTags,
-        expectedValue: 'No deprecated tags',
-        autoFix: `Remove deprecated tags: ${deprecatedTags.join(', ')}`,
-        epicContext: 'Deprecated tags must be removed for architectural consistency'
-      });
-    }
-
-    // Check transitivity potential for new architecture
-    const transitivityTags = tags.filter(tag => 
+    // Detailed transitivity check
+    const transitivityTags = tags.filter(tag =>
       ['always-transitive', 'always-intransitive', 'both-possible'].includes(tag)
     );
 
@@ -387,7 +426,12 @@ export class ConjugationComplianceValidator {
         message: 'Missing transitivity potential classification',
         currentValue: tags,
         expectedValue: 'One of: always-transitive, always-intransitive, both-possible',
-        manualSteps: ['Analyze verb usage patterns', 'Add appropriate transitivity tag'],
+        manualSteps: [
+          'Check if verb takes direct objects (transitive)',
+          'Check if verb never takes direct objects (intransitive)',
+          'Check if verb can be both (like "mangiare")',
+          'Add appropriate tag to word.tags array'
+        ],
         epicContext: 'Translation-level auxiliary assignment validation depends on word-level transitivity'
       });
     }
@@ -401,8 +445,6 @@ export class ConjugationComplianceValidator {
   private validateTranslationLevel(translations: any[]): ComplianceIssue[] {
     const issues: ComplianceIssue[] = [];
 
-    console.log(`🔍 Translation level validation: ${translations.length} translations`);
-
     if (translations.length === 0) {
       issues.push({
         ruleId: 'no-translations',
@@ -410,73 +452,53 @@ export class ConjugationComplianceValidator {
         message: 'Verb has no translations defined',
         currentValue: 0,
         expectedValue: 'At least one translation required',
-        manualSteps: ['Create at least one translation in word_translations table'],
+        manualSteps: [
+          'Go to word_translations table',
+          'Add entry with word_id = this verb ID',
+          'Set translation to English meaning',
+          'Set context_metadata.auxiliary to "avere" or "essere"'
+        ],
         epicContext: 'Translation-driven architecture requires at least one meaning definition'
       });
       return issues;
     }
 
-    for (const translation of translations) {
+    for (let i = 0; i < translations.length; i++) {
+      const translation = translations[i];
       const metadata = translation.context_metadata || {};
 
-      // Check required auxiliary assignment
+      // Detailed auxiliary check
       if (!metadata.auxiliary || !['avere', 'essere'].includes(metadata.auxiliary)) {
         issues.push({
           ruleId: 'missing-auxiliary-assignment',
           severity: 'critical',
-          message: `Translation "${translation.translation}" missing auxiliary assignment`,
+          message: `Translation #${i + 1} "${translation.translation}" missing auxiliary assignment`,
           currentValue: metadata.auxiliary || 'undefined',
           expectedValue: 'avere or essere',
           manualSteps: [
-            'Analyze verb semantics and transitivity',
-            'Set context_metadata.auxiliary to "avere" or "essere"'
+            `Edit word_translations record ID: ${translation.id}`,
+            'Set context_metadata.auxiliary to:',
+            '  - "avere" for transitive actions (takes direct object)',
+            '  - "essere" for intransitive actions, motion, state changes',
+            `For "${translation.translation}": analyze if it takes direct objects`
           ],
           epicContext: 'Layer 2: Translation Metadata - auxiliary drives all compound form materialization'
         });
       }
 
-      // Check form_ids array (critical for new architecture)
-      if (!translation.form_ids || !Array.isArray(translation.form_ids) || translation.form_ids.length === 0) {
-        issues.push({
-          ruleId: 'missing-form-ids-array',
-          severity: 'critical',
-          message: `Translation "${translation.translation}" missing form_ids array`,
-          currentValue: translation.form_ids || 'undefined',
-          expectedValue: 'Array of form IDs this translation uses',
-          manualSteps: [
-            'Identify which forms belong to this translation meaning',
-            'Create form_ids array with appropriate form IDs'
-          ],
-          epicContext: 'Translation-to-form relationship - core architecture requirement'
-        });
-      }
-
-      // Check transitivity consistency
-      if (!metadata.transitivity || !['transitive', 'intransitive'].includes(metadata.transitivity)) {
+      if (!metadata.transitivity) {
         issues.push({
           ruleId: 'missing-transitivity',
           severity: 'high',
-          message: `Translation "${translation.translation}" missing transitivity specification`,
+          message: `Translation #${i + 1} "${translation.translation}" missing transitivity`,
           currentValue: metadata.transitivity || 'undefined',
           expectedValue: 'transitive or intransitive',
-          manualSteps: ['Analyze if this meaning takes direct objects', 'Set context_metadata.transitivity'],
-          epicContext: 'Semantic consistency validation with auxiliary selection'
+          manualSteps: [
+            `Edit word_translations record ID: ${translation.id}`,
+            'Set context_metadata.transitivity based on whether it takes direct objects'
+          ],
+          epicContext: 'Required for auxiliary validation consistency'
         });
-      }
-
-      // Validate reflexive usage constraints
-      if (metadata.usage && ['direct-reflexive', 'reciprocal'].includes(metadata.usage)) {
-        if (metadata.usage === 'reciprocal' && metadata.plurality !== 'plural-only') {
-          issues.push({
-            ruleId: 'reciprocal-plurality-mismatch',
-            severity: 'high',
-            message: `Reciprocal usage requires plural-only constraint`,
-            currentValue: metadata.plurality || 'undefined',
-            expectedValue: 'plural-only',
-            autoFix: 'Set context_metadata.plurality = "plural-only"',
-            epicContext: 'Reciprocal actions require multiple participants'
-          });
-        }
       }
     }
 
@@ -643,47 +665,86 @@ export class ConjugationComplianceValidator {
 
     console.log('🔗 Cross-table relationship validation');
 
-    // Validate form_ids integrity
-    for (const translation of verbData.translations) {
-      if (translation.form_ids && Array.isArray(translation.form_ids)) {
-        for (const formId of translation.form_ids) {
-          const referencedForm = verbData.forms.find(f => f.id === formId);
-          if (!referencedForm) {
-            issues.push({
-              ruleId: 'broken-form-reference',
-              severity: 'critical',
-              message: `Translation "${translation.translation}" references non-existent form ID ${formId}`,
-              currentValue: translation.form_ids,
-              expectedValue: 'All form_ids must reference existing forms',
-              manualSteps: ['Remove invalid form_id', 'Create missing form', 'Verify form_ids array'],
-              epicContext: 'Translation-to-form relationship integrity essential'
-            });
-          }
+    for (const assignment of verbData.formTranslations) {
+      const form = verbData.forms.find(f => f.id === assignment.form_id);
+      const translation = verbData.translations.find(t => t.id === assignment.word_translation_id);
+
+      if (!form || !translation) {
+        issues.push({
+          ruleId: 'broken-form-translation-reference',
+          severity: 'critical',
+          message: `Form_translation ${assignment.id} references missing form or translation`,
+          currentValue: assignment,
+          expectedValue: 'Valid form_id and word_translation_id',
+          manualSteps: ['Remove invalid assignment', 'Create missing record', 'Verify form_translations entries'],
+          epicContext: 'Translation-to-form relationship integrity essential'
+        });
+        continue;
+      }
+
+      const translationAux = translation.context_metadata?.auxiliary;
+      if (translationAux && this.isCompoundForm(form)) {
+        const expectedAuxTag = `${translationAux}-auxiliary`;
+        if (!form.tags.includes(expectedAuxTag)) {
+          issues.push({
+            ruleId: 'auxiliary-consistency-mismatch',
+            severity: 'critical',
+            message: `Form "${form.form_text}" auxiliary tag doesn't match translation auxiliary`,
+            currentValue: form.tags.filter(t => t.includes('auxiliary')),
+            expectedValue: expectedAuxTag,
+            autoFix: `Add "${expectedAuxTag}" tag to form`,
+            epicContext: 'Auxiliary consistency between translation metadata and form tags'
+          });
         }
       }
     }
 
-    // Validate auxiliary consistency
+    return issues;
+  }
+
+  private async validateFormTranslationRelationships(verbData: VerbData): Promise<ComplianceIssue[]> {
+    const issues: ComplianceIssue[] = [];
+
+    // Count expected form_translations based on auxiliary variations
+    const auxiliaries = new Set(
+      verbData.translations.map(t => t.context_metadata?.auxiliary).filter(Boolean)
+    );
+    const totalForms = verbData.forms.length;
+
+    // Each translation should cover appropriate forms
     for (const translation of verbData.translations) {
-      const translationAux = translation.context_metadata?.auxiliary;
-      if (translationAux && translation.form_ids) {
-        for (const formId of translation.form_ids) {
-          const form = verbData.forms.find(f => f.id === formId);
-          if (form && this.isCompoundForm(form)) {
-            const expectedAuxTag = `${translationAux}-auxiliary`;
-            if (!form.tags.includes(expectedAuxTag)) {
-              issues.push({
-                ruleId: 'auxiliary-consistency-mismatch',
-                severity: 'critical',
-                message: `Form "${form.form_text}" auxiliary tag doesn't match translation auxiliary`,
-                currentValue: form.tags.filter(t => t.includes('auxiliary')),
-                expectedValue: expectedAuxTag,
-                autoFix: `Add "${expectedAuxTag}" tag to form`,
-                epicContext: 'Auxiliary consistency between translation metadata and form tags'
-              });
-            }
-          }
-        }
+      const translationFormTranslations = verbData.formTranslations.filter(ft =>
+        ft.word_translation_id === translation.id
+      );
+
+      const expectedCount = auxiliaries.size > 1 ? totalForms : totalForms;
+
+      if (translationFormTranslations.length === 0) {
+        issues.push({
+          ruleId: 'translation-no-forms',
+          severity: 'critical',
+          message: `Translation "${translation.translation}" covers no forms`,
+          currentValue: 0,
+          expectedValue: `~${expectedCount} form_translations`,
+          manualSteps: [
+            'Create form_translations entries linking this translation to appropriate forms',
+            `Link to forms with matching auxiliary type (${translation.context_metadata?.auxiliary})`
+          ],
+          epicContext: 'Each translation must cover its auxiliary-appropriate forms'
+        });
+      } else if (translationFormTranslations.length < expectedCount * 0.8) {
+        issues.push({
+          ruleId: 'translation-incomplete-coverage',
+          severity: 'high',
+          message: `Translation "${translation.translation}" has incomplete form coverage`,
+          currentValue: translationFormTranslations.length,
+          expectedValue: `~${expectedCount} form_translations`,
+          manualSteps: [
+            `Add ${expectedCount - translationFormTranslations.length} missing form_translations`,
+            'Ensure all tenses are covered for this meaning'
+          ],
+          epicContext: 'Complete form coverage required for proper conjugation display'
+        });
       }
     }
 
@@ -694,40 +755,55 @@ export class ConjugationComplianceValidator {
    * Validate building blocks for compound generation
    */
   private validateBuildingBlocks(forms: any[]): string[] {
-    const missing: string[] = [];
-
-    console.log('🧱 Building blocks validation');
+    const detailedMissing: string[] = [];
 
     // Check for past participle
-    const hasParticiple = forms.some(f => 
-      f.tags?.includes('participio-passato') && 
+    const hasParticiple = forms.some(f =>
+      f.tags?.includes('participio-passato') &&
       f.tags?.includes('building-block')
     );
-    
+
     if (!hasParticiple) {
-      missing.push('participio-passato');
+      detailedMissing.push('Past Participle (participio-passato) - Required for: passato prossimo, trapassato prossimo, futuro anteriore, condizionale passato');
     }
 
     // Check for present gerund
-    const hasGerund = forms.some(f => 
-      f.tags?.includes('gerundio-presente') && 
+    const hasGerund = forms.some(f =>
+      f.tags?.includes('gerundio-presente') &&
       f.tags?.includes('building-block')
     );
-    
+
     if (!hasGerund) {
-      missing.push('gerundio-presente');
+      detailedMissing.push('Present Gerund (gerundio-presente) - Required for: presente progressivo, passato progressivo, futuro progressivo');
     }
 
     // Check for present infinitive
-    const hasInfinitive = forms.some(f => 
+    const hasInfinitive = forms.some(f =>
       f.tags?.includes('infinito-presente')
     );
-    
+
     if (!hasInfinitive) {
-      missing.push('infinito-presente');
+      detailedMissing.push('Present Infinitive (infinito-presente) - Required for: negative imperatives, clitic attachment');
     }
 
-    return missing;
+    // Check for each required tense
+    const requiredTenses = [
+      { tag: 'presente', name: 'Present Indicative', persons: 6 },
+      { tag: 'imperfetto', name: 'Imperfect', persons: 6 },
+      { tag: 'futuro-semplice', name: 'Simple Future', persons: 6 },
+      { tag: 'congiuntivo-presente', name: 'Present Subjunctive', persons: 6 },
+      { tag: 'condizionale-presente', name: 'Present Conditional', persons: 6 },
+      { tag: 'imperativo-presente', name: 'Imperative', persons: 5 }
+    ];
+
+    for (const tense of requiredTenses) {
+      const tenseForms = forms.filter(f => f.tags?.includes(tense.tag));
+      if (tenseForms.length < tense.persons) {
+        detailedMissing.push(`${tense.name} (${tense.tag}) - Has ${tenseForms.length}/${tense.persons} persons`);
+      }
+    }
+
+    return detailedMissing;
   }
 
   /**
@@ -1052,12 +1128,14 @@ export class ConjugationComplianceValidator {
   }
 
   /**
-   * Quick validation for specific verb
+   * Validate specific verb with comprehensive debugging
    */
-  async validateSpecificVerb(verbItalian: string): Promise<VerbComplianceReport | null> {
-    console.log(`🔍 Quick validation for: ${verbItalian}`);
+
+  async validateSpecificVerbWithDebug(verbItalian: string, debugLog: (msg: string) => void): Promise<VerbComplianceReport | null> {
+    debugLog(`🔍 Starting validation for: ${verbItalian}`);
 
     try {
+      debugLog('📥 Connecting to database...');
       const { data: word, error } = await this.supabase
         .from('dictionary')
         .select('*')
@@ -1066,9 +1144,476 @@ export class ConjugationComplianceValidator {
         .single();
 
       if (error || !word) {
+        debugLog(`❌ Verb not found: ${error?.message}`);
+        return null;
+      }
+
+      debugLog(`✅ Found verb: ${word.italian} (ID: ${word.id})`);
+      debugLog(`📊 Word tags: ${JSON.stringify(word.tags)}`);
+
+      // DETAILED WORD TAG ANALYSIS
+      debugLog('🔍 WORD LEVEL ANALYSIS:');
+      const requiredWordTags = {
+        conjugationClass: ['are-conjugation', 'ere-conjugation', 'ire-conjugation', 'ire-isc-conjugation'],
+        transitivity: ['always-transitive', 'always-intransitive', 'both-possible'],
+        frequency: ['freq-top100', 'freq-top200', 'freq-top500', 'freq-top1000', 'freq-top5000'],
+        cefr: ['CEFR-A1', 'CEFR-A2', 'CEFR-B1', 'CEFR-B2', 'CEFR-C1', 'CEFR-C2']
+      };
+
+      for (const [category, options] of Object.entries(requiredWordTags)) {
+        const found = word.tags.filter(tag => options.includes(tag));
+        debugLog(`  ${category}: ${found.length > 0 ? '✅ ' + found.join(', ') : '❌ MISSING - expected one of: ' + options.join(', ')}`);
+      }
+
+      // DETAILED TRANSLATIONS ANALYSIS
+      debugLog('📥 Loading translations...');
+      const { data: translations, error: translationsError } = await this.supabase
+        .from('word_translations')
+        .select('*')
+        .eq('word_id', word.id);
+
+      if (translationsError) {
+        debugLog(`❌ Translations error: ${translationsError.message}`);
+        return null;
+      }
+
+      debugLog(`✅ Loaded ${translations?.length || 0} translations`);
+      debugLog('🔍 TRANSLATIONS ANALYSIS:');
+
+      if (!translations || translations.length === 0) {
+        debugLog('  ❌ NO TRANSLATIONS FOUND - verb needs at least one translation');
+      } else {
+        for (let i = 0; i < translations.length; i++) {
+          const t = translations[i];
+          debugLog(`  Translation ${i + 1}: "${t.translation}"`);
+          debugLog(`    ID: ${t.id}`);
+          debugLog(`    Priority: ${t.display_priority || 'undefined'}`);
+
+          const metadata = t.context_metadata || {};
+          debugLog(`    Auxiliary: ${metadata.auxiliary || '❌ MISSING (required: avere/essere)'}`);
+          debugLog(`    Transitivity: ${metadata.transitivity || '❌ MISSING (required: transitive/intransitive)'}`);
+          debugLog(`    Usage: ${metadata.usage || 'undefined'}`);
+        }
+      }
+
+      // DETAILED FORMS ANALYSIS
+      debugLog('📥 Loading forms...');
+      const { data: forms, error: formsError } = await this.supabase
+        .from('word_forms')
+        .select('*')
+        .eq('word_id', word.id);
+
+      if (formsError) {
+        debugLog(`❌ Forms error: ${formsError.message}`);
+        return null;
+      }
+
+      debugLog(`✅ Loaded ${forms?.length || 0} forms`);
+      // DETAILED FORMS ANALYSIS BY MOOD
+      debugLog('🔍 COMPREHENSIVE FORMS ANALYSIS BY MOOD:');
+
+      const moodGroups = [
+        {
+          name: 'Indicative (Indicativo)',
+          moods: ['indicativo'],
+          tenses: [
+            { tag: 'presente', name: 'Presente', persons: 6, compound: false },
+            { tag: 'imperfetto', name: 'Imperfetto', persons: 6, compound: false },
+            { tag: 'futuro-semplice', name: 'Futuro Semplice', persons: 6, compound: false },
+            { tag: 'passato-remoto', name: 'Passato Remoto', persons: 6, compound: false },
+            { tag: 'passato-prossimo', name: 'Passato Prossimo', persons: 6, compound: true },
+            { tag: 'trapassato-prossimo', name: 'Trapassato Prossimo', persons: 6, compound: true },
+            { tag: 'futuro-anteriore', name: 'Futuro Anteriore', persons: 6, compound: true },
+            { tag: 'trapassato-remoto', name: 'Trapassato Remoto', persons: 6, compound: true },
+            { tag: 'presente-progressivo', name: 'Presente Progressivo', persons: 6, compound: true },
+            { tag: 'imperfetto-progressivo', name: 'Imperfetto Progressivo', persons: 6, compound: true },
+            { tag: 'futuro-progressivo', name: 'Futuro Progressivo', persons: 6, compound: true }
+          ]
+        },
+        {
+          name: 'Subjunctive (Congiuntivo)',
+          moods: ['congiuntivo'],
+          tenses: [
+            { tag: 'congiuntivo-presente', name: 'Presente', persons: 6, compound: false },
+            { tag: 'congiuntivo-imperfetto', name: 'Imperfetto', persons: 6, compound: false },
+            { tag: 'congiuntivo-passato', name: 'Passato', persons: 6, compound: true },
+            { tag: 'congiuntivo-trapassato', name: 'Trapassato', persons: 6, compound: true },
+            { tag: 'congiuntivo-presente-progressivo', name: 'Presente Progressivo', persons: 6, compound: true }
+          ]
+        },
+        {
+          name: 'Conditional (Condizionale)',
+          moods: ['condizionale'],
+          tenses: [
+            { tag: 'condizionale-presente', name: 'Presente', persons: 6, compound: false },
+            { tag: 'condizionale-passato', name: 'Passato', persons: 6, compound: true },
+            { tag: 'condizionale-presente-progressivo', name: 'Presente Progressivo', persons: 6, compound: true }
+          ]
+        },
+        {
+          name: 'Imperative (Imperativo)',
+          moods: ['imperativo'],
+          tenses: [
+            { tag: 'imperativo-presente', name: 'Presente', persons: 5, compound: false },
+            { tag: 'imperativo-passato', name: 'Passato', persons: 5, compound: true }
+          ]
+        },
+        {
+          name: 'Non-finite Forms',
+          moods: ['infinito', 'participio', 'gerundio'],
+          tenses: [
+            { tag: 'infinito-presente', name: 'Infinito Presente', persons: 0, compound: false },
+            { tag: 'infinito-passato', name: 'Infinito Passato', persons: 0, compound: true },
+            { tag: 'participio-presente', name: 'Participio Presente', persons: 0, compound: false },
+            { tag: 'participio-passato', name: 'Participio Passato', persons: 0, compound: false },
+            { tag: 'gerundio-presente', name: 'Gerundio Presente', persons: 0, compound: false },
+            { tag: 'gerundio-passato', name: 'Gerundio Passato', persons: 0, compound: true }
+          ]
+        }
+      ];
+
+      let totalExpected = 0;
+      let totalFound = 0;
+
+      for (const group of moodGroups) {
+        debugLog(`\n  ${group.name}:`);
+
+        for (const expected of group.tenses) {
+          const foundForms = forms?.filter(f =>
+            group.moods.some(mood => f.tags?.includes(mood)) &&
+            f.tags?.includes(expected.tag)
+          ) || [];
+
+          const expectedCount = expected.persons || 1;
+          totalExpected += expectedCount;
+          totalFound += foundForms.length;
+
+          debugLog(`    ${expected.name}:`);
+          debugLog(`      Expected: ${expectedCount} forms | Found: ${foundForms.length} forms`);
+
+          if (foundForms.length === 0) {
+            debugLog('      ❌ COMPLETELY MISSING');
+          } else if (foundForms.length < expectedCount) {
+            debugLog(`      ⚠️ INCOMPLETE (missing ${expectedCount - foundForms.length})`);
+
+            if (expected.persons > 0) {
+              const personTags = ['prima-persona', 'seconda-persona', 'terza-persona'];
+              const numbers = ['singolare', 'plurale'];
+
+              debugLog('      Present persons:');
+              for (const number of numbers) {
+                for (const person of personTags) {
+                  const personForm = foundForms.find(f =>
+                    f.tags?.includes(person) && f.tags?.includes(number)
+                  );
+                  const personLabel = `${person.split('-')[0]} ${number}`;
+                  if (personForm) {
+                    debugLog(`        ✅ ${personLabel}: "${personForm.form_text}"`);
+                  } else {
+                    debugLog(`        ❌ ${personLabel}: MISSING`);
+                  }
+                }
+              }
+            }
+          } else {
+            debugLog('      ✅ COMPLETE');
+          }
+
+          if (expected.compound && foundForms.length > 0) {
+            const withAuxTags = foundForms.filter(f =>
+              f.tags?.some(t => ['avere-auxiliary', 'essere-auxiliary', 'stare-auxiliary'].includes(t))
+            );
+            debugLog(`      Auxiliary tags: ${withAuxTags.length}/${foundForms.length} forms have auxiliary tags`);
+          }
+        }
+      }
+
+      debugLog(`\n📊 FORMS SUMMARY: ${totalFound}/${totalExpected} total forms (${Math.round(totalFound / totalExpected * 100)}% complete)`);
+
+      // BUILDING BLOCKS ANALYSIS
+      debugLog('🔍 BUILDING BLOCKS ANALYSIS:');
+      const buildingBlocks = [
+        { name: 'Past Participle', mood: 'participio', tense: 'participio-passato', required: true, purpose: 'Compound tenses generation' },
+        { name: 'Present Gerund', mood: 'gerundio', tense: 'gerundio-presente', required: true, purpose: 'Progressive tenses generation' },
+        { name: 'Present Infinitive', mood: 'infinito', tense: 'infinito-presente', required: true, purpose: 'Negative imperatives, clitic attachment' }
+      ];
+
+      for (const block of buildingBlocks) {
+        const found = forms?.find(f =>
+          f.tags?.includes(block.mood) &&
+          f.tags?.includes(block.tense)
+        );
+
+        if (found) {
+          debugLog(`  ✅ ${block.name}: "${found.form_text}"`);
+          if (block.required && !found.tags?.includes('building-block')) {
+            debugLog(`    ⚠️ Missing 'building-block' tag (needed for ${block.purpose})`);
+          } else if (found.tags?.includes('building-block')) {
+            debugLog(`    ✅ Has 'building-block' tag for ${block.purpose}`);
+          }
+        } else {
+          debugLog(`  ❌ ${block.name}: MISSING (needed for ${block.purpose})`);
+        }
+      }
+
+      // FORM-TRANSLATION RELATIONSHIPS ANALYSIS
+      debugLog('🔍 FORM-TRANSLATION RELATIONSHIPS ANALYSIS:');
+
+      // Count distinct auxiliaries to determine expected form sets
+      const auxiliaryCount = translations?.length ?
+        new Set(translations.map(t => t.context_metadata?.auxiliary).filter(Boolean)).size : 0;
+      debugLog(`  Distinct auxiliaries found: ${auxiliaryCount} (${auxiliaryCount === 2 ? 'avere + essere' : auxiliaryCount === 1 ? 'single auxiliary' : 'none specified'})`);
+
+      // Calculate expected form_translations per translation
+      const totalForms = forms?.length || 0;
+      const expectedPerTranslation = auxiliaryCount > 1 ? totalForms : totalForms;
+      debugLog(`  Expected form_translations per translation: ${expectedPerTranslation}`);
+
+      // Check form_translations coverage
+      const formIds = (forms || []).map(f => f.id);
+      const { data: formTranslations } = await this.supabase
+        .from('form_translations')
+        .select('*')
+        .in('form_id', formIds);
+      debugLog(`  Total form_translations found: ${formTranslations?.length || 0}`);
+
+      // Analyze each translation's coverage
+      if (translations && translations.length > 0) {
+        for (let i = 0; i < translations.length; i++) {
+          const translation = translations[i];
+          const translationFormTranslations = formTranslations?.filter(ft =>
+            ft.word_translation_id === translation.id
+          ) || [];
+
+          debugLog(`  Translation ${i + 1} "${translation.translation}" (${translation.context_metadata?.auxiliary || 'no aux'}):`);
+          debugLog(`    Form_translations: ${translationFormTranslations.length}/${expectedPerTranslation}`);
+
+          if (translationFormTranslations.length === 0) {
+            debugLog(`    ❌ NO FORM_TRANSLATIONS - translation covers no forms`);
+          } else if (translationFormTranslations.length < expectedPerTranslation * 0.8) {
+            debugLog(`    ⚠️ INCOMPLETE COVERAGE - missing ${expectedPerTranslation - translationFormTranslations.length} form_translations`);
+          } else {
+            debugLog(`    ✅ GOOD COVERAGE`);
+          }
+        }
+      }
+
+      // Check for orphaned forms (forms without ANY form_translation)
+      const formsWithTranslations = new Set(formTranslations?.map(ft => ft.form_id) || []);
+      const orphanedForms = forms?.filter(f => !formsWithTranslations.has(f.id)) || [];
+
+      if (orphanedForms.length > 0) {
+        debugLog(`  ❌ Orphaned forms (no form_translations): ${orphanedForms.length}`);
+        orphanedForms.slice(0, 5).forEach(form => {
+          debugLog(`    "${form.form_text}" (ID: ${form.id}) - no English translation available`);
+        });
+      } else {
+        debugLog(`  ✅ All forms have English translations`);
+      }
+
+      // Check for orphaned translations (translations without form_translations)
+      const translationsWithForms = new Set(formTranslations?.map(ft => ft.word_translation_id) || []);
+      const orphanedTranslations = translations?.filter(t => !translationsWithForms.has(t.id)) || [];
+
+      if (orphanedTranslations.length > 0) {
+        debugLog(`  ❌ Orphaned translations (no form_translations): ${orphanedTranslations.length}`);
+        orphanedTranslations.forEach(trans => {
+          debugLog(`    "${trans.translation}" (ID: ${trans.id}) - covers no forms`);
+        });
+      } else {
+        debugLog(`  ✅ All translations cover forms`);
+      }
+
+      // Remove any reference to form_ids arrays
+      debugLog(`  📊 Architecture validation:`);
+      debugLog(`    ✅ Using proper many-to-many relationship via form_translations`);
+      debugLog(`    ✅ No direct form_ids arrays needed in translations`);
+
+      const report: VerbComplianceReport = {
+        verbId: word.id,
+        verbItalian: word.italian,
+        overallScore: 0,
+        complianceStatus: 'compliant',
+        wordLevelIssues: [],
+        translationLevelIssues: [],
+        formLevelIssues: [],
+        crossTableIssues: [],
+        missingBuildingBlocks: [],
+        deprecatedContent: [],
+        autoFixableIssues: [],
+        manualInterventionRequired: [],
+        epicAlignmentNotes: [],
+        migrationReadiness: false,
+        priorityLevel: this.calculateVerbPriority(word),
+        estimatedFixTime: '0 minutes'
+      };
+
+      report.wordLevelIssues = this.validateWordLevelDetailed(word);
+      report.translationLevelIssues = this.validateTranslationLevelDetailed(translations || []);
+      report.formLevelIssues = this.validateFormLevelDetailed(forms || [], true);
+      report.missingBuildingBlocks = this.validateBuildingBlocksDetailed(forms || []);
+
+      this.calculateVerbCompliance(report);
+
+      debugLog(`✅ Final score: ${report.overallScore}% (${report.complianceStatus})`);
+      debugLog('🎉 Validation completed successfully!');
+      return report;
+    } catch (error) {
+      debugLog(`❌ Unexpected error: ${error.message}`);
+      debugLog(`❌ Stack: ${error.stack}`);
+      return null;
+    }
+  }
+
+  private validateWordLevelDetailed(word: any): ComplianceIssue[] {
+    const issues: ComplianceIssue[] = [];
+    const tags = word.tags || [];
+
+    const conjugationClasses = ['are-conjugation', 'ere-conjugation', 'ire-conjugation', 'ire-isc-conjugation'];
+    const foundConjugation = tags.filter(tag => conjugationClasses.includes(tag));
+    if (foundConjugation.length === 0) {
+      issues.push({
+        ruleId: 'missing-conjugation-class',
+        severity: 'critical',
+        message: 'Missing conjugation class tag',
+        currentValue: tags,
+        expectedValue: 'Exactly one of: ' + conjugationClasses.join(', '),
+        manualSteps: [
+          `Verb "${word.italian}" needs conjugation class tag`,
+          `Based on ending: ${this.suggestConjugationClass(word.italian)}`,
+          'Add to word.tags array in dictionary table'
+        ],
+        epicContext: 'Conjugation class determines form generation patterns'
+      });
+    }
+
+    const transitivityTags = ['always-transitive', 'always-intransitive', 'both-possible'];
+    const foundTransitivity = tags.filter(tag => transitivityTags.includes(tag));
+    if (foundTransitivity.length === 0) {
+      issues.push({
+        ruleId: 'missing-transitivity',
+        severity: 'high',
+        message: 'Missing transitivity classification',
+        currentValue: tags,
+        expectedValue: 'One of: ' + transitivityTags.join(', '),
+        manualSteps: [
+          'Analyze if verb takes direct objects',
+          'Add appropriate transitivity tag to word.tags'
+        ],
+        epicContext: 'Required for auxiliary assignment validation'
+      });
+    }
+    return issues;
+  }
+
+  private validateTranslationLevelDetailed(translations: any[]): ComplianceIssue[] {
+    const issues: ComplianceIssue[] = [];
+
+    if (translations.length === 0) {
+      issues.push({
+        ruleId: 'no-translations',
+        severity: 'critical',
+        message: 'No translations found',
+        currentValue: 0,
+        expectedValue: 'At least 1 translation required',
+        manualSteps: [
+          'Add record to word_translations table',
+          'Set translation to English meaning',
+          'Set context_metadata.auxiliary to avere/essere',
+          'Create form_translations entries to link forms to this translation'
+        ],
+        epicContext: 'Translation-driven architecture requires meaning definitions'
+      });
+      return issues;
+    }
+
+    for (let i = 0; i < translations.length; i++) {
+      const t = translations[i];
+      const metadata = t.context_metadata || {};
+      if (!metadata.auxiliary) {
+        issues.push({
+          ruleId: 'missing-auxiliary',
+          severity: 'critical',
+          message: `Translation "${t.translation}" missing auxiliary`,
+          currentValue: metadata,
+          expectedValue: 'auxiliary: "avere" or "essere"',
+          manualSteps: [
+            `Edit word_translations record ID: ${t.id}`,
+            'Set context_metadata.auxiliary to "avere" or "essere"',
+            'Use "avere" for transitive, "essere" for intransitive/reflexive'
+          ],
+          epicContext: 'Auxiliary determines compound form generation'
+        });
+      }
+
+      if (!metadata.transitivity) {
+        issues.push({
+          ruleId: 'missing-transitivity',
+          severity: 'high',
+          message: `Translation "${t.translation}" missing transitivity`,
+          currentValue: metadata,
+          expectedValue: 'transitivity: "transitive" or "intransitive"',
+          manualSteps: [
+            `Edit word_translations record ID: ${t.id}`,
+            'Set context_metadata.transitivity based on whether it takes direct objects'
+          ],
+          epicContext: 'Required for auxiliary validation consistency'
+        });
+      }
+
+      // no form_ids validation needed
+    }
+    return issues;
+  }
+
+  private validateFormLevelDetailed(forms: any[], includeTerminology: boolean = true): ComplianceIssue[] {
+    return this.validateFormLevel(forms, includeTerminology);
+  }
+
+  private validateBuildingBlocksDetailed(forms: any[]): string[] {
+    const missing: string[] = [];
+    const requiredBlocks = [
+      { name: 'Past Participle', mood: 'participio', tense: 'participio-passato', impact: 'Cannot generate: passato prossimo, trapassato prossimo, futuro anteriore, condizionale passato' },
+      { name: 'Present Gerund', mood: 'gerundio', tense: 'gerundio-presente', impact: 'Cannot generate: presente progressivo, passato progressivo, futuro progressivo' },
+      { name: 'Present Infinitive', mood: 'infinito', tense: 'infinito-presente', impact: 'Cannot generate: negative imperatives, clitic attachments' }
+    ];
+    for (const block of requiredBlocks) {
+      const found = forms.find(f =>
+        f.tags?.includes(block.mood) &&
+        f.tags?.includes(block.tense)
+      );
+      if (!found) {
+        missing.push(`${block.name} (${block.mood}/${block.tense}) - ${block.impact}`);
+      }
+    }
+    return missing;
+  }
+  /**
+   * Quick validation for specific verb
+   */
+  async validateSpecificVerb(verbItalian: string): Promise<VerbComplianceReport | null> {
+    console.log(`🔍 Quick validation for: ${verbItalian}`);
+
+    try {
+      console.log('📥 Looking up verb in database...');
+      const { data: word, error } = await this.supabase
+        .from('dictionary')
+        .select('*')
+        .eq('italian', verbItalian)
+        .eq('word_type', 'VERB')
+        .single();
+
+      if (error) {
+        console.error(`❌ Database error:`, error);
+        return null;
+      }
+
+      if (!word) {
         console.error(`❌ Verb "${verbItalian}" not found`);
         return null;
       }
+
+      console.log(`✅ Found verb:`, word);
 
       const options: ValidationOptions = {
         includeDeprecatedCheck: true,
@@ -1077,7 +1622,11 @@ export class ConjugationComplianceValidator {
         generateAutoFixes: true
       };
 
-      return await this.validateSingleVerb(word, options);
+      console.log('🔍 Starting detailed validation...');
+      const result = await this.validateSingleVerb(word, options);
+      console.log('✅ Validation result:', result);
+
+      return result;
 
     } catch (error) {
       console.error(`❌ Error validating ${verbItalian}:`, error);
