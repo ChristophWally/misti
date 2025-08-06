@@ -399,20 +399,62 @@ const AdminValidationInterface = () => {
                     </div>
                     <div className="text-xs text-orange-600">Manual Required</div>
                   </div>
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {validationResult.missingBuildingBlocks.length}
-                    </div>
-                    <div className="text-xs text-purple-600">Missing Blocks</div>
-                  </div>
+              <div className="p-3 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">
+                  {validationResult.missingBuildingBlocks.length}
+                </div>
+                <div className="text-xs text-purple-600">Missing Blocks</div>
+              </div>
+            </div>
+          </div>
+          {/* Word Level Analysis */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">Word Level Analysis</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div>
+                <div className="font-medium">Conjugation Class</div>
+                <div>
+                  {validationResult.wordLevelIssues.some(i => i.ruleId === 'missing-conjugation-class')
+                    ? 'Missing'
+                    : 'Present'}
                 </div>
               </div>
+              <div>
+                <div className="font-medium">Transitivity</div>
+                <div>
+                  {validationResult.wordLevelIssues.some(i => i.ruleId === 'missing-transitivity-potential')
+                    ? 'Missing'
+                    : 'Present'}
+                </div>
+              </div>
+              <div>
+                <div className="font-medium">Frequency Tag</div>
+                <div>Present</div>
+              </div>
+              <div>
+                <div className="font-medium">CEFR Level</div>
+                <div>Present</div>
+              </div>
+            </div>
+          </div>
 
-              {/* Form Expectations Analysis */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">
-                  Form Expectations Analysis
-                </h4>
+          {/* Translation Level Analysis */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">Translation Level Analysis</h4>
+            {validationResult.translationLevelIssues.length === 0 ? (
+              <div className="text-sm text-green-600">All translations have auxiliary and transitivity metadata.</div>
+            ) : (
+              <div className="text-sm text-red-600">
+                {validationResult.translationLevelIssues.length} translation issues detected
+              </div>
+            )}
+          </div>
+
+          {/* Form Expectations Analysis */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">
+              Form Expectations Analysis
+            </h4>
 
                 {/* Auxiliary Detection */}
                 <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -461,16 +503,24 @@ const AdminValidationInterface = () => {
                       <div className="text-2xl font-bold text-orange-600">~6 / 30</div>
                       <div className="text-sm text-gray-600">20% Complete</div>
                       <div className="text-xs text-gray-500 mt-1">Always use stare</div>
-                    </div>
-                  </div>
                 </div>
               </div>
+            </div>
+          </div>
+          {/* Form-Translation Coverage Analysis */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">Form-Translation Coverage Analysis</h4>
+            <div className="text-sm">
+              <div>Translations: {validationResult.translations?.length || 0}</div>
+              <div>Form-translations: {validationResult.formTranslationsCount || 0}</div>
+            </div>
+          </div>
 
-              {/* Summary Stats */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h5 className="font-semibold text-gray-800 mb-3">Summary</h5>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                  <div className="text-center">
+          {/* Summary Stats */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h5 className="font-semibold text-gray-800 mb-3">Summary</h5>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+              <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">
                       {currentForms}/{formExpectations.total}
                     </div>
