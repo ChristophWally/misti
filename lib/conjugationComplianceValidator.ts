@@ -1429,6 +1429,126 @@ export class ConjugationComplianceValidator {
       debugLog(`    ✅ Using proper many-to-many relationship via form_translations`);
       debugLog(`    ✅ No direct form_ids arrays needed in translations`);
 
+      // EXTRACT REAL DATA FOR FRONTEND
+      const auxiliaries = Array.from(new Set(
+        (translations || []).map(t => t.context_metadata?.auxiliary).filter(Boolean)
+      ));
+
+      // Count forms by mood and tense
+      const formCountsByMood: { [mood: string]: { [tense: string]: number } } = {};
+      const moods = ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'];
+
+      for (const mood of moods) {
+        formCountsByMood[mood] = {};
+        const moodForms = (forms || []).filter(f => f.tags?.includes(mood));
+
+        // Group by tense within mood
+        const tenses = new Set(moodForms.flatMap(f => f.tags || []).filter(tag =>
+          tag.includes('presente') || tag.includes('passato') || tag.includes('futuro') ||
+          tag.includes('imperfetto') || tag.includes('remoto') || tag.includes('trapassato')
+        ));
+
+        for (const tense of Array.from(tenses)) {
+          const tenseStr = tense as string;
+          formCountsByMood[mood][tenseStr] = moodForms.filter(f => f.tags?.includes(tenseStr)).length;
+        }
+      }
+
+      // Calculate type-based counts
+      const auxiliaryCountDetailed = auxiliaries.length || 1;
+      const simpleFormCount = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        return !tags.some(tag =>
+          tag.includes('auxiliary') || tag.includes('progressivo') || tag.includes('passato')
+        );
+      }).length;
+
+      const compoundFormCount = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        return tags.some(tag => tag.includes('auxiliary') || tag.includes('passato'));
+      }).length;
+
+      const progressiveFormCount = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        return tags.some(tag => tag.includes('progressivo'));
+      }).length;
+
+      // Calculate expectations based on auxiliary count
+      const expectations = {
+        simple: 51, // Fixed
+        perfectCompound: 49 * auxiliaryCountDetailed, // Base 49 × auxiliary count
+        progressive: 30, // Fixed
+        total: 51 + (49 * auxiliaryCountDetailed) + 30
+      };
+
+      // Analyze form-translation coverage
+      const translationBreakdown = (translations || []).map(translation => {
+        const translationFormTranslations = (formTranslations || []).filter(ft =>
+          ft.word_translation_id === translation.id
+        );
+
+        return {
+          translation: translation.translation,
+          auxiliary: translation.context_metadata?.auxiliary || 'unknown',
+          expected: expectations.total,
+          actual: translationFormTranslations.length,
+          coverage: Math.round((translationFormTranslations.length / expectations.total) * 100)
+        };
+      });
+
+      // Find orphaned records
+      const assignedFormIds = new Set((formTranslations || []).map(ft => ft.form_id));
+      const formsWithoutTranslations = (forms || []).filter(f => !assignedFormIds.has(f.id))
+        .map(f => ({ id: f.id, text: f.form_text, tags: f.tags || [] }));
+
+      const translationsWithFormsDetailed = new Set((formTranslations || []).map(ft => ft.word_translation_id));
+      const translationsWithoutForms = (translations || []).filter(t => !translationsWithFormsDetailed.has(t.id))
+        .map(t => ({ id: t.id, translation: t.translation, auxiliary: t.context_metadata?.auxiliary || 'unknown' }));
+
+      // Find forms without proper mood/tense classification
+      const formsWithoutMoodTense = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        const hasMood = moods.some(mood => tags.includes(mood));
+        const hasTense = tags.some(tag =>
+          tag.includes('presente') || tag.includes('passato') || tag.includes('futuro') ||
+          tag.includes('imperfetto') || tag.includes('remoto')
+        );
+        return !hasMood || !hasTense;
+      }).map(f => ({ id: f.id, text: f.form_text, tags: f.tags || [] }));
+
+      // Find missing building block tags
+      const buildingBlockCandidates = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        return tags.includes('participio-passato') || tags.includes('gerundio-presente') || tags.includes('infinito-presente');
+      });
+
+      const missingBuildingBlocks = buildingBlockCandidates.filter(f =>
+        !(f.tags || []).includes('building-block')
+      ).map(f => ({
+        id: f.id,
+        text: f.form_text,
+        missingTag: 'building-block'
+      }));
+
+      // Find missing auxiliary tags
+      const compoundForms = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        return tags.some(tag =>
+          tag.includes('passato-prossimo') || tag.includes('trapassato') ||
+          tag.includes('futuro-anteriore') || tag.includes('condizionale-passato')
+        );
+      });
+
+      const missingAuxiliaryTags = compoundForms.filter(f => {
+        const tags = f.tags || [];
+        return !tags.some(tag => tag.includes('auxiliary'));
+      }).map(f => ({
+        id: f.id,
+        text: f.form_text,
+        expectedTag: 'avere-auxiliary or essere-auxiliary'
+      }));
+
+      // Create enhanced report with real data
       const report: VerbComplianceReport = {
         verbId: word.id,
         verbItalian: word.italian,
@@ -1445,9 +1565,36 @@ export class ConjugationComplianceValidator {
         epicAlignmentNotes: [],
         migrationReadiness: false,
         priorityLevel: this.calculateVerbPriority(word),
-        estimatedFixTime: '0 minutes'
+        estimatedFixTime: '0 minutes',
+        detailedAnalysis: {
+          auxiliaries,
+          formCounts: {
+            byMood: formCountsByMood,
+            byType: {
+              simple: simpleFormCount,
+              perfectCompound: compoundFormCount,
+              progressive: progressiveFormCount,
+              total: (forms || []).length
+            },
+            expectations
+          },
+          formTranslationCoverage: {
+            totalFormTranslations: (formTranslations || []).length,
+            translationBreakdown
+          },
+          orphanedRecords: {
+            formsWithoutTranslations,
+            translationsWithoutForms,
+            formsWithoutMoodTense,
+            missingTags: {
+              buildingBlocks: missingBuildingBlocks,
+              auxiliaries: missingAuxiliaryTags
+            }
+          }
+        }
       };
 
+      // Continue with existing validation logic...
       report.wordLevelIssues = this.validateWordLevelDetailed(word);
       report.translationLevelIssues = this.validateTranslationLevelDetailed(translations || []);
       report.formLevelIssues = this.validateFormLevelDetailed(forms || [], true);
@@ -1455,8 +1602,6 @@ export class ConjugationComplianceValidator {
 
       this.calculateVerbCompliance(report);
 
-      debugLog(`✅ Final score: ${report.overallScore}% (${report.complianceStatus})`);
-      debugLog('🎉 Validation completed successfully!');
       return report;
     } catch (error) {
       debugLog(`❌ Unexpected error: ${error.message}`);
