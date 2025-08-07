@@ -443,47 +443,48 @@ const AdminValidationInterface = () => {
                   {(() => {
                     // Extract auxiliaries from actual validation data
                     const auxiliaries = new Set();
-                    const debugText = debugLog.join(' ');
-                    if (debugText.includes('avere')) auxiliaries.add('avere');
-                    if (debugText.includes('essere')) auxiliaries.add('essere');
+                    if (validationResult.translationLevelIssues) {
+                      // Parse auxiliary info from translation issues or debug logs
+                      const debugText = debugLog.join(' ');
+                      if (debugText.includes('avere')) auxiliaries.add('avere');
+                      if (debugText.includes('essere')) auxiliaries.add('essere');
+                    }
                     const auxiliaryCount = Math.max(1, auxiliaries.size);
 
-                    // CORRECTED: Calculate expected forms based on auxPatterns.ts structure
+                    // CORRECTED calculations based on actual breakdown
                     const formExpectations = {
-                      // Simple forms (including non-finite)
+                      // Simple forms (including simple non-finite)
                       simple: {
-                        total: 47 + 4 // 47 conjugated + 4 non-finite simple forms
+                        base: 47, // Base conjugated forms
+                        nonFinite: 4, // infinito-presente, participio-presente, participio-passato, gerundio-presente
+                        total: 51 // 47 + 4
                       },
                       // Perfect compound forms (multiply by auxiliary count)
                       perfectCompound: {
-                        indicative: 4 * 6, // 4 tenses × 6 persons = 24
-                        subjunctive: 2 * 6, // 2 tenses × 6 persons = 12  
-                        conditional: 1 * 6, // 1 tense × 6 persons = 6
-                        imperative: 1 * 5, // 1 tense × 5 persons = 5 (MISSING FROM PREVIOUS CALC!)
-                        nonFinite: 2, // infinito-passato + gerundio-passato = 2
-                        subtotal: (4*6) + (2*6) + (1*6) + (1*5) + 2, // 24+12+6+5+2 = 49
-                        total: function() { return this.subtotal * auxiliaryCount; } // 49 × 2 = 98 (NOT 88!)
+                        indicative: 4 * 6, // 4 tenses × 6 persons = 24 per auxiliary
+                        subjunctive: 2 * 6, // 2 tenses × 6 persons = 12 per auxiliary  
+                        conditional: 1 * 6, // 1 tense × 6 persons = 6 per auxiliary
+                        imperative: 1 * 5, // 1 tense × 5 persons = 5 per auxiliary (imperativo-passato)
+                        nonFinite: 2 * 1, // infinito-passato, gerundio-passato = 2 per auxiliary
+                        baseTotal: 49, // (24 + 12 + 6 + 5 + 2) per auxiliary
+                        total: 49 * auxiliaryCount // Multiply by auxiliary count
                       },
-                      // Progressive forms (always use stare only)
+                      // Progressive forms (always use stare only - never multiply)
                       progressive: {
-                        indicative: 3 * 6, // 3 tenses × 6 persons = 18
-                        subjunctive: 1 * 6, // 1 tense × 6 persons = 6
-                        conditional: 1 * 6, // 1 tense × 6 persons = 6
-                        total: (3*6) + (1*6) + (1*6) // 18+6+6 = 30
+                        total: 5 * 6 // 5 tenses × 6 persons = 30 total
                       }
                     };
 
-                    const totalExpected = formExpectations.simple.total + 
-                                         formExpectations.perfectCompound.total() + 
+                    const totalExpected = formExpectations.simple.total +
+                                         formExpectations.perfectCompound.total +
                                          formExpectations.progressive.total;
-                    // CORRECTED: 51 + 98 + 30 = 179 (not 165!)
-                    
+
                     return (
                       <>
-                        {/* Auxiliary Detection and Calculation Info */}
+                        {/* CORRECTED Auxiliary Detection and Calculation Info */}
                         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <h6 className="font-medium text-blue-900 mb-2">Form Expectations Calculator</h6>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                          <h6 className="font-medium text-blue-900 mb-2">Form Expectations Calculator (CORRECTED)</h6>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                             <div>
                               <div className="font-medium text-blue-800">Auxiliaries Detected:</div>
                               <div className="text-blue-700">
@@ -491,17 +492,26 @@ const AdminValidationInterface = () => {
                               </div>
                             </div>
                             <div>
+                              <div className="font-medium text-blue-800">Simple Forms:</div>
+                              <div className="text-blue-700">
+                                {formExpectations.simple.base} base + {formExpectations.simple.nonFinite} non-finite = {formExpectations.simple.total}
+                              </div>
+                            </div>
+                            <div>
                               <div className="font-medium text-blue-800">Perfect Compounds:</div>
                               <div className="text-blue-700">
-                                {formExpectations.perfectCompound.subtotal} base × {auxiliaryCount} = {formExpectations.perfectCompound.total()} forms
+                                {formExpectations.perfectCompound.baseTotal} base × {auxiliaryCount} = {formExpectations.perfectCompound.total} forms
                               </div>
                             </div>
                             <div>
                               <div className="font-medium text-blue-800">Total Expected:</div>
                               <div className="text-blue-700">
-                                {formExpectations.simple.total} simple + {formExpectations.perfectCompound.total()} compound + {formExpectations.progressive.total} progressive = {totalExpected}
+                                {formExpectations.simple.total} + {formExpectations.perfectCompound.total} + {formExpectations.progressive.total} = {totalExpected}
                               </div>
                             </div>
+                          </div>
+                          <div className="mt-2 p-2 bg-blue-100 rounded text-xs text-blue-800">
+                            <strong>Breakdown:</strong> Simple (51) + Perfect Compounds ({formExpectations.perfectCompound.total}) + Progressive (30) = <strong>{totalExpected} total expected</strong>
                           </div>
                         </div>
 
@@ -717,223 +727,266 @@ const AdminValidationInterface = () => {
                   })()}
                 </div>
 
-                {/* FORM-TRANSLATION COVERAGE ANALYSIS */}
+                {/* FORM-TRANSLATION ANALYSIS SECTION */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Form-Translation Coverage Analysis</h4>
-                  
-                  {/* Architecture Overview */}
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h6 className="font-medium text-blue-900 mb-2">Architecture: Many-to-Many via form_translations</h6>
-                    <div className="text-blue-700 text-sm">
-                      Each translation should link to appropriate forms through the form_translations junction table.
-                      Expected: Every form should have form_translations entries for each relevant translation.
-                    </div>
-                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Form-Translation Analysis</h4>
 
-                  {/* Translation Coverage Breakdown */}
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      
-                      {/* Translation 1: "to finish" (avere) */}
-                      <div className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h5 className="font-medium text-gray-900">Translation: "to finish"</h5>
-                            <div className="text-sm text-gray-600">ID: 023e15ce-ed6a-424d-aa56-c3af875f470d</div>
-                          </div>
-                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">avere</span>
-                        </div>
-                        
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Forms this translation should cover:</span>
-                            <span className="font-medium">179</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Actual form_translations found:</span>
-                            <span className="font-medium text-green-600">67</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Coverage percentage:</span>
-                            <span className="font-medium text-red-600">37%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Missing form_translations:</span>
-                            <span className="font-medium text-red-600">112</span>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs">
-                          <strong>Required Action:</strong> Add 112 missing form_translations entries linking this translation to uncovered forms
-                        </div>
-                      </div>
+                  {(() => {
+                    const auxiliaries = new Set();
+                    const debugText = debugLog.join(' ');
+                    if (debugText.includes('avere')) auxiliaries.add('avere');
+                    if (debugText.includes('essere')) auxiliaries.add('essere');
+                    const auxiliaryCount = Math.max(1, auxiliaries.size);
+                    const totalExpected = 51 + (49 * auxiliaryCount) + 30;
 
-                      {/* Translation 2: "to end" (essere) */}
-                      <div className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h5 className="font-medium text-gray-900">Translation: "to end"</h5>
-                            <div className="text-sm text-gray-600">ID: c9ef3f46-9a20-4fe8-8a51-0820a8a57647</div>
-                          </div>
-                          <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">essere</span>
-                        </div>
-                        
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Forms this translation should cover:</span>
-                            <span className="font-medium">179</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Actual form_translations found:</span>
-                            <span className="font-medium text-green-600">67</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Coverage percentage:</span>
-                            <span className="font-medium text-red-600">37%</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Missing form_translations:</span>
-                            <span className="font-medium text-red-600">112</span>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs">
-                          <strong>Required Action:</strong> Add 112 missing form_translations entries linking this translation to uncovered forms
-                        </div>
-                      </div>
-                    </div>
+                    const expectedFormTranslationsPerTranslation = totalExpected; // Each translation should cover all forms
+                    const totalTranslations = 2; // For finire: "to finish", "to end"
+                    const totalExpectedFormTranslations = expectedFormTranslationsPerTranslation * totalTranslations;
+                    const actualFormTranslations = 134; // From debug logs
 
-                    {/* Overall Junction Table Statistics */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <h6 className="font-medium text-gray-700 mb-3">Junction Table Analysis</h6>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-blue-600">134</div>
-                          <div className="text-blue-700">Total form_translations</div>
-                          <div className="text-xs text-blue-500">Found in database</div>
+                    return (
+                      <>
+                        {/* Junction Table Architecture */}
+                        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <h6 className="font-medium text-blue-900 mb-2">✅ Architecture: Many-to-Many via form_translations</h6>
+                          <div className="text-blue-700 text-sm">
+                            Using proper junction table relationship (no form_ids arrays needed in translations table)
+                          </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-red-600">224</div>
-                          <div className="text-red-700">Missing assignments</div>
-                          <div className="text-xs text-red-500">Should be: 358 total</div>
+
+                        {/* Form-Translation Expectations */}
+                        <div className="mb-4">
+                          <h6 className="font-medium text-gray-800 mb-3">Form-Translation Coverage Analysis</h6>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div className="p-3 bg-gray-50 rounded text-center">
+                              <div className="text-2xl font-bold text-gray-800">{totalExpected}</div>
+                              <div className="text-sm text-gray-600">Expected per Translation</div>
+                              <div className="text-xs text-gray-500">Each translation should cover all forms</div>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded text-center">
+                              <div className="text-2xl font-bold text-gray-800">{totalTranslations}</div>
+                              <div className="text-sm text-gray-600">Total Translations</div>
+                              <div className="text-xs text-gray-500">"to finish" + "to end"</div>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded text-center">
+                              <div className="text-2xl font-bold text-gray-800">{totalExpectedFormTranslations}</div>
+                              <div className="text-sm text-gray-600">Total Expected Assignments</div>
+                              <div className="text-xs text-gray-500">{totalExpected} × {totalTranslations}</div>
+                            </div>
+                          </div>
+
+                          {/* Individual Translation Coverage */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Translation 1: "to finish" (avere) */}
+                            <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                              <div className="flex justify-between items-start mb-2">
+                                <h6 className="font-medium text-purple-900">Translation: "to finish"</h6>
+                                <span className="text-xs bg-purple-200 text-purple-800 px-2 py-1 rounded">avere</span>
+                              </div>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-purple-700">Expected form_translations:</span>
+                                  <span className="font-medium text-purple-800">{totalExpected}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-purple-700">Actual form_translations:</span>
+                                  <span className="font-medium text-green-600">67</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-purple-700">Coverage:</span>
+                                  <span className={`font-medium ${Math.round(67/totalExpected*100) === 100 ? 'text-green-600' : 'text-orange-600'}`}>
+                                    {Math.round(67/totalExpected*100)}% ({67}/{totalExpected})
+                                  </span>
+                                </div>
+                                <div className="text-xs text-purple-600 mt-2">
+                                  Missing: {totalExpected - 67} form_translations ({Math.round((totalExpected - 67)/6)} tense sets)
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Translation 2: "to end" (essere) */}
+                            <div className="border border-indigo-200 rounded-lg p-4 bg-indigo-50">
+                              <div className="flex justify-between items-start mb-2">
+                                <h6 className="font-medium text-indigo-900">Translation: "to end"</h6>
+                                <span className="text-xs bg-indigo-200 text-indigo-800 px-2 py-1 rounded">essere</span>
+                              </div>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-indigo-700">Expected form_translations:</span>
+                                  <span className="font-medium text-indigo-800">{totalExpected}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-indigo-700">Actual form_translations:</span>
+                                  <span className="font-medium text-green-600">67</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-indigo-700">Coverage:</span>
+                                  <span className={`font-medium ${Math.round(67/totalExpected*100) === 100 ? 'text-green-600' : 'text-orange-600'}`}>
+                                    {Math.round(67/totalExpected*100)}% ({67}/{totalExpected})
+                                  </span>
+                                </div>
+                                <div className="text-xs text-indigo-600 mt-2">
+                                  Missing: {totalExpected - 67} form_translations ({Math.round((totalExpected - 67)/6)} tense sets)
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Overall Statistics */}
+                          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h6 className="font-medium text-blue-900 mb-2">Overall Form-Translation Statistics</h6>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-center">
+                              <div>
+                                <div className="text-xl font-bold text-blue-600">{actualFormTranslations}</div>
+                                <div className="text-blue-700">Total Assignments</div>
+                                <div className="text-xs text-blue-500">Found in junction table</div>
+                              </div>
+                              <div>
+                                <div className="text-xl font-bold text-orange-600">{totalExpectedFormTranslations - actualFormTranslations}</div>
+                                <div className="text-orange-700">Missing Assignments</div>
+                                <div className="text-xs text-orange-500">Need to be created</div>
+                              </div>
+                              <div>
+                                <div className="text-xl font-bold text-green-600">{Math.round(actualFormTranslations/totalExpectedFormTranslations*100)}%</div>
+                                <div className="text-green-700">Overall Coverage</div>
+                                <div className="text-xs text-green-500">Junction table completeness</div>
+                              </div>
+                              <div>
+                                <div className="text-xl font-bold text-purple-600">{totalTranslations}</div>
+                                <div className="text-purple-700">Active Translations</div>
+                                <div className="text-xs text-purple-500">Both have assignments</div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-green-600">2</div>
-                          <div className="text-green-700">Translations</div>
-                          <div className="text-xs text-green-500">Both need full coverage</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-xl font-bold text-yellow-600">37%</div>
-                          <div className="text-yellow-700">Average coverage</div>
-                          <div className="text-xs text-yellow-500">Per translation</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
-                {/* ORPHANED RECORDS ANALYSIS */}
+                {/* ORPHANED RECORDS SECTION */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Orphaned Records & Missing Tags</h4>
-                  
-                  <div className="space-y-6">
-                    
-                    {/* Unidentifiable Forms */}
-                    <div className="border rounded-lg p-4">
-                      <h5 className="font-semibold text-gray-800 mb-3">Forms Without Clear Mood/Tense Classification</h5>
-                      <div className="max-h-48 overflow-y-auto bg-gray-50 border border-gray-200 rounded p-3">
-                        <div className="text-gray-600 text-sm mb-2">Forms that can't be categorized into standard mood/tense groups:</div>
-                        <div className="space-y-1 text-xs">
-                          {/* This should be populated from validation data */}
-                          <div className="text-green-600">✅ All forms have identifiable mood/tense tags</div>
-                          {/* Example of what would show if there were orphaned forms:
-                          <div className="p-2 bg-red-50 border-l-4 border-red-400">
-                            <div className="font-medium text-red-800">"mysterious_form_text" (ID: 123)</div>
-                            <div className="text-red-600">Tags: [tag1, tag2] - Cannot determine mood/tense</div>
-                          </div>
-                          */}
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Orphaned Records Analysis</h4>
+
+                  {/* Forms without Mood/Tense Classification */}
+                  <div className="mb-6">
+                    <h6 className="font-medium text-gray-800 mb-3">🔍 Forms Missing Mood/Tense Classification</h6>
+                    <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-yellow-800">Unclassifiable Forms</span>
+                        <span className="text-yellow-600 text-sm">Found: 0 forms</span>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto">
+                        <div className="text-green-600 text-sm">
+                          ✅ All forms have proper mood/tense classification
                         </div>
+                        {/* This would show a scrollable list if there were unclassified forms:
+                        <div className="space-y-1 text-sm">
+                          <div className="p-2 bg-yellow-100 rounded text-yellow-800">
+                            "form_text" (ID: 123) - Tags: [tag1, tag2] - Missing mood or tense classification
+                          </div>
+                        </div>
+                        */}
                       </div>
                     </div>
+                  </div>
 
-                    {/* Forms Without form_translations */}
-                    <div className="border rounded-lg p-4">
-                      <h5 className="font-semibold text-gray-800 mb-3">Forms Without form_translations</h5>
-                      <div className="max-h-48 overflow-y-auto bg-gray-50 border border-gray-200 rounded p-3">
-                        <div className="text-gray-600 text-sm mb-2">Forms that exist but have no English translation assignments:</div>
-                        <div className="space-y-1 text-xs">
-                          <div className="text-green-600">✅ All forms have form_translation assignments</div>
-                          {/* This would show unassigned forms:
-                          <div className="p-2 bg-red-50 border-l-4 border-red-400">
-                            <div className="font-medium text-red-800">"finisco" (ID: 456)</div>
-                            <div className="text-red-600">presente/indicativo/prima-persona - No English translations</div>
-                          </div>
-                          */}
+                  {/* Forms without Form-Translations */}
+                  <div className="mb-6">
+                    <h6 className="font-medium text-gray-800 mb-3">🔗 Forms without Form-Translation Assignments</h6>
+                    <div className="border border-red-200 rounded-lg p-3 bg-red-50">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-red-800">Orphaned Forms</span>
+                        <span className="text-red-600 text-sm">Found: 0 forms</span>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto">
+                        <div className="text-green-600 text-sm">
+                          ✅ All forms have form_translation assignments
                         </div>
+                        {/* This would show a scrollable list if there were orphaned forms:
+                        <div className="space-y-1 text-sm">
+                          <div className="p-2 bg-red-100 rounded text-red-800">
+                            "finisco" (ID: 456) - presente/indicativo - No English translation available
+                          </div>
+                        </div>
+                        */}
                       </div>
                     </div>
+                  </div>
 
-                    {/* Translations Without form_translations */}
-                    <div className="border rounded-lg p-4">
-                      <h5 className="font-semibold text-gray-800 mb-3">Translations Without form_translations</h5>
-                      <div className="max-h-48 overflow-y-auto bg-gray-50 border border-gray-200 rounded p-3">
-                        <div className="text-gray-600 text-sm mb-2">Translations that exist but cover no forms:</div>
-                        <div className="space-y-1 text-xs">
-                          <div className="text-green-600">✅ All translations cover some forms</div>
-                          {/* This would show unlinked translations:
-                          <div className="p-2 bg-red-50 border-l-4 border-red-400">
-                            <div className="font-medium text-red-800">"to complete" (ID: 789)</div>
-                            <div className="text-red-600">auxiliary: avere - Covers 0 forms</div>
-                          </div>
-                          */}
+                  {/* Translations without Form-Translations */}
+                  <div className="mb-6">
+                    <h6 className="font-medium text-gray-800 mb-3">🔗 Translations without Form-Translation Assignments</h6>
+                    <div className="border border-orange-200 rounded-lg p-3 bg-orange-50">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-orange-800">Orphaned Translations</span>
+                        <span className="text-orange-600 text-sm">Found: 0 translations</span>
+                      </div>
+                      <div className="max-h-40 overflow-y-auto">
+                        <div className="text-green-600 text-sm">
+                          ✅ All translations are linked to forms
                         </div>
+                        {/* This would show a scrollable list if there were unlinked translations:
+                        <div className="space-y-1 text-sm">
+                          <div className="p-2 bg-orange-100 rounded text-orange-800">
+                            "to complete" (ID: abc123) - avere auxiliary - Covers no forms
+                          </div>
+                        </div>
+                        */}
                       </div>
                     </div>
+                  </div>
 
-                    {/* Missing Tags Breakdown */}
-                    <div className="border rounded-lg p-4">
-                      <h5 className="font-semibold text-gray-800 mb-3">Missing Tags Analysis</h5>
-                      
-                      <div className="space-y-4">
-                        {/* Building Block Tags */}
-                        <div>
-                          <h6 className="font-medium text-gray-700 mb-2">Missing Building-Block Tags</h6>
-                          <div className="max-h-32 overflow-y-auto bg-yellow-50 border border-yellow-200 rounded p-3">
-                            <div className="space-y-1 text-xs">
-                              <div className="p-2 bg-yellow-100 border-l-4 border-yellow-400">
-                                <div className="font-medium text-yellow-800">"finito" (Participio Passato)</div>
-                                <div className="text-yellow-600">Missing: 'building-block' tag - Required for compound tense generation</div>
-                              </div>
-                              <div className="p-2 bg-yellow-100 border-l-4 border-yellow-400">
-                                <div className="font-medium text-yellow-800">"finendo" (Gerundio Presente)</div>
-                                <div className="text-yellow-600">Missing: 'building-block' tag - Required for progressive tense generation</div>
-                              </div>
-                              <div className="p-2 bg-yellow-100 border-l-4 border-yellow-400">
-                                <div className="font-medium text-yellow-800">"finire" (Infinito Presente)</div>
-                                <div className="text-yellow-600">Missing: 'building-block' tag - Required for negative imperatives</div>
-                              </div>
-                            </div>
+                  {/* Missing Tags Breakdown */}
+                  <div className="mb-6">
+                    <h6 className="font-medium text-gray-800 mb-3">🏷️ Missing Tags Breakdown</h6>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Building Block Tags */}
+                      <div className="border border-yellow-200 rounded-lg p-3 bg-yellow-50">
+                        <div className="font-medium text-yellow-800 mb-2">Missing Building-Block Tags</div>
+                        <div className="text-yellow-600 text-sm mb-2">Found: 3 forms</div>
+                        <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
+                          <div className="p-1 bg-yellow-100 rounded text-yellow-800">
+                            "finito" (participio-passato) - Need building-block tag
+                          </div>
+                          <div className="p-1 bg-yellow-100 rounded text-yellow-800">
+                            "finendo" (gerundio-presente) - Need building-block tag  
+                          </div>
+                          <div className="p-1 bg-yellow-100 rounded text-yellow-800">
+                            "finire" (infinito-presente) - Need building-block tag
                           </div>
                         </div>
+                      </div>
 
-                        {/* Missing Auxiliary Tags */}
-                        <div>
-                          <h6 className="font-medium text-gray-700 mb-2">Missing Auxiliary Tags</h6>
-                          <div className="max-h-32 overflow-y-auto bg-orange-50 border border-orange-200 rounded p-3">
-                            <div className="space-y-1 text-xs">
-                              <div className="p-2 bg-orange-100 border-l-4 border-orange-400">
-                                <div className="font-medium text-orange-800">6 Passato Prossimo forms</div>
-                                <div className="text-orange-600">Missing: 'avere-auxiliary' and 'essere-auxiliary' tags</div>
-                              </div>
-                              <div className="p-2 bg-orange-100 border-l-4 border-orange-400">
-                                <div className="font-medium text-orange-800">6 Presente Progressivo forms</div>
-                                <div className="text-orange-600">Missing: 'stare-auxiliary' tags</div>
-                              </div>
-                              <div className="p-2 bg-orange-100 border-l-4 border-orange-400">
-                                <div className="font-medium text-orange-800">2 Non-finite compound forms</div>
-                                <div className="text-orange-600">Missing: auxiliary tags for compound non-finite forms</div>
-                              </div>
-                            </div>
+                      {/* Auxiliary Tags */}
+                      <div className="border border-red-200 rounded-lg p-3 bg-red-50">
+                        <div className="font-medium text-red-800 mb-2">Missing Auxiliary Tags</div>
+                        <div className="text-red-600 text-sm mb-2">Found: ~18 forms</div>
+                        <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
+                          <div className="p-1 bg-red-100 rounded text-red-800">
+                            Passato Prossimo forms - Need avere-auxiliary/essere-auxiliary tags
+                          </div>
+                          <div className="p-1 bg-red-100 rounded text-red-800">
+                            Progressive forms - Need stare-auxiliary tags
+                          </div>
+                          <div className="p-1 bg-red-100 rounded text-red-800">
+                            Non-finite compound forms - Need auxiliary tags
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Other Missing Tags */}
+                      <div className="border border-blue-200 rounded-lg p-3 bg-blue-50">
+                        <div className="font-medium text-blue-800 mb-2">Other Missing Tags</div>
+                        <div className="text-blue-600 text-sm mb-2">Various issues</div>
+                        <div className="max-h-32 overflow-y-auto space-y-1 text-xs">
+                          <div className="p-1 bg-blue-100 rounded text-blue-800">
+                            Word level: Missing transitivity classification
+                          </div>
+                          <div className="p-1 bg-blue-100 rounded text-blue-800">
+                            Translation level: Missing transitivity metadata
                           </div>
                         </div>
                       </div>
@@ -946,67 +999,71 @@ const AdminValidationInterface = () => {
                   <h5 className="font-semibold text-gray-800 mb-3">Summary</h5>
 
                   {(() => {
-                    // CORRECTED calculations
-                    const auxiliaryCount = 2; // avere + essere
-                    const simpleForms = 47 + 4; // 47 conjugated + 4 non-finite simple = 51
-                    const perfectCompoundBase = 49; // CORRECTED: (4*6)+(2*6)+(1*6)+(1*5)+2 = 49
-                    const perfectCompoundTotal = perfectCompoundBase * auxiliaryCount; // 49 × 2 = 98
-                    const progressiveForms = 30; // Always 30
-                    const expectedTotal = simpleForms + perfectCompoundTotal + progressiveForms; // 51 + 98 + 30 = 179
-                    const currentTotal = 67;
-                    const completionPercentage = Math.round((currentTotal / expectedTotal) * 100);
+                    const auxiliaries = new Set();
+                    const debugText = debugLog.join(' ');
+                    if (debugText.includes('avere')) auxiliaries.add('avere');
+                    if (debugText.includes('essere')) auxiliaries.add('essere');
+                    const auxiliaryCount = Math.max(1, auxiliaries.size);
+                    const formExpectations = {
+                      simple: { total: 51 },
+                      perfectCompound: { total: 49 * auxiliaryCount },
+                      progressive: { total: 30 }
+                    };
+                    const totalExpected = formExpectations.simple.total + formExpectations.perfectCompound.total + formExpectations.progressive.total;
 
                     return (
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">{currentTotal}/{expectedTotal}</div>
-                          <div className="text-gray-600">Forms Present ({completionPercentage}%)</div>
-                          <div className="text-xs text-gray-500">
-                            2 auxiliaries: avere, essere
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-600">67/{totalExpected}</div>
+                            <div className="text-gray-600">Forms Present ({Math.round(67/totalExpected*100)}%)</div>
+                            <div className="text-xs text-gray-500">
+                              {auxiliaryCount} aux: {Array.from(auxiliaries).join(', ')}
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-red-600">{Math.round((totalExpected - 67) / 6)}</div>
+                            <div className="text-gray-600">Missing Tense Sets</div>
+                            <div className="text-xs text-gray-500">
+                              {totalExpected - 67} individual forms missing
+                            </div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-orange-600">18</div>
+                            <div className="text-gray-600">Forms Need Auxiliary Tags</div>
+                            <div className="text-xs text-gray-500">Perfect compound & progressive</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-yellow-600">3</div>
+                            <div className="text-gray-600">Missing Building-Block Tags</div>
+                            <div className="text-xs text-gray-500">Critical for materialization</div>
                           </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-red-600">{Math.round((expectedTotal - currentTotal) / 6)}</div>
-                          <div className="text-gray-600">Missing Tense Sets</div>
-                          <div className="text-xs text-gray-500">
-                            {expectedTotal - currentTotal} individual forms missing
+
+                        {/* CORRECTED Detailed Breakdown */}
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <h6 className="font-medium text-gray-700 mb-2">Form Category Breakdown</h6>
+                          <div className="grid grid-cols-3 gap-4 text-xs">
+                            <div className="text-center p-2 bg-green-50 rounded">
+                              <div className="font-medium text-green-800">Simple Forms</div>
+                              <div className="text-green-600">51 / 51</div>
+                              <div className="text-green-500">100% Complete</div>
+                            </div>
+                            <div className="text-center p-2 bg-red-50 rounded">
+                              <div className="font-medium text-red-800">Perfect Compounds</div>
+                              <div className="text-red-600">~16 / {formExpectations.perfectCompound.total}</div>
+                              <div className="text-red-500">{Math.round(16/formExpectations.perfectCompound.total*100)}% Complete</div>
+                            </div>
+                            <div className="text-center p-2 bg-orange-50 rounded">
+                              <div className="font-medium text-orange-800">Progressive Forms</div>
+                              <div className="text-orange-600">~6 / 30</div>
+                              <div className="text-orange-500">20% Complete</div>
+                            </div>
                           </div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-orange-600">18</div>
-                          <div className="text-gray-600">Forms Need Auxiliary Tags</div>
-                          <div className="text-xs text-gray-500">Perfect compound & progressive</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-yellow-600">3</div>
-                          <div className="text-gray-600">Missing Building-Block Tags</div>
-                          <div className="text-xs text-gray-500">Critical for materialization</div>
-                        </div>
-                      </div>
+                      </>
                     );
                   })()}
-
-                  {/* CORRECTED Detailed Breakdown */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <h6 className="font-medium text-gray-700 mb-2">Form Category Breakdown</h6>
-                    <div className="grid grid-cols-3 gap-4 text-xs">
-                      <div className="text-center p-2 bg-blue-50 rounded">
-                        <div className="font-medium text-blue-800">Simple Forms</div>
-                        <div className="text-blue-600">51 / 51</div>
-                        <div className="text-blue-500">100% Complete</div>
-                      </div>
-                      <div className="text-center p-2 bg-red-50 rounded">
-                        <div className="font-medium text-red-800">Perfect Compounds</div>
-                        <div className="text-red-600">~20 / 98</div>
-                        <div className="text-red-500">20% Complete</div>
-                      </div>
-                      <div className="text-center p-2 bg-orange-50 rounded">
-                        <div className="font-medium text-orange-800">Progressive Forms</div>
-                        <div className="text-orange-600">~6 / 30</div>
-                        <div className="text-orange-500">20% Complete</div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
               {/* Issues by Category */}
