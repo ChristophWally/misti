@@ -1533,6 +1533,12 @@ export class ConjugationComplianceValidator {
         priorityLevel: this.calculateVerbPriority(word),
         estimatedFixTime: '0 minutes',
         detailedAnalysis: {
+          rawData: {
+            wordTags: word.tags || [],
+            translations: translations || [],
+            forms: forms || [],
+            formTranslations: formTranslations || []
+          },
           auxiliaries,
           formCounts: {
             byMood: formCountsByMood,

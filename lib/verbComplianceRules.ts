@@ -497,6 +497,30 @@ export interface VerbComplianceReport {
   priorityLevel: 'high' | 'medium' | 'low';
   estimatedFixTime: string;
   detailedAnalysis?: {
+    rawData: {
+      wordTags: string[];
+      translations: Array<{
+        id: string;
+        translation: string;
+        context_metadata: any;
+        display_priority: number;
+      }>;
+      forms: Array<{
+        id: number;
+        form_text: string;
+        form_type: string;
+        tags: string[];
+        phonetic_form?: string;
+        ipa?: string;
+        created_at?: string;
+      }>;
+      formTranslations: Array<{
+        id: string;
+        form_id: number;
+        word_translation_id: string;
+        translation: string;
+      }>;
+    };
     auxiliaries: string[];
     formCounts: {
       byMood: { [mood: string]: { [tense: string]: number } };
