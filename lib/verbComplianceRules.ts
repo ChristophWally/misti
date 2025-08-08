@@ -239,13 +239,6 @@ export const FORM_LEVEL_REQUIRED_TAGS = {
     rule: 'exactly-one-for-compound-forms',
     priority: 'critical' as ValidationPriority,
     epicRequirement: 'Explicit auxiliary tags eliminate runtime inference requirement'
-  },
-
-  building_blocks: {
-    tags: ['building-block'],
-    rule: 'required-for-participles-and-gerunds',
-    priority: 'critical' as ValidationPriority,
-    epicRequirement: 'Building blocks enable compound form generation without materialization'
   }
 };
 
@@ -289,7 +282,7 @@ export const CROSS_TABLE_VALIDATION_RULES = {
   },
 
   'building-block-completeness': {
-    rule: 'All verbs must have participio-passato and gerundio-presente forms with building-block tags',
+    rule: 'All verbs must have participio-passato and gerundio-presente forms',
     priority: 'critical' as ValidationPriority,
     epicRequirement: 'Building blocks essential for compound tense generation',
     autoFixable: false,
@@ -320,7 +313,7 @@ export const CROSS_TABLE_VALIDATION_RULES = {
 export const EPIC_BUILDING_BLOCK_REQUIREMENTS = {
   'participio-passato': {
     required: true,
-    tags: ['participio', 'participio-passato', 'simple', 'building-block'],
+    tags: ['participio', 'participio-passato', 'simple'],
     priority: 'critical' as ValidationPriority,
     impact: 'Cannot generate any compound perfect tenses (passato prossimo, trapassato prossimo, etc.)',
     epicRequirement: 'Essential building block for 14 compound tense categories'
@@ -328,7 +321,7 @@ export const EPIC_BUILDING_BLOCK_REQUIREMENTS = {
 
   'gerundio-presente': {
     required: true,
-    tags: ['gerundio', 'gerundio-presente', 'simple', 'building-block'],
+    tags: ['gerundio', 'gerundio-presente', 'simple'],
     priority: 'critical' as ValidationPriority,
     impact: 'Cannot generate progressive tenses (presente progressivo, passato progressivo, etc.)',
     epicRequirement: 'Essential building block for 5 progressive tense categories'
@@ -390,7 +383,6 @@ export const CRITICAL_COMPLIANCE_RULES = [
   'moods',
   'tenses',
   'auxiliary_tags',
-  'building_blocks',
   'translation-form-references',
   'auxiliary-consistency',
   'building-block-completeness'
@@ -552,7 +544,6 @@ export interface VerbComplianceReport {
       translationsWithoutForms: Array<{ id: string; translation: string; auxiliary: string; }>;
       formsWithoutMoodTense: Array<{ id: number; text: string; tags: string[]; }>;
       missingTags: {
-        buildingBlocks: Array<{ id: number; text: string; missingTag: string; }>;
         auxiliaries: Array<{ id: number; text: string; expectedTag: string; }>;
       };
     };

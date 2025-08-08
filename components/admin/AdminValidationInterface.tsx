@@ -618,7 +618,6 @@ const AdminValidationInterface = () => {
                       persons: new Set<string>(),
                       numbers: new Set<string>(),
                       auxiliaries: new Set<string>(),
-                      buildingBlocks: new Set<string>(),
                       other: new Set<string>()
                     };
 
@@ -631,8 +630,6 @@ const AdminValidationInterface = () => {
                           tagsByCategory.moods.add(tag);
                         } else if (tag.includes('auxiliary')) {
                           tagsByCategory.auxiliaries.add(tag);
-                        } else if (tag === 'building-block') {
-                          tagsByCategory.buildingBlocks.add(tag);
                         } else if (tag.includes('persona')) {
                           tagsByCategory.persons.add(tag);
                         } else if (['singolare', 'plurale'].includes(tag)) {
@@ -1212,20 +1209,19 @@ const AdminValidationInterface = () => {
                 )}
               </div>
 
-              {/* Building Blocks Analysis - CONSOLIDATED REAL DATA */}
+              {/* Building Blocks Analysis - NO REDUNDANT TAGS REQUIRED */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Building Blocks Analysis</h4>
                 <div className="text-sm text-gray-600 mb-4">
-                  Building blocks are essential forms needed for compound tense generation. They must have 'building-block' tags for the materialization engine to identify them.
+                  Building blocks are essential forms needed for compound tense generation. Identified by their grammatical classification (no additional tags needed).
                 </div>
 
                 {(() => {
                   const analysis = validationResult.detailedAnalysis;
                   if (!analysis?.rawData) return <div className="text-red-600">No building blocks data available</div>;
-
+                  
                   const forms = analysis.rawData.forms;
-
-                  // Define required building blocks
+                  
                   const requiredBuildingBlocks = [
                     {
                       name: 'Past Participle',
@@ -1235,7 +1231,7 @@ const AdminValidationInterface = () => {
                       impact: 'passato prossimo, trapassato prossimo, futuro anteriore, condizionale passato'
                     },
                     {
-                      name: 'Present Gerund',
+                      name: 'Present Gerund', 
                       moodTag: 'gerundio',
                       tenseTag: 'gerundio-presente',
                       purpose: 'Progressive tenses',
@@ -1243,185 +1239,105 @@ const AdminValidationInterface = () => {
                     },
                     {
                       name: 'Present Infinitive',
-                      moodTag: 'infinito',
+                      moodTag: 'infinito', 
                       tenseTag: 'infinito-presente',
                       purpose: 'Negative imperatives',
                       impact: 'negative imperatives, clitic attachment base'
                     }
                   ];
-
+                  
                   return (
                     <div className="space-y-4">
-                      {/* Building Blocks Status Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {requiredBuildingBlocks.map((block, idx) => {
-                          // Find the actual form in the data
-                          const foundForm = forms.find(f =>
-                            f.tags?.includes(block.moodTag) &&
+                          // Find form by grammatical tags only
+                          const foundForm = forms.find(f => 
+                            f.tags?.includes(block.moodTag) && 
                             f.tags?.includes(block.tenseTag)
                           );
-
-                          // Check if it has building-block tag
-                          const hasBuildingBlockTag = foundForm?.tags?.includes('building-block');
-                          const isComplete = foundForm && hasBuildingBlockTag;
+                          
                           const exists = !!foundForm;
-
+                          
                           return (
                             <div key={idx} className={`border rounded-lg p-4 ${
-                              isComplete ? 'border-green-200 bg-green-50' :
-                              exists ? 'border-yellow-200 bg-yellow-50' : 'border-red-200 bg-red-50'
+                              exists ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
                             }`}>
-                              {/* Header */}
                               <div className="flex items-center justify-between mb-3">
-                                <div className={`font-medium ${
-                                  isComplete ? 'text-green-800' : exists ? 'text-yellow-800' : 'text-red-800'
-                                }`}>
+                                <div className={`font-medium ${exists ? 'text-green-800' : 'text-red-800'}`}>
                                   {block.name}
                                 </div>
-                                <span className={`text-lg ${
-                                  isComplete ? 'text-green-600' : exists ? 'text-yellow-600' : 'text-red-600'
-                                }`}>
-                                  {isComplete ? '✅' : exists ? '⚠️' : '❌'}
+                                <span className={`text-lg ${exists ? 'text-green-600' : 'text-red-600'}`}>
+                                  {exists ? '✅' : '❌'}
                                 </span>
                               </div>
-
-                              {/* Form Details */}
-                              <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Form exists:</span>
-                                  <span className={exists ? 'text-green-600' : 'text-red-600'}>
-                                    {exists ? '✓' : '✗'}
-                                  </span>
+                              
+                              {exists ? (
+                                <div className="space-y-2 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Form text:</span>
+                                    <span className="font-mono text-gray-800">"{foundForm.form_text}"</span>
+                                  </div>
+                                  
+                                  <div className="text-green-600 text-sm">
+                                    ✅ Identified by grammatical tags: {block.moodTag}, {block.tenseTag}
+                                  </div>
+                                  
+                                  <div className="mt-2">
+                                    <div className="text-xs text-gray-600 mb-1">All tags:</div>
+                                    <div className="flex flex-wrap gap-1">
+                                      {(foundForm.tags || []).map((tag, tagIdx) => (
+                                        <span key={tagIdx} className={`px-1.5 py-0.5 rounded text-xs font-mono ${
+                                          tag === block.moodTag || tag === block.tenseTag ? 'bg-blue-100 text-blue-800' :
+                                          'bg-gray-100 text-gray-700'
+                                        }`}>
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
                                 </div>
-
-                                {exists && (
-                                  <>
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Form text:</span>
-                                      <span className="font-mono text-gray-800">"{foundForm.form_text}"</span>
-                                    </div>
-
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-600">Building-block tag:</span>
-                                      <span className={hasBuildingBlockTag ? 'text-green-600' : 'text-red-600'}>
-                                        {hasBuildingBlockTag ? '✓' : '✗'}
-                                      </span>
-                                    </div>
-
-                                    {/* All tags for this form */}
-                                    <div className="mt-2">
-                                      <div className="text-xs text-gray-600 mb-1">All tags:</div>
-                                      <div className="flex flex-wrap gap-1">
-                                        {(foundForm.tags || []).map((tag, tagIdx) => (
-                                          <span key={tagIdx} className={`px-1.5 py-0.5 rounded text-xs font-mono ${
-                                            tag === 'building-block' ? 'bg-green-100 text-green-800' :
-                                            tag === block.moodTag || tag === block.tenseTag ? 'bg-blue-100 text-blue-800' :
-                                            'bg-gray-100 text-gray-700'
-                                          }`}>
-                                            {tag}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-
-                              {/* Purpose */}
+                              ) : (
+                                <div className="bg-red-100 border border-red-200 rounded p-2">
+                                  <div className="text-xs text-red-800 font-medium">Missing Form:</div>
+                                  <div className="text-xs text-red-700">
+                                    Need form with tags: {block.moodTag}, {block.tenseTag}
+                                  </div>
+                                </div>
+                              )}
+                              
                               <div className="mt-3 p-2 border rounded bg-blue-50">
                                 <div className="text-xs text-blue-900 font-medium">Purpose:</div>
                                 <div className="text-xs text-blue-800">{block.purpose}</div>
                                 <div className="text-xs text-blue-700 mt-1">Enables: {block.impact}</div>
                               </div>
-
-                              {/* Action Required */}
-                              {!isComplete && (
-                                <div className={`mt-3 p-2 rounded ${
-                                  !exists ? 'bg-red-100 border border-red-200' : 'bg-yellow-100 border border-yellow-200'
-                                }`}>
-                                  <div className={`text-xs font-medium ${!exists ? 'text-red-800' : 'text-yellow-800'}`}>
-                                    Action Required:
-                                  </div>
-                                  <div className={`text-xs ${!exists ? 'text-red-700' : 'text-yellow-700'}`}>
-                                    {!exists ?
-                                      `Create ${block.moodTag}/${block.tenseTag} form` :
-                                      `Add 'building-block' tag to form ID: ${foundForm.id}`
-                                    }
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           );
                         })}
                       </div>
-
-                      {/* Summary Statistics */}
+                      
+                      {/* Simplified Summary */}
                       <div className="border rounded-lg p-4 bg-gray-50">
                         <h6 className="font-medium text-gray-900 mb-3">Building Blocks Summary</h6>
-
                         {(() => {
-                          const totalRequired = requiredBuildingBlocks.length;
-                          const formsExist = requiredBuildingBlocks.filter(block =>
-                            forms.some(f =>
-                              f.tags?.includes(block.moodTag) &&
-                              f.tags?.includes(block.tenseTag)
-                            )
+                          const foundBlocks = requiredBuildingBlocks.filter(block => 
+                            forms.some(f => f.tags?.includes(block.moodTag) && f.tags?.includes(block.tenseTag))
                           ).length;
-                          const properlyTagged = requiredBuildingBlocks.filter(block =>
-                            forms.some(f =>
-                              f.tags?.includes(block.moodTag) &&
-                              f.tags?.includes(block.tenseTag) &&
-                              f.tags?.includes('building-block')
-                            )
-                          ).length;
-
+                          
                           return (
-                            <div className="grid grid-cols-3 gap-4 text-center">
+                            <div className="grid grid-cols-2 gap-4 text-center">
                               <div>
-                                <div className="text-2xl font-bold text-blue-600">{formsExist}/{totalRequired}</div>
-                                <div className="text-sm text-gray-600">Forms Exist</div>
+                                <div className="text-2xl font-bold text-blue-600">{foundBlocks}/{requiredBuildingBlocks.length}</div>
+                                <div className="text-sm text-gray-600">Building Blocks Present</div>
                               </div>
                               <div>
-                                <div className="text-2xl font-bold text-green-600">{properlyTagged}/{totalRequired}</div>
-                                <div className="text-sm text-gray-600">Properly Tagged</div>
-                              </div>
-                              <div>
-                                <div className={`text-2xl font-bold ${properlyTagged === totalRequired ? 'text-green-600' : 'text-red-600'}`}>
-                                  {properlyTagged === totalRequired ? '✅' : '❌'}
+                                <div className={`text-2xl font-bold ${foundBlocks === requiredBuildingBlocks.length ? 'text-green-600' : 'text-red-600'}`}>
+                                  {foundBlocks === requiredBuildingBlocks.length ? '✅' : '❌'}
                                 </div>
-                                <div className="text-sm text-gray-600">Ready for Engine</div>
+                                <div className="text-sm text-gray-600">Ready for Compound Generation</div>
                               </div>
                             </div>
                           );
                         })()}
-                      </div>
-
-                      {/* Impact Analysis */}
-                      <div className="border rounded-lg p-4 bg-blue-50">
-                        <h6 className="font-medium text-blue-900 mb-2">Materialization Impact</h6>
-                        <div className="text-sm text-blue-800">
-                          Missing building blocks prevent the materialization engine from generating compound tenses.
-                          Each missing block affects multiple tense categories:
-                        </div>
-                        <ul className="mt-2 space-y-1 text-sm text-blue-700">
-                          {requiredBuildingBlocks.map((block, idx) => {
-                            const exists = forms.some(f =>
-                              f.tags?.includes(block.moodTag) &&
-                              f.tags?.includes(block.tenseTag) &&
-                              f.tags?.includes('building-block')
-                            );
-
-                            if (!exists) {
-                              return (
-                                <li key={idx} className="flex items-start">
-                                  <span className="text-red-500 mr-2">•</span>
-                                  <span><strong>{block.name}:</strong> Cannot generate {block.impact}</span>
-                                </li>
-                              );
-                            }
-                            return null;
-                          }).filter(Boolean)}
-                        </ul>
                       </div>
                     </div>
                   );
