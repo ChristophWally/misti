@@ -140,8 +140,8 @@ The following table provides the definitive specification for all verb forms tha
 | **15** | **Infinitive** | Infinito | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags` | `transitivity`, `semantic-type` | `infinitive`, `present`, `simple` | Enclitic attachment |
 | **25** | **Infinitive** | Infinito | Passato | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `semantic-type` | `infinitive`, `perfect`, `compound`, `materialized` | Pronoun-auxiliary + PP |
 | **26** | **Participle** | Participio | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags` | `semantic-type` | `participle`, `present`, `simple` | N/A |
-| **16** | **Participle** | Participio | Passato | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags`, `irregular-participle` | `semantic-type` | `participle`, `past`, `simple`, `building-block` | Building block for compounds |
-| **17** | **Gerund** | Gerundio | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags`, `irregular-gerund` | `semantic-type` | `gerund`, `present`, `simple`, `building-block` | Building block for progressives |
+| **16** | **Participle** | Participio | Passato | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags`, `irregular-participle` | `semantic-type` | `participle`, `past`, `simple` | Building block for compounds |
+| **17** | **Gerund** | Gerundio | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags`, `irregular-gerund` | `semantic-type` | `gerund`, `present`, `simple` | Building block for progressives |
 | **27** | **Gerund** | Gerundio | Passato | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `semantic-type` | `gerund`, `perfect`, `compound`, `materialized` | Pronoun-auxiliary + PP |
 
 ## Database Impact → "No structural change"
@@ -687,7 +687,7 @@ The system automatically filters materialized forms based on these constraints. 
 - All compound tenses based on translation auxiliary requirements (passato prossimo, trapassato prossimo, etc.)
 - All progressive tenses using stare auxiliary (presente progressivo, imperfetto progressivo, etc.)
 - All irregular forms including: irregular past participles (fatto, detto, posto), irregular gerunds (facendo, dicendo), irregular imperatives (fa', da', sta')
-- Building block forms marked with `building-block` tags for compound materialization
+- Past participles and present gerunds stored as building blocks for compound materialization, identified solely by their mood and tense tags
 
 **What's Generated Dynamically:**
 - Gender variants: materialized masculine forms → calculated feminine variants ("andato" → "andata")
@@ -1145,7 +1145,7 @@ const STANDARDIZED_FORM_TAGS = {
   form_type: ['simple', 'compound', 'progressive'],
   
   // Special markers - optional
-  special: ['irregular', 'building-block', 'calculated-variant', 'materialized']
+  special: ['irregular', 'calculated-variant', 'materialized']
 }
 ```
 
@@ -1246,9 +1246,9 @@ The system will include comprehensive validation that runs continuously to ensur
 
 ```javascript
 const DATA_QUALITY_RULES = {
-  // Every verb must have required building blocks
+  // Every verb must have required building blocks (participio-passato and gerundio-presente forms identified by mood and tense tags)
   building_blocks: {
-    rule: 'All verbs must have participio-passato and gerundio-presente forms',
+    rule: 'All verbs must have participio-passato and gerundio-presente forms identified solely by mood and tense tags',
     query: 'SELECT verb_id FROM missing_building_blocks_view',
     severity: 'critical'
   },
@@ -1453,7 +1453,7 @@ const FUTURE_MOOD_CONSTRUCTIONS = {
   conditionalPeriods: {
     current: 'conditional forms stored',
     future: 'se fossi... sarei... constructions',
-    foundation: 'Subjunctive + conditional forms provide building blocks'
+    foundation: 'Subjunctive + conditional forms provide building blocks identified by mood and tense alone'
   },
   
   subjunctiveSequences: {
@@ -1561,7 +1561,7 @@ This reordering follows proper operational safety principles: **Backup → Monit
 
 **Orthographic Precision:** All existing forms display proper Italian orthography including apostrophe placement, formal pronoun capitalization, and systematic hyphenation in stored constructions.
 
-**NEW: Admin Tools Validator Accuracy:** Word conjugation validator in admin tools section identifies architectural compliance issues across all dictionary verbs with ≥95% accuracy in detecting missing building blocks, tag inconsistencies, auxiliary tag problems, and translation-form reference integrity issues.
+**NEW: Admin Tools Validator Accuracy:** Word conjugation validator in admin tools section identifies architectural compliance issues across all dictionary verbs with ≥95% accuracy in detecting missing building blocks via mood and tense tags, tag inconsistencies, auxiliary tag problems, and translation-form reference integrity issues.
 
 **NEW: Translation-Form Mapping Validation:** Validation system verifies that every translation has a populated form_ids array, all referenced forms exist, and auxiliary tags are consistent between translations and their referenced forms. Zero tolerance for orphaned references or auxiliary mismatches.
 
@@ -1595,7 +1595,7 @@ This reordering follows proper operational safety principles: **Backup → Monit
 
 **NEW: Linguistic Quality Assurance:** All reflexive verb translations pass plurality constraint validation. Auxiliary assignments for state-change vs action verbs match Italian grammatical requirements. Form-to-translation assignments maintain semantic coherence across all verb meanings.
 
-**NEW: Foundation Completeness:** All existing dictionary verbs have required building blocks (past participle, gerund) for future materialization. No gaps remain that would prevent the materialization engine from functioning with any currently stored verb.
+**NEW: Foundation Completeness:** All existing dictionary verbs have required building blocks (past participle, gerund) for future materialization, identified through mood and tense tags without additional tagging. No gaps remain that would prevent the materialization engine from functioning with any currently stored verb.
 
 **NEW: Scope Boundary Validation:** Automated validation confirms that only base word clitics are stored, no negative forms exist in data, and complex constructions are properly excluded from current scope.
 
