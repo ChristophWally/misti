@@ -496,6 +496,43 @@ export interface VerbComplianceReport {
   migrationReadiness: boolean;
   priorityLevel: 'high' | 'medium' | 'low';
   estimatedFixTime: string;
+  detailedAnalysis?: {
+    auxiliaries: string[];
+    formCounts: {
+      byMood: { [mood: string]: { [tense: string]: number } };
+      byType: {
+        simple: number;
+        perfectCompound: number;
+        progressive: number;
+        total: number;
+      };
+      expectations: {
+        simple: number;
+        perfectCompound: number;
+        progressive: number;
+        total: number;
+      };
+    };
+    formTranslationCoverage: {
+      totalFormTranslations: number;
+      translationBreakdown: Array<{
+        translation: string;
+        auxiliary: string;
+        expected: number;
+        actual: number;
+        coverage: number;
+      }>;
+    };
+    orphanedRecords: {
+      formsWithoutTranslations: Array<{ id: number; text: string; tags: string[]; }>;
+      translationsWithoutForms: Array<{ id: string; translation: string; auxiliary: string; }>;
+      formsWithoutMoodTense: Array<{ id: number; text: string; tags: string[]; }>;
+      missingTags: {
+        buildingBlocks: Array<{ id: number; text: string; missingTag: string; }>;
+        auxiliaries: Array<{ id: number; text: string; expectedTag: string; }>;
+      };
+    };
+  };
 }
 
 export interface SystemComplianceReport {
