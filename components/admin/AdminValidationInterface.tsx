@@ -451,22 +451,22 @@ const AdminValidationInterface = () => {
                   })()}
                 </div>
 
-                {/* Translation Analysis with REAL DATA and GROUPED ERRORS */}
+                {/* Translation Analysis with INTEGRATED METADATA - REAL STRUCTURED DATA */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Translation Analysis</h4>
                   <div className="space-y-4">
                     {(() => {
-                      // Group translation issues by translation using real data
                       const analysis = validationResult.detailedAnalysis;
-                      if (!analysis) {
+                      if (!analysis?.rawData) {
                         return <div className="text-red-600">No translation analysis available</div>;
                       }
 
-                      const translationIssuesByTranslation = new Map();
+                      const translations = analysis.rawData.translations;
 
-                      // Group issues by translation
+                      // Group validation issues by translation
+                      const translationIssuesByTranslation = new Map();
                       validationResult.translationLevelIssues.forEach(issue => {
-                        const translationMatch = issue.message.match(/Translation.*?"([^\"]+)"/);
+                        const translationMatch = issue.message.match(/Translation.*?"([^"]+)"/);
                         const translationName = translationMatch ? translationMatch[1] : 'Unknown Translation';
 
                         if (!translationIssuesByTranslation.has(translationName)) {
@@ -475,52 +475,93 @@ const AdminValidationInterface = () => {
                         translationIssuesByTranslation.get(translationName).push(issue);
                       });
 
-                      // If no issues, show success state
-                      if (validationResult.translationLevelIssues.length === 0) {
-                        return (
-                          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="text-green-800 font-medium">✅ All translations properly configured</div>
-                            <div className="mt-2 text-sm text-green-700">
-                              All translations have required auxiliary and transitivity settings
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      // Show translations with their grouped issues
                       return (
                         <div className="space-y-4">
-                          {analysis.formTranslationCoverage.translationBreakdown.map((translation, idx) => {
+                          {translations.map((translation, idx) => {
                             const translationIssues = translationIssuesByTranslation.get(translation.translation) || [];
                             const hasIssues = translationIssues.length > 0;
+                            const metadata = translation.context_metadata || {};
+                            const coverage = analysis.formTranslationCoverage.translationBreakdown[idx];
 
                             return (
-                              <div
-                                key={idx}
-                                className={`border rounded-lg p-4 ${
-                                  hasIssues ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'
-                                }`}
-                              >
+                              <div key={idx} className={`border rounded-lg p-4 ${
+                                hasIssues ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'
+                              }`}>
+                                {/* Translation Header */}
                                 <div className="flex justify-between items-start mb-3">
                                   <div>
                                     <h6 className={`font-medium ${hasIssues ? 'text-red-900' : 'text-green-900'}`}>
                                       Translation: "{translation.translation}"
                                     </h6>
-                                    <div className="text-xs text-gray-600 mt-1">
-                                      Auxiliary: {translation.auxiliary} | Coverage: {translation.coverage}% ({translation.actual}/{translation.expected})
+                                    <div className="text-xs text-gray-600 mt-1 flex items-center gap-3">
+                                      <span>Priority: {translation.display_priority}</span>
+                                      <span>Coverage: {coverage?.coverage || 0}% ({coverage?.actual || 0}/{130})</span>
                                     </div>
                                   </div>
-                                  <span
-                                    className={`text-xs px-2 py-1 rounded ${
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs px-2 py-1 rounded ${
                                       hasIssues ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'
-                                    }`}
-                                  >
-                                    {hasIssues ? `${translationIssues.length} issues` : 'No issues'}
-                                  </span>
+                                    }`}>
+                                      {hasIssues ? `${translationIssues.length} issues` : 'No issues'}
+                                    </span>
+                                    <span className={`text-xs px-2 py-1 rounded ${
+                                      idx === 0 ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'
+                                    }`}>
+                                      {metadata.auxiliary || 'no aux'}
+                                    </span>
+                                  </div>
                                 </div>
 
+                                {/* Metadata Display */}
+                                <div className="mb-3">
+                                  <h6 className="text-sm font-medium text-gray-700 mb-2">Translation Metadata</h6>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    {[
+                                      { name: 'Auxiliary', value: metadata.auxiliary, required: true },
+                                      { name: 'Transitivity', value: metadata.transitivity, required: true },
+                                      { name: 'Usage', value: metadata.usage, required: false },
+                                      { name: 'Register', value: metadata.register, required: false }
+                                    ].map((field, fieldIdx) => {
+                                      const hasValue = field.value && field.value !== 'undefined';
+                                      return (
+                                        <div key={fieldIdx} className={`p-2 rounded text-xs border ${
+                                          hasValue ? 'bg-green-50 border-green-200' :
+                                          field.required ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'
+                                        }`}>
+                                          <div className={`font-medium ${
+                                            hasValue ? 'text-green-800' : field.required ? 'text-red-800' : 'text-gray-600'
+                                          }`}>
+                                            {field.name}
+                                          </div>
+                                          <div className={`font-mono ${
+                                            hasValue ? 'text-green-700' : field.required ? 'text-red-600' : 'text-gray-500'
+                                          }`}>
+                                            {hasValue ? field.value : (field.required ? 'Missing' : 'Not set')}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* All Metadata Tags */}
+                                  {Object.keys(metadata).length > 0 && (
+                                    <div className="mt-2 p-2 border rounded bg-blue-50">
+                                      <div className="text-xs text-blue-900 font-medium mb-1">All metadata:</div>
+                                      <div className="flex flex-wrap gap-1">
+                                        {Object.entries(metadata).map(([key, value], metaIdx) => (
+                                          <span key={metaIdx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono bg-blue-100 text-blue-800">
+                                            {key}: {JSON.stringify(value)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Issues Display */}
                                 {hasIssues ? (
                                   <div className="space-y-2">
+                                    <h6 className="text-sm font-medium text-red-800">Validation Issues ({translationIssues.length}):</h6>
                                     {translationIssues.map((issue, issueIdx) => (
                                       <div key={issueIdx} className="p-3 bg-red-100 border border-red-200 rounded">
                                         <div className="text-red-800 font-medium text-sm">❌ {issue.message}</div>
@@ -544,8 +585,10 @@ const AdminValidationInterface = () => {
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-green-600 text-sm">
-                                    ✅ Translation properly configured with auxiliary and transitivity metadata
+                                  <div className="p-2 bg-green-100 border border-green-200 rounded">
+                                    <div className="text-green-600 text-sm">
+                                      ✅ Translation properly configured with all required metadata
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -555,92 +598,6 @@ const AdminValidationInterface = () => {
                       );
                     })()}
                   </div>
-                </div>
-
-                {/* Translation Level Metadata - REAL STRUCTURED DATA */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Translation Level Metadata</h4>
-
-                  {(() => {
-                    const analysis = validationResult.detailedAnalysis;
-                    if (!analysis?.rawData) return <div className="text-red-600">No translation data available</div>;
-
-                    const translations = analysis.rawData.translations;
-
-                    return (
-                      <div className="space-y-4">
-                        {translations.map((translation, idx) => {
-                          const metadata = translation.context_metadata || {};
-
-                          return (
-                            <div key={idx} className="border rounded p-3">
-                              <div className="flex items-center justify-between mb-3">
-                                <h6 className="font-medium">Translation: "{translation.translation}"</h6>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-500">Priority: {translation.display_priority}</span>
-                                  <span className={`px-2 py-1 rounded text-xs ${
-                                    idx === 0 ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'
-                                  }`}>
-                                    {metadata.auxiliary || 'no aux'}
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Required Metadata Grid */}
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                                {[
-                                  { name: 'Auxiliary', value: metadata.auxiliary, required: true },
-                                  { name: 'Transitivity', value: metadata.transitivity, required: true },
-                                  { name: 'Usage', value: metadata.usage, required: false },
-                                  { name: 'Register', value: metadata.register, required: false }
-                                ].map((field, fieldIdx) => {
-                                  const hasValue = field.value && field.value !== 'undefined';
-                                  return (
-                                    <div key={fieldIdx} className={`p-2 rounded text-xs ${
-                                      hasValue
-                                        ? 'bg-green-50 border border-green-200'
-                                        : field.required
-                                          ? 'bg-red-50 border border-red-200'
-                                          : 'bg-gray-50 border border-gray-200'
-                                    }`}>
-                                      <div className={`font-medium ${
-                                        hasValue
-                                          ? 'text-green-800'
-                                          : field.required
-                                            ? 'text-red-800'
-                                            : 'text-gray-600'
-                                      }`}>{field.name}</div>
-                                      <div className={`font-mono ${
-                                        hasValue
-                                          ? 'text-green-700'
-                                          : field.required
-                                            ? 'text-red-600'
-                                            : 'text-gray-500'
-                                      }`}>
-                                        {hasValue ? field.value : field.required ? 'Missing' : 'Not set'}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              {/* All Metadata */}
-                              <div className="border rounded p-2 bg-blue-50">
-                                <div className="text-xs text-blue-900 font-medium mb-1">All metadata:</div>
-                                <div className="flex flex-wrap gap-1">
-                                  {Object.entries(metadata).map(([key, value], metaIdx) => (
-                                    <span key={metaIdx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono bg-blue-100 text-blue-800">
-                                      {key}: {JSON.stringify(value)}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
                 </div>
 
                 {/* Form Level Tags - REAL STRUCTURED DATA */}
