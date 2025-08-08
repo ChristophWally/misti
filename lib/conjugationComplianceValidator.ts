@@ -1359,17 +1359,6 @@ export class ConjugationComplianceValidator {
       // FORM-TRANSLATION RELATIONSHIPS ANALYSIS
       debugLog('🔍 FORM-TRANSLATION RELATIONSHIPS ANALYSIS:');
 
-      // Count distinct auxiliaries to determine expected form sets
-      const auxiliaryCount = translations?.length ?
-        new Set(translations.map(t => t.context_metadata?.auxiliary).filter(Boolean)).size : 0;
-      debugLog(`  Distinct auxiliaries found: ${auxiliaryCount} (${auxiliaryCount === 2 ? 'avere + essere' : auxiliaryCount === 1 ? 'single auxiliary' : 'none specified'})`);
-
-      // Calculate expected form_translations per translation
-      const totalForms = forms?.length || 0;
-      const expectedPerTranslation = auxiliaryCount > 1 ? totalForms : totalForms;
-      debugLog(`  Expected form_translations per translation: ${expectedPerTranslation}`);
-
-      // Check form_translations coverage
       const formIds = (forms || []).map(f => f.id);
       const { data: formTranslations } = await this.supabase
         .from('form_translations')
@@ -1377,57 +1366,154 @@ export class ConjugationComplianceValidator {
         .in('form_id', formIds);
       debugLog(`  Total form_translations found: ${formTranslations?.length || 0}`);
 
-      // Analyze each translation's coverage
-      if (translations && translations.length > 0) {
-        for (let i = 0; i < translations.length; i++) {
-          const translation = translations[i];
-          const translationFormTranslations = formTranslations?.filter(ft =>
-            ft.word_translation_id === translation.id
-          ) || [];
-
-          debugLog(`  Translation ${i + 1} "${translation.translation}" (${translation.context_metadata?.auxiliary || 'no aux'}):`);
-          debugLog(`    Form_translations: ${translationFormTranslations.length}/${expectedPerTranslation}`);
-
-          if (translationFormTranslations.length === 0) {
-            debugLog(`    ❌ NO FORM_TRANSLATIONS - translation covers no forms`);
-          } else if (translationFormTranslations.length < expectedPerTranslation * 0.8) {
-            debugLog(`    ⚠️ INCOMPLETE COVERAGE - missing ${expectedPerTranslation - translationFormTranslations.length} form_translations`);
-          } else {
-            debugLog(`    ✅ GOOD COVERAGE`);
-          }
-        }
-      }
-
-      // Check for orphaned forms (forms without ANY form_translation)
-      const formsWithTranslations = new Set(formTranslations?.map(ft => ft.form_id) || []);
-      const orphanedForms = forms?.filter(f => !formsWithTranslations.has(f.id)) || [];
-
-      if (orphanedForms.length > 0) {
-        debugLog(`  ❌ Orphaned forms (no form_translations): ${orphanedForms.length}`);
-        orphanedForms.slice(0, 5).forEach(form => {
-          debugLog(`    "${form.form_text}" (ID: ${form.id}) - no English translation available`);
-        });
-      } else {
-        debugLog(`  ✅ All forms have English translations`);
-      }
-
-      // Check for orphaned translations (translations without form_translations)
-      const translationsWithForms = new Set(formTranslations?.map(ft => ft.word_translation_id) || []);
-      const orphanedTranslations = translations?.filter(t => !translationsWithForms.has(t.id)) || [];
-
-      if (orphanedTranslations.length > 0) {
-        debugLog(`  ❌ Orphaned translations (no form_translations): ${orphanedTranslations.length}`);
-        orphanedTranslations.forEach(trans => {
-          debugLog(`    "${trans.translation}" (ID: ${trans.id}) - covers no forms`);
-        });
-      } else {
-        debugLog(`  ✅ All translations cover forms`);
-      }
-
       // Remove any reference to form_ids arrays
       debugLog(`  📊 Architecture validation:`);
       debugLog(`    ✅ Using proper many-to-many relationship via form_translations`);
       debugLog(`    ✅ No direct form_ids arrays needed in translations`);
+
+      // EXTRACT REAL DATA FOR FRONTEND
+      const auxiliaries = Array.from(
+        new Set((translations || []).map(t => t.context_metadata?.auxiliary).filter(Boolean))
+      ) as string[];
+
+      // Count forms by mood and tense
+      const formCountsByMood: { [mood: string]: { [tense: string]: number } } = {};
+      const moods = ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'];
+
+      for (const mood of moods) {
+        formCountsByMood[mood] = {};
+        const moodForms = (forms || []).filter(f => f.tags?.includes(mood));
+
+        const tenses = new Set<string>(
+          moodForms
+            .flatMap(f => f.tags || [])
+            .filter(tag =>
+              tag.includes('presente') ||
+              tag.includes('passato') ||
+              tag.includes('futuro') ||
+              tag.includes('imperfetto') ||
+              tag.includes('remoto') ||
+              tag.includes('trapassato')
+            )
+        );
+
+        tenses.forEach((tense: string) => {
+          formCountsByMood[mood][tense] = moodForms.filter(f => f.tags?.includes(tense)).length;
+        });
+      }
+
+      // Calculate type-based counts
+      const auxiliaryCount = auxiliaries.length || 1;
+      const simpleFormCount = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        return !tags.some(tag =>
+          tag.includes('auxiliary') || tag.includes('progressivo') || tag.includes('passato')
+        );
+      }).length;
+
+      const compoundFormCount = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        return tags.some(tag => tag.includes('auxiliary') || tag.includes('passato'));
+      }).length;
+
+      const progressiveFormCount = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        return tags.some(tag => tag.includes('progressivo'));
+      }).length;
+
+      // Calculate expectations based on auxiliary count
+      const expectations = {
+        simple: 51,
+        perfectCompound: 49 * auxiliaryCount,
+        progressive: 30,
+        total: 51 + 49 * auxiliaryCount + 30
+      };
+
+      // Analyze form-translation coverage
+      const translationBreakdown = (translations || []).map(translation => {
+        const translationFormTranslations = (formTranslations || []).filter(
+          ft => ft.word_translation_id === translation.id
+        );
+
+        return {
+          translation: translation.translation,
+          auxiliary: translation.context_metadata?.auxiliary || 'unknown',
+          expected: expectations.total,
+          actual: translationFormTranslations.length,
+          coverage: Math.round(
+            (translationFormTranslations.length / expectations.total) * 100
+          )
+        };
+      });
+
+      // Find orphaned records
+      const assignedFormIds = new Set((formTranslations || []).map(ft => ft.form_id));
+      const formsWithoutTranslations = (forms || [])
+        .filter(f => !assignedFormIds.has(f.id))
+        .map(f => ({ id: f.id, text: f.form_text, tags: f.tags || [] }));
+
+      const translationsWithForms = new Set(
+        (formTranslations || []).map(ft => ft.word_translation_id)
+      );
+      const translationsWithoutForms = (translations || [])
+        .filter(t => !translationsWithForms.has(t.id))
+        .map(t => ({
+          id: t.id,
+          translation: t.translation,
+          auxiliary: t.context_metadata?.auxiliary || 'unknown'
+        }));
+
+      // Find forms without proper mood/tense classification
+      const formsWithoutMoodTense = (forms || [])
+        .filter(f => {
+          const tags = f.tags || [];
+          const hasMood = moods.some(mood => tags.includes(mood));
+          const hasTense = tags.some(tag =>
+            tag.includes('presente') ||
+            tag.includes('passato') ||
+            tag.includes('futuro') ||
+            tag.includes('imperfetto') ||
+            tag.includes('remoto')
+          );
+          return !hasMood || !hasTense;
+        })
+        .map(f => ({ id: f.id, text: f.form_text, tags: f.tags || [] }));
+
+      // Find missing building block tags
+      const buildingBlockCandidates = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        return (
+          tags.includes('participio-passato') ||
+          tags.includes('gerundio-presente') ||
+          tags.includes('infinito-presente')
+        );
+      });
+
+      const missingBuildingBlocks = buildingBlockCandidates
+        .filter(f => !(f.tags || []).includes('building-block'))
+        .map(f => ({ id: f.id, text: f.form_text, missingTag: 'building-block' }));
+
+      // Find missing auxiliary tags
+      const compoundForms = (forms || []).filter(f => {
+        const tags = f.tags || [];
+        return tags.some(tag =>
+          tag.includes('passato-prossimo') ||
+          tag.includes('trapassato') ||
+          tag.includes('futuro-anteriore') ||
+          tag.includes('condizionale-passato')
+        );
+      });
+
+      const missingAuxiliaryTags = compoundForms
+        .filter(f => {
+          const tags = f.tags || [];
+          return !tags.some(tag => tag.includes('auxiliary'));
+        })
+        .map(f => ({
+          id: f.id,
+          text: f.form_text,
+          expectedTag: 'avere-auxiliary or essere-auxiliary'
+        }));
 
       const report: VerbComplianceReport = {
         verbId: word.id,
@@ -1445,9 +1531,36 @@ export class ConjugationComplianceValidator {
         epicAlignmentNotes: [],
         migrationReadiness: false,
         priorityLevel: this.calculateVerbPriority(word),
-        estimatedFixTime: '0 minutes'
+        estimatedFixTime: '0 minutes',
+        detailedAnalysis: {
+          auxiliaries,
+          formCounts: {
+            byMood: formCountsByMood,
+            byType: {
+              simple: simpleFormCount,
+              perfectCompound: compoundFormCount,
+              progressive: progressiveFormCount,
+              total: (forms || []).length
+            },
+            expectations
+          },
+          formTranslationCoverage: {
+            totalFormTranslations: (formTranslations || []).length,
+            translationBreakdown
+          },
+          orphanedRecords: {
+            formsWithoutTranslations,
+            translationsWithoutForms,
+            formsWithoutMoodTense,
+            missingTags: {
+              buildingBlocks: missingBuildingBlocks,
+              auxiliaries: missingAuxiliaryTags
+            }
+          }
+        }
       };
 
+      // Continue with existing validation logic...
       report.wordLevelIssues = this.validateWordLevelDetailed(word);
       report.translationLevelIssues = this.validateTranslationLevelDetailed(translations || []);
       report.formLevelIssues = this.validateFormLevelDetailed(forms || [], true);
