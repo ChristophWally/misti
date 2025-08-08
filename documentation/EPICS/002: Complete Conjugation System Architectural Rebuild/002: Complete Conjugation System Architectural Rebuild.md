@@ -140,8 +140,8 @@ The following table provides the definitive specification for all verb forms tha
 | **15** | **Infinitive** | Infinito | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags` | `transitivity`, `semantic-type` | `infinitive`, `present`, `simple` | Enclitic attachment |
 | **25** | **Infinitive** | Infinito | Passato | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `semantic-type` | `infinitive`, `perfect`, `compound`, `materialized` | Pronoun-auxiliary + PP |
 | **26** | **Participle** | Participio | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags` | `semantic-type` | `participle`, `present`, `simple` | N/A |
-| **16** | **Participle** | Participio | Passato | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags`, `irregular-participle` | `semantic-type` | `participle`, `past`, `simple`, `building-block` | Building block for compounds |
-| **17** | **Gerund** | Gerundio | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags`, `irregular-gerund` | `semantic-type` | `gerund`, `present`, `simple`, `building-block` | Building block for progressives |
+| **16** | **Participle** | Participio | Passato | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags`, `irregular-participle` | `semantic-type` | `participle`, `past`, `simple` | Building block for compounds |
+| **17** | **Gerund** | Gerundio | Presente | Simple | Base form | Stored | `conjugation-class`, `irregularity-flags`, `irregular-gerund` | `semantic-type` | `gerund`, `present`, `simple` | Building block for progressives |
 | **27** | **Gerund** | Gerundio | Passato | Compound | Auxiliary + participle | Materialized | `conjugation-class`, `irregularity-flags` | `auxiliary`, `semantic-type` | `gerund`, `perfect`, `compound`, `materialized` | Pronoun-auxiliary + PP |
 
 ## Database Impact → "No structural change"
@@ -687,7 +687,7 @@ The system automatically filters materialized forms based on these constraints. 
 - All compound tenses based on translation auxiliary requirements (passato prossimo, trapassato prossimo, etc.)
 - All progressive tenses using stare auxiliary (presente progressivo, imperfetto progressivo, etc.)
 - All irregular forms including: irregular past participles (fatto, detto, posto), irregular gerunds (facendo, dicendo), irregular imperatives (fa', da', sta')
-- Building block forms marked with `building-block` tags for compound materialization
+- Past participles, present gerunds, present infinitives, and base imperatives stored as building blocks for compound materialization, identified solely by their mood and tense tags (participio + participio-passato, gerundio + gerundio-presente, infinito + infinito-presente, imperativo + imperativo-presente)
 
 **What's Generated Dynamically:**
 - Gender variants: materialized masculine forms → calculated feminine variants ("andato" → "andata")
@@ -966,7 +966,7 @@ The conjugation system rebuild provides an opportunity to systematically review 
 
 Before implementing the new architecture, we need to understand the completeness and accuracy of our existing data across four critical dimensions:
 
-**Form Coverage Completeness:** Many verbs in our `word_forms` table may have incomplete conjugation sets. Some verbs might be missing specific tenses (particularly passato remoto or congiuntivo forms), while others might lack important building blocks like past participles or gerunds needed for compound materialization.
+**Form Coverage Completeness:** Many verbs in our `word_forms` table may have incomplete conjugation sets. Some verbs might be missing specific tenses (particularly passato remoto or congiuntivo forms), while others might lack important building blocks like past participles, present gerunds, present infinitives, or base imperatives needed for compound materialization.
 
 **Translation Quality and Consistency:** The `form_translations` table assignments may contain inconsistencies where similar forms across different verbs have divergent English translations, or where translations don't properly reflect the semantic context specified in the selected word translation.
 
@@ -1038,10 +1038,10 @@ class FormGapAnalyzer {
 
 **Building Block Priority System:**
 Certain forms are more critical than others because they serve as building blocks for compound materialization:
-- **Past Participles:** Essential for all compound tenses (passato prossimo, trapassato prossimo, etc.)
-- **Gerunds:** Required for progressive constructions (presente progressivo, etc.)  
-- **Irregular Imperatives:** Needed for command forms and clitic attachment
-- **Base Present Forms:** Foundation for subjunctive and conditional formation
+- **Past Participle (mood: participio, tense: participio-passato):** Essential for all compound tenses (passato prossimo, trapassato prossimo, etc.)
+- **Present Gerund (mood: gerundio, tense: gerundio-presente):** Required for progressive constructions (presente progressivo, etc.)
+- **Present Infinitive (mood: infinito, tense: infinito-presente):** Base for negative imperatives and clitic handling
+- **Base Imperative (mood: imperativo, tense: imperativo-presente):** Needed for command forms and clitic attachment
 
 ### Translation Review and Enhancement Workflow
 
@@ -1145,7 +1145,7 @@ const STANDARDIZED_FORM_TAGS = {
   form_type: ['simple', 'compound', 'progressive'],
   
   // Special markers - optional
-  special: ['irregular', 'building-block', 'calculated-variant', 'materialized']
+  special: ['irregular', 'calculated-variant', 'materialized']
 }
 ```
 
@@ -1174,15 +1174,16 @@ const STANDARDIZED_TRANSLATION_METADATA = {
 **Phase A: Automated Analysis and Gap Detection (Week 1)**
 
 ```sql
--- Query to identify verbs missing critical building blocks
-SELECT 
+-- Query to identify verbs missing critical building blocks (participio-passato, gerundio-presente, infinito-presente, imperativo-presente)
+SELECT
   d.italian,
   d.id,
-  COUNT(CASE WHEN wf.tags ? 'participio-passato' THEN 1 END) as has_participle,
-  COUNT(CASE WHEN wf.tags ? 'gerundio-presente' THEN 1 END) as has_gerund,
-  COUNT(CASE WHEN wf.tags ? 'imperativo' THEN 1 END) as imperative_forms
+  COUNT(CASE WHEN wf.tags ? 'participio-passato' THEN 1 END) AS has_participle,
+  COUNT(CASE WHEN wf.tags ? 'gerundio-presente' THEN 1 END) AS has_gerund,
+  COUNT(CASE WHEN wf.tags ? 'infinito-presente' THEN 1 END) AS has_infinitive,
+  COUNT(CASE WHEN wf.tags ? 'imperativo-presente' THEN 1 END) AS has_imperative
 FROM dictionary d
-LEFT JOIN word_forms wf ON d.id = wf.word_id  
+LEFT JOIN word_forms wf ON d.id = wf.word_id
 WHERE d.word_type = 'VERB'
 GROUP BY d.id, d.italian
 HAVING 
@@ -1245,10 +1246,10 @@ class TagMigrationValidator {
 The system will include comprehensive validation that runs continuously to ensure data quality:
 
 ```javascript
-const DATA_QUALITY_RULES = {
-  // Every verb must have required building blocks
+  const DATA_QUALITY_RULES = {
+  // Every verb must have required building blocks: participio+participio-passato, gerundio+gerundio-presente, infinito+infinito-presente, imperativo+imperativo-presente (identified by mood and tense tags)
   building_blocks: {
-    rule: 'All verbs must have participio-passato and gerundio-presente forms',
+    rule: 'All verbs must have participio-passato, gerundio-presente, infinito-presente, and imperativo-presente forms identified solely by mood and tense tags',
     query: 'SELECT verb_id FROM missing_building_blocks_view',
     severity: 'critical'
   },
@@ -1453,7 +1454,7 @@ const FUTURE_MOOD_CONSTRUCTIONS = {
   conditionalPeriods: {
     current: 'conditional forms stored',
     future: 'se fossi... sarei... constructions',
-    foundation: 'Subjunctive + conditional forms provide building blocks'
+    foundation: 'Subjunctive + conditional forms provide building blocks identified by mood and tense alone'
   },
   
   subjunctiveSequences: {
@@ -1561,7 +1562,7 @@ This reordering follows proper operational safety principles: **Backup → Monit
 
 **Orthographic Precision:** All existing forms display proper Italian orthography including apostrophe placement, formal pronoun capitalization, and systematic hyphenation in stored constructions.
 
-**NEW: Admin Tools Validator Accuracy:** Word conjugation validator in admin tools section identifies architectural compliance issues across all dictionary verbs with ≥95% accuracy in detecting missing building blocks, tag inconsistencies, auxiliary tag problems, and translation-form reference integrity issues.
+**NEW: Admin Tools Validator Accuracy:** Word conjugation validator in admin tools section identifies architectural compliance issues across all dictionary verbs with ≥95% accuracy in detecting missing building blocks via mood and tense tags, tag inconsistencies, auxiliary tag problems, and translation-form reference integrity issues.
 
 **NEW: Translation-Form Mapping Validation:** Validation system verifies that every translation has a populated form_ids array, all referenced forms exist, and auxiliary tags are consistent between translations and their referenced forms. Zero tolerance for orphaned references or auxiliary mismatches.
 
@@ -1595,7 +1596,7 @@ This reordering follows proper operational safety principles: **Backup → Monit
 
 **NEW: Linguistic Quality Assurance:** All reflexive verb translations pass plurality constraint validation. Auxiliary assignments for state-change vs action verbs match Italian grammatical requirements. Form-to-translation assignments maintain semantic coherence across all verb meanings.
 
-**NEW: Foundation Completeness:** All existing dictionary verbs have required building blocks (past participle, gerund) for future materialization. No gaps remain that would prevent the materialization engine from functioning with any currently stored verb.
+**NEW: Foundation Completeness:** All existing dictionary verbs have required building blocks—past participle (participio + participio-passato), present gerund (gerundio + gerundio-presente), present infinitive (infinito + infinito-presente), and base imperative (imperativo + imperativo-presente)—identified through mood and tense tags without additional tagging. No gaps remain that would prevent the materialization engine from functioning with any currently stored verb.
 
 **NEW: Scope Boundary Validation:** Automated validation confirms that only base word clitics are stored, no negative forms exist in data, and complex constructions are properly excluded from current scope.
 

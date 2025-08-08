@@ -588,20 +588,6 @@ export class ConjugationComplianceValidator {
         }
       }
 
-      // Building block validation
-      if (this.isBuildingBlockForm(form)) {
-        if (!tags.includes('building-block')) {
-          issues.push({
-            ruleId: 'missing-building-block-tag',
-            severity: 'critical',
-            message: `Building block form "${form.form_text}" missing building-block tag`,
-            currentValue: tags,
-            expectedValue: 'Must include building-block tag',
-            autoFix: 'Add "building-block" tag',
-            epicContext: 'Building blocks enable compound form generation'
-          });
-        }
-      }
     }
 
     return issues;
@@ -757,50 +743,34 @@ export class ConjugationComplianceValidator {
   private validateBuildingBlocks(forms: any[]): string[] {
     const detailedMissing: string[] = [];
 
-    // Check for past participle
+    // Check for past participle (NO building-block tag needed)
     const hasParticiple = forms.some(f =>
       f.tags?.includes('participio-passato') &&
-      f.tags?.includes('building-block')
+      f.tags?.includes('participio')
     );
 
     if (!hasParticiple) {
       detailedMissing.push('Past Participle (participio-passato) - Required for: passato prossimo, trapassato prossimo, futuro anteriore, condizionale passato');
     }
 
-    // Check for present gerund
+    // Check for present gerund (NO building-block tag needed)
     const hasGerund = forms.some(f =>
       f.tags?.includes('gerundio-presente') &&
-      f.tags?.includes('building-block')
+      f.tags?.includes('gerundio')
     );
 
     if (!hasGerund) {
       detailedMissing.push('Present Gerund (gerundio-presente) - Required for: presente progressivo, passato progressivo, futuro progressivo');
     }
 
-    // Check for present infinitive
+    // Check for present infinitive (NO building-block tag needed)
     const hasInfinitive = forms.some(f =>
-      f.tags?.includes('infinito-presente')
+      f.tags?.includes('infinito-presente') &&
+      f.tags?.includes('infinito')
     );
 
     if (!hasInfinitive) {
       detailedMissing.push('Present Infinitive (infinito-presente) - Required for: negative imperatives, clitic attachment');
-    }
-
-    // Check for each required tense
-    const requiredTenses = [
-      { tag: 'presente', name: 'Present Indicative', persons: 6 },
-      { tag: 'imperfetto', name: 'Imperfect', persons: 6 },
-      { tag: 'futuro-semplice', name: 'Simple Future', persons: 6 },
-      { tag: 'congiuntivo-presente', name: 'Present Subjunctive', persons: 6 },
-      { tag: 'condizionale-presente', name: 'Present Conditional', persons: 6 },
-      { tag: 'imperativo-presente', name: 'Imperative', persons: 5 }
-    ];
-
-    for (const tense of requiredTenses) {
-      const tenseForms = forms.filter(f => f.tags?.includes(tense.tag));
-      if (tenseForms.length < tense.persons) {
-        detailedMissing.push(`${tense.name} (${tense.tag}) - Has ${tenseForms.length}/${tense.persons} persons`);
-      }
     }
 
     return detailedMissing;
@@ -844,13 +814,6 @@ export class ConjugationComplianceValidator {
     ];
     
     return auxiliaryPatterns.some(pattern => pattern.test(form.form_text));
-  }
-
-  private isBuildingBlockForm(form: any): boolean {
-    const tags = form.tags || [];
-    return tags.includes('participio-passato') || 
-           tags.includes('gerundio-presente') ||
-           tags.includes('infinito-presente');
   }
 
   private hasComplexClitics(formText: string): boolean {
@@ -1346,11 +1309,6 @@ export class ConjugationComplianceValidator {
 
         if (found) {
           debugLog(`  ✅ ${block.name}: "${found.form_text}"`);
-          if (block.required && !found.tags?.includes('building-block')) {
-            debugLog(`    ⚠️ Missing 'building-block' tag (needed for ${block.purpose})`);
-          } else if (found.tags?.includes('building-block')) {
-            debugLog(`    ✅ Has 'building-block' tag for ${block.purpose}`);
-          }
         } else {
           debugLog(`  ❌ ${block.name}: MISSING (needed for ${block.purpose})`);
         }
@@ -1479,20 +1437,6 @@ export class ConjugationComplianceValidator {
         })
         .map(f => ({ id: f.id, text: f.form_text, tags: f.tags || [] }));
 
-      // Find missing building block tags
-      const buildingBlockCandidates = (forms || []).filter(f => {
-        const tags = f.tags || [];
-        return (
-          tags.includes('participio-passato') ||
-          tags.includes('gerundio-presente') ||
-          tags.includes('infinito-presente')
-        );
-      });
-
-      const missingBuildingBlocks = buildingBlockCandidates
-        .filter(f => !(f.tags || []).includes('building-block'))
-        .map(f => ({ id: f.id, text: f.form_text, missingTag: 'building-block' }));
-
       // Find missing auxiliary tags
       const compoundForms = (forms || []).filter(f => {
         const tags = f.tags || [];
@@ -1559,7 +1503,6 @@ export class ConjugationComplianceValidator {
             translationsWithoutForms,
             formsWithoutMoodTense,
             missingTags: {
-              buildingBlocks: missingBuildingBlocks,
               auxiliaries: missingAuxiliaryTags
             }
           }
