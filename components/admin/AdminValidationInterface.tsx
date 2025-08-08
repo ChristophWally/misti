@@ -342,27 +342,16 @@ const AdminValidationInterface = () => {
 
               {/* Detailed Analysis by Category */}
               <div className="space-y-6">
-                {/* Word Level Analysis with REAL TAG DATA */}
+                {/* Word Level Analysis - REAL STRUCTURED DATA */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Word Level Analysis</h4>
 
                   {(() => {
                     const analysis = validationResult.detailedAnalysis;
-                    if (!analysis) return <div className="text-red-600">No word analysis available</div>;
+                    if (!analysis?.rawData) return <div className="text-red-600">No word data available</div>;
 
-                    // PARSE REAL WORD TAGS from debug logs or validation result
-                    let wordTags: string[] = [];
-                    try {
-                      const tagsLogEntry = debugLog.find(log => log.includes('Word tags:'));
-                      if (tagsLogEntry) {
-                        const tagsMatch = tagsLogEntry.match(/Word tags: (.+)/);
-                        if (tagsMatch) {
-                          wordTags = JSON.parse(tagsMatch[1]);
-                        }
-                      }
-                    } catch (e) {
-                      wordTags = [];
-                    }
+                    // READ DIRECTLY FROM STRUCTURED DATA
+                    const wordTags = analysis.rawData.wordTags;
 
                     const tagCategories = [
                       {
@@ -391,14 +380,15 @@ const AdminValidationInterface = () => {
                       }
                     ];
 
+                    // Find other tags not in categories
                     const categorizedTags = new Set<string>();
                     tagCategories.forEach(cat => cat.options.forEach(opt => categorizedTags.add(opt)));
                     const otherTags = wordTags.filter(tag => !categorizedTags.has(tag));
 
                     return (
                       <div className="space-y-4">
-                        {/* Required Tag Categories - COMPACT */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Compact Required Categories */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {tagCategories.map((category, idx) => {
                             const isComplete = category.rule === 'exactly-one' ? category.present.length === 1 : category.present.length > 0;
 
@@ -413,73 +403,45 @@ const AdminValidationInterface = () => {
                                   </span>
                                 </div>
 
-                                {/* COMPACT tag grid */}
                                 <div className="grid grid-cols-2 gap-1 text-xs">
                                   {category.options.map((option, optIdx) => {
                                     const isPresent = category.present.includes(option);
                                     return (
-                                      <div key={optIdx} className={`flex items-center justify-between px-2 py-1 rounded border ${
-                                        isPresent ? 'bg-green-50 border-green-200 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-500'
+                                      <div key={optIdx} className={`flex items-center justify-between px-2 py-1 rounded ${
+                                        isPresent ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-gray-50 border border-gray-200 text-gray-500'
                                       }`}>
-                                        <span className="font-mono text-xs truncate">{option}</span>
+                                        <span className="font-mono truncate">{option.replace(/^(freq-|CEFR-|are-|ere-|ire-|always-|both-)/,'')}</span>
                                         <span>{isPresent ? '●' : '○'}</span>
                                       </div>
                                     );
                                   })}
                                 </div>
-
-                                {/* Show present tags */}
-                                {category.present.length > 0 && (
-                                  <div className="mt-2 text-xs">
-                                    <span className="text-green-700 font-medium">Present: </span>
-                                    <span className="text-green-600">{category.present.join(', ')}</span>
-                                  </div>
-                                )}
                               </div>
                             );
                           })}
                         </div>
 
-                        {/* All Present Word Tags */}
-                        <div className="border rounded-lg p-3 bg-blue-50">
+                        {/* All Present Tags */}
+                        <div className="border rounded p-3 bg-blue-50">
                           <h6 className="font-medium text-sm text-blue-900 mb-2">All Present Word Tags ({wordTags.length} total)</h6>
-                          {wordTags.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {wordTags.map((tag, tagIdx) => (
-                                <span key={tagIdx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-mono bg-blue-100 text-blue-800 border">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-blue-600 text-sm">No tags found in word data</div>
-                          )}
+                          <div className="flex flex-wrap gap-1">
+                            {wordTags.map((tag, tagIdx) => (
+                              <span key={tagIdx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-mono bg-blue-100 text-blue-800">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
                         </div>
 
-                        {/* Other/Uncategorized Tags */}
+                        {/* Other Tags */}
                         {otherTags.length > 0 && (
-                          <div className="border rounded-lg p-3 bg-gray-50">
+                          <div className="border rounded p-3 bg-gray-50">
                             <h6 className="font-medium text-sm text-gray-900 mb-2">Other Tags ({otherTags.length})</h6>
                             <div className="flex flex-wrap gap-1">
                               {otherTags.map((tag, tagIdx) => (
-                                <span key={tagIdx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-mono bg-gray-100 text-gray-700 border">
+                                <span key={tagIdx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-mono bg-gray-100 text-gray-700">
                                   {tag}
                                 </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Word Level Issues Summary */}
-                        {validationResult.wordLevelIssues.length > 0 && (
-                          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                            <h6 className="font-medium text-red-800 mb-2">Required Fixes ({validationResult.wordLevelIssues.length} issues):</h6>
-                            <div className="space-y-1 text-sm">
-                              {validationResult.wordLevelIssues.map((issue, issueIdx) => (
-                                <div key={issueIdx} className="text-red-700">
-                                  <span className="font-medium">• {issue.message}</span>
-                                  <div className="text-xs ml-4 text-red-600">Expected: {issue.expectedValue}</div>
-                                </div>
                               ))}
                             </div>
                           </div>
@@ -595,44 +557,36 @@ const AdminValidationInterface = () => {
                   </div>
                 </div>
 
-                {/* Translation Level Tags Display with REAL DATA */}
+                {/* Translation Level Metadata - REAL STRUCTURED DATA */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Translation Level Metadata</h4>
 
                   {(() => {
                     const analysis = validationResult.detailedAnalysis;
-                    if (!analysis) return <div className="text-red-600">No translation metadata available</div>;
+                    if (!analysis?.rawData) return <div className="text-red-600">No translation data available</div>;
+
+                    const translations = analysis.rawData.translations;
 
                     return (
                       <div className="space-y-4">
-                        {analysis.formTranslationCoverage.translationBreakdown.map((translation, idx) => {
-                          let metadata: Record<string, string> = {};
-                          try {
-                            const metadataLog = debugLog.find(log =>
-                              log.includes(`Translation ${idx + 1}`) && log.includes(translation.translation)
-                            );
-                            metadata = {
-                              auxiliary: translation.auxiliary,
-                              transitivity: 'unknown',
-                              usage: 'unknown',
-                              register: 'unknown'
-                            };
-                          } catch (e) {
-                            metadata = { auxiliary: translation.auxiliary };
-                          }
+                        {translations.map((translation, idx) => {
+                          const metadata = translation.context_metadata || {};
 
                           return (
-                            <div key={idx} className="border rounded-lg p-3">
+                            <div key={idx} className="border rounded p-3">
                               <div className="flex items-center justify-between mb-3">
                                 <h6 className="font-medium">Translation: "{translation.translation}"</h6>
-                                <span className={`px-2 py-1 rounded text-xs ${
-                                  idx === 0 ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'
-                                }`}>
-                                  {translation.auxiliary}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-gray-500">Priority: {translation.display_priority}</span>
+                                  <span className={`px-2 py-1 rounded text-xs ${
+                                    idx === 0 ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'
+                                  }`}>
+                                    {metadata.auxiliary || 'no aux'}
+                                  </span>
+                                </div>
                               </div>
 
-                              {/* Required Metadata */}
+                              {/* Required Metadata Grid */}
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
                                 {[
                                   { name: 'Auxiliary', value: metadata.auxiliary, required: true },
@@ -640,38 +594,29 @@ const AdminValidationInterface = () => {
                                   { name: 'Usage', value: metadata.usage, required: false },
                                   { name: 'Register', value: metadata.register, required: false }
                                 ].map((field, fieldIdx) => {
-                                  const hasValue = field.value && field.value !== 'unknown';
+                                  const hasValue = field.value && field.value !== 'undefined';
                                   return (
-                                    <div
-                                      key={fieldIdx}
-                                      className={`p-2 rounded border text-xs ${
+                                    <div key={fieldIdx} className={`p-2 rounded text-xs ${
+                                      hasValue
+                                        ? 'bg-green-50 border border-green-200'
+                                        : field.required
+                                          ? 'bg-red-50 border border-red-200'
+                                          : 'bg-gray-50 border border-gray-200'
+                                    }`}>
+                                      <div className={`font-medium ${
                                         hasValue
-                                          ? 'bg-green-50 border-green-200'
+                                          ? 'text-green-800'
                                           : field.required
-                                            ? 'bg-red-50 border-red-200'
-                                            : 'bg-gray-50 border-gray-200'
-                                      }`}
-                                    >
-                                      <div
-                                        className={`font-medium ${
-                                          hasValue
-                                            ? 'text-green-800'
-                                            : field.required
-                                              ? 'text-red-800'
-                                              : 'text-gray-600'
-                                        }`}
-                                      >
-                                        {field.name}
-                                      </div>
-                                      <div
-                                        className={
-                                          hasValue
-                                            ? 'text-green-700'
-                                            : field.required
-                                              ? 'text-red-600'
-                                              : 'text-gray-500'
-                                        }
-                                      >
+                                            ? 'text-red-800'
+                                            : 'text-gray-600'
+                                      }`}>{field.name}</div>
+                                      <div className={`font-mono ${
+                                        hasValue
+                                          ? 'text-green-700'
+                                          : field.required
+                                            ? 'text-red-600'
+                                            : 'text-gray-500'
+                                      }`}>
                                         {hasValue ? field.value : field.required ? 'Missing' : 'Not set'}
                                       </div>
                                     </div>
@@ -679,12 +624,16 @@ const AdminValidationInterface = () => {
                                 })}
                               </div>
 
-                              {/* All Present Metadata */}
-                              <div className="text-xs text-gray-600">
-                                <span className="font-medium">All metadata: </span>
-                                {Object.entries(metadata)
-                                  .map(([key, value]) => `${key}: ${value}`)
-                                  .join(', ')}
+                              {/* All Metadata */}
+                              <div className="border rounded p-2 bg-blue-50">
+                                <div className="text-xs text-blue-900 font-medium mb-1">All metadata:</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {Object.entries(metadata).map(([key, value], metaIdx) => (
+                                    <span key={metaIdx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono bg-blue-100 text-blue-800">
+                                      {key}: {JSON.stringify(value)}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           );
@@ -694,14 +643,17 @@ const AdminValidationInterface = () => {
                   })()}
                 </div>
 
-                {/* Form Level Tags Summary */}
+                {/* Form Level Tags - REAL STRUCTURED DATA */}
                 <div className="border rounded-lg p-4 mb-4">
                   <h5 className="font-semibold text-gray-800 mb-3">Form Level Tags Summary</h5>
 
                   {(() => {
                     const analysis = validationResult.detailedAnalysis;
-                    if (!analysis) return <div className="text-red-600">No form tags data available</div>;
+                    if (!analysis?.rawData) return <div className="text-red-600">No form data available</div>;
 
+                    const forms = analysis.rawData.forms;
+
+                    // Extract all unique tags from forms
                     const allFormTags = new Set<string>();
                     const tagsByCategory = {
                       moods: new Set<string>(),
@@ -713,35 +665,53 @@ const AdminValidationInterface = () => {
                       other: new Set<string>()
                     };
 
-                    debugLog.forEach(log => {
-                      if (log.includes('forms have auxiliary tags') || log.includes('building-block')) {
-                        const tagMatches = log.match(/[A-Za-z-]+/g);
-                        tagMatches?.forEach(tag => {
-                          if (tag.includes('auxiliary')) tagsByCategory.auxiliaries.add(tag);
-                          else if (tag === 'building-block') tagsByCategory.buildingBlocks.add(tag);
-                          else if (['indicativo', 'congiuntivo', 'condizionale', 'imperativo'].includes(tag)) tagsByCategory.moods.add(tag);
-                          else if (tag.includes('persona')) tagsByCategory.persons.add(tag);
-                          else if (['singolare', 'plurale'].includes(tag)) tagsByCategory.numbers.add(tag);
-                          else if (tag.includes('presente') || tag.includes('passato') || tag.includes('futuro')) tagsByCategory.tenses.add(tag);
-                          else tagsByCategory.other.add(tag);
-                          allFormTags.add(tag);
-                        });
-                      }
+                    forms.forEach(form => {
+                      (form.tags || []).forEach(tag => {
+                        allFormTags.add(tag);
+
+                        // Categorize tags
+                        if (['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'].includes(tag)) {
+                          tagsByCategory.moods.add(tag);
+                        } else if (tag.includes('auxiliary')) {
+                          tagsByCategory.auxiliaries.add(tag);
+                        } else if (tag === 'building-block') {
+                          tagsByCategory.buildingBlocks.add(tag);
+                        } else if (tag.includes('persona')) {
+                          tagsByCategory.persons.add(tag);
+                        } else if (['singolare', 'plurale'].includes(tag)) {
+                          tagsByCategory.numbers.add(tag);
+                        } else if (
+                          tag.includes('presente') ||
+                          tag.includes('passato') ||
+                          tag.includes('futuro') ||
+                          tag.includes('imperfetto') ||
+                          tag.includes('remoto') ||
+                          tag.includes('trapassato')
+                        ) {
+                          tagsByCategory.tenses.add(tag);
+                        } else {
+                          tagsByCategory.other.add(tag);
+                        }
+                      });
                     });
 
                     return (
                       <div className="space-y-3">
-                        {/* Tag Categories */}
+                        {/* Tag Categories Grid */}
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                           {Object.entries(tagsByCategory).map(([category, tags]) => (
                             <div key={category} className="border rounded p-2">
-                              <div className="font-medium text-xs text-gray-700 mb-1 capitalize">{category}</div>
-                              <div className="text-xs space-y-1">
-                                {Array.from(tags).slice(0, 3).map((tag, idx) => (
-                                  <div key={idx} className="bg-blue-50 px-1 py-0.5 rounded font-mono">{tag}</div>
+                              <div className="font-medium text-xs text-gray-700 mb-1 capitalize">
+                                {category} ({(tags as Set<string>).size})
+                              </div>
+                              <div className="space-y-1">
+                                {Array.from(tags as Set<string>).slice(0, 3).map((tag, idx) => (
+                                  <div key={idx} className="bg-blue-50 px-1.5 py-0.5 rounded text-xs font-mono text-blue-800">
+                                    {tag}
+                                  </div>
                                 ))}
-                                {tags.size > 3 && (
-                                  <div className="text-gray-500">+{tags.size - 3} more</div>
+                                {(tags as Set<string>).size > 3 && (
+                                  <div className="text-gray-500 text-xs">+{(tags as Set<string>).size - 3} more</div>
                                 )}
                               </div>
                             </div>
@@ -750,10 +720,12 @@ const AdminValidationInterface = () => {
 
                         {/* All Form Tags */}
                         <div className="border rounded p-3 bg-green-50">
-                          <h6 className="font-medium text-sm text-green-900 mb-2">All Form Tags Present ({allFormTags.size} unique)</h6>
+                          <h6 className="font-medium text-sm text-green-900 mb-2">
+                            All Form Tags Present ({allFormTags.size} unique across {forms.length} forms)
+                          </h6>
                           <div className="flex flex-wrap gap-1">
                             {Array.from(allFormTags).map((tag, tagIdx) => (
-                              <span key={tagIdx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono bg-green-100 text-green-800 border">
+                              <span key={tagIdx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono bg-green-100 text-green-800">
                                 {tag}
                               </span>
                             ))}
