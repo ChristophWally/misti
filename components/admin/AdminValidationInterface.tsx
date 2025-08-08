@@ -397,42 +397,109 @@ const AdminValidationInterface = () => {
                   </div>
                 </div>
 
-                {/* Translation Level Issues */}
+                {/* Translation Analysis with REAL DATA and GROUPED ERRORS */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Translation Analysis</h4>
                   <div className="space-y-4">
-                    {validationResult.translationLevelIssues.length === 0 ? (
-                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="text-green-800 font-medium">✅ All translations properly configured</div>
-                        <div className="mt-2 text-sm text-green-700">
-                          All translations have required auxiliary and transitivity settings
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {validationResult.translationLevelIssues.map((issue, idx) => (
-                          <div key={idx} className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="text-red-800 font-medium text-sm">❌ {issue.message}</div>
-                            <div className="text-red-700 text-sm mt-1">
-                              <strong>Current:</strong> {JSON.stringify(issue.currentValue)}
+                    {(() => {
+                      // Group translation issues by translation using real data
+                      const analysis = validationResult.detailedAnalysis;
+                      if (!analysis) {
+                        return <div className="text-red-600">No translation analysis available</div>;
+                      }
+
+                      const translationIssuesByTranslation = new Map();
+
+                      // Group issues by translation
+                      validationResult.translationLevelIssues.forEach(issue => {
+                        const translationMatch = issue.message.match(/Translation.*?"([^\"]+)"/);
+                        const translationName = translationMatch ? translationMatch[1] : 'Unknown Translation';
+
+                        if (!translationIssuesByTranslation.has(translationName)) {
+                          translationIssuesByTranslation.set(translationName, []);
+                        }
+                        translationIssuesByTranslation.get(translationName).push(issue);
+                      });
+
+                      // If no issues, show success state
+                      if (validationResult.translationLevelIssues.length === 0) {
+                        return (
+                          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="text-green-800 font-medium">✅ All translations properly configured</div>
+                            <div className="mt-2 text-sm text-green-700">
+                              All translations have required auxiliary and transitivity settings
                             </div>
-                            <div className="text-red-700 text-sm">
-                              <strong>Expected:</strong> {issue.expectedValue}
-                            </div>
-                            {issue.manualSteps && (
-                              <div className="mt-2 p-2 bg-red-100 rounded">
-                                <div className="text-red-800 font-medium text-xs">Actions:</div>
-                                <ul className="text-red-700 text-xs mt-1 list-decimal list-inside">
-                                  {issue.manualSteps.map((step, stepIdx) => (
-                                    <li key={stepIdx}>{step}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        );
+                      }
+
+                      // Show translations with their grouped issues
+                      return (
+                        <div className="space-y-4">
+                          {analysis.formTranslationCoverage.translationBreakdown.map((translation, idx) => {
+                            const translationIssues = translationIssuesByTranslation.get(translation.translation) || [];
+                            const hasIssues = translationIssues.length > 0;
+
+                            return (
+                              <div
+                                key={idx}
+                                className={`border rounded-lg p-4 ${
+                                  hasIssues ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'
+                                }`}
+                              >
+                                <div className="flex justify-between items-start mb-3">
+                                  <div>
+                                    <h6 className={`font-medium ${hasIssues ? 'text-red-900' : 'text-green-900'}`}>
+                                      Translation: "{translation.translation}"
+                                    </h6>
+                                    <div className="text-xs text-gray-600 mt-1">
+                                      Auxiliary: {translation.auxiliary} | Coverage: {translation.coverage}% ({translation.actual}/{translation.expected})
+                                    </div>
+                                  </div>
+                                  <span
+                                    className={`text-xs px-2 py-1 rounded ${
+                                      hasIssues ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'
+                                    }`}
+                                  >
+                                    {hasIssues ? `${translationIssues.length} issues` : 'No issues'}
+                                  </span>
+                                </div>
+
+                                {hasIssues ? (
+                                  <div className="space-y-2">
+                                    {translationIssues.map((issue, issueIdx) => (
+                                      <div key={issueIdx} className="p-3 bg-red-100 border border-red-200 rounded">
+                                        <div className="text-red-800 font-medium text-sm">❌ {issue.message}</div>
+                                        <div className="text-red-700 text-sm mt-1">
+                                          <strong>Current:</strong> {JSON.stringify(issue.currentValue)}
+                                        </div>
+                                        <div className="text-red-700 text-sm">
+                                          <strong>Expected:</strong> {issue.expectedValue}
+                                        </div>
+                                        {issue.manualSteps && (
+                                          <div className="mt-2 p-2 bg-red-200 rounded">
+                                            <div className="text-red-800 font-medium text-xs">Actions:</div>
+                                            <ul className="text-red-700 text-xs mt-1 list-decimal list-inside">
+                                              {issue.manualSteps.map((step, stepIdx) => (
+                                                <li key={stepIdx}>{step}</li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-green-600 text-sm">
+                                    ✅ Translation properly configured with auxiliary and transitivity metadata
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -440,18 +507,17 @@ const AdminValidationInterface = () => {
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Forms Analysis by Mood</h4>
 
-                    {(() => {
-                    // REAL DATA from validation results
+                  {(() => {
+                    // REAL DATA from validationResult.detailedAnalysis
                     const analysis = validationResult.detailedAnalysis;
                     if (!analysis) {
                       return <div className="text-red-600">No detailed analysis available</div>;
                     }
 
-                    const auxiliaries = analysis.auxiliaries || [];
+                    const auxiliaries = analysis.auxiliaries;
                     const auxiliaryCount = auxiliaries.length || 1;
-                    const formCounts = analysis.formCounts;
-                    const expectations = formCounts.expectations;
-                    const actualCounts = formCounts.byType;
+                    const actualCounts = analysis.formCounts.byType;
+                    const expectations = analysis.formCounts.expectations;
 
                     return (
                       <>
@@ -486,57 +552,77 @@ const AdminValidationInterface = () => {
                           </div>
                         </div>
 
-                        {/* Use REAL mood-by-mood data */}
+                        {/* Indicative Mood with REAL DATA */}
                         <div className="border rounded-lg p-4 mb-4">
-                          <h5 className="font-semibold text-gray-800 mb-3">Indicative (Indicativo) - REAL DATA</h5>
+                          <h5 className="font-semibold text-gray-800 mb-3">Indicative (Indicativo)</h5>
 
                           {/* Simple Tenses with REAL counts */}
                           <div className="mb-4">
                             <h6 className="font-medium text-gray-700 mb-2">Simple Tenses</h6>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                              {Object.entries(formCounts.byMood.indicativo as Record<string, number> || {}).filter(([tense]) =>
-                                !tense.includes('passato') && !tense.includes('progressivo')
-                              ).map(([tense, count], idx) => (
-                                <div key={idx} className={`flex justify-between items-center p-2 rounded ${
-                                  count >= 6 ? 'bg-gray-50' : 'bg-red-50'
-                                }`}>
-                                  <span>{tense} ({count} forms)</span>
-                                  <span className={count >= 6 ? 'text-green-600' : 'text-red-600'}>
-                                    {count >= 6 ? '✅ Complete' : `❌ ${count}/6`}
-                                  </span>
-                                </div>
-                              ))}
+                              {[
+                                { name: 'Presente', tense: 'presente', expected: 6 },
+                                { name: 'Imperfetto', tense: 'imperfetto', expected: 6 },
+                                { name: 'Futuro Semplice', tense: 'futuro-semplice', expected: 6 },
+                                { name: 'Passato Remoto', tense: 'passato-remoto', expected: 6 }
+                              ].map((tenseInfo, idx) => {
+                                const found = analysis.formCounts.byMood.indicativo?.[tenseInfo.tense] || 0;
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`flex justify-between items-center p-2 rounded ${
+                                      found >= tenseInfo.expected ? 'bg-gray-50' : 'bg-red-50'
+                                    }`}
+                                  >
+                                    <span>{tenseInfo.name} ({tenseInfo.expected} forms)</span>
+                                    <span className={found >= tenseInfo.expected ? 'text-green-600' : 'text-red-600'}>
+                                      {found >= tenseInfo.expected ? '✅ Complete' : `❌ ${found}/${tenseInfo.expected}`}
+                                    </span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
 
                           {/* Perfect Compounds with REAL counts */}
                           <div className="mb-4">
                             <h6 className="font-medium text-gray-700 mb-2">Perfect Compound Tenses</h6>
+                            <div className="text-xs text-gray-600 mb-2">
+                              Each tense needs {auxiliaryCount === 2 ? 'both avere AND essere forms' : 'forms for detected auxiliary'}
+                              ({auxiliaryCount === 2 ? '12 forms each (6 avere + 6 essere)' : '6 forms each'})
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                              {['passato-prossimo', 'trapassato-prossimo', 'futuro-anteriore', 'trapassato-remoto'].map((tense, idx) => {
-                                const found = formCounts.byMood.indicativo?.[tense] || 0;
+                              {[
+                                { name: 'Passato Prossimo', tense: 'passato-prossimo' },
+                                { name: 'Trapassato Prossimo', tense: 'trapassato-prossimo' },
+                                { name: 'Futuro Anteriore', tense: 'futuro-anteriore' },
+                                { name: 'Trapassato Remoto', tense: 'trapassato-remoto' }
+                              ].map((tenseInfo, idx) => {
+                                const found = analysis.formCounts.byMood.indicativo?.[tenseInfo.tense] || 0;
                                 const expected = 6 * auxiliaryCount;
                                 const auxTagged = analysis.orphanedRecords.missingTags.auxiliaries.filter(a =>
-                                  a.text.includes(tense.replace('-', ' '))
+                                  a.expectedTag.includes('auxiliary')
                                 ).length;
 
                                 return (
                                   <div key={idx} className="p-2 bg-red-50 rounded">
                                     <div className="flex justify-between items-start">
                                       <div>
-                                        <div className="font-medium">{tense.replace('-', ' ')}</div>
+                                        <div className="font-medium">{tenseInfo.name}</div>
                                         <div className="text-xs text-gray-500">
                                           Expected: {expected} forms
                                           {auxiliaryCount === 2 && ` (${expected/2} avere + ${expected/2} essere)`}
                                         </div>
                                         <div className="text-xs text-gray-500">
-                                          Found: {found} forms ({found - auxTagged} with aux tags)
+                                          Found: {found} forms ({Math.max(0, found - auxTagged)} with aux tags)
                                         </div>
                                       </div>
-                                      <span className={
-                                        found === 0 ? 'text-red-600' :
-                                        auxTagged > 0 ? 'text-yellow-600' : 'text-green-600'
-                                      }>
+                                      <span
+                                        className={
+                                          found === 0 ? 'text-red-600' :
+                                          auxTagged > 0 ? 'text-yellow-600' : 'text-green-600'
+                                        }
+                                      >
                                         {found === 0 ? '❌ Missing' :
                                          auxTagged > 0 ? '⚠️ No aux tags' : '✅ Complete'}
                                       </span>
@@ -546,11 +632,206 @@ const AdminValidationInterface = () => {
                               })}
                             </div>
                           </div>
+
+                          {/* Progressive Tenses with REAL counts */}
+                          <div className="mb-4">
+                            <h6 className="font-medium text-gray-700 mb-2">Progressive Tenses</h6>
+                            <div className="text-xs text-gray-600 mb-2">
+                              Progressive forms always use STARE auxiliary only (6 forms each, regardless of verb's other auxiliaries)
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                              {[
+                                { name: 'Presente Progressivo', tense: 'presente-progressivo' },
+                                { name: 'Passato Progressivo', tense: 'passato-progressivo' },
+                                { name: 'Futuro Progressivo', tense: 'futuro-progressivo' }
+                              ].map((tenseInfo, idx) => {
+                                const found = analysis.formCounts.byMood.indicativo?.[tenseInfo.tense] || 0;
+                                const hasStareTags = analysis.orphanedRecords.missingTags.auxiliaries.filter(a =>
+                                  a.expectedTag.includes('stare')
+                                ).length;
+
+                                return (
+                                  <div
+                                    key={idx}
+                                    className={`p-2 rounded ${found === 0 ? 'bg-red-50' : 'bg-yellow-50'}`}
+                                  >
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <div className="font-medium">{tenseInfo.name}</div>
+                                        <div className="text-xs text-gray-500">Expected: 6 forms (stare + gerund)</div>
+                                        <div className="text-xs text-gray-500">
+                                          Found: {found} forms ({Math.max(0, 6 - hasStareTags)} with stare tags)
+                                        </div>
+                                      </div>
+                                      <span
+                                        className={
+                                          found === 0 ? 'text-red-600' :
+                                          hasStareTags > 0 ? 'text-yellow-600' : 'text-green-600'
+                                        }
+                                      >
+                                        {found === 0 ? '❌ Missing' :
+                                         hasStareTags > 0 ? '⚠️ No stare tags' : '✅ Complete'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Subjunctive with REAL DATA */}
+                        <div className="border rounded-lg p-4 mb-4">
+                          <h5 className="font-semibold text-gray-800 mb-3">Subjunctive (Congiuntivo)</h5>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            {[
+                              { name: 'Presente', tense: 'congiuntivo-presente', expected: 6, type: 'simple' },
+                              { name: 'Imperfetto', tense: 'congiuntivo-imperfetto', expected: 6, type: 'simple' },
+                              { name: 'Passato', tense: 'congiuntivo-passato', expected: 6 * auxiliaryCount, type: 'perfect-compound' },
+                              { name: 'Trapassato', tense: 'congiuntivo-trapassato', expected: 6 * auxiliaryCount, type: 'perfect-compound' },
+                              { name: 'Presente Progressivo', tense: 'congiuntivo-presente-progressivo', expected: 6, type: 'progressive' }
+                            ].map((tenseInfo, idx) => {
+                              const found = analysis.formCounts.byMood.congiuntivo?.[tenseInfo.tense] || 0;
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`p-2 rounded ${
+                                    found === 0 ? 'bg-red-50' :
+                                    found < tenseInfo.expected ? 'bg-yellow-50' : 'bg-gray-50'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <div className="font-medium">{tenseInfo.name}</div>
+                                      <div className="text-xs text-gray-500">
+                                        Expected: {tenseInfo.expected} forms
+                                        {tenseInfo.type === 'perfect-compound' && auxiliaryCount === 2 && ` (${tenseInfo.expected/2} avere + ${tenseInfo.expected/2} essere)`}
+                                        {tenseInfo.type === 'progressive' && ' (stare only)'}
+                                      </div>
+                                      <div className="text-xs text-gray-500">Found: {found} forms</div>
+                                    </div>
+                                    <span
+                                      className={
+                                        found === 0 ? 'text-red-600' :
+                                        found < tenseInfo.expected ? 'text-yellow-600' : 'text-green-600'
+                                      }
+                                    >
+                                      {found === 0 ? '❌ Missing' :
+                                       found < tenseInfo.expected ? `⚠️ ${found}/${tenseInfo.expected}` : '✅ Complete'}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Conditional & Imperative with REAL DATA */}
+                        <div className="border rounded-lg p-4 mb-4">
+                          <h5 className="font-semibold text-gray-800 mb-3">Conditional & Imperative</h5>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            {[
+                              { name: 'Condizionale Presente', tense: 'condizionale-presente', expected: 6, type: 'simple' },
+                              { name: 'Condizionale Passato', tense: 'condizionale-passato', expected: 6 * auxiliaryCount, type: 'perfect-compound' },
+                              { name: 'Condizionale Presente Progressivo', tense: 'condizionale-presente-progressivo', expected: 6, type: 'progressive' },
+                              { name: 'Imperativo Presente', tense: 'imperativo-presente', expected: 5, type: 'simple' },
+                              { name: 'Imperativo Passato', tense: 'imperativo-passato', expected: 5 * auxiliaryCount, type: 'perfect-compound' }
+                            ].map((tenseInfo, idx) => {
+                              const moodName = tenseInfo.tense.includes('condizionale') ? 'condizionale' : 'imperativo';
+                              const found = analysis.formCounts.byMood[moodName]?.[tenseInfo.tense] || 0;
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`p-2 rounded ${
+                                    found === 0 ? 'bg-red-50' :
+                                    found < tenseInfo.expected ? 'bg-yellow-50' : 'bg-gray-50'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <div className="font-medium">{tenseInfo.name}</div>
+                                      <div className="text-xs text-gray-500">
+                                        Expected: {tenseInfo.expected} forms
+                                        {tenseInfo.type === 'perfect-compound' && auxiliaryCount === 2 && tenseInfo.expected > 6 && ` (${tenseInfo.expected/2} avere + ${tenseInfo.expected/2} essere)`}
+                                        {tenseInfo.type === 'progressive' && ' (stare only)'}
+                                      </div>
+                                      <div className="text-xs text-gray-500">Found: {found} forms</div>
+                                    </div>
+                                    <span
+                                      className={
+                                        found === 0 ? 'text-red-600' :
+                                        found < tenseInfo.expected ? 'text-yellow-600' : 'text-green-600'
+                                      }
+                                    >
+                                      {found === 0 ? '❌ Missing' :
+                                       found < tenseInfo.expected ? `⚠️ ${found}/${tenseInfo.expected}` : '✅ Complete'}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Non-finite Forms with REAL DATA */}
+                        <div className="border rounded-lg p-4 mb-4">
+                          <h5 className="font-semibold text-gray-800 mb-3">Non-finite Forms</h5>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                            {[
+                              { name: 'Infinito Presente', tense: 'infinito-presente', expected: 1, type: 'simple' },
+                              { name: 'Infinito Passato', tense: 'infinito-passato', expected: auxiliaryCount, type: 'perfect-compound' },
+                              { name: 'Participio Presente', tense: 'participio-presente', expected: 1, type: 'simple' },
+                              { name: 'Participio Passato', tense: 'participio-passato', expected: 1, type: 'building-block' },
+                              { name: 'Gerundio Presente', tense: 'gerundio-presente', expected: 1, type: 'building-block' },
+                              { name: 'Gerundio Passato', tense: 'gerundio-passato', expected: auxiliaryCount, type: 'perfect-compound' }
+                            ].map((tenseInfo, idx) => {
+                              const moodName = tenseInfo.tense.split('-')[0];
+                              const found = analysis.formCounts.byMood[moodName]?.[tenseInfo.tense] || 0;
+                              const needsBuildingBlockTag =
+                                tenseInfo.type === 'building-block' &&
+                                analysis.orphanedRecords.missingTags.buildingBlocks.some(b => b.missingTag === 'building-block');
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className={`p-2 rounded ${
+                                    tenseInfo.type === 'building-block' && needsBuildingBlockTag
+                                      ? 'bg-yellow-50'
+                                      : found < tenseInfo.expected
+                                      ? 'bg-red-50'
+                                      : 'bg-gray-50'
+                                  }`}
+                                >
+                                  <div className="text-center">
+                                    <div className="font-medium">{tenseInfo.name}</div>
+                                    <div className="text-xs text-gray-500 mb-1">
+                                      {tenseInfo.expected > 1 ? `${tenseInfo.expected} forms (per auxiliary)` : '1 form'}
+                                    </div>
+                                    <span
+                                      className={
+                                        tenseInfo.type === 'building-block' && needsBuildingBlockTag
+                                          ? 'text-yellow-600'
+                                          : found < tenseInfo.expected
+                                          ? 'text-red-600'
+                                          : 'text-green-600'
+                                      }
+                                    >
+                                      {tenseInfo.type === 'building-block' && needsBuildingBlockTag
+                                        ? '⚠️ Need building-block tag'
+                                        : found < tenseInfo.expected
+                                        ? `❌ ${found}/${tenseInfo.expected}`
+                                        : '✅ Present'}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       </>
                     );
                   })()}
-                  </div>
+                </div>
 
                   {(() => {
                     const analysis = validationResult.detailedAnalysis;
