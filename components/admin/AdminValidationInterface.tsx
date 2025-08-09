@@ -74,6 +74,22 @@ const AdminValidationInterface = () => {
     return duplicates;
   };
 
+  const getTenseDuplicateInfo = (tenseInfo, moodName, analysis) => {
+    const moodTenseForms = analysis.rawData.forms.filter(f =>
+      f.tags?.includes(moodName) && f.tags?.includes(tenseInfo.tense)
+    );
+
+    const duplicates = detectDuplicateForms(moodTenseForms);
+    const duplicateCount = Array.from(duplicates.values()).reduce((sum, forms) => sum + forms.length, 0);
+
+    return {
+      hasDuplicates: duplicates.size > 0,
+      duplicateGroups: duplicates.size,
+      duplicateFormsCount: duplicateCount,
+      totalForms: moodTenseForms.length
+    };
+  };
+
   const getFormAuxiliary = (form) => {
     const tags = form.tags || [];
     const auxTag = tags.find(t => t.includes('auxiliary'));
@@ -142,7 +158,20 @@ const AdminValidationInterface = () => {
           }`}
         >
           <div className="flex-1">
-            <span>{tenseInfo.name} ({tenseInfo.expected} forms)</span>
+            <div className="flex items-center gap-2">
+              <span>{tenseInfo.name} ({tenseInfo.expected} forms)</span>
+              {(() => {
+                const duplicateInfo = getTenseDuplicateInfo(tenseInfo, moodName, analysis);
+                if (duplicateInfo.hasDuplicates) {
+                  return (
+                    <span className="px-1.5 py-0.5 bg-orange-200 text-orange-800 text-xs rounded font-medium">
+                      {duplicateInfo.duplicateGroups} DUPE GROUPS
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className={found >= tenseInfo.expected ? 'text-green-600' : 'text-red-600'}>
@@ -163,11 +192,12 @@ const AdminValidationInterface = () => {
               const linkedTranslations = analysis.rawData.formTranslations
                 .filter(ft => ft.form_id === form.id)
                 .map(ft => {
-                  const translation = analysis.rawData.translations.find(t => t.id === ft.word_translation_id);
+                  const wordTranslation = analysis.rawData.translations.find(t => t.id === ft.word_translation_id);
                   return {
                     ...ft,
-                    translationAuxiliary: translation?.context_metadata?.auxiliary,
-                    translationText: translation?.translation || ft.translation
+                    translationAuxiliary: wordTranslation?.context_metadata?.auxiliary,
+                    translationText: ft.translation,
+                    wordTranslationText: wordTranslation?.translation
                   };
                 });
 
@@ -261,6 +291,11 @@ const AdminValidationInterface = () => {
                                 <div className={isAuxMismatch ? 'text-red-800 font-medium' : 'text-green-800'}>
                                   "{lt.translationText}"
                                 </div>
+                                {lt.wordTranslationText && (
+                                  <div className="text-xs text-gray-600 mt-0.5">
+                                    From: "{lt.wordTranslationText}"
+                                  </div>
+                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className={`px-1.5 py-0.5 rounded ${
@@ -641,7 +676,22 @@ const AdminValidationInterface = () => {
                 {(() => {
                   const analysis = validationResult.detailedAnalysis;
                   if (!analysis?.rawData) return <div className="text-red-600">No analysis data available</div>;
-                  
+
+                  // Use the SAME calculation logic as the detailed form analysis
+                  const auxiliaries = analysis.auxiliaries;
+                  const auxiliaryCount = auxiliaries.length || 1;
+
+                  // Expected forms calculation (same as Form Expectations Calculator)
+                  const expectations = {
+                    simple: 51,
+                    perfectCompound: 49 * auxiliaryCount,
+                    progressive: 30,
+                    total: 51 + (49 * auxiliaryCount) + 30
+                  };
+
+                  // Actual form counts (same as detailed analysis)
+                  const actualCounts = analysis.formCounts.byType;
+
                   // Calculate real expected vs missing tags
                   const wordTagStats = {
                     conjugationClass: analysis.rawData.wordTags.filter(tag => 
@@ -654,7 +704,7 @@ const AdminValidationInterface = () => {
                       tag.includes('irregular') || tag.includes('regular')
                     ).length > 0
                   };
-                  
+
                   const translationStats = {
                     withAuxiliary: analysis.rawData.translations.filter(t => 
                       t.context_metadata?.auxiliary
@@ -664,16 +714,17 @@ const AdminValidationInterface = () => {
                     ).length,
                     total: analysis.rawData.translations.length
                   };
-                  
+
                   const formStats = {
                     withMoodTense: analysis.rawData.forms.filter(f => {
                       const moods = ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'];
                       return f.tags?.some(tag => moods.includes(tag));
                     }).length,
                     withTranslations: analysis.rawData.formTranslations.length,
-                    totalForms: analysis.rawData.forms.length
+                    totalForms: analysis.rawData.forms.length,
+                    expectedForms: expectations.total // Use same calculation as detailed analysis
                   };
-                  
+
                   return (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       {/* Word Level Summary */}
@@ -694,7 +745,7 @@ const AdminValidationInterface = () => {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Translation Level Summary */}
                       <div className="p-4 border rounded-lg">
                         <h6 className="font-medium text-gray-800 mb-2">Translation Metadata</h6>
@@ -713,8 +764,8 @@ const AdminValidationInterface = () => {
                           </div>
                         </div>
                       </div>
-                      
-                      {/* Form Level Summary */}
+
+                      {/* Form Level Summary - CORRECTED */}
                       <div className="p-4 border rounded-lg">
                         <h6 className="font-medium text-gray-800 mb-2">Form Classification</h6>
                         <div className="space-y-1 text-sm">
@@ -726,12 +777,14 @@ const AdminValidationInterface = () => {
                           </div>
                           <div className="flex justify-between">
                             <span>Total Forms:</span>
-                            <span className="text-blue-600">{formStats.totalForms}</span>
+                            <span className={`${formStats.totalForms === formStats.expectedForms ? 'text-green-600' : 'text-orange-600'}`}>
+                              {formStats.totalForms}/{formStats.expectedForms}
+                            </span>
                           </div>
                         </div>
                       </div>
-                      
-                      {/* Form-Translation Links Summary */}
+
+                      {/* Form-Translation Links Summary - CORRECTED */}
                       <div className="p-4 border rounded-lg">
                         <h6 className="font-medium text-gray-800 mb-2">Form-Translation Links</h6>
                         <div className="space-y-1 text-sm">
@@ -741,8 +794,8 @@ const AdminValidationInterface = () => {
                           </div>
                           <div className="flex justify-between">
                             <span>Coverage:</span>
-                            <span className={formStats.withTranslations > formStats.totalForms * 0.8 ? 'text-green-600' : 'text-orange-600'}>
-                              {Math.round((formStats.withTranslations / formStats.totalForms) * 100)}%
+                            <span className={formStats.withTranslations >= formStats.expectedForms ? 'text-green-600' : 'text-orange-600'}>
+                              {Math.round((formStats.withTranslations / formStats.expectedForms) * 100)}%
                             </span>
                           </div>
                         </div>
