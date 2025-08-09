@@ -1102,7 +1102,7 @@ export class ConjugationComplianceValidator {
       const { data: word, error } = await this.supabase
         .from('dictionary')
         .select('*')
-        .eq('italian', verbItalian)
+        .ilike('italian', verbItalian)
         .eq('word_type', 'VERB')
         .single();
 
@@ -1661,7 +1661,7 @@ export class ConjugationComplianceValidator {
       const { data: word, error } = await this.supabase
         .from('dictionary')
         .select('*')
-        .eq('italian', verbItalian)
+        .ilike('italian', verbItalian)
         .eq('word_type', 'VERB')
         .single();
 
