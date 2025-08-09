@@ -45,31 +45,38 @@ const AdminValidationInterface = () => {
     const isExpanded = expandedMoodTenses.has(tenseKey);
 
     // Get actual forms for this mood/tense
-    const moodTenseForms = analysis.rawData.forms.filter(f =>
-      f.tags?.includes(moodName) && f.tags?.includes(tenseInfo.tense)
-    ).sort((a, b) => {
-      // Sort by: First Singular, Second Singular, Third Singular, First Plural, Second Plural, Third Plural
-      const getOrder = (form) => {
-        const tags = form.tags || [];
-        const isSingular = tags.includes('singolare');
-        const isPrima = tags.includes('prima-persona');
-        const isSeconda = tags.includes('seconda-persona');
+    const moodTenseForms = analysis.rawData.forms
+      .filter(
+        (f) => f.tags?.includes(moodName) && f.tags?.includes(tenseInfo.tense)
+      )
+      .sort((a, b) => {
+        // Sort by: First Singular, Second Singular, Third Singular, First Plural, Second Plural, Third Plural
+        const getOrder = (form) => {
+          const tags = form.tags || [];
+          const isSingular = tags.includes('singolare');
+          const isPrima = tags.includes('prima-persona');
+          const isSeconda = tags.includes('seconda-persona');
 
-        if (isSingular) {
-          if (isPrima) return 1;
-          if (isSeconda) return 2;
-          return 3; // terza-persona
-        } else {
-          if (isPrima) return 4;
-          if (isSeconda) return 5;
-          return 6; // terza-persona
-        }
-      };
-      return getOrder(a) - getOrder(b);
-    });
+          if (isSingular) {
+            if (isPrima) return 1;
+            if (isSeconda) return 2;
+            return 3; // terza-persona
+          } else {
+            if (isPrima) return 4;
+            if (isSeconda) return 5;
+            return 6; // terza-persona
+          }
+        };
+        return getOrder(a) - getOrder(b);
+      });
 
     return (
-      <div key={tenseInfo.tense} className={`border rounded ${found >= tenseInfo.expected ? 'bg-gray-50' : 'bg-red-50'}`}>
+      <div
+        key={tenseInfo.tense}
+        className={`border rounded ${
+          found >= tenseInfo.expected ? 'bg-gray-50' : 'bg-red-50'
+        }`}
+      >
         <button
           onClick={() => toggleMoodTenseExpansion(tenseKey)}
           className={`w-full flex justify-between items-center p-2 text-left hover:bg-gray-100 ${
@@ -77,11 +84,19 @@ const AdminValidationInterface = () => {
           }`}
         >
           <div className="flex-1">
-            <span>{tenseInfo.name} ({tenseInfo.expected} forms)</span>
+            <span>
+              {tenseInfo.name} ({tenseInfo.expected} forms)
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className={found >= tenseInfo.expected ? 'text-green-600' : 'text-red-600'}>
-              {found >= tenseInfo.expected ? '✅ Complete' : `❌ ${found}/${tenseInfo.expected}`}
+            <span
+              className={
+                found >= tenseInfo.expected ? 'text-green-600' : 'text-red-600'
+              }
+            >
+              {found >= tenseInfo.expected
+                ? '✅ Complete'
+                : `❌ ${found}/${tenseInfo.expected}`}
             </span>
             <span className="text-gray-400">{isExpanded ? '▼' : '▶'}</span>
           </div>
@@ -90,39 +105,145 @@ const AdminValidationInterface = () => {
         {isExpanded && (
           <div className="border-t bg-white p-3">
             {moodTenseForms.length === 0 ? (
-              <div className="text-red-600 text-sm">No forms found for this tense</div>
+              <div className="text-red-600 text-sm">
+                No forms found for this tense
+              </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {moodTenseForms.map((form, formIdx) => {
-                  // Check if form has form_translations
-                  const hasFormTranslation = analysis.rawData.formTranslations.some(ft =>
-                    ft.form_id === form.id
+                  // Get linked translations for this form
+                  const linkedTranslations = analysis.rawData.formTranslations
+                    .filter((ft) => ft.form_id === form.id)
+                    .map((ft) => ft.translation);
+
+                  const personLabel = form.tags?.includes('prima-persona')
+                    ? 'First'
+                    : form.tags?.includes('seconda-persona')
+                    ? 'Second'
+                    : 'Third';
+                  const numberLabel = form.tags?.includes('singolare')
+                    ? 'Singular'
+                    : 'Plural';
+
+                  // Categorize tags
+                  const expectedTags = (form.tags || []).filter(
+                    (tag) =>
+                      // Mood/tense tags
+                      [
+                        'indicativo',
+                        'congiuntivo',
+                        'condizionale',
+                        'imperativo',
+                        'infinito',
+                        'participio',
+                        'gerundio',
+                      ].includes(tag) ||
+                      tag.includes('presente') ||
+                      tag.includes('passato') ||
+                      tag.includes('futuro') ||
+                      tag.includes('imperfetto') ||
+                      tag.includes('remoto') ||
+                      tag.includes('trapassato') ||
+                      // Person/number tags
+                      [
+                        'prima-persona',
+                        'seconda-persona',
+                        'terza-persona',
+                        'singolare',
+                        'plurale',
+                      ].includes(tag) ||
+                      // Form type tags
+                      ['simple', 'compound', 'progressive'].includes(tag) ||
+                      // Auxiliary tags
+                      tag.includes('auxiliary') ||
+                      // Regularity tags
+                      tag.includes('irregular') ||
+                      tag.includes('regular')
                   );
 
-                  const personLabel = form.tags?.includes('prima-persona') ? 'First' :
-                                   form.tags?.includes('seconda-persona') ? 'Second' : 'Third';
-                  const numberLabel = form.tags?.includes('singolare') ? 'Singular' : 'Plural';
+                  const otherTags = (form.tags || []).filter(
+                    (tag) => !expectedTags.includes(tag)
+                  );
 
                   return (
-                    <div key={formIdx} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                      <div className="flex-1">
-                        <div className="font-medium">{personLabel} Person {numberLabel}</div>
-                        <div className="text-blue-600 font-mono">"{form.form_text}"</div>
+                    <div key={formIdx} className="border rounded p-3 bg-gray-50">
+                      {/* Form Header */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">
+                            {personLabel} Person {numberLabel}
+                          </div>
+                          <div className="text-blue-600 font-mono text-lg">
+                            "{form.form_text}"
+                          </div>
+                        </div>
+                        <div
+                          className={`px-2 py-1 rounded text-xs ${
+                            linkedTranslations.length > 0
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-orange-100 text-orange-800'
+                          }`}
+                        >
+                          {linkedTranslations.length > 0
+                            ? '✅ Translated'
+                            : '⚠️ No Translation'}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
+
+                      {/* Linked Translations */}
+                      {linkedTranslations.length > 0 && (
+                        <div className="mb-2">
+                          <div className="text-xs font-medium text-gray-700 mb-1">
+                            English Translations:
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {linkedTranslations.map((translation, transIdx) => (
+                              <span
+                                key={transIdx}
+                                className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded"
+                              >
+                                "{translation}"
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Expected Tags */}
+                      <div className="mb-2">
+                        <div className="text-xs font-medium text-gray-700 mb-1">
+                          Expected Tags ({expectedTags.length}):
+                        </div>
                         <div className="flex flex-wrap gap-1">
-                          {(form.tags || []).map((tag, tagIdx) => (
-                            <span key={tagIdx} className="px-1 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+                          {expectedTags.map((tag, tagIdx) => (
+                            <span
+                              key={tagIdx}
+                              className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded font-mono"
+                            >
                               {tag}
                             </span>
                           ))}
                         </div>
-                        <div className={`px-2 py-1 rounded text-xs ${
-                          hasFormTranslation ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
-                        }`}>
-                          {hasFormTranslation ? '✅ Translated' : '⚠️ No Translation'}
-                        </div>
                       </div>
+
+                      {/* Other Tags */}
+                      {otherTags.length > 0 && (
+                        <div>
+                          <div className="text-xs font-medium text-gray-700 mb-1">
+                            Other Tags ({otherTags.length}):
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {otherTags.map((tag, tagIdx) => (
+                              <span
+                                key={tagIdx}
+                                className="px-1.5 py-0.5 bg-gray-100 text-gray-700 text-xs rounded font-mono"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -446,123 +567,332 @@ const AdminValidationInterface = () => {
                     <div className="text-2xl font-bold text-orange-600">{validationResult.manualInterventionRequired.length}</div>
                     <div className="text-xs text-orange-600">Manual Required</div>
                   </div>
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">{validationResult.missingBuildingBlocks.length}</div>
-                    <div className="text-xs text-purple-600">Missing Blocks</div>
+              <div className="p-3 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">{validationResult.missingBuildingBlocks.length}</div>
+                <div className="text-xs text-purple-600">Missing Blocks</div>
+              </div>
+            </div>
+          </div>
+
+          {/* REAL DATA SUMMARY - MOVED TO TOP */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h4 className="text-lg font-semibold text-gray-900 mb-4">Comprehensive Validation Summary (REAL DATA)</h4>
+
+            {(() => {
+              const analysis = validationResult.detailedAnalysis;
+              if (!analysis?.rawData) return <div className="text-red-600">No analysis data available</div>;
+
+              // Calculate real expected vs missing tags
+              const wordTagStats = {
+                conjugationClass: analysis.rawData.wordTags.filter(tag =>
+                  ['are-conjugation', 'ere-conjugation', 'ire-conjugation', 'ire-isc-conjugation'].includes(tag)
+                ).length > 0,
+                transitivity: analysis.rawData.wordTags.filter(tag =>
+                  ['always-transitive', 'always-intransitive', 'both-possible'].includes(tag)
+                ).length > 0,
+                irregularity: analysis.rawData.wordTags.filter(tag =>
+                  tag.includes('irregular') || tag.includes('regular')
+                ).length > 0
+              };
+
+              const translationStats = {
+                withAuxiliary: analysis.rawData.translations.filter(t =>
+                  t.context_metadata?.auxiliary
+                ).length,
+                withTransitivity: analysis.rawData.translations.filter(t =>
+                  t.context_metadata?.transitivity
+                ).length,
+                total: analysis.rawData.translations.length
+              };
+
+              const formStats = {
+                withMoodTense: analysis.rawData.forms.filter(f => {
+                  const moods = ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'];
+                  return f.tags?.some(tag => moods.includes(tag));
+                }).length,
+                withTranslations: analysis.rawData.formTranslations.length,
+                totalForms: analysis.rawData.forms.length
+              };
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Word Level Summary */}
+                  <div className="p-4 border rounded-lg">
+                    <h6 className="font-medium text-gray-800 mb-2">Word Level Tags</h6>
+                    <div className="space-y-1 text-sm">
+                      <div className={`flex justify-between ${wordTagStats.conjugationClass ? 'text-green-600' : 'text-red-600'}`}>
+                        <span>Conjugation Class:</span>
+                        <span>{wordTagStats.conjugationClass ? '✅' : '❌'}</span>
+                      </div>
+                      <div className={`flex justify-between ${wordTagStats.transitivity ? 'text-green-600' : 'text-red-600'}`}>
+                        <span>Transitivity:</span>
+                        <span>{wordTagStats.transitivity ? '✅' : '❌'}</span>
+                      </div>
+                      <div className={`flex justify-between ${wordTagStats.irregularity ? 'text-green-600' : 'text-orange-600'}`}>
+                        <span>Regularity:</span>
+                        <span>{wordTagStats.irregularity ? '✅' : '⚠️'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Translation Level Summary */}
+                  <div className="p-4 border rounded-lg">
+                    <h6 className="font-medium text-gray-800 mb-2">Translation Metadata</h6>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>With Auxiliary:</span>
+                        <span className={translationStats.withAuxiliary === translationStats.total ? 'text-green-600' : 'text-red-600'}>
+                          {translationStats.withAuxiliary}/{translationStats.total}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>With Transitivity:</span>
+                        <span className={translationStats.withTransitivity === translationStats.total ? 'text-green-600' : 'text-red-600'}>
+                          {translationStats.withTransitivity}/{translationStats.total}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Form Level Summary */}
+                  <div className="p-4 border rounded-lg">
+                    <h6 className="font-medium text-gray-800 mb-2">Form Classification</h6>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>With Mood/Tense:</span>
+                        <span className={formStats.withMoodTense === formStats.totalForms ? 'text-green-600' : 'text-red-600'}>
+                          {formStats.withMoodTense}/{formStats.totalForms}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total Forms:</span>
+                        <span className="text-blue-600">{formStats.totalForms}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Form-Translation Links Summary */}
+                  <div className="p-4 border rounded-lg">
+                    <h6 className="font-medium text-gray-800 mb-2">Form-Translation Links</h6>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>Total Links:</span>
+                        <span className="text-blue-600">{formStats.withTranslations}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Coverage:</span>
+                        <span className={formStats.withTranslations > formStats.totalForms * 0.8 ? 'text-green-600' : 'text-orange-600'}>
+                          {Math.round((formStats.withTranslations / formStats.totalForms) * 100)}%
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              );
+            })()}
+          </div>
 
-              {/* Detailed Analysis by Category */}
-              <div className="space-y-6">
-                {/* Word Level Analysis - REAL STRUCTURED DATA */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Word Level Analysis</h4>
+          {/* Detailed Analysis by Category */}
+          <div className="space-y-6">
+              {/* Word Level Analysis - FIXED TO SHOW ACTUAL VALUES */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Word Level Analysis</h4>
 
-                  {(() => {
-                    const analysis = validationResult.detailedAnalysis;
-                    if (!analysis?.rawData) return <div className="text-red-600">No word data available</div>;
+                {(() => {
+                  const analysis = validationResult.detailedAnalysis;
+                  if (!analysis?.rawData) return <div className="text-red-600">No word data available</div>;
 
-                    // READ DIRECTLY FROM STRUCTURED DATA
-                    const wordTags = analysis.rawData.wordTags;
+                  const wordTags = analysis.rawData.wordTags;
 
-                    const tagCategories = [
-                      {
-                        name: 'Conjugation Class',
-                        options: ['are-conjugation', 'ere-conjugation', 'ire-conjugation', 'ire-isc-conjugation'],
-                        present: wordTags.filter(tag => ['are-conjugation', 'ere-conjugation', 'ire-conjugation', 'ire-isc-conjugation'].includes(tag)),
-                        rule: 'exactly-one'
-                      },
-                      {
-                        name: 'Transitivity',
-                        options: ['always-transitive', 'always-intransitive', 'both-possible'],
-                        present: wordTags.filter(tag => ['always-transitive', 'always-intransitive', 'both-possible'].includes(tag)),
-                        rule: 'exactly-one'
-                      },
-                      {
-                        name: 'Frequency',
-                        options: ['freq-top100', 'freq-top200', 'freq-top500', 'freq-top1000', 'freq-top5000'],
-                        present: wordTags.filter(tag => tag.startsWith('freq-')),
-                        rule: 'at-least-one'
-                      },
-                      {
-                        name: 'CEFR Level',
-                        options: ['CEFR-A1', 'CEFR-A2', 'CEFR-B1', 'CEFR-B2', 'CEFR-C1', 'CEFR-C2'],
-                        present: wordTags.filter(tag => tag.startsWith('CEFR-')),
-                        rule: 'at-least-one'
-                      }
-                    ];
+                  const tagCategories = [
+                    {
+                      name: 'Conjugation Class',
+                      options: ['are-conjugation', 'ere-conjugation', 'ire-conjugation', 'ire-isc-conjugation'],
+                      present: wordTags.filter(tag =>
+                        ['are-conjugation', 'ere-conjugation', 'ire-conjugation', 'ire-isc-conjugation'].includes(tag)
+                      ),
+                      rule: 'exactly-one',
+                      critical: true
+                    },
+                    {
+                      name: 'Transitivity',
+                      options: ['always-transitive', 'always-intransitive', 'both-possible'],
+                      present: wordTags.filter(tag =>
+                        ['always-transitive', 'always-intransitive', 'both-possible'].includes(tag)
+                      ),
+                      rule: 'exactly-one',
+                      critical: true
+                    },
+                    {
+                      name: 'Regularity Pattern',
+                      options: ['regular-pattern', 'irregular-pattern', 'stem-changing', 'irregular-participle', 'irregular-gerund', 'irregular-imperative'],
+                      present: wordTags.filter(tag =>
+                        tag.includes('irregular') || tag.includes('regular') || tag.includes('stem-changing')
+                      ),
+                      rule: 'at-least-one',
+                      critical: true
+                    },
+                    {
+                      name: 'Frequency',
+                      options: ['freq-top100', 'freq-top200', 'freq-top500', 'freq-top1000', 'freq-top5000'],
+                      present: wordTags.filter(tag => tag.startsWith('freq-')),
+                      rule: 'at-least-one',
+                      critical: false
+                    },
+                    {
+                      name: 'CEFR Level',
+                      options: ['CEFR-A1', 'CEFR-A2', 'CEFR-B1', 'CEFR-B2', 'CEFR-C1', 'CEFR-C2'],
+                      present: wordTags.filter(tag => tag.startsWith('CEFR-')),
+                      rule: 'at-least-one',
+                      critical: false
+                    }
+                  ];
 
-                    // Find other tags not in categories
-                    const categorizedTags = new Set<string>();
-                    tagCategories.forEach(cat => cat.options.forEach(opt => categorizedTags.add(opt)));
-                    const otherTags = wordTags.filter(tag => !categorizedTags.has(tag));
+                  return (
+                    <div className="space-y-4">
+                      {/* Critical Required Categories */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {tagCategories.filter(cat => cat.critical).map((category, idx) => {
+                          const isComplete =
+                            category.rule === 'exactly-one'
+                              ? category.present.length === 1
+                              : category.present.length > 0;
+                          const expectedCount =
+                            category.rule === 'exactly-one' ? '1' : '1+';
 
-                    return (
-                      <div className="space-y-4">
-                        {/* Compact Required Categories */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {tagCategories.map((category, idx) => {
-                            const isComplete = category.rule === 'exactly-one' ? category.present.length === 1 : category.present.length > 0;
-
-                            return (
-                              <div key={idx} className="border rounded p-3">
-                                <div className="flex items-center justify-between mb-2">
-                                  <h6 className="font-medium text-sm">{category.name}</h6>
-                                  <span className={`px-2 py-1 rounded text-xs ${
-                                    isComplete ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                                  }`}>
-                                    {isComplete ? '✅' : '❌'} {category.present.length}/{category.rule === 'exactly-one' ? '1' : '1+'}
-                                  </span>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-1 text-xs">
-                                  {category.options.map((option, optIdx) => {
-                                    const isPresent = category.present.includes(option);
-                                    return (
-                                      <div key={optIdx} className={`flex items-center justify-between px-2 py-1 rounded ${
-                                        isPresent ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-gray-50 border border-gray-200 text-gray-500'
-                                      }`}>
-                                        <span className="font-mono truncate">{option.replace(/^(freq-|CEFR-|are-|ere-|ire-|always-|both-)/,'')}</span>
-                                        <span>{isPresent ? '●' : '○'}</span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {/* All Present Tags */}
-                        <div className="border rounded p-3 bg-blue-50">
-                          <h6 className="font-medium text-sm text-blue-900 mb-2">All Present Word Tags ({wordTags.length} total)</h6>
-                          <div className="flex flex-wrap gap-1">
-                            {wordTags.map((tag, tagIdx) => (
-                              <span key={tagIdx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-mono bg-blue-100 text-blue-800">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Other Tags */}
-                        {otherTags.length > 0 && (
-                          <div className="border rounded p-3 bg-gray-50">
-                            <h6 className="font-medium text-sm text-gray-900 mb-2">Other Tags ({otherTags.length})</h6>
-                            <div className="flex flex-wrap gap-1">
-                              {otherTags.map((tag, tagIdx) => (
-                                <span key={tagIdx} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-mono bg-gray-100 text-gray-700">
-                                  {tag}
+                          return (
+                            <div
+                              key={idx}
+                              className={`border rounded p-3 ${
+                                isComplete
+                                  ? 'border-green-200 bg-green-50'
+                                  : 'border-red-200 bg-red-50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <h6
+                                  className={`font-medium text-sm ${
+                                    isComplete
+                                      ? 'text-green-800'
+                                      : 'text-red-800'
+                                  }`}
+                                >
+                                  {category.name}
+                                </h6>
+                                <span
+                                  className={`px-2 py-1 rounded text-xs ${
+                                    isComplete
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-red-100 text-red-700'
+                                  }`}
+                                >
+                                  {isComplete ? '✅' : '❌'} {category.present.length}/
+                                  {expectedCount}
                                 </span>
-                              ))}
+                              </div>
+
+                              <div className="mb-2">
+                                <div className="text-xs text-gray-600 mb-1">
+                                  Present Tags:
+                                </div>
+                                {category.present.length > 0 ? (
+                                  <div className="flex flex-wrap gap-1">
+                                    {category.present.map((tag, tagIdx) => (
+                                      <span
+                                        key={tagIdx}
+                                        className="inline-flex items-center px-2 py-1 rounded text-xs font-mono bg-blue-100 text-blue-800"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-red-600 text-xs">None found</div>
+                                )}
+                              </div>
+
+                              {!isComplete && (
+                                <div className="text-xs text-red-700">
+                                  <strong>Expected one of:</strong> {category.options.join(', ')}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        )}
+                          );
+                        })}
                       </div>
-                    );
-                  })()}
-                </div>
+
+                      {/* Optional Categories */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {tagCategories.filter(cat => !cat.critical).map((category, idx) => {
+                          const isComplete = category.present.length > 0;
+
+                          return (
+                            <div
+                              key={idx}
+                              className={`border rounded p-3 ${
+                                isComplete
+                                  ? 'border-green-200 bg-green-50'
+                                  : 'border-yellow-200 bg-yellow-50'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <h6
+                                  className={`font-medium text-sm ${
+                                    isComplete
+                                      ? 'text-green-800'
+                                      : 'text-yellow-800'
+                                  }`}
+                                >
+                                  {category.name}
+                                </h6>
+                                <span
+                                  className={`px-2 py-1 rounded text-xs ${
+                                    isComplete
+                                      ? 'bg-green-100 text-green-700'
+                                      : 'bg-yellow-100 text-yellow-700'
+                                  }`}
+                                >
+                                  {isComplete ? '✅' : '⚠️'} {category.present.length}/1+
+                                </span>
+                              </div>
+
+                              {category.present.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mb-2">
+                                  {category.present.map((tag, tagIdx) => (
+                                    <span
+                                      key={tagIdx}
+                                      className="inline-flex items-center px-2 py-1 rounded text-xs font-mono bg-blue-100 text-blue-800"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* All Present Word Tags */}
+                      <div className="border rounded p-3 bg-blue-50">
+                        <h6 className="font-medium text-sm text-blue-900 mb-2">
+                          All Present Word Tags ({wordTags.length} total)
+                        </h6>
+                        <div className="flex flex-wrap gap-1">
+                          {wordTags.map((tag, tagIdx) => (
+                            <span
+                              key={tagIdx}
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-mono bg-blue-100 text-blue-800"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
 
                 {/* Translation Analysis with INTEGRATED METADATA - REAL STRUCTURED DATA */}
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -1085,84 +1415,10 @@ const AdminValidationInterface = () => {
                         </div>
                       </>
                     );
-                  })()}
-                  {/* Summary Stats - CORRECTED CALCULATIONS */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h5 className="font-semibold text-gray-800 mb-3">Summary</h5>
-
-                    {(() => {
-                      const auxiliaries = new Set();
-                      const debugText = debugLog.join(' ');
-                      if (debugText.includes('avere')) auxiliaries.add('avere');
-                      if (debugText.includes('essere')) auxiliaries.add('essere');
-                      const auxiliaryCount = Math.max(1, auxiliaries.size);
-
-                      const formExpectations = {
-                        simple: { base: 47, nonFinite: 4, total: 51 },
-                        perfectCompound: { baseTotal: 49, total: 49 * auxiliaryCount },
-                        progressive: { total: 5 * 6 }
-                      };
-                      const totalExpected = formExpectations.simple.total +
-                                            formExpectations.perfectCompound.total +
-                                            formExpectations.progressive.total;
-
-                      return (
-                        <>
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">67/{totalExpected}</div>
-                              <div className="text-gray-600">Forms Present ({Math.round(67/totalExpected*100)}%)</div>
-                              <div className="text-xs text-gray-500">
-                                {auxiliaryCount} aux: {Array.from(auxiliaries).join(', ')}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-red-600">{Math.round((totalExpected - 67) / 6)}</div>
-                              <div className="text-gray-600">Missing Tense Sets</div>
-                              <div className="text-xs text-gray-500">
-                                {totalExpected - 67} individual forms missing
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-orange-600">18</div>
-                              <div className="text-gray-600">Forms Need Auxiliary Tags</div>
-                              <div className="text-xs text-gray-500">Perfect compound & progressive</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-yellow-600">3</div>
-                              <div className="text-gray-600">Missing Building-Block Tags</div>
-                              <div className="text-xs text-gray-500">Critical for materialization</div>
-                            </div>
-                          </div>
-
-                          {/* CORRECTED Detailed Breakdown */}
-                          <div className="mt-4 pt-4 border-t border-gray-200">
-                            <h6 className="font-medium text-gray-700 mb-2">Form Category Breakdown</h6>
-                            <div className="grid grid-cols-3 gap-4 text-xs">
-                              <div className="text-center p-2 bg-green-50 rounded">
-                                <div className="font-medium text-green-800">Simple Forms</div>
-                                <div className="text-green-600">51 / 51</div>
-                                <div className="text-green-500">100% Complete</div>
-                              </div>
-                              <div className="text-center p-2 bg-red-50 rounded">
-                                <div className="font-medium text-red-800">Perfect Compounds</div>
-                                <div className="text-red-600">~16 / {formExpectations.perfectCompound.total}</div>
-                                <div className="text-red-500">{Math.round(16/formExpectations.perfectCompound.total*100)}% Complete</div>
-                              </div>
-                              <div className="text-center p-2 bg-orange-50 rounded">
-                                <div className="font-medium text-orange-800">Progressive Forms</div>
-                                <div className="text-orange-600">~6 / 30</div>
-                                <div className="text-orange-500">20% Complete</div>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      );
                     })()}
-                  </div>
-              </div>
-              {/* Issues by Category */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                </div>
+                {/* Issues by Category */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Auto-Fixable Issues */}
                 {validationResult.autoFixableIssues.length > 0 && (
                   <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
