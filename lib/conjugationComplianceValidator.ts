@@ -1083,11 +1083,54 @@ export class ConjugationComplianceValidator {
   }
 
   private calculateLinguisticAccuracy(reports: VerbComplianceReport[]): number {
-    const accurateVerbs = reports.filter(r => 
-      r.missingBuildingBlocks.length === 0 && 
+    const accurateVerbs = reports.filter(r =>
+      r.missingBuildingBlocks.length === 0 &&
       r.deprecatedContent.length === 0
     ).length;
     return Math.round((accurateVerbs / reports.length) * 100) || 0;
+  }
+
+  /**
+   * Helper function to get translation constraints for form expectations
+   */
+  private getTranslationConstraints(translations: any[]): {
+    isReciprocal: boolean;
+    isDirectReflexive: boolean;
+    expectedFormsMultiplier: number;
+    allowedPersons: string[];
+  } {
+    const hasReciprocal = translations.some(t =>
+      t.context_metadata?.usage === "reciprocal" &&
+      t.context_metadata?.plurality === "plural-only"
+    );
+
+    const hasDirectReflexive = translations.some(t =>
+      t.context_metadata?.usage === "direct-reflexive" &&
+      t.context_metadata?.plurality === "any"
+    );
+
+    if (hasReciprocal) {
+      return {
+        isReciprocal: true,
+        isDirectReflexive: false,
+        expectedFormsMultiplier: 0.5,
+        allowedPersons: ['plural-only']
+      };
+    } else if (hasDirectReflexive) {
+      return {
+        isReciprocal: false,
+        isDirectReflexive: true,
+        expectedFormsMultiplier: 1.0,
+        allowedPersons: ['any']
+      };
+    } else {
+      return {
+        isReciprocal: false,
+        isDirectReflexive: false,
+        expectedFormsMultiplier: 1.0,
+        allowedPersons: ['any']
+      };
+    }
   }
 
   /**
@@ -1379,13 +1422,31 @@ export class ConjugationComplianceValidator {
         return tags.some(tag => tag.includes('progressivo'));
       }).length;
 
-      // Calculate expectations based on auxiliary count
+      // Calculate expectations based on auxiliary count AND translation constraints
+      const translationConstraints = this.getTranslationConstraints(translations || []);
+      const formsMultiplier = translationConstraints.expectedFormsMultiplier;
+
+      // Finite tenses counts (affected by reciprocal constraint)
+      const finiteSimpleCount = Math.round(27 * formsMultiplier); // 27 finite simple forms normally
+      const finiteCompoundCount = Math.round(49 * auxiliaryCount * formsMultiplier); // All compound forms are finite
+      const finiteProgressiveCount = Math.round(24 * formsMultiplier); // 24 finite progressive forms normally
+
+      // Non-finite forms (unchanged regardless of reciprocal/reflexive)
+      const nonFiniteSimpleCount = 24; // 24 non-finite simple forms
+      const nonFiniteProgressiveCount = 6; // 6 non-finite progressive forms
+
       const expectations = {
-        simple: 51,
-        perfectCompound: 49 * auxiliaryCount,
-        progressive: 30,
-        total: 51 + 49 * auxiliaryCount + 30
+        simple: finiteSimpleCount + nonFiniteSimpleCount,
+        perfectCompound: finiteCompoundCount,
+        progressive: finiteProgressiveCount + nonFiniteProgressiveCount,
+        total: finiteSimpleCount + nonFiniteSimpleCount + finiteCompoundCount + finiteProgressiveCount + nonFiniteProgressiveCount
       };
+
+      if (translationConstraints.isReciprocal) {
+        debugLog(`📊 RECIPROCAL VERB DETECTED: Finite tenses expect 3 forms (plural only), non-finite unchanged`);
+      } else if (translationConstraints.isDirectReflexive) {
+        debugLog(`📊 DIRECT REFLEXIVE VERB DETECTED: Normal form expectations (6 forms per finite tense)`);
+      }
 
       // Analyze form-translation coverage
       const translationBreakdown = (translations || []).map(translation => {
@@ -1484,6 +1545,7 @@ export class ConjugationComplianceValidator {
             formTranslations: formTranslations || []
           },
           auxiliaries,
+          translationConstraints,
           formCounts: {
             byMood: formCountsByMood,
             byType: {

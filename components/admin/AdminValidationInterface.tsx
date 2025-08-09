@@ -121,6 +121,19 @@ const AdminValidationInterface = () => {
 
   // REPLACE the existing renderTenseWithDropdown function with this enhanced version:
   const renderTenseWithDropdown = (tenseInfo, moodName, analysis) => {
+    const constraints = analysis.translationConstraints || {
+      isReciprocal: false,
+      expectedFormsMultiplier: 1.0
+    };
+
+    // Adjust expected count for reciprocal verbs (finite tenses only)
+    let adjustedExpected = tenseInfo.expected;
+    const isFiniteTense = tenseInfo.expected === 6; // Finite tenses expect 6 normally
+
+    if (constraints.isReciprocal && isFiniteTense) {
+      adjustedExpected = 3; // Reciprocal verbs only have plural forms
+    }
+
     const found = analysis.formCounts.byMood[moodName]?.[tenseInfo.tense] || 0;
     const tenseKey = `${moodName}-${tenseInfo.tense}`;
     const isExpanded = expandedMoodTenses.has(tenseKey);
@@ -150,16 +163,21 @@ const AdminValidationInterface = () => {
     });
 
     return (
-      <div key={tenseInfo.tense} className={`border rounded ${found >= tenseInfo.expected ? 'bg-gray-50' : 'bg-red-50'}`}>
+      <div key={tenseInfo.tense} className={`border rounded ${found >= adjustedExpected ? 'bg-gray-50' : 'bg-red-50'}`}>
         <button
           onClick={() => toggleMoodTenseExpansion(tenseKey)}
           className={`w-full flex justify-between items-center p-2 text-left hover:bg-gray-100 ${
-            found >= tenseInfo.expected ? '' : 'hover:bg-red-100'
+            found >= adjustedExpected ? '' : 'hover:bg-red-100'
           }`}
         >
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <span>{tenseInfo.name} ({tenseInfo.expected} forms)</span>
+              <span>{tenseInfo.name} ({adjustedExpected} forms)</span>
+              {constraints.isReciprocal && isFiniteTense && (
+                <span className="px-1.5 py-0.5 bg-purple-200 text-purple-800 text-xs rounded font-medium">
+                  PLURAL ONLY
+                </span>
+              )}
               {(() => {
                 const duplicateInfo = getTenseDuplicateInfo(tenseInfo, moodName, analysis);
                 if (duplicateInfo.hasDuplicates) {
@@ -174,8 +192,8 @@ const AdminValidationInterface = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={found >= tenseInfo.expected ? 'text-green-600' : 'text-red-600'}>
-              {found >= tenseInfo.expected ? '✅ Complete' : `❌ ${found}/${tenseInfo.expected}`}
+            <span className={found >= adjustedExpected ? 'text-green-600' : 'text-red-600'}>
+              {found >= adjustedExpected ? '✅ Complete' : `❌ ${found}/${adjustedExpected}`}
             </span>
             <span className="text-gray-400">{isExpanded ? '▼' : '▶'}</span>
           </div>
@@ -1218,14 +1236,27 @@ const AdminValidationInterface = () => {
 
                           {(() => {
                             const duplicates = detectDuplicateForms(analysis.rawData.forms);
+                            const constraints = analysis.translationConstraints || {
+                              isReciprocal: false,
+                              isDirectReflexive: false,
+                              expectedFormsMultiplier: 1.0,
+                              allowedPersons: ['any']
+                            };
 
                             return (
                               <>
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm mb-3">
                                   <div>
                                     <div className="font-medium text-blue-800">Auxiliaries Detected:</div>
                                     <div className="text-blue-700">
                                       {auxiliaryCount} total: {auxiliaries.join(', ') || 'None'}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-blue-800">Verb Type:</div>
+                                    <div className="text-blue-700">
+                                      {constraints.isReciprocal ? 'Reciprocal (plural only)' :
+                                       constraints.isDirectReflexive ? 'Direct Reflexive' : 'Standard'}
                                     </div>
                                   </div>
                                   <div>
@@ -1248,7 +1279,31 @@ const AdminValidationInterface = () => {
                                   </div>
                                 </div>
 
-                                {/* Duplicate Forms Warning */}
+                                {/* Constraint Explanation */}
+                                {constraints.isReciprocal && (
+                                  <div className="p-3 bg-purple-100 border border-purple-300 rounded mb-3">
+                                    <div className="font-medium text-purple-800 mb-1">
+                                      🔄 RECIPROCAL VERB: Form expectations adjusted for plural-only usage
+                                    </div>
+                                    <div className="text-purple-700 text-sm">
+                                      Finite tenses expect 3 forms (1st/2nd/3rd person plural) instead of 6. 
+                                      Singular persons are not applicable for reciprocal actions.
+                                    </div>
+                                  </div>
+                                )}
+
+                                {constraints.isDirectReflexive && (
+                                  <div className="p-3 bg-green-100 border border-green-300 rounded mb-3">
+                                    <div className="font-medium text-green-800 mb-1">
+                                      🪞 DIRECT REFLEXIVE VERB: Standard form expectations apply
+                                    </div>
+                                    <div className="text-green-700 text-sm">
+                                      All 6 persons (singular + plural) are valid for direct reflexive actions.
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Existing duplicate forms warning */}
                                 {duplicates.size > 0 && (
                                   <div className="p-3 bg-orange-100 border border-orange-300 rounded">
                                     <div className="font-medium text-orange-800 mb-1">
