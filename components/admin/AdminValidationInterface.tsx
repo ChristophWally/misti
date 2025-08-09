@@ -121,6 +121,19 @@ const AdminValidationInterface = () => {
 
   // REPLACE the existing renderTenseWithDropdown function with this enhanced version:
   const renderTenseWithDropdown = (tenseInfo, moodName, analysis) => {
+    const constraints = analysis.translationConstraints || {
+      isReciprocal: false,
+      expectedFormsMultiplier: 1.0,
+    };
+
+    // Adjust expected count for reciprocal verbs (finite tenses only)
+    let adjustedExpected = tenseInfo.expected;
+    const isFiniteTense = tenseInfo.expected === 6; // Finite tenses expect 6 normally
+
+    if (constraints.isReciprocal && isFiniteTense) {
+      adjustedExpected = 3; // Reciprocal verbs only have plural forms
+    }
+
     const found = analysis.formCounts.byMood[moodName]?.[tenseInfo.tense] || 0;
     const tenseKey = `${moodName}-${tenseInfo.tense}`;
     const isExpanded = expandedMoodTenses.has(tenseKey);
@@ -150,16 +163,21 @@ const AdminValidationInterface = () => {
     });
 
     return (
-      <div key={tenseInfo.tense} className={`border rounded ${found >= tenseInfo.expected ? 'bg-gray-50' : 'bg-red-50'}`}>
+      <div key={tenseInfo.tense} className={`border rounded ${found >= adjustedExpected ? 'bg-gray-50' : 'bg-red-50'}`}>
         <button
           onClick={() => toggleMoodTenseExpansion(tenseKey)}
           className={`w-full flex justify-between items-center p-2 text-left hover:bg-gray-100 ${
-            found >= tenseInfo.expected ? '' : 'hover:bg-red-100'
+            found >= adjustedExpected ? '' : 'hover:bg-red-100'
           }`}
         >
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <span>{tenseInfo.name} ({tenseInfo.expected} forms)</span>
+              <span>{tenseInfo.name} ({adjustedExpected} forms)</span>
+              {constraints.isReciprocal && isFiniteTense && (
+                <span className="px-1.5 py-0.5 bg-purple-200 text-purple-800 text-xs rounded font-medium">
+                  PLURAL ONLY
+                </span>
+              )}
               {(() => {
                 const duplicateInfo = getTenseDuplicateInfo(tenseInfo, moodName, analysis);
                 if (duplicateInfo.hasDuplicates) {
@@ -174,8 +192,8 @@ const AdminValidationInterface = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className={found >= tenseInfo.expected ? 'text-green-600' : 'text-red-600'}>
-              {found >= tenseInfo.expected ? '✅ Complete' : `❌ ${found}/${tenseInfo.expected}`}
+            <span className={found >= adjustedExpected ? 'text-green-600' : 'text-red-600'}>
+              {found >= adjustedExpected ? '✅ Complete' : `❌ ${found}/${adjustedExpected}`}
             </span>
             <span className="text-gray-400">{isExpanded ? '▼' : '▶'}</span>
           </div>
@@ -1212,62 +1230,99 @@ const AdminValidationInterface = () => {
 
                     return (
                       <>
-                        {/* REAL DATA Auxiliary Detection and Calculation Info + Duplicate Detection */}
-                        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <h6 className="font-medium text-blue-900 mb-2">Form Expectations Calculator (REAL DATA)</h6>
+                          {/* REAL DATA Auxiliary Detection and Calculation Info + Duplicate Detection */}
+                          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h6 className="font-medium text-blue-900 mb-2">Form Expectations Calculator (REAL DATA)</h6>
 
-                          {(() => {
-                            const duplicates = detectDuplicateForms(analysis.rawData.forms);
+                            {(() => {
+                              const duplicates = detectDuplicateForms(analysis.rawData.forms);
+                              const constraints = analysis.translationConstraints || {
+                                isReciprocal: false,
+                                isDirectReflexive: false,
+                                expectedFormsMultiplier: 1.0,
+                                allowedPersons: ['any']
+                              };
 
-                            return (
-                              <>
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
-                                  <div>
-                                    <div className="font-medium text-blue-800">Auxiliaries Detected:</div>
-                                    <div className="text-blue-700">
-                                      {auxiliaryCount} total: {auxiliaries.join(', ') || 'None'}
+                              return (
+                                <>
+                                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm mb-3">
+                                    <div>
+                                      <div className="font-medium text-blue-800">Auxiliaries Detected:</div>
+                                      <div className="text-blue-700">
+                                        {auxiliaryCount} total: {auxiliaries.join(', ') || 'None'}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="font-medium text-blue-800">Verb Type:</div>
+                                      <div className="text-blue-700">
+                                        {constraints.isReciprocal ? 'Reciprocal (plural only)' :
+                                         constraints.isDirectReflexive ? 'Direct Reflexive' : 'Standard'}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="font-medium text-blue-800">Simple Forms:</div>
+                                      <div className="text-blue-700">
+                                        Found: {actualCounts.simple} / Expected: {expectations.simple}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="font-medium text-blue-800">Perfect Compounds:</div>
+                                      <div className="text-blue-700">
+                                        Found: {actualCounts.perfectCompound} / Expected: {expectations.perfectCompound}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <div className="font-medium text-blue-800">Total Expected:</div>
+                                      <div className="text-blue-700">
+                                        {actualCounts.total} / {expectations.total} ({Math.round(actualCounts.total/expectations.total*100)}%)
+                                      </div>
                                     </div>
                                   </div>
-                                  <div>
-                                    <div className="font-medium text-blue-800">Simple Forms:</div>
-                                    <div className="text-blue-700">
-                                      Found: {actualCounts.simple} / Expected: {expectations.simple}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <div className="font-medium text-blue-800">Perfect Compounds:</div>
-                                    <div className="text-blue-700">
-                                      Found: {actualCounts.perfectCompound} / Expected: {expectations.perfectCompound}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <div className="font-medium text-blue-800">Total Expected:</div>
-                                    <div className="text-blue-700">
-                                      {actualCounts.total} / {expectations.total} ({Math.round(actualCounts.total/expectations.total*100)}%)
-                                    </div>
-                                  </div>
-                                </div>
 
-                                {/* Duplicate Forms Warning */}
-                                {duplicates.size > 0 && (
-                                  <div className="p-3 bg-orange-100 border border-orange-300 rounded">
-                                    <div className="font-medium text-orange-800 mb-1">
-                                      ⚠️ Duplicate Forms Detected: {duplicates.size} duplicate groups found
+                                  {/* Constraint Explanation */}
+                                  {constraints.isReciprocal && (
+                                    <div className="p-3 bg-purple-100 border border-purple-300 rounded mb-3">
+                                      <div className="font-medium text-purple-800 mb-1">
+                                        🔄 RECIPROCAL VERB: Form expectations adjusted for plural-only usage
+                                      </div>
+                                      <div className="text-purple-700 text-sm">
+                                        Finite tenses expect 3 forms (1st/2nd/3rd person plural) instead of 6. 
+                                        Singular persons are not applicable for reciprocal actions.
+                                      </div>
                                     </div>
-                                    <div className="text-orange-700 text-sm">
-                                      This explains why "Found" counts exceed "Expected" - multiple forms exist for the same grammatical combination.
-                                      Check form dropdowns for highlighted duplicates.
-                                    </div>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
-                        </div>
+                                  )}
 
-                        {/* Indicative Mood with REAL DATA */}
-                        <div className="border rounded-lg p-4 mb-4">
-                          <h5 className="font-semibold text-gray-800 mb-3">Indicative (Indicativo)</h5>
+                                  {constraints.isDirectReflexive && (
+                                    <div className="p-3 bg-green-100 border border-green-300 rounded mb-3">
+                                      <div className="font-medium text-green-800 mb-1">
+                                        🪞 DIRECT REFLEXIVE VERB: Standard form expectations apply
+                                      </div>
+                                      <div className="text-green-700 text-sm">
+                                        All 6 persons (singular + plural) are valid for direct reflexive actions.
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Existing duplicate forms warning */}
+                                  {duplicates.size > 0 && (
+                                    <div className="p-3 bg-orange-100 border border-orange-300 rounded">
+                                      <div className="font-medium text-orange-800 mb-1">
+                                        ⚠️ Duplicate Forms Detected: {duplicates.size} duplicate groups found
+                                      </div>
+                                      <div className="text-orange-700 text-sm">
+                                        This explains why "Found" counts exceed "Expected" - multiple forms exist for the same grammatical combination.
+                                        Check form dropdowns for highlighted duplicates.
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                          
+                          {/* Indicative Mood with REAL DATA */}
+                          <div className="border rounded-lg p-4 mb-4">
+                            <h5 className="font-semibold text-gray-800 mb-3">Indicative (Indicativo)</h5>
 
                           {/* Simple Tenses with REAL counts */}
                           <div className="mb-4">

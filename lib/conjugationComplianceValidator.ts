@@ -846,6 +846,51 @@ export class ConjugationComplianceValidator {
   }
 
   /**
+   * Helper function to get translation constraints for form expectations
+   */
+  private getTranslationConstraints(translations: any[]): {
+    isReciprocal: boolean;
+    isDirectReflexive: boolean;
+    expectedFormsMultiplier: number;
+    allowedPersons: string[];
+  } {
+    // Check if any translation is reciprocal
+    const hasReciprocal = translations.some(t =>
+      t.context_metadata?.usage === "reciprocal" &&
+      t.context_metadata?.plurality === "plural-only"
+    );
+
+    // Check if any translation is direct reflexive
+    const hasDirectReflexive = translations.some(t =>
+      t.context_metadata?.usage === "direct-reflexive" &&
+      t.context_metadata?.plurality === "any"
+    );
+
+    if (hasReciprocal) {
+      return {
+        isReciprocal: true,
+        isDirectReflexive: false,
+        expectedFormsMultiplier: 0.5, // 3 forms instead of 6 for finite tenses
+        allowedPersons: ['plural-only']
+      };
+    } else if (hasDirectReflexive) {
+      return {
+        isReciprocal: false,
+        isDirectReflexive: true,
+        expectedFormsMultiplier: 1.0, // Normal 6 forms for finite tenses
+        allowedPersons: ['any']
+      };
+    } else {
+      return {
+        isReciprocal: false,
+        isDirectReflexive: false,
+        expectedFormsMultiplier: 1.0, // Normal expectations
+        allowedPersons: ['any']
+      };
+    }
+  }
+
+  /**
    * Identify auto-fixable issues for automated remediation
    */
   private identifyAutoFixableIssues(report: VerbComplianceReport) {
@@ -1379,13 +1424,41 @@ export class ConjugationComplianceValidator {
         return tags.some(tag => tag.includes('progressivo'));
       }).length;
 
-      // Calculate expectations based on auxiliary count
-      const expectations = {
-        simple: 51,
-        perfectCompound: 49 * auxiliaryCount,
-        progressive: 30,
-        total: 51 + 49 * auxiliaryCount + 30
-      };
+        // Calculate expectations based on auxiliary count AND translation constraints
+        const translationConstraints = this.getTranslationConstraints(translations || []);
+        const formsMultiplier = translationConstraints.expectedFormsMultiplier;
+
+        // Finite tenses counts (affected by reciprocal constraint)
+        const finiteSimpleCount = Math.round(27 * formsMultiplier); // 27 finite simple forms normally
+        const finiteCompoundCount = Math.round(49 * auxiliaryCount * formsMultiplier); // All compound forms are finite
+        const finiteProgressiveCount = Math.round(24 * formsMultiplier); // 24 finite progressive forms normally
+
+        // Non-finite forms (unchanged regardless of reciprocal/reflexive)
+        const nonFiniteSimpleCount = 24; // 24 non-finite simple forms
+        const nonFiniteProgressiveCount = 6; // 6 non-finite progressive forms
+
+        const expectations = {
+          simple: finiteSimpleCount + nonFiniteSimpleCount,
+          perfectCompound: finiteCompoundCount,
+          progressive: finiteProgressiveCount + nonFiniteProgressiveCount,
+          total:
+            finiteSimpleCount +
+            nonFiniteSimpleCount +
+            finiteCompoundCount +
+            finiteProgressiveCount +
+            nonFiniteProgressiveCount,
+          translationConstraints: translationConstraints
+        };
+
+        if (translationConstraints.isReciprocal) {
+          debugLog(
+            `📊 RECIPROCAL VERB DETECTED: Finite tenses expect 3 forms (plural only), non-finite unchanged`
+          );
+        } else if (translationConstraints.isDirectReflexive) {
+          debugLog(
+            `📊 DIRECT REFLEXIVE VERB DETECTED: Normal form expectations (6 forms per finite tense)`
+          );
+        }
 
       // Analyze form-translation coverage
       const translationBreakdown = (translations || []).map(translation => {
@@ -1483,13 +1556,14 @@ export class ConjugationComplianceValidator {
             forms: forms || [],
             formTranslations: formTranslations || []
           },
-          auxiliaries,
-          formCounts: {
-            byMood: formCountsByMood,
-            byType: {
-              simple: simpleFormCount,
-              perfectCompound: compoundFormCount,
-              progressive: progressiveFormCount,
+            auxiliaries,
+            translationConstraints,
+            formCounts: {
+              byMood: formCountsByMood,
+              byType: {
+                simple: simpleFormCount,
+                perfectCompound: compoundFormCount,
+                progressive: progressiveFormCount,
               total: (forms || []).length
             },
             expectations

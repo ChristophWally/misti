@@ -150,6 +150,40 @@ export const TRANSLATION_LEVEL_REQUIRED_METADATA = {
     rule: 'array-of-integers-required',
     priority: 'critical' as ValidationPriority,
     epicRequirement: 'Translation-to-form relationship - each translation must specify which forms it uses'
+  },
+
+  // Reciprocal verb constraints
+  reciprocal_constraints: {
+    rule: 'reciprocal-usage-requires-plural-only',
+    priority: 'high' as ValidationPriority,
+    epicRequirement: 'Reciprocal verbs can only use plural persons for mutual actions',
+    validation: (translation: any) => {
+      const metadata = translation.context_metadata || {};
+      if (metadata.usage === 'reciprocal') {
+        return metadata.plurality === 'plural-only';
+      }
+      return true; // Non-reciprocal verbs don't need this constraint
+    }
+  },
+
+  reflexive_form_expectations: {
+    rule: 'adjust-form-counts-for-reciprocal-usage',
+    priority: 'medium' as ValidationPriority,
+    epicRequirement: 'Form expectations must account for reciprocal person restrictions',
+    validation: (verbData: any) => {
+      const hasReciprocal = verbData.translations.some(t =>
+        t.context_metadata?.usage === 'reciprocal'
+      );
+      if (hasReciprocal) {
+        // Validate that finite forms only include plural persons
+        const finiteForms = verbData.forms.filter(f =>
+          f.tags?.some(tag => ['prima-persona', 'seconda-persona', 'terza-persona'].includes(tag))
+        );
+        const singularForms = finiteForms.filter(f => f.tags?.includes('singolare'));
+        return singularForms.length === 0; // No singular forms should exist for reciprocal
+      }
+      return true;
+    }
   }
 };
 
@@ -513,26 +547,38 @@ export interface VerbComplianceReport {
         translation: string;
       }>;
     };
-    auxiliaries: string[];
-    formCounts: {
-      byMood: { [mood: string]: { [tense: string]: number } };
-      byType: {
-        simple: number;
-        perfectCompound: number;
-        progressive: number;
-        total: number;
+      auxiliaries: string[];
+      translationConstraints?: {
+        isReciprocal: boolean;
+        isDirectReflexive: boolean;
+        expectedFormsMultiplier: number;
+        allowedPersons: string[];
       };
-      expectations: {
-        simple: number;
-        perfectCompound: number;
-        progressive: number;
-        total: number;
+      formCounts: {
+        byMood: { [mood: string]: { [tense: string]: number } };
+        byType: {
+          simple: number;
+          perfectCompound: number;
+          progressive: number;
+          total: number;
+        };
+        expectations: {
+          simple: number;
+          perfectCompound: number;
+          progressive: number;
+          total: number;
+          translationConstraints?: {
+            isReciprocal: boolean;
+            isDirectReflexive: boolean;
+            expectedFormsMultiplier: number;
+            allowedPersons: string[];
+          };
+        };
       };
-    };
-    formTranslationCoverage: {
-      totalFormTranslations: number;
-      translationBreakdown: Array<{
-        translation: string;
+      formTranslationCoverage: {
+        totalFormTranslations: number;
+        translationBreakdown: Array<{
+          translation: string;
         auxiliary: string;
         expected: number;
         actual: number;
