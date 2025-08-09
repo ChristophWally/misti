@@ -39,6 +39,22 @@ const AdminValidationInterface = () => {
     setExpandedMoodTenses(newExpanded);
   };
 
+  // Helper to find duplicate form_text entries
+  const findDuplicateForms = (forms) => {
+    const formTextCounts = {};
+    const duplicates = new Set();
+
+    forms.forEach((form) => {
+      const text = form.form_text;
+      formTextCounts[text] = (formTextCounts[text] || 0) + 1;
+      if (formTextCounts[text] > 1) {
+        duplicates.add(text);
+      }
+    });
+
+    return duplicates;
+  };
+
   const renderTenseWithDropdown = (tenseInfo, moodName, analysis) => {
     const found = analysis.formCounts.byMood[moodName]?.[tenseInfo.tense] || 0;
     const tenseKey = `${moodName}-${tenseInfo.tense}`;
@@ -111,10 +127,38 @@ const AdminValidationInterface = () => {
             ) : (
               <div className="space-y-3">
                 {moodTenseForms.map((form, formIdx) => {
-                  // Get linked translations for this form
-                  const linkedTranslations = analysis.rawData.formTranslations
-                    .filter((ft) => ft.form_id === form.id)
-                    .map((ft) => ft.translation);
+                  // Get linked form_translations for this form
+                  const linkedFormTranslations = analysis.rawData.formTranslations.filter(
+                    (ft) => ft.form_id === form.id
+                  );
+
+                  // Get the actual word_translations with auxiliary info
+                  const linkedTranslationsWithAux = linkedFormTranslations.map((ft) => {
+                    const wordTranslation = analysis.rawData.translations.find(
+                      (t) => t.id === ft.word_translation_id
+                    );
+                    return {
+                      ...ft,
+                      auxiliary:
+                        wordTranslation?.context_metadata?.auxiliary || 'unknown',
+                      translationText: wordTranslation?.translation || 'unknown',
+                    };
+                  });
+
+                  // Check for auxiliary mismatches
+                  const formAuxiliaryTags = (form.tags || []).filter((tag) =>
+                    tag.includes('auxiliary')
+                  );
+                  const auxiliaryMismatches = linkedTranslationsWithAux.filter((lt) => {
+                    if (!lt.auxiliary || lt.auxiliary === 'unknown') return false;
+                    const expectedTag = `${lt.auxiliary}-auxiliary`;
+                    return !formAuxiliaryTags.includes(expectedTag);
+                  });
+
+                  // Check if this form is a duplicate
+                  const isDuplicate = findDuplicateForms(
+                    analysis.rawData.forms
+                  ).has(form.form_text);
 
                   const personLabel = form.tags?.includes('prima-persona')
                     ? 'First'
@@ -126,39 +170,38 @@ const AdminValidationInterface = () => {
                     : 'Plural';
 
                   // Categorize tags
-                  const expectedTags = (form.tags || []).filter(
-                    (tag) =>
-                      // Mood/tense tags
-                      [
-                        'indicativo',
-                        'congiuntivo',
-                        'condizionale',
-                        'imperativo',
-                        'infinito',
-                        'participio',
-                        'gerundio',
-                      ].includes(tag) ||
-                      tag.includes('presente') ||
-                      tag.includes('passato') ||
-                      tag.includes('futuro') ||
-                      tag.includes('imperfetto') ||
-                      tag.includes('remoto') ||
-                      tag.includes('trapassato') ||
-                      // Person/number tags
-                      [
-                        'prima-persona',
-                        'seconda-persona',
-                        'terza-persona',
-                        'singolare',
-                        'plurale',
-                      ].includes(tag) ||
-                      // Form type tags
-                      ['simple', 'compound', 'progressive'].includes(tag) ||
-                      // Auxiliary tags
-                      tag.includes('auxiliary') ||
-                      // Regularity tags
-                      tag.includes('irregular') ||
-                      tag.includes('regular')
+                  const expectedTags = (form.tags || []).filter((tag) =>
+                    // Mood/tense tags
+                    [
+                      'indicativo',
+                      'congiuntivo',
+                      'condizionale',
+                      'imperativo',
+                      'infinito',
+                      'participio',
+                      'gerundio',
+                    ].includes(tag) ||
+                    tag.includes('presente') ||
+                    tag.includes('passato') ||
+                    tag.includes('futuro') ||
+                    tag.includes('imperfetto') ||
+                    tag.includes('remoto') ||
+                    tag.includes('trapassato') ||
+                    // Person/number tags
+                    [
+                      'prima-persona',
+                      'seconda-persona',
+                      'terza-persona',
+                      'singolare',
+                      'plurale',
+                    ].includes(tag) ||
+                    // Form type tags
+                    ['simple', 'compound', 'progressive'].includes(tag) ||
+                    // Auxiliary tags
+                    tag.includes('auxiliary') ||
+                    // Regularity tags
+                    tag.includes('irregular') ||
+                    tag.includes('regular')
                   );
 
                   const otherTags = (form.tags || []).filter(
@@ -166,45 +209,95 @@ const AdminValidationInterface = () => {
                   );
 
                   return (
-                    <div key={formIdx} className="border rounded p-3 bg-gray-50">
+                    <div
+                      key={formIdx}
+                      className={`border rounded p-3 ${
+                        isDuplicate
+                          ? 'bg-yellow-50 border-yellow-200'
+                          : 'bg-gray-50'
+                      }`}
+                    >
                       {/* Form Header */}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex-1">
-                          <div className="font-medium text-sm">
-                            {personLabel} Person {numberLabel}
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium text-sm">
+                              {personLabel} Person {numberLabel}
+                            </div>
+                            {isDuplicate && (
+                              <span className="px-1 py-0.5 bg-yellow-200 text-yellow-800 text-xs rounded">
+                                DUPLICATE
+                              </span>
+                            )}
                           </div>
                           <div className="text-blue-600 font-mono text-lg">
                             "{form.form_text}"
                           </div>
                         </div>
-                        <div
-                          className={`px-2 py-1 rounded text-xs ${
-                            linkedTranslations.length > 0
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-orange-100 text-orange-800'
-                          }`}
-                        >
-                          {linkedTranslations.length > 0
-                            ? '✅ Translated'
-                            : '⚠️ No Translation'}
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`px-2 py-1 rounded text-xs ${
+                              linkedTranslationsWithAux.length > 0
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-orange-100 text-orange-800'
+                            }`}
+                          >
+                            {linkedTranslationsWithAux.length > 0
+                              ? '✅ Translated'
+                              : '⚠️ No Translation'}
+                          </div>
+                          {auxiliaryMismatches.length > 0 && (
+                            <div className="px-2 py-1 rounded text-xs bg-red-100 text-red-800">
+                              ❌ Aux Mismatch
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Linked Translations */}
-                      {linkedTranslations.length > 0 && (
+                      {/* Linked Translations with Auxiliary Info */}
+                      {linkedTranslationsWithAux.length > 0 && (
                         <div className="mb-2">
                           <div className="text-xs font-medium text-gray-700 mb-1">
-                            English Translations:
+                            English Translations with Auxiliary Info:
                           </div>
-                          <div className="flex flex-wrap gap-1">
-                            {linkedTranslations.map((translation, transIdx) => (
-                              <span
-                                key={transIdx}
-                                className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded"
-                              >
-                                "{translation}"
-                              </span>
-                            ))}
+                          <div className="space-y-1">
+                            {linkedTranslationsWithAux.map((lt, transIdx) => {
+                              const expectedAuxTag = `${lt.auxiliary}-auxiliary`;
+                              const hasCorrectAux = formAuxiliaryTags.includes(
+                                expectedAuxTag
+                              );
+
+                              return (
+                                <div
+                                  key={transIdx}
+                                  className={`p-2 rounded text-xs ${
+                                    hasCorrectAux
+                                      ? 'bg-green-100 border border-green-200'
+                                      : 'bg-red-100 border border-red-200'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">
+                                      "{lt.translationText}"
+                                    </span>
+                                    <span
+                                      className={`px-1 py-0.5 rounded ${
+                                        hasCorrectAux
+                                          ? 'bg-green-200 text-green-800'
+                                          : 'bg-red-200 text-red-800'
+                                      }`}
+                                    >
+                                      {lt.auxiliary}{' '}
+                                      {hasCorrectAux ? '✅' : '❌'}
+                                    </span>
+                                  </div>
+                                  <div className="text-gray-600 mt-1">
+                                    Expected: {expectedAuxTag} | Form has:{' '}
+                                    {formAuxiliaryTags.join(', ') || 'none'}
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -271,7 +364,7 @@ const AdminValidationInterface = () => {
       const validator = new ConjugationComplianceValidator(supabase);
 
       // Pass the debug function to the validator
-      const result = await validator.validateSpecificVerbWithDebug(selectedVerb, addDebugLog);
+      const result = await validator.validateSpecificVerbWithDebug(selectedVerb.toLowerCase(), addDebugLog);
 
       if (result) {
         setValidationResult(result);
@@ -486,7 +579,7 @@ const AdminValidationInterface = () => {
                     id="verb-input"
                     type="text"
                     value={selectedVerb}
-                    onChange={(e) => setSelectedVerb(e.target.value)}
+                    onChange={(e) => setSelectedVerb(e.target.value.toLowerCase())}
                     placeholder="e.g., parlare, finire, essere..."
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     onKeyPress={(e) => e.key === 'Enter' && handleVerbValidation()}
@@ -1001,6 +1094,80 @@ const AdminValidationInterface = () => {
                                   )}
                                 </div>
 
+                                {/* Auxiliary Mismatch Analysis */}
+                                {(() => {
+                                  const translationFormTranslations =
+                                    analysis.rawData.formTranslations.filter(
+                                      (ft) =>
+                                        ft.word_translation_id === translation.id
+                                    );
+
+                                  const mismatchedForms = translationFormTranslations.filter(
+                                    (ft) => {
+                                      const form = analysis.rawData.forms.find(
+                                        (f) => f.id === ft.form_id
+                                      );
+                                      if (
+                                        !form ||
+                                        !translation.context_metadata?.auxiliary
+                                      )
+                                        return false;
+
+                                      const expectedAuxTag = `${translation.context_metadata.auxiliary}-auxiliary`;
+                                      const formAuxTags = (form.tags || []).filter((tag) =>
+                                        tag.includes('auxiliary')
+                                      );
+
+                                      return (
+                                        formAuxTags.length > 0 &&
+                                        !formAuxTags.includes(expectedAuxTag)
+                                      );
+                                    }
+                                  );
+
+                                  if (mismatchedForms.length > 0) {
+                                    return (
+                                      <div className="mt-3 p-3 bg-red-100 border border-red-200 rounded">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <h6 className="font-medium text-red-800 text-sm">
+                                            ⚠️ Auxiliary Mismatches
+                                          </h6>
+                                          <span className="text-red-600 text-xs">
+                                            {mismatchedForms.length} forms
+                                          </span>
+                                        </div>
+                                        <div className="max-h-32 overflow-y-auto space-y-1">
+                                          {mismatchedForms.map((ft, mismatchIdx) => {
+                                            const form = analysis.rawData.forms.find(
+                                              (f) => f.id === ft.form_id
+                                            );
+                                            const formAuxTags = (form?.tags || []).filter((tag) =>
+                                              tag.includes('auxiliary')
+                                            );
+                                            const expectedAuxTag = `${translation.context_metadata.auxiliary}-auxiliary`;
+
+                                            return (
+                                              <div
+                                                key={mismatchIdx}
+                                                className="p-2 bg-red-200 rounded text-xs"
+                                              >
+                                                <div className="font-mono text-red-900">
+                                                  "{form?.form_text}"
+                                                </div>
+                                                <div className="text-red-800">
+                                                  Expected: {expectedAuxTag} | Has:{' '}
+                                                  {formAuxTags.join(', ') || 'none'}
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+
                               </div>
                             );
                           })}
@@ -1121,32 +1288,70 @@ const AdminValidationInterface = () => {
                         {/* REAL DATA Auxiliary Detection and Calculation Info */}
                         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <h6 className="font-medium text-blue-900 mb-2">Form Expectations Calculator (REAL DATA)</h6>
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                            <div>
-                              <div className="font-medium text-blue-800">Auxiliaries Detected:</div>
-                              <div className="text-blue-700">
-                                {auxiliaryCount} total: {auxiliaries.join(', ') || 'None'}
+
+                          {(() => {
+                            const duplicateForms = findDuplicateForms(analysis.rawData.forms);
+                            const uniqueFormCount = new Set(
+                              analysis.rawData.forms.map((f) => f.form_text)
+                            ).size;
+                            const totalFormCount = analysis.rawData.forms.length;
+
+                            return (
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                                  <div>
+                                    <div className="font-medium text-blue-800">
+                                      Auxiliaries Detected:
+                                    </div>
+                                    <div className="text-blue-700">
+                                      {auxiliaryCount} total: {auxiliaries.join(', ') || 'None'}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-blue-800">
+                                      Simple Forms:
+                                    </div>
+                                    <div className="text-blue-700">
+                                      Found: {actualCounts.simple} / Expected: {expectations.simple}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-blue-800">
+                                      Perfect Compounds:
+                                    </div>
+                                    <div className="text-blue-700">
+                                      Found: {actualCounts.perfectCompound} / Expected: {expectations.perfectCompound}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-blue-800">Total Expected:</div>
+                                    <div className="text-blue-700">
+                                      {actualCounts.total} / {expectations.total} ({
+                                        Math.round(
+                                          (actualCounts.total / expectations.total) * 100
+                                        )
+                                      }%)
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Duplicate Forms Warning */}
+                                {duplicateForms.size > 0 && (
+                                  <div className="p-2 bg-red-100 border border-red-200 rounded">
+                                    <div className="font-medium text-red-800 text-sm">
+                                      ⚠️ Duplicate Forms Detected ({duplicateForms.size} duplicates)
+                                    </div>
+                                    <div className="text-red-700 text-xs mt-1">
+                                      Total forms: {totalFormCount}, Unique forms: {uniqueFormCount}
+                                    </div>
+                                    <div className="text-red-700 text-xs">
+                                      Duplicates: {Array.from(duplicateForms).join(', ')}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-blue-800">Simple Forms:</div>
-                              <div className="text-blue-700">
-                                Found: {actualCounts.simple} / Expected: {expectations.simple}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-blue-800">Perfect Compounds:</div>
-                              <div className="text-blue-700">
-                                Found: {actualCounts.perfectCompound} / Expected: {expectations.perfectCompound}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="font-medium text-blue-800">Total Expected:</div>
-                              <div className="text-blue-700">
-                                {actualCounts.total} / {expectations.total} ({Math.round(actualCounts.total/expectations.total*100)}%)
-                              </div>
-                            </div>
-                          </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Indicative Mood with REAL DATA */}
