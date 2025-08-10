@@ -308,30 +308,58 @@ const AdminValidationInterface = () => {
                                                formAuxiliary !== lt.translationAuxiliary;
 
                           return (
-                            <div key={transIdx} className={`flex items-center justify-between p-2 rounded text-xs ${
-                              isAuxMismatch ? 'bg-red-100 border border-red-300' : 'bg-green-100'
-                            }`}>
-                              <div className="flex-1">
-                                <div className={isAuxMismatch ? 'text-red-800 font-medium' : 'text-green-800'}>
-                                  "{lt.translationText}"
-                                </div>
-                                {lt.wordTranslationText && (
-                                  <div className="text-xs text-gray-600 mt-0.5">
-                                    From: "{lt.wordTranslationText}"
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className={`px-1.5 py-0.5 rounded ${
-                                  isAuxMismatch ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'
+                            (() => {
+                              // Get the word translation to check for reciprocal/reflexive usage
+                              const wordTranslation = analysis.rawData.translations.find(t => t.id === lt.word_translation_id);
+                              const isReciprocal = wordTranslation?.context_metadata?.usage === "reciprocal";
+                              const isDirectReflexive = wordTranslation?.context_metadata?.usage === "direct-reflexive";
+
+                              return (
+                                <div key={transIdx} className={`flex items-center justify-between p-2 rounded text-xs ${
+                                  isAuxMismatch ? 'bg-red-100 border border-red-300' : 'bg-green-100'
                                 }`}>
-                                  Trans Aux: {lt.translationAuxiliary || 'none'}
-                                </span>
-                                {isAuxMismatch && (
-                                  <span className="text-red-600 font-bold">❌</span>
-                                )}
-                              </div>
-                            </div>
+                                  <div className="flex-1">
+                                    <div className={`${
+                                      isAuxMismatch ? 'text-red-800 font-medium' :
+                                      isReciprocal ? 'text-purple-800 font-medium' :
+                                      isDirectReflexive ? 'text-blue-800 font-medium' :
+                                      'text-green-800'
+                                    }`}>
+                                      "{lt.translationText}"
+                                      {isReciprocal && (
+                                        <span className="ml-2 px-1.5 py-0.5 bg-purple-200 text-purple-800 text-xs rounded font-medium">
+                                          RECIPROCAL
+                                        </span>
+                                      )}
+                                      {isDirectReflexive && (
+                                        <span className="ml-2 px-1.5 py-0.5 bg-blue-200 text-blue-800 text-xs rounded font-medium">
+                                          REFLEXIVE
+                                        </span>
+                                      )}
+                                    </div>
+                                    {lt.wordTranslationText && (
+                                      <div className={`text-xs mt-0.5 ${
+                                        isReciprocal ? 'text-purple-600' :
+                                        isDirectReflexive ? 'text-blue-600' :
+                                        'text-gray-600'
+                                      }`}>
+                                        From: "{lt.wordTranslationText}"
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`px-1.5 py-0.5 rounded ${
+                                      isAuxMismatch ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'
+                                    }`}>
+                                      Trans Aux: {lt.translationAuxiliary || 'none'}
+                                    </span>
+                                    {isAuxMismatch && (
+                                      <span className="text-red-600 font-bold">❌</span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()
                           );
                         })}
                       </div>
@@ -1041,19 +1069,31 @@ const AdminValidationInterface = () => {
                                 {/* Translation Header */}
                                 <div className="flex justify-between items-start mb-3">
                                   <div>
-                                    <h6 className={`font-medium ${hasIssues ? 'text-red-900' : 'text-green-900'}`}> 
-                                      Translation: "{translation.translation}"
-                                      {coverage?.isReciprocal && (
-                                        <span className="ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded font-medium">
-                                          🔄 RECIPROCAL
-                                        </span>
-                                      )}
-                                      {coverage?.isDirectReflexive && (
-                                        <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded font-medium">
-                                          🪞 REFLEXIVE
-                                        </span>
-                                      )}
-                                    </h6>
+                                    {(() => {
+                                      const isReciprocal = translation.context_metadata?.usage === "reciprocal";
+                                      const isDirectReflexive = translation.context_metadata?.usage === "direct-reflexive";
+
+                                      return (
+                                        <h6 className={`font-medium ${
+                                          hasIssues ? 'text-red-900' :
+                                          isReciprocal ? 'text-purple-900' :
+                                          isDirectReflexive ? 'text-blue-900' :
+                                          'text-green-900'
+                                        }`}>
+                                          Translation: "{translation.translation}"
+                                          {isReciprocal && (
+                                            <span className="ml-2 px-1.5 py-0.5 bg-purple-200 text-purple-800 text-xs rounded font-medium">
+                                              RECIPROCAL
+                                            </span>
+                                          )}
+                                          {isDirectReflexive && (
+                                            <span className="ml-2 px-1.5 py-0.5 bg-blue-200 text-blue-800 text-xs rounded font-medium">
+                                              REFLEXIVE
+                                            </span>
+                                          )}
+                                        </h6>
+                                      );
+                                    })()}
                                     <div className="text-xs text-gray-600 mt-1 flex items-center gap-3">
                                       <span>Priority: {translation.display_priority}</span>
                                       <span>Coverage: {coverage?.coverage || 0}% ({coverage?.actual || 0}/{coverage?.expected || 130})</span>

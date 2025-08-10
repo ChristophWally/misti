@@ -1453,7 +1453,7 @@ export class ConjugationComplianceValidator {
 
         const expectedForThisTranslation = this.isReciprocalTranslation(translation)
           ? this.calculateReciprocalExpectedForms(auxiliaryCount)
-          : 51 + 49 * 1 + 30;
+          : 51 + 49 * auxiliaryCount + 30;
 
         return {
           translation: translation.translation,
