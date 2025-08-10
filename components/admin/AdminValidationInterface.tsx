@@ -1985,67 +1985,127 @@ const AdminValidationInterface = () => {
                 </div>
 
                 <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {systemAnalysis.verbSummaries.map((verb, idx) => (
-                    <div
-                      key={idx}
-                      className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => handleVerbDrillDown(verb)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-medium text-gray-900">{verb.verbItalian}</h4>
+                  {systemAnalysis.verbSummaries.map((verb, idx) => {
+                    const translationStats = verb._fullReport?.detailedAnalysis ? {
+                      totalTranslations: verb._fullReport.detailedAnalysis.rawData.translations.length,
+                      avgCoverage: Math.round(
+                        verb._fullReport.detailedAnalysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.coverage, 0) /
+                        verb._fullReport.detailedAnalysis.formTranslationCoverage.translationBreakdown.length
+                      ),
+                      withAuxiliary: verb._fullReport.detailedAnalysis.rawData.translations.filter(t =>
+                        t.context_metadata?.auxiliary
+                      ).length
+                    } : { totalTranslations: 0, avgCoverage: 0, withAuxiliary: 0 };
 
-                            {/* Status Badge */}
-                            <span className={`px-2 py-1 text-xs rounded font-medium ${
-                              verb.complianceStatus === 'compliant' ? 'bg-green-100 text-green-800' :
-                              verb.complianceStatus === 'needs-work' ? 'bg-yellow-100 text-yellow-800' :
-                              verb.complianceStatus === 'critical-issues' ? 'bg-orange-100 text-orange-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {verb.complianceStatus.replace('-', ' ').toUpperCase()}
-                            </span>
+                    return (
+                      <div
+                        key={idx}
+                        className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => handleVerbDrillDown(verb)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h4 className="font-medium text-gray-900">{verb.verbItalian}</h4>
 
-                            {/* Priority Badge */}
-                            <span className={`px-2 py-1 text-xs rounded font-medium ${
-                              verb.priorityLevel === 'high' ? 'bg-purple-100 text-purple-800' :
-                              verb.priorityLevel === 'medium' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {verb.priorityLevel.toUpperCase()}
-                            </span>
-
-                            {/* Special Verb Type Indicators */}
-                            {verb.hasReciprocal && (
-                              <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded font-medium">
-                                🔄 RECIPROCAL
+                              {/* Status Badge */}
+                              <span className={`px-2 py-1 text-xs rounded font-medium ${
+                                verb.complianceStatus === 'compliant' ? 'bg-green-100 text-green-800' :
+                                verb.complianceStatus === 'needs-work' ? 'bg-yellow-100 text-yellow-800' :
+                                verb.complianceStatus === 'critical-issues' ? 'bg-orange-100 text-orange-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {verb.complianceStatus.replace('-', ' ').toUpperCase()}
                               </span>
-                            )}
-                            {verb.hasReflexive && (
-                              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded font-medium">
-                                🪞 REFLEXIVE
+
+                              {/* Priority Badge */}
+                              <span className={`px-2 py-1 text-xs rounded font-medium ${
+                                verb.priorityLevel === 'high' ? 'bg-purple-100 text-purple-800' :
+                                verb.priorityLevel === 'medium' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {verb.priorityLevel.toUpperCase()}
                               </span>
-                            )}
+
+                              {/* Special Verb Type Indicators */}
+                              {verb.hasReciprocal && (
+                                <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded font-medium">
+                                  🔄 RECIPROCAL
+                                </span>
+                              )}
+                              {verb.hasReflexive && (
+                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded font-medium">
+                                  🪞 REFLEXIVE
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-600">Score:</span>
+                                <span className={`ml-1 font-medium ${
+                                  verb.overallScore >= 80 ? 'text-green-600' :
+                                  verb.overallScore >= 60 ? 'text-yellow-600' : 'text-red-600'
+                                }`}>
+                                  {verb.overallScore}%
+                                </span>
+                              </div>
+
+                              <div>
+                                <span className="text-gray-600">Issues:</span>
+                                <span className="ml-1 font-medium text-red-600">
+                                  {verb.totalIssues}
+                                  {verb.criticalIssues > 0 && ` (${verb.criticalIssues} critical)`}
+                                </span>
+                              </div>
+
+                              <div>
+                                <span className="text-gray-600">Forms:</span>
+                                <span className="ml-1 font-medium text-blue-600">
+                                  {verb.formCounts.total}/{verb.formCounts.expected}
+                                  <span className="text-gray-500 ml-1">({verb.formCounts.coverage}%)</span>
+                                </span>
+                              </div>
+
+                              <div>
+                                <span className="text-gray-600">Translations:</span>
+                                <span className="ml-1 font-medium text-purple-600">
+                                  {translationStats.totalTranslations}
+                                  <span className="text-gray-500 ml-1">
+                                    ({translationStats.withAuxiliary}/{translationStats.totalTranslations} aux)
+                                  </span>
+                                </span>
+                              </div>
+
+                              <div>
+                                <span className="text-gray-600">Trans Coverage:</span>
+                                <span className={`ml-1 font-medium ${
+                                  translationStats.avgCoverage >= 90 ? 'text-green-600' :
+                                  translationStats.avgCoverage >= 70 ? 'text-yellow-600' : 'text-red-600'
+                                }`}>
+                                  {translationStats.avgCoverage}%
+                                </span>
+                              </div>
+
+                              <div>
+                                <span className="text-gray-600">Auxiliaries:</span>
+                                <span className="ml-1 font-medium text-teal-600">
+                                  {verb.auxiliaries.join(', ') || 'none'}
+                                </span>
+                              </div>
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <span>Score: <strong>{verb.overallScore}%</strong></span>
-                            <span>Issues: <strong>{verb.totalIssues}</strong> ({verb.criticalIssues} critical)</span>
-                            <span>Forms: <strong>{verb.formCounts.total}/{verb.formCounts.expected}</strong> ({verb.formCounts.coverage}%)</span>
-                            <span>Auxiliaries: <strong>{verb.auxiliaries.join(', ') || 'none'}</strong></span>
-                            <span>Fix Time: <strong>{verb.estimatedFixTime}</strong></span>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-2xl ${verb.migrationReadiness ? 'text-green-500' : 'text-red-500'}`}>
+                              {verb.migrationReadiness ? '✅' : '❌'}
+                            </span>
+                            <span className="text-gray-400">▶</span>
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <span className={`text-2xl ${verb.migrationReadiness ? 'text-green-500' : 'text-red-500'}`}>
-                            {verb.migrationReadiness ? '✅' : '❌'}
-                          </span>
-                          <span className="text-gray-400">▶</span>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
