@@ -1083,11 +1083,69 @@ export class ConjugationComplianceValidator {
   }
 
   private calculateLinguisticAccuracy(reports: VerbComplianceReport[]): number {
-    const accurateVerbs = reports.filter(r => 
-      r.missingBuildingBlocks.length === 0 && 
+    const accurateVerbs = reports.filter(r =>
+      r.missingBuildingBlocks.length === 0 &&
       r.deprecatedContent.length === 0
     ).length;
     return Math.round((accurateVerbs / reports.length) * 100) || 0;
+  }
+
+  private calculateReciprocalExpectedForms(auxiliaryCount: number): number {
+    const finiteSimpleTenses = {
+      'presente': 3,
+      'imperfetto': 3,
+      'futuro-semplice': 3,
+      'passato-remoto': 3,
+      'congiuntivo-presente': 3,
+      'congiuntivo-imperfetto': 3,
+      'condizionale-presente': 3,
+      'imperativo-presente': 3
+    };
+
+    const compoundTenses = {
+      'passato-prossimo': 3,
+      'trapassato-prossimo': 3,
+      'futuro-anteriore': 3,
+      'trapassato-remoto': 3,
+      'congiuntivo-passato': 3,
+      'congiuntivo-trapassato': 3,
+      'condizionale-passato': 3,
+      'imperativo-passato': 3
+    };
+
+    const progressiveTenses = {
+      'presente-progressivo': 3,
+      'passato-progressivo': 3,
+      'futuro-progressivo': 3,
+      'congiuntivo-presente-progressivo': 3,
+      'condizionale-presente-progressivo': 3
+    };
+
+    const nonFiniteForms = {
+      'infinito-presente': 1,
+      'infinito-passato': auxiliaryCount,
+      'participio-presente': 1,
+      'participio-passato': 1,
+      'gerundio-presente': 1,
+      'gerundio-passato': auxiliaryCount
+    };
+
+    const simpleForms = Object.values(finiteSimpleTenses).reduce((sum, c) => sum + c, 0);
+    const compoundForms = Object.values(compoundTenses).reduce((sum, c) => sum + c, 0) * auxiliaryCount;
+    const progressiveForms = Object.values(progressiveTenses).reduce((sum, c) => sum + c, 0);
+    const nonFinite = Object.values(nonFiniteForms).reduce((sum, c) => sum + c, 0);
+
+    return simpleForms + compoundForms + progressiveForms + nonFinite;
+  }
+
+  private isReciprocalTranslation(translation: any): boolean {
+    const metadata = translation.context_metadata || {};
+    return metadata.usage === 'reciprocal' && metadata.plurality === 'plural-only';
+  }
+
+  private isDirectReflexiveTranslation(translation: any): boolean {
+    const metadata = translation.context_metadata || {};
+    return metadata.usage === 'direct-reflexive' && metadata.plurality === 'any';
   }
 
   /**
@@ -1393,14 +1451,20 @@ export class ConjugationComplianceValidator {
           ft => ft.word_translation_id === translation.id
         );
 
+        const expectedForThisTranslation = this.isReciprocalTranslation(translation)
+          ? this.calculateReciprocalExpectedForms(auxiliaryCount)
+          : 51 + 49 * auxiliaryCount + 30;
+
         return {
           translation: translation.translation,
           auxiliary: translation.context_metadata?.auxiliary || 'unknown',
-          expected: expectations.total,
+          expected: expectedForThisTranslation,
           actual: translationFormTranslations.length,
           coverage: Math.round(
-            (translationFormTranslations.length / expectations.total) * 100
-          )
+            (translationFormTranslations.length / expectedForThisTranslation) * 100
+          ),
+          isReciprocal: this.isReciprocalTranslation(translation),
+          isDirectReflexive: this.isDirectReflexiveTranslation(translation)
         };
       });
 
@@ -1514,6 +1578,38 @@ export class ConjugationComplianceValidator {
       report.translationLevelIssues = this.validateTranslationLevelDetailed(translations || []);
       report.formLevelIssues = this.validateFormLevelDetailed(forms || [], true);
       report.missingBuildingBlocks = this.validateBuildingBlocksDetailed(forms || []);
+
+      (translations || []).forEach(translation => {
+        if (this.isReciprocalTranslation(translation)) {
+          const reciprocalFormIds = (formTranslations || [])
+            .filter(ft => ft.word_translation_id === translation.id)
+            .map(ft => ft.form_id);
+
+          const reciprocalForms = (forms || []).filter(f => reciprocalFormIds.includes(f.id));
+
+          const invalidSingularForms = reciprocalForms.filter(f =>
+            f.tags?.includes('singolare') &&
+            f.tags?.some(tag =>
+              ['prima-persona', 'seconda-persona', 'terza-persona'].includes(tag)
+            )
+          );
+
+          if (invalidSingularForms.length > 0) {
+            report.translationLevelIssues.push({
+              ruleId: 'reciprocal-singular-forms',
+              severity: 'high',
+              message: `Reciprocal translation "${translation.translation}" has invalid singular forms`,
+              currentValue: invalidSingularForms.map(f => f.form_text),
+              expectedValue: 'Only plural forms allowed for reciprocal usage',
+              manualSteps: [
+                'Remove singular forms from reciprocal translation',
+                'Ensure only noi/voi/loro persons are linked to reciprocal meanings'
+              ],
+              epicContext: 'Reciprocal actions require multiple actors (plural only)'
+            });
+          }
+        }
+      });
 
       this.calculateVerbCompliance(report);
 
