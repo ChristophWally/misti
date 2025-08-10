@@ -163,24 +163,35 @@ export class ConjugationComplianceValidator {
 
       for (let i = 0; i < verbs.length; i++) {
         const verb = verbs[i];
-        debugLog(`🔍 Analyzing ${i + 1}/${verbs.length}: ${verb.italian}`);
+        const progressPercent = Math.round((i / verbs.length) * 100);
+        debugLog(`🔍 Analyzing ${i + 1}/${verbs.length}: ${verb.italian} (${progressPercent}%)`);
 
         try {
-          const verbReport = await this.validateSingleVerb(verb, options);
-          this.validationResults.verbReports.push(verbReport);
-          this.validationResults.analyzedVerbs++;
-        } catch (error) {
-          debugLog(`❌ Error validating ${verb.italian}: ${error.message}`);
+          const verbReport = await this.validateSpecificVerbWithDebug(verb.italian, () => {});
+          if (verbReport) {
+            this.validationResults.verbReports.push(verbReport);
+            this.validationResults.analyzedVerbs++;
+            debugLog(`✅ Successfully analyzed ${verb.italian}`);
+          } else {
+            debugLog(`⚠️ No report generated for ${verb.italian}`);
+          }
+        } catch (error: any) {
+          debugLog(`❌ Error analyzing ${verb.italian}: ${error.message}`);
           this.validationResults.validationErrors.push(`${verb.italian}: ${error.message}`);
         }
       }
 
       this.validationResults.systemReport = this.generateSystemReport();
-      debugLog(`✅ System analysis complete: ${this.validationResults.systemReport.overallScore.overall}% compliance`);
+      const successCount = this.validationResults.verbReports.length;
+      const failCount = this.validationResults.validationErrors.length;
+
+      debugLog(`✅ System analysis complete: ${successCount} successful, ${failCount} failed`);
+      debugLog(`📊 Average compliance: ${this.validationResults.systemReport.overallScore.overall}%`);
+      debugLog(`📈 Distribution: ${this.validationResults.systemReport.complianceDistribution.compliant} compliant, ${this.validationResults.systemReport.complianceDistribution.blocksMigration} blocking migration`);
 
       return this.validationResults.systemReport;
 
-    } catch (error) {
+    } catch (error: any) {
       debugLog(`❌ System validation failed: ${error.message}`);
       throw error;
     }
@@ -1921,23 +1932,28 @@ export class ConjugationComplianceValidator {
         debugLog(`🔍 Analyzing ${i + 1}/${verbs.length}: ${verb.italian} (${Math.round((i/verbs.length)*100)}%)`);
 
         try {
-          const fullReport = await this.validateSingleVerb(verb, options);
-          const summary = this.extractSummaryFromFullReport(fullReport);
-          verbSummaries.push(summary);
+          const fullReport = await this.validateSpecificVerbWithDebug(verb.italian, () => {});
+          if (fullReport) {
+            const summary = this.extractSummaryFromFullReport(fullReport);
+            verbSummaries.push(summary);
 
-          const allIssues = [
-            ...fullReport.wordLevelIssues,
-            ...fullReport.translationLevelIssues,
-            ...fullReport.formLevelIssues,
-            ...fullReport.crossTableIssues
-          ];
+            const allIssues = [
+              ...fullReport.wordLevelIssues,
+              ...fullReport.translationLevelIssues,
+              ...fullReport.formLevelIssues,
+              ...fullReport.crossTableIssues
+            ];
 
-          allIssues.forEach(issue => {
-            const count = issueCounter.get(issue.ruleId) || 0;
-            issueCounter.set(issue.ruleId, count + 1);
-          });
+            allIssues.forEach(issue => {
+              const count = issueCounter.get(issue.ruleId) || 0;
+              issueCounter.set(issue.ruleId, count + 1);
+            });
 
-          successCount++;
+            successCount++;
+          } else {
+            debugLog(`⚠️ No report generated for ${verb.italian}`);
+            failureCount++;
+          }
         } catch (error: any) {
           debugLog(`❌ Error analyzing ${verb.italian}: ${error.message}`);
           failureCount++;
