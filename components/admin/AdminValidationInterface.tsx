@@ -710,8 +710,8 @@ const AdminValidationInterface = () => {
                   </div>
                 </div>
 
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                {/* Quick Stats - REMOVE ESTIMATED FIX TIME */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
                   <div className="p-3 bg-red-50 rounded-lg">
                     <div className="text-2xl font-bold text-red-600">
                       {validationResult.wordLevelIssues.length + validationResult.translationLevelIssues.length +
@@ -727,10 +727,7 @@ const AdminValidationInterface = () => {
                     <div className="text-2xl font-bold text-orange-600">{validationResult.manualInterventionRequired.length}</div>
                     <div className="text-xs text-orange-600">Manual Required</div>
                   </div>
-                  <div className="p-3 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">{validationResult.missingBuildingBlocks.length}</div>
-                    <div className="text-xs text-purple-600">Missing Blocks</div>
-                  </div>
+                  {/* REMOVED: Estimated Fix Time card */}
                 </div>
               </div>
 
@@ -771,11 +768,8 @@ const AdminValidationInterface = () => {
                   };
 
                   const translationStats = {
-                    withAuxiliary: analysis.rawData.translations.filter(t => 
+                    withAuxiliary: analysis.rawData.translations.filter(t =>
                       t.context_metadata?.auxiliary
-                    ).length,
-                    withTransitivity: analysis.rawData.translations.filter(t => 
-                      t.context_metadata?.transitivity
                     ).length,
                     total: analysis.rawData.translations.length
                   };
@@ -787,7 +781,6 @@ const AdminValidationInterface = () => {
                     }).length,
                     totalForms: analysis.rawData.forms.length,
                     expectedForms: expectations.total,
-                    formsWithTranslations: new Set(analysis.rawData.formTranslations.map(ft => ft.form_id)).size,
                     totalFormTranslations: analysis.rawData.formTranslations.length
                   };
 
@@ -812,82 +805,98 @@ const AdminValidationInterface = () => {
                         </div>
                       </div>
 
-                      {/* Translation Level Summary */}
-                      <div className="p-4 border rounded-lg">
-                        <h6 className="font-medium text-gray-800 mb-2">Translation Metadata</h6>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span>With Auxiliary:</span>
-                            <span className={translationStats.withAuxiliary === translationStats.total ? 'text-green-600' : 'text-red-600'}>
-                              {translationStats.withAuxiliary}/{translationStats.total}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>With Transitivity:</span>
-                            <span className={translationStats.withTransitivity === translationStats.total ? 'text-green-600' : 'text-red-600'}>
-                              {translationStats.withTransitivity}/{translationStats.total}
-                            </span>
+                        {/* Translation Level Summary - ENHANCED */}
+                        <div className="p-4 border rounded-lg">
+                          <h6 className="font-medium text-gray-800 mb-2">Translation Analysis</h6>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span>Total Translations:</span>
+                              <span className="text-blue-600">{translationStats.total}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>With Auxiliary:</span>
+                              <span className={translationStats.withAuxiliary === translationStats.total ? 'text-green-600' : 'text-red-600'}>
+                                {translationStats.withAuxiliary}/{translationStats.total}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Avg Coverage:</span>
+                              <span className={`${
+                                Math.round(
+                                  analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.coverage, 0) /
+                                    analysis.formTranslationCoverage.translationBreakdown.length
+                                ) >= 90
+                                  ? 'text-green-600'
+                                  : 'text-orange-600'
+                              }`}>
+                                {Math.round(
+                                  analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.coverage, 0) /
+                                    analysis.formTranslationCoverage.translationBreakdown.length
+                                )}%
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Form Level Summary - CORRECTED */}
-                      <div className="p-4 border rounded-lg">
-                        <h6 className="font-medium text-gray-800 mb-2">Form Classification</h6>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span>With Mood/Tense:</span>
-                            <span className={formStats.withMoodTense === formStats.totalForms ? 'text-green-600' : 'text-red-600'}>
-                              {formStats.withMoodTense}/{formStats.totalForms}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Total Forms:</span>
-                            <span className={`${formStats.totalForms === formStats.expectedForms ? 'text-green-600' : 'text-orange-600'}`}>
-                              {formStats.totalForms}/{formStats.expectedForms}
-                            </span>
+                        {/* Form Level Summary */}
+                        <div className="p-4 border rounded-lg">
+                          <h6 className="font-medium text-gray-800 mb-2">Form Classification</h6>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span>With Mood/Tense:</span>
+                              <span className={formStats.withMoodTense === formStats.totalForms ? 'text-green-600' : 'text-red-600'}>
+                                {formStats.withMoodTense}/{formStats.totalForms}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Total Forms:</span>
+                              <span className={`${formStats.totalForms === formStats.expectedForms ? 'text-green-600' : 'text-orange-600'}`}>
+                                {formStats.totalForms}/{formStats.expectedForms}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Completion:</span>
+                              <span className={`${Math.round((formStats.totalForms / formStats.expectedForms) * 100) >= 90 ? 'text-green-600' : 'text-orange-600'}`}>
+                                {Math.round((formStats.totalForms / formStats.expectedForms) * 100)}%
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Form-Translation Links Summary - UPDATED WITH TWO METRICS */}
-                      <div className="p-4 border rounded-lg">
-                        <h6 className="font-medium text-gray-800 mb-2">Form-Translation Links</h6>
-                        <div className="space-y-1 text-sm">
-                          {/* Metric 1: Coverage of existing forms */}
-                          <div className="flex justify-between">
-                            <span>Forms with translations:</span>
-                            <span className={formStats.formsWithTranslations === formStats.totalForms ? 'text-green-600' : 'text-orange-600'}>
-                              {formStats.formsWithTranslations}/{formStats.totalForms}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Existing form coverage:</span>
-                            <span className={formStats.formsWithTranslations === formStats.totalForms ? 'text-green-600' : 'text-orange-600'}>
-                              {Math.round((formStats.formsWithTranslations / formStats.totalForms) * 100)}%
-                            </span>
-                          </div>
-                          {/* Metric 2: Total translation links vs expected */}
-                          <div className="flex justify-between border-t pt-1">
-                            <span>Total translation links:</span>
-                            <span className="text-blue-600">{formStats.totalFormTranslations}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Expected total links:</span>
-                            <span className="text-gray-600">
-                              {analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.expected, 0)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Overall completion:</span>
-                            <span className={`$
-                              {Math.round((formStats.totalFormTranslations / analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.expected, 0)) * 100) >= 100 ? 'text-green-600' : 'text-orange-600'}
-                            }`}>
-                              {Math.round((formStats.totalFormTranslations / analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.expected, 0)) * 100)}%
-                            </span>
+                        {/* Form-Translation Links Summary - ENHANCED */}
+                        <div className="p-4 border rounded-lg">
+                          <h6 className="font-medium text-gray-800 mb-2">Translation Links</h6>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span>Total Links:</span>
+                              <span className="text-blue-600">{formStats.totalFormTranslations}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Expected Links:</span>
+                              <span className="text-gray-600">
+                                {analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.expected, 0)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Link Coverage:</span>
+                              <span className={`${
+                                Math.round(
+                                  (formStats.totalFormTranslations /
+                                    analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.expected, 0)) *
+                                    100
+                                ) >= 90
+                                  ? 'text-green-600'
+                                  : 'text-orange-600'
+                              }`}>
+                                {Math.round(
+                                  (formStats.totalFormTranslations /
+                                    analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.expected, 0)) *
+                                    100
+                                )}%
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
                     </div>
                   );
                 })()}
