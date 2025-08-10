@@ -163,24 +163,35 @@ export class ConjugationComplianceValidator {
 
       for (let i = 0; i < verbs.length; i++) {
         const verb = verbs[i];
-        debugLog(`🔍 Analyzing ${i + 1}/${verbs.length}: ${verb.italian}`);
+        const progressPercent = Math.round((i / verbs.length) * 100);
+        debugLog(`🔍 Analyzing ${i + 1}/${verbs.length}: ${verb.italian} (${progressPercent}%)`);
 
         try {
-          const verbReport = await this.validateSingleVerb(verb, options);
-          this.validationResults.verbReports.push(verbReport);
-          this.validationResults.analyzedVerbs++;
-        } catch (error) {
-          debugLog(`❌ Error validating ${verb.italian}: ${error.message}`);
+          const verbReport = await this.validateSpecificVerbWithDebug(verb.italian, () => {});
+          if (verbReport) {
+            this.validationResults.verbReports.push(verbReport);
+            this.validationResults.analyzedVerbs++;
+            debugLog(`✅ Successfully analyzed ${verb.italian}`);
+          } else {
+            debugLog(`⚠️ No report generated for ${verb.italian}`);
+          }
+        } catch (error: any) {
+          debugLog(`❌ Error analyzing ${verb.italian}: ${error.message}`);
           this.validationResults.validationErrors.push(`${verb.italian}: ${error.message}`);
         }
       }
 
       this.validationResults.systemReport = this.generateSystemReport();
-      debugLog(`✅ System analysis complete: ${this.validationResults.systemReport.overallScore.overall}% compliance`);
+      const successCount = this.validationResults.verbReports.length;
+      const failCount = this.validationResults.validationErrors.length;
+
+      debugLog(`✅ System analysis complete: ${successCount} successful, ${failCount} failed`);
+      debugLog(`📊 Average compliance: ${this.validationResults.systemReport.overallScore.overall}%`);
+      debugLog(`📈 Distribution: ${this.validationResults.systemReport.complianceDistribution.compliant} compliant, ${this.validationResults.systemReport.complianceDistribution.blocksMigration} blocking migration`);
 
       return this.validationResults.systemReport;
 
-    } catch (error) {
+    } catch (error: any) {
       debugLog(`❌ System validation failed: ${error.message}`);
       throw error;
     }
@@ -1745,6 +1756,224 @@ export class ConjugationComplianceValidator {
       }
     }
     return missing;
+  }
+
+  /**
+   * Extract summary information from a complete validation report
+   * This ensures consistency between individual and system-wide views
+   */
+  private extractSummaryFromFullReport(fullReport: VerbComplianceReport) {
+    const allIssues = [
+      ...fullReport.wordLevelIssues,
+      ...fullReport.translationLevelIssues,
+      ...fullReport.formLevelIssues,
+      ...fullReport.crossTableIssues
+    ];
+
+    const totalIssues = allIssues.length;
+    const criticalIssues = allIssues.filter(issue => issue.severity === 'critical').length;
+    const highIssues = allIssues.filter(issue => issue.severity === 'high').length;
+
+    let formCounts = {
+      total: 0,
+      expected: 0,
+      coverage: 0
+    };
+
+    if (fullReport.detailedAnalysis) {
+      const analysis = fullReport.detailedAnalysis;
+      formCounts = {
+        total: analysis.formCounts.byType.total,
+        expected: analysis.formCounts.expectations.total,
+        coverage: Math.round((analysis.formCounts.byType.total / analysis.formCounts.expectations.total) * 100)
+      };
+    }
+
+    const auxiliaries = fullReport.detailedAnalysis?.auxiliaries || [];
+    const translations = fullReport.detailedAnalysis?.rawData?.translations || [];
+    const hasReciprocal = translations.some(t =>
+      t.context_metadata?.usage === 'reciprocal' &&
+      t.context_metadata?.plurality === 'plural-only'
+    );
+    const hasReflexive = translations.some(t =>
+      t.context_metadata?.usage === 'direct-reflexive'
+    );
+
+    const severityScore = (criticalIssues * 4) + (highIssues * 2) + totalIssues;
+
+    return {
+      verbId: fullReport.verbId,
+      verbItalian: fullReport.verbItalian,
+      overallScore: fullReport.overallScore,
+      complianceStatus: fullReport.complianceStatus,
+      migrationReadiness: fullReport.migrationReadiness,
+      priorityLevel: fullReport.priorityLevel,
+      totalIssues,
+      criticalIssues,
+      highIssues,
+      severityScore,
+      formCounts,
+      auxiliaries,
+      hasReciprocal,
+      hasReflexive,
+      estimatedFixTime: fullReport.estimatedFixTime,
+      lastAnalyzed: new Date().toISOString(),
+      _fullReport: fullReport
+    };
+  }
+
+  /**
+   * Calculate system-wide statistics from individual verb summaries
+   */
+  private calculateOverallStatsFromSummaries(summaries: any[], issueCounter: Map<string, number>) {
+    const totalVerbs = summaries.length;
+
+    if (totalVerbs === 0) {
+      return {
+        totalVerbs: 0,
+        analyzedVerbs: 0,
+        averageScore: 0,
+        complianceDistribution: { compliant: 0, needsWork: 0, criticalIssues: 0, blocksMigration: 0 },
+        topIssues: [],
+        formCompleteness: { averageCoverage: 0, totalForms: 0, expectedForms: 0 },
+        verbTypeBreakdown: { reciprocal: 0, reflexive: 0, normal: 0 },
+        priorityBreakdown: { high: 0, medium: 0, low: 0 }
+      };
+    }
+
+    const complianceDistribution = {
+      compliant: summaries.filter(v => v.complianceStatus === 'compliant').length,
+      needsWork: summaries.filter(v => v.complianceStatus === 'needs-work').length,
+      criticalIssues: summaries.filter(v => v.complianceStatus === 'critical-issues').length,
+      blocksMigration: summaries.filter(v => v.complianceStatus === 'blocks-migration').length
+    };
+
+    const totalScore = summaries.reduce((sum, verb) => sum + verb.overallScore, 0);
+    const averageScore = Math.round(totalScore / totalVerbs);
+
+    const totalActualForms = summaries.reduce((sum, verb) => sum + verb.formCounts.total, 0);
+    const totalExpectedForms = summaries.reduce((sum, verb) => sum + verb.formCounts.expected, 0);
+    const averageCoverage = totalExpectedForms > 0 ? Math.round((totalActualForms / totalExpectedForms) * 100) : 0;
+
+    const verbTypeBreakdown = {
+      reciprocal: summaries.filter(v => v.hasReciprocal).length,
+      reflexive: summaries.filter(v => v.hasReflexive).length,
+      normal: summaries.filter(v => !v.hasReciprocal && !v.hasReflexive).length
+    };
+
+    const priorityBreakdown = {
+      high: summaries.filter(v => v.priorityLevel === 'high').length,
+      medium: summaries.filter(v => v.priorityLevel === 'medium').length,
+      low: summaries.filter(v => v.priorityLevel === 'low').length
+    };
+
+    const topIssues = Array.from(issueCounter.entries())
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([ruleId, count]) => ({
+        ruleId,
+        count,
+        percentage: Math.round((count / totalVerbs) * 100),
+        description: this.getIssueDescription(ruleId)
+      }));
+
+    return {
+      totalVerbs,
+      analyzedVerbs: totalVerbs,
+      averageScore,
+      complianceDistribution,
+      topIssues,
+      formCompleteness: {
+        averageCoverage,
+        totalForms: totalActualForms,
+        expectedForms: totalExpectedForms
+      },
+      verbTypeBreakdown,
+      priorityBreakdown
+    };
+  }
+
+  /**
+   * Get human-readable description for issue rule IDs
+   */
+  private getIssueDescription(ruleId: string): string {
+    const descriptions: Record<string, string> = {
+      'missing-conjugation-class': 'Missing conjugation class (-are, -ere, -ire)',
+      'missing-auxiliary-assignment': 'Missing auxiliary assignment (avere/essere)',
+      'missing-transitivity': 'Missing transitivity classification',
+      'missing-mood-tag': 'Forms missing mood classification',
+      'missing-tense-tag': 'Forms missing tense classification',
+      'missing-auxiliary-tag': 'Compound forms missing auxiliary tags',
+      'reciprocal-singular-forms': 'Reciprocal verbs with invalid singular forms',
+      'legacy-person-terms': 'Using legacy person terms (io/tu/lui)',
+      'no-translations': 'Verb has no translations defined',
+      'no-forms': 'Verb has no forms defined'
+    };
+    return descriptions[ruleId] || ruleId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  }
+
+  /**
+   * System-wide analysis using the EXACT SAME validation logic as individual analysis
+   */
+  async validateConjugationSystemSummaries(options: ValidationOptions, debugLog: (msg: string) => void) {
+    debugLog('🔍 Starting system-wide analysis using individual validation logic…');
+
+    try {
+      const verbs = await this.loadVerbsForValidation(options);
+      debugLog(`✅ Loaded ${verbs.length} verbs for comprehensive analysis`);
+
+      const verbSummaries: any[] = [];
+      const issueCounter = new Map<string, number>();
+      let successCount = 0;
+      let failureCount = 0;
+
+      for (let i = 0; i < verbs.length; i++) {
+        const verb = verbs[i];
+        debugLog(`🔍 Analyzing ${i + 1}/${verbs.length}: ${verb.italian} (${Math.round((i/verbs.length)*100)}%)`);
+
+        try {
+          const fullReport = await this.validateSpecificVerbWithDebug(verb.italian, () => {});
+          if (fullReport) {
+            const summary = this.extractSummaryFromFullReport(fullReport);
+            verbSummaries.push(summary);
+
+            const allIssues = [
+              ...fullReport.wordLevelIssues,
+              ...fullReport.translationLevelIssues,
+              ...fullReport.formLevelIssues,
+              ...fullReport.crossTableIssues
+            ];
+
+            allIssues.forEach(issue => {
+              const count = issueCounter.get(issue.ruleId) || 0;
+              issueCounter.set(issue.ruleId, count + 1);
+            });
+
+            successCount++;
+          } else {
+            debugLog(`⚠️ No report generated for ${verb.italian}`);
+            failureCount++;
+          }
+        } catch (error: any) {
+          debugLog(`❌ Error analyzing ${verb.italian}: ${error.message}`);
+          failureCount++;
+        }
+      }
+
+      const overallStats = this.calculateOverallStatsFromSummaries(verbSummaries, issueCounter);
+
+      debugLog(`✅ System analysis complete: ${successCount} successful, ${failureCount} failed`);
+      debugLog(`📊 Average compliance: ${overallStats.averageScore}%`);
+      debugLog(`📈 Distribution: ${overallStats.complianceDistribution.compliant} compliant, ${overallStats.complianceDistribution.blocksMigration} blocking migration`);
+
+      return {
+        overallStats,
+        verbSummaries: verbSummaries.sort((a, b) => b.severityScore - a.severityScore)
+      };
+    } catch (error: any) {
+      debugLog(`❌ System analysis failed: ${error.message}`);
+      throw error;
+    }
   }
   /**
    * Quick validation for specific verb
