@@ -261,6 +261,30 @@ const AdminValidationInterface = () => {
                             AUX MISMATCH
                           </span>
                         )}
+                        {(() => {
+                          const hasReflexive = linkedTranslations.some(lt => {
+                            const wordTranslation = analysis.rawData.translations.find(t => t.id === lt.word_translation_id);
+                            return wordTranslation?.context_metadata?.usage === 'direct-reflexive';
+                          });
+                          const hasReciprocal = linkedTranslations.some(lt => {
+                            const wordTranslation = analysis.rawData.translations.find(t => t.id === lt.word_translation_id);
+                            return wordTranslation?.context_metadata?.usage === 'reciprocal';
+                          });
+                          return (
+                            <>
+                              {hasReflexive && (
+                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded font-medium">
+                                  🪞 REFLEXIVE
+                                </span>
+                              )}
+                              {hasReciprocal && (
+                                <span className="px-1.5 py-0.5 bg-purple-100 text-purple-800 text-xs rounded font-medium">
+                                  🔄 RECIPROCAL
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                       <div className="text-blue-600 font-mono text-lg">"{form.form_text}"</div>
                       {formAuxiliary && (
@@ -669,9 +693,9 @@ const AdminValidationInterface = () => {
                 </div>
               </div>
 
-              {/* REAL DATA SUMMARY - MOVED TO TOP */}
+              {/* Summary - moved to top */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Comprehensive Validation Summary (REAL DATA)</h4>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Comprehensive Validation Summary</h4>
                 
                 {(() => {
                   const analysis = validationResult.detailedAnalysis;
@@ -720,9 +744,10 @@ const AdminValidationInterface = () => {
                       const moods = ['indicativo', 'congiuntivo', 'condizionale', 'imperativo', 'infinito', 'participio', 'gerundio'];
                       return f.tags?.some(tag => moods.includes(tag));
                     }).length,
-                    withTranslations: analysis.rawData.formTranslations.length,
                     totalForms: analysis.rawData.forms.length,
-                    expectedForms: expectations.total // Use same calculation as detailed analysis
+                    expectedForms: expectations.total,
+                    formsWithTranslations: new Set(analysis.rawData.formTranslations.map(ft => ft.form_id)).size,
+                    totalFormTranslations: analysis.rawData.formTranslations.length
                   };
 
                   return (
@@ -784,18 +809,40 @@ const AdminValidationInterface = () => {
                         </div>
                       </div>
 
-                      {/* Form-Translation Links Summary - CORRECTED */}
+                      {/* Form-Translation Links Summary - UPDATED WITH TWO METRICS */}
                       <div className="p-4 border rounded-lg">
                         <h6 className="font-medium text-gray-800 mb-2">Form-Translation Links</h6>
                         <div className="space-y-1 text-sm">
+                          {/* Metric 1: Coverage of existing forms */}
                           <div className="flex justify-between">
-                            <span>Total Links:</span>
-                            <span className="text-blue-600">{formStats.withTranslations}</span>
+                            <span>Forms with translations:</span>
+                            <span className={formStats.formsWithTranslations === formStats.totalForms ? 'text-green-600' : 'text-orange-600'}>
+                              {formStats.formsWithTranslations}/{formStats.totalForms}
+                            </span>
                           </div>
                           <div className="flex justify-between">
-                            <span>Coverage:</span>
-                            <span className={formStats.withTranslations >= formStats.expectedForms ? 'text-green-600' : 'text-orange-600'}>
-                              {Math.round((formStats.withTranslations / formStats.expectedForms) * 100)}%
+                            <span>Existing form coverage:</span>
+                            <span className={formStats.formsWithTranslations === formStats.totalForms ? 'text-green-600' : 'text-orange-600'}>
+                              {Math.round((formStats.formsWithTranslations / formStats.totalForms) * 100)}%
+                            </span>
+                          </div>
+                          {/* Metric 2: Total translation links vs expected */}
+                          <div className="flex justify-between border-t pt-1">
+                            <span>Total translation links:</span>
+                            <span className="text-blue-600">{formStats.totalFormTranslations}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Expected total links:</span>
+                            <span className="text-gray-600">
+                              {analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.expected, 0)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Overall completion:</span>
+                            <span className={`$
+                              {Math.round((formStats.totalFormTranslations / analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.expected, 0)) * 100) >= 100 ? 'text-green-600' : 'text-orange-600'}
+                            }`}>
+                              {Math.round((formStats.totalFormTranslations / analysis.formTranslationCoverage.translationBreakdown.reduce((sum, t) => sum + t.expected, 0)) * 100)}%
                             </span>
                           </div>
                         </div>
@@ -1212,7 +1259,7 @@ const AdminValidationInterface = () => {
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Forms Analysis by Mood</h4>
 
                   {(() => {
-                    // REAL DATA from validationResult.detailedAnalysis
+                    // Data from validationResult.detailedAnalysis
                     const analysis = validationResult.detailedAnalysis;
                     if (!analysis) {
                       return <div className="text-red-600">No detailed analysis available</div>;
@@ -1225,9 +1272,9 @@ const AdminValidationInterface = () => {
 
                     return (
                       <>
-                        {/* REAL DATA Auxiliary Detection and Calculation Info + Duplicate Detection */}
+                        {/* Auxiliary detection and calculation info with duplicate detection */}
                         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <h6 className="font-medium text-blue-900 mb-2">Form Expectations Calculator (REAL DATA)</h6>
+                          <h6 className="font-medium text-blue-900 mb-2">Form Expectations Calculator</h6>
 
                           {(() => {
                             const duplicates = detectDuplicateForms(analysis.rawData.forms);
@@ -1278,7 +1325,7 @@ const AdminValidationInterface = () => {
                           })()}
                         </div>
 
-                        {/* Indicative Mood with REAL DATA */}
+                        {/* Indicative mood */}
                         <div className="border rounded-lg p-4 mb-4">
                           <h5 className="font-semibold text-gray-800 mb-3">Indicative (Indicativo)</h5>
 
@@ -1328,7 +1375,7 @@ const AdminValidationInterface = () => {
                           </div>
                         </div>
 
-                        {/* Subjunctive with REAL DATA */}
+                        {/* Subjunctive */}
                         <div className="border rounded-lg p-4 mb-4">
                           <h5 className="font-semibold text-gray-800 mb-3">Subjunctive (Congiuntivo)</h5>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -1342,7 +1389,7 @@ const AdminValidationInterface = () => {
                           </div>
                         </div>
 
-                        {/* Conditional & Imperative with REAL DATA */}
+                        {/* Conditional & Imperative */}
                         <div className="border rounded-lg p-4 mb-4">
                           <h5 className="font-semibold text-gray-800 mb-3">Conditional & Imperative</h5>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -1359,7 +1406,7 @@ const AdminValidationInterface = () => {
                           </div>
                         </div>
 
-                        {/* Non-finite Forms with REAL DATA */}
+                        {/* Non-finite forms */}
         <div className="border rounded-lg p-4 mb-4">
           <h5 className="font-semibold text-gray-800 mb-3">Non-finite Forms</h5>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
@@ -1388,7 +1435,7 @@ const AdminValidationInterface = () => {
                       <>
                         {/* REAL Form-Translation Analysis */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-4">Form-Translation Analysis (REAL DATA)</h4>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">Form-Translation Analysis</h4>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {analysis.formTranslationCoverage.translationBreakdown.map((translation, idx) => {
@@ -1446,7 +1493,7 @@ const AdminValidationInterface = () => {
 
                         {/* REAL Orphaned Records - EXPANDED VERSION */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-4">Orphaned Records Analysis (REAL DATA)</h4>
+                          <h4 className="text-lg font-semibold text-gray-900 mb-4">Orphaned Records Analysis</h4>
 
                           {/* Forms without Form-Translations */}
                           <div className="mb-6">
