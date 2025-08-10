@@ -994,12 +994,25 @@ const AdminValidationInterface = () => {
                                 {/* Translation Header */}
                                 <div className="flex justify-between items-start mb-3">
                                   <div>
-                                    <h6 className={`font-medium ${hasIssues ? 'text-red-900' : 'text-green-900'}`}>
+                                    <h6 className={`font-medium ${hasIssues ? 'text-red-900' : 'text-green-900'}`}> 
                                       Translation: "{translation.translation}"
+                                      {coverage?.isReciprocal && (
+                                        <span className="ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded font-medium">
+                                          🔄 RECIPROCAL
+                                        </span>
+                                      )}
+                                      {coverage?.isDirectReflexive && (
+                                        <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded font-medium">
+                                          🪞 REFLEXIVE
+                                        </span>
+                                      )}
                                     </h6>
                                     <div className="text-xs text-gray-600 mt-1 flex items-center gap-3">
                                       <span>Priority: {translation.display_priority}</span>
-                                      <span>Coverage: {coverage?.coverage || 0}% ({coverage?.actual || 0}/{130})</span>
+                                      <span>Coverage: {coverage?.coverage || 0}% ({coverage?.actual || 0}/{coverage?.expected || 130})</span>
+                                      {coverage?.isReciprocal && (
+                                        <span className="text-purple-600">Plural forms only</span>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
@@ -1377,14 +1390,8 @@ const AdminValidationInterface = () => {
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                           <h4 className="text-lg font-semibold text-gray-900 mb-4">Form-Translation Analysis (REAL DATA)</h4>
 
-                          {/* Individual Translation Coverage with CORRECTED CALCULATIONS */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {analysis.formTranslationCoverage.translationBreakdown.map((translation, idx) => {
-                              // CORRECTED: Each translation expects 130 forms (51 simple + 49 compound + 30 progressive)
-                              // Not the total verb expectation of 179
-                              const expectedPerTranslation = 130; // Fixed per translation regardless of total auxiliaries
-                              const correctedCoverage = Math.round((translation.actual / expectedPerTranslation) * 100);
-                              
                               return (
                                 <div key={idx} className={`border rounded-lg p-4 ${
                                   idx === 0 ? 'border-purple-200 bg-purple-50' : 'border-indigo-200 bg-indigo-50'
@@ -1392,6 +1399,16 @@ const AdminValidationInterface = () => {
                                   <div className="flex justify-between items-start mb-2">
                                     <h6 className={`font-medium ${idx === 0 ? 'text-purple-900' : 'text-indigo-900'}`}>
                                       Translation: "{translation.translation}"
+                                      {translation.isReciprocal && (
+                                        <span className="ml-2 px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded font-medium">
+                                          🔄 RECIPROCAL
+                                        </span>
+                                      )}
+                                      {translation.isDirectReflexive && (
+                                        <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded font-medium">
+                                          🪞 REFLEXIVE
+                                        </span>
+                                      )}
                                     </h6>
                                     <span className={`text-xs px-2 py-1 rounded ${
                                       idx === 0 ? 'bg-purple-200 text-purple-800' : 'bg-indigo-200 text-indigo-800'
@@ -1402,9 +1419,7 @@ const AdminValidationInterface = () => {
                                   <div className="space-y-2 text-sm">
                                     <div className="flex justify-between">
                                       <span className={idx === 0 ? 'text-purple-700' : 'text-indigo-700'}>Expected form_translations:</span>
-                                      <span className={`font-medium ${idx === 0 ? 'text-purple-800' : 'text-indigo-800'}`}>
-                                        {expectedPerTranslation}
-                                      </span>
+                                      <span className={`font-medium ${idx === 0 ? 'text-purple-800' : 'text-indigo-800'}`}>{translation.expected}</span>
                                     </div>
                                     <div className="flex justify-between">
                                       <span className={idx === 0 ? 'text-purple-700' : 'text-indigo-700'}>Actual form_translations:</span>
@@ -1412,14 +1427,14 @@ const AdminValidationInterface = () => {
                                     </div>
                                     <div className="flex justify-between">
                                       <span className={idx === 0 ? 'text-purple-700' : 'text-indigo-700'}>Coverage:</span>
-                                      <span className={`font-medium ${correctedCoverage === 100 ? 'text-green-600' : 'text-orange-600'}`}>
-                                        {correctedCoverage}% ({translation.actual}/{expectedPerTranslation})
+                                      <span className={`font-medium ${translation.coverage === 100 ? 'text-green-600' : 'text-orange-600'}`}>
+                                        {translation.coverage}% ({translation.actual}/{translation.expected})
                                       </span>
                                     </div>
-                                    {correctedCoverage < 100 && (
+                                    {translation.coverage < 100 && (
                                       <div className={`text-xs mt-2 ${idx === 0 ? 'text-purple-600' : 'text-indigo-600'}`}>
-                                        Missing: {expectedPerTranslation - translation.actual} form_translations 
-                                        ({Math.round((expectedPerTranslation - translation.actual)/6)} tense sets)
+                                        Missing: {translation.expected - translation.actual} form_translations
+                                        ({Math.round((translation.expected - translation.actual)/6)} tense sets)
                                       </div>
                                     )}
                                   </div>
