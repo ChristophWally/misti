@@ -437,19 +437,32 @@ const AdminValidationInterface = () => {
 
   const handleSystemAnalysis = async () => {
     setIsValidating(true);
-    setDebugLog([]); // Clear previous logs
-    addDebugLog('🔍 Starting system-wide analysis...');
+    setDebugLog([]);
+    addDebugLog('🔍 Starting system-wide summary analysis…');
     try {
       const validator = new ConjugationComplianceValidator(supabase);
-      const result = await validator.validateConjugationSystemWithDebug(validationOptions, addDebugLog);
+      const result = await validator.validateConjugationSystemSummaries(validationOptions, addDebugLog);
       setSystemAnalysis(result);
-      addDebugLog('✅ System analysis completed');
+      addDebugLog('✅ System summary analysis completed');
     } catch (error) {
       addDebugLog(`❌ System analysis failed: ${error.message}`);
-      addDebugLog(`❌ Stack: ${error.stack}`);
       setSystemAnalysis(null);
     } finally {
       setIsValidating(false);
+    }
+  };
+
+  const handleVerbDrillDown = (verbSummary) => {
+    if (verbSummary._fullReport) {
+      setValidationResult(verbSummary._fullReport);
+      setSelectedVerb(verbSummary.verbItalian);
+      setActiveTab('single-verb');
+      addDebugLog(`🔍 Showing cached detailed analysis for: ${verbSummary.verbItalian}`);
+    } else {
+      setSelectedVerb(verbSummary.verbItalian);
+      setActiveTab('single-verb');
+      handleVerbValidation();
+      addDebugLog(`🔍 Running fresh detailed analysis for: ${verbSummary.verbItalian}`);
     }
   };
 
@@ -1846,138 +1859,193 @@ const AdminValidationInterface = () => {
           {/* System Analysis Results */}
           {systemAnalysis && (
             <div className="space-y-6">
-              {/* Overall Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <ComplianceScoreCard
-                  title="Overall Compliance"
-                  score={systemAnalysis.overallScore.overall}
-                  description={`${systemAnalysis.analyzedVerbs} verbs analyzed`}
-                  color="blue"
-                />
-                <ComplianceScoreCard
-                  title="Migration Ready"
-                  score={Math.round((systemAnalysis.complianceDistribution.compliant / systemAnalysis.analyzedVerbs) * 100)}
-                  description={`${systemAnalysis.complianceDistribution.compliant} verbs ready`}
-                  color="green"
-                />
-                <ComplianceScoreCard
-                  title="Critical Issues"
-                  score={systemAnalysis.overallScore.blockers}
-                  description="Migration blockers"
-                  color="red"
-                />
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                  <h3 className="text-sm font-medium text-gray-900">Estimated Work</h3>
-                  <p className="text-2xl font-bold text-gray-900">{systemAnalysis.estimatedWorkRequired}</p>
-                  <p className="text-xs text-gray-500 mt-1">To fix all issues</p>
-                </div>
-              </div>
-
-              {/* Compliance Distribution */}
+              {/* Overall Statistics Dashboard */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Compliance Distribution</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-3xl font-bold text-green-600">{systemAnalysis.complianceDistribution.compliant}</div>
-                    <div className="text-sm text-green-600 font-medium">Compliant</div>
-                    <div className="text-xs text-gray-500">Ready for migration</div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-6">System-Wide Summary</h3>
+
+                {/* Key Metrics Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <ComplianceScoreCard
+                    title="Average Compliance"
+                    score={systemAnalysis.overallStats.averageScore}
+                    description={`${systemAnalysis.overallStats.analyzedVerbs} verbs analyzed`}
+                    color="blue"
+                  />
+                  <ComplianceScoreCard
+                    title="Migration Ready"
+                    score={Math.round((systemAnalysis.overallStats.complianceDistribution.compliant / systemAnalysis.overallStats.analyzedVerbs) * 100)}
+                    description={`${systemAnalysis.overallStats.complianceDistribution.compliant} verbs ready`}
+                    color="green"
+                  />
+                  <ComplianceScoreCard
+                    title="Need Attention"
+                    score={systemAnalysis.overallStats.complianceDistribution.criticalIssues + systemAnalysis.overallStats.complianceDistribution.blocksMigration}
+                    description="verbs with critical issues"
+                    color="red"
+                  />
+                  <ComplianceScoreCard
+                    title="Form Completeness"
+                    score={systemAnalysis.overallStats.formCompleteness.averageCoverage}
+                    description={`${systemAnalysis.overallStats.formCompleteness.totalForms}/${systemAnalysis.overallStats.formCompleteness.expectedForms} total forms`}
+                    color="purple"
+                  />
+                </div>
+
+                {/* Detailed Breakdowns */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Compliance Distribution */}
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-3">Compliance Distribution</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-green-700">Compliant</span>
+                        <span className="text-sm font-medium">{systemAnalysis.overallStats.complianceDistribution.compliant}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-yellow-700">Needs Work</span>
+                        <span className="text-sm font-medium">{systemAnalysis.overallStats.complianceDistribution.needsWork}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-orange-700">Critical Issues</span>
+                        <span className="text-sm font-medium">{systemAnalysis.overallStats.complianceDistribution.criticalIssues}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-red-700">Blocks Migration</span>
+                        <span className="text-sm font-medium">{systemAnalysis.overallStats.complianceDistribution.blocksMigration}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                    <div className="text-3xl font-bold text-yellow-600">{systemAnalysis.complianceDistribution.needsWork}</div>
-                    <div className="text-sm text-yellow-600 font-medium">Needs Work</div>
-                    <div className="text-xs text-gray-500">Minor issues to resolve</div>
+
+                  {/* Verb Type Breakdown */}
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-3">Verb Type Breakdown</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-700">Normal</span>
+                        <span className="text-sm font-medium">{systemAnalysis.overallStats.verbTypeBreakdown.normal}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-blue-700">🪞 Reflexive</span>
+                        <span className="text-sm font-medium">{systemAnalysis.overallStats.verbTypeBreakdown.reflexive}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-purple-700">🔄 Reciprocal</span>
+                        <span className="text-sm font-medium">{systemAnalysis.overallStats.verbTypeBreakdown.reciprocal}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-3xl font-bold text-orange-600">{systemAnalysis.complianceDistribution.criticalIssues}</div>
-                    <div className="text-sm text-orange-600 font-medium">Critical Issues</div>
-                    <div className="text-xs text-gray-500">Significant problems</div>
-                  </div>
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <div className="text-3xl font-bold text-red-600">{systemAnalysis.complianceDistribution.blocksMigration}</div>
-                    <div className="text-sm text-red-600 font-medium">Blocks Migration</div>
-                    <div className="text-xs text-gray-500">Must fix before migration</div>
+
+                  {/* Priority Breakdown */}
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium text-gray-900 mb-3">Priority Breakdown</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-red-700">High Priority</span>
+                        <span className="text-sm font-medium">{systemAnalysis.overallStats.priorityBreakdown.high}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-yellow-700">Medium Priority</span>
+                        <span className="text-sm font-medium">{systemAnalysis.overallStats.priorityBreakdown.medium}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-700">Low Priority</span>
+                        <span className="text-sm font-medium">{systemAnalysis.overallStats.priorityBreakdown.low}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Top Issues */}
+              {/* Top Issues Across System */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Issues Across System</h3>
                 <div className="space-y-3">
-                  {systemAnalysis.topIssues.map((issue, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  {systemAnalysis.overallStats.topIssues.slice(0, 5).map((issue, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                       <div>
-                        <h4 className="font-medium text-gray-900">{issue.ruleId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{issue.impact}</p>
+                        <h4 className="font-medium text-gray-900">{issue.description}</h4>
+                        <p className="text-sm text-gray-600">Rule ID: {issue.ruleId}</p>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-red-600">{issue.count}</div>
-                        <div className="text-xs text-gray-500">verbs affected</div>
+                        <div className="text-lg font-bold text-red-600">{issue.count}</div>
+                        <div className="text-xs text-gray-500">{issue.percentage}% of verbs</div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Migration Readiness */}
+              {/* Individual Verb Summaries */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Migration Readiness Assessment</h3>
-                <div className={`p-4 rounded-lg border-2 ${systemAnalysis.migrationReadiness.ready ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                  <div className="flex items-center">
-                    {systemAnalysis.migrationReadiness.ready ? (
-                      <CheckCircle className="w-6 h-6 text-green-500 mr-3" />
-                    ) : (
-                      <XCircle className="w-6 h-6 text-red-500 mr-3" />
-                    )}
-                    <div>
-                      <h4 className={`font-semibold ${systemAnalysis.migrationReadiness.ready ? 'text-green-800' : 'text-red-800'}`}>
-                        {systemAnalysis.migrationReadiness.ready ? 'System Ready for Migration' : 'Migration Blocked'}
-                      </h4>
-                      <p className={`text-sm mt-1 ${systemAnalysis.migrationReadiness.ready ? 'text-green-700' : 'text-red-700'}`}>
-                        {systemAnalysis.migrationReadiness.ready
-                          ? 'All critical requirements met. Safe to proceed with architectural changes.'
-                          : 'Critical issues must be resolved before proceeding with migration.'}
-                      </p>
-                    </div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Individual Verb Analysis</h3>
+                  <div className="text-sm text-gray-500">
+                    Click any verb for detailed analysis • Sorted by severity
                   </div>
                 </div>
 
-                {systemAnalysis.migrationReadiness.blockers.length > 0 && (
-                  <div className="mt-4">
-                    <h5 className="font-medium text-gray-900 mb-2">Migration Blockers:</h5>
-                    <ul className="space-y-1">
-                      {systemAnalysis.migrationReadiness.blockers.map((blocker, idx) => (
-                        <li key={idx} className="text-sm text-red-600 flex items-center">
-                          <XCircle className="w-4 h-4 mr-2" />
-                          {blocker}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {systemAnalysis.verbSummaries.map((verb, idx) => (
+                    <div
+                      key={idx}
+                      className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => handleVerbDrillDown(verb)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h4 className="font-medium text-gray-900">{verb.verbItalian}</h4>
 
-                {systemAnalysis.migrationReadiness.recommendations.length > 0 && (
-                  <div className="mt-4">
-                    <h5 className="font-medium text-gray-900 mb-2">Recommendations:</h5>
-                    <ul className="space-y-1">
-                      {systemAnalysis.migrationReadiness.recommendations.map((rec, idx) => (
-                        <li key={idx} className="text-sm text-blue-600 flex items-center">
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          {rec}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                            {/* Status Badge */}
+                            <span className={`px-2 py-1 text-xs rounded font-medium ${
+                              verb.complianceStatus === 'compliant' ? 'bg-green-100 text-green-800' :
+                              verb.complianceStatus === 'needs-work' ? 'bg-yellow-100 text-yellow-800' :
+                              verb.complianceStatus === 'critical-issues' ? 'bg-orange-100 text-orange-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {verb.complianceStatus.replace('-', ' ').toUpperCase()}
+                            </span>
 
-                <div className="mt-4 flex gap-2">
-                  <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium">
-                    Apply Auto-Fixes ({systemAnalysis.autoFixableCount})
-                  </button>
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium flex items-center gap-2">
-                    <Download className="w-4 h-4" />
-                    Export Report
-                  </button>
+                            {/* Priority Badge */}
+                            <span className={`px-2 py-1 text-xs rounded font-medium ${
+                              verb.priorityLevel === 'high' ? 'bg-purple-100 text-purple-800' :
+                              verb.priorityLevel === 'medium' ? 'bg-blue-100 text-blue-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {verb.priorityLevel.toUpperCase()}
+                            </span>
+
+                            {/* Special Verb Type Indicators */}
+                            {verb.hasReciprocal && (
+                              <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded font-medium">
+                                🔄 RECIPROCAL
+                              </span>
+                            )}
+                            {verb.hasReflexive && (
+                              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded font-medium">
+                                🪞 REFLEXIVE
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span>Score: <strong>{verb.overallScore}%</strong></span>
+                            <span>Issues: <strong>{verb.totalIssues}</strong> ({verb.criticalIssues} critical)</span>
+                            <span>Forms: <strong>{verb.formCounts.total}/{verb.formCounts.expected}</strong> ({verb.formCounts.coverage}%)</span>
+                            <span>Auxiliaries: <strong>{verb.auxiliaries.join(', ') || 'none'}</strong></span>
+                            <span>Fix Time: <strong>{verb.estimatedFixTime}</strong></span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className={`text-2xl ${verb.migrationReadiness ? 'text-green-500' : 'text-red-500'}`}>
+                            {verb.migrationReadiness ? '✅' : '❌'}
+                          </span>
+                          <span className="text-gray-400">▶</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
