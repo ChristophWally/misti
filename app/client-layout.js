@@ -39,6 +39,31 @@ export default function ClientLayout({ children }) {
               <button className="text-white hover:text-cyan-200 transition-colors">
                 My Decks
               </button>
+              <div className="relative group">
+                <button className="text-white hover:text-cyan-200 transition-colors">
+                  Admin
+                </button>
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 border border-gray-200">
+                  <div className="py-1">
+                    <a
+                      href="/admin/conjugation-validator"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      🔍 Verb Validator
+                    </a>
+                    <a
+                      href="/admin/migration-testing"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      🚀 Migration Testing
+                    </a>
+                    <div className="border-t border-gray-100 my-1"></div>
+                    <div className="px-4 py-2 text-xs text-gray-500">
+                      More tools coming soon...
+                    </div>
+                  </div>
+                </div>
+              </div>
               <button className="text-white hover:text-cyan-200 transition-colors">
                 Profile
               </button>
