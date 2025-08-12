@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 
 interface MigrationIssue {
   type: 'critical' | 'high' | 'medium' | 'low';
@@ -19,14 +19,17 @@ interface DatabaseStats {
   totalFormTranslations: number;
 }
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export default function MigrationToolsInterface() {
   const [currentTab, setCurrentTab] = useState<'audit' | 'migration' | 'progress'>('audit');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<MigrationIssue[]>([]);
   const [databaseStats, setDatabaseStats] = useState<DatabaseStats | null>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
-  
-  const supabase = createClientComponentClient();
 
   const addToDebugLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
