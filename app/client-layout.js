@@ -57,9 +57,15 @@ export default function ClientLayout({ children }) {
                     >
                       🔍 Verb Validator
                     </a>
+                    <a
+                      href="/admin/migration-tools"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      🔄 Migration Tools
+                    </a>
                     <div className="border-t border-gray-100 my-1"></div>
                     <div className="px-4 py-2 text-xs text-gray-500">
-                      More tools coming soon...
+                      Story 002.003 Implementation
                     </div>
                   </div>
                 </div>
