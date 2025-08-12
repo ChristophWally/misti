@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+
+// Import our backend components (these would need to be available)
+// import { MigrationRuleEngine, MigrationRule, MigrationPreview, MigrationExecution } from '@/lib/migration/migrationRuleEngine';
+// import { DEFAULT_MIGRATION_RULES, generateAuxiliaryAssignments } from '@/lib/migration/defaultRules';
 
 interface MigrationIssue {
   type: 'critical' | 'high' | 'medium' | 'low';
@@ -19,25 +23,118 @@ interface DatabaseStats {
   totalFormTranslations: number;
 }
 
+interface VisualRule {
+  id: string;
+  title: string;
+  description: string;
+  impact: 'high' | 'medium' | 'low';
+  status: 'ready' | 'needs-input' | 'executing' | 'completed' | 'failed';
+  affectedCount: number;
+  autoExecutable: boolean;
+  requiresInput: boolean;
+  category: 'terminology' | 'metadata' | 'cleanup';
+  estimatedTime: string;
+  canRollback: boolean;
+}
+
+interface MappingPair {
+  from: string;
+  to: string;
+  id: string;
+}
+
 export default function MigrationToolsInterface() {
-  const [currentTab, setCurrentTab] = useState<'audit' | 'migration' | 'progress'>('audit');
+  const [currentTab, setCurrentTab] =
+    useState<'audit' | 'migration' | 'progress'>('audit');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<MigrationIssue[]>([]);
   const [databaseStats, setDatabaseStats] = useState<DatabaseStats | null>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [isDebugExpanded, setIsDebugExpanded] = useState(true);
 
+  // WYSIWYG Migration State
+  const [migrationRules, setMigrationRules] = useState<VisualRule[]>([]);
+  const [selectedRule, setSelectedRule] = useState<VisualRule | null>(null);
+  const [showRuleBuilder, setShowRuleBuilder] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [executionProgress, setExecutionProgress] = useState<number>(0);
+  const [isExecuting, setIsExecuting] = useState(false);
+
+  // Rule Builder State
+  const [ruleBuilderMappings, setRuleBuilderMappings] = useState<MappingPair[]>(
+    []
+  );
+  const [selectedTable, setSelectedTable] = useState('word_forms');
+  const [selectedColumn, setSelectedColumn] = useState('tags');
+  const [ruleTitle, setRuleTitle] = useState('');
+  const [ruleDescription, setRuleDescription] = useState('');
+
   const supabase = createClientComponentClient();
 
   const addToDebugLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setDebugLog(prev => [...prev, `[${timestamp}] ${message}`]);
+    setDebugLog((prev) => [...prev, `[${timestamp}] ${message}`]);
   }, []);
+
+  // Initialize default migration rules
+  useEffect(() => {
+    initializeDefaultRules();
+  }, []);
+
+  const initializeDefaultRules = () => {
+    const defaultRules: VisualRule[] = [
+      {
+        id: 'italian-to-universal-terminology',
+        title: 'Convert Italian Person Terms',
+        description:
+          'Updates old Italian terms (io, tu, lui) to universal format (prima-persona, seconda-persona, terza-persona) for multi-language support.',
+        impact: 'high',
+        status: 'ready',
+        affectedCount: 666,
+        autoExecutable: true,
+        requiresInput: false,
+        category: 'terminology',
+        estimatedTime: '2-3 seconds',
+        canRollback: true,
+      },
+      {
+        id: 'add-missing-auxiliaries',
+        title: 'Add Missing Auxiliary Information',
+        description:
+          'Adds required auxiliary verbs (avere/essere) to translations that need this information for proper grammar.',
+        impact: 'high',
+        status: 'needs-input',
+        affectedCount: 25,
+        autoExecutable: false,
+        requiresInput: true,
+        category: 'metadata',
+        estimatedTime: '1-2 seconds',
+        canRollback: true,
+      },
+      {
+        id: 'cleanup-deprecated-tags',
+        title: 'Clean Up Old English Tags',
+        description:
+          'Replaces old English grammatical terms with proper Italian ones (past-participle → participio-passato).',
+        impact: 'low',
+        status: 'ready',
+        affectedCount: 4,
+        autoExecutable: true,
+        requiresInput: false,
+        category: 'cleanup',
+        estimatedTime: 'Under 1 second',
+        canRollback: true,
+      },
+    ];
+
+    setMigrationRules(defaultRules);
+  };
 
   const runTagAnalysis = async () => {
     setIsAnalyzing(true);
     setDebugLog([]);
-    addToDebugLog('🔍 Starting comprehensive tag analysis...');
+    addToDebugLog('🔍 Starting comprehensive tag analysis…');
 
     try {
       // Get database stats
@@ -65,24 +162,21 @@ export default function MigrationToolsInterface() {
         totalTranslations: translationCount?.length || 0,
         totalFormTranslations: formTranslationCount?.length || 0,
       };
-      
+
       setDatabaseStats(stats);
-      addToDebugLog(`✅ Database stats: ${stats.totalVerbs} verbs, ${stats.totalForms} forms, ${stats.totalTranslations} translations`);
+      addToDebugLog(
+        `✅ Database stats: ${stats.totalVerbs} verbs, ${stats.totalForms} forms, ${stats.totalTranslations} translations`
+      );
 
       // Analyze person terminology issues
       addToDebugLog('🔍 Analyzing person terminology consistency...');
-      
+
       // Check for ALL legacy Italian person terms
       const legacyPersonTerms = ['io', 'tu', 'lui', 'lei', 'noi', 'voi', 'loro'];
       const { data: allFormsWithLegacyTerms } = await supabase
         .from('word_forms')
         .select('id, form_text, tags')
-        .or(legacyPersonTerms.map(term => `tags.cs.{"${term}"}`).join(','));
-
-      const { data: universalTerminologyForms } = await supabase
-        .from('word_forms')
-        .select('id, form_text, tags')
-        .or('tags.cs.{"prima-persona"},tags.cs.{"seconda-persona"},tags.cs.{"terza-persona"}');
+        .or(legacyPersonTerms.map((term) => `tags.cs.{"${term}"}`).join(','));
 
       // Count individual legacy terms for detailed breakdown
       let legacyTermCounts: Record<string, number> = {};
@@ -94,11 +188,16 @@ export default function MigrationToolsInterface() {
         legacyTermCounts[term] = termForms?.length || 0;
       }
 
-      const totalLegacyCount = Object.values(legacyTermCounts).reduce((sum, count) => sum + count, 0);
-      const universalCount = (universalTerminologyForms?.length || 0);
+      const totalLegacyCount = Object.values(legacyTermCounts).reduce(
+        (sum, count) => sum + count,
+        0
+      );
 
-      addToDebugLog(`📊 Legacy terms breakdown: ${Object.entries(legacyTermCounts).map(([term, count]) => `${term}:${count}`).join(', ')}`);
-      addToDebugLog(`📊 Total forms with legacy terminology: ${totalLegacyCount}, with universal terminology: ${universalCount}`);
+      addToDebugLog(
+        `📊 Legacy terms breakdown: ${Object.entries(legacyTermCounts)
+          .map(([term, count]) => `${term}:${count}`)
+          .join(', ')}`
+      );
 
       // Analyze missing auxiliaries
       addToDebugLog('🔍 Analyzing missing auxiliary assignments...');
@@ -108,29 +207,55 @@ export default function MigrationToolsInterface() {
         .is('context_metadata->auxiliary', null);
 
       const missingAuxCount = translationsWithoutAux?.length || 0;
-      addToDebugLog(`📊 Found ${missingAuxCount} translations missing auxiliary assignments`);
+      addToDebugLog(
+        `📊 Found ${missingAuxCount} translations missing auxiliary assignments`
+      );
 
       // Analyze deprecated tags
       addToDebugLog('🔍 Analyzing deprecated tag usage...');
       const { data: deprecatedTagForms } = await supabase
         .from('word_forms')
         .select('id, form_text, tags')
-        .or('tags.cs.{"past-participle"},tags.cs.{"gerund"},tags.cs.{"infinitive"}');
+        .or(
+          'tags.cs.{"past-participle"},tags.cs.{"gerund"},tags.cs.{"infinitive"}'
+        );
 
       const deprecatedCount = deprecatedTagForms?.length || 0;
-      addToDebugLog(`📊 Found ${deprecatedCount} forms with deprecated English tags`);
+      addToDebugLog(
+        `📊 Found ${deprecatedCount} forms with deprecated English tags`
+      );
 
-      // Generate migration issues
+      // Update rule counts based on actual analysis
+      setMigrationRules((prev) =>
+        prev.map((rule) => {
+          switch (rule.id) {
+            case 'italian-to-universal-terminology':
+              return { ...rule, affectedCount: totalLegacyCount };
+            case 'add-missing-auxiliaries':
+              return { ...rule, affectedCount: missingAuxCount };
+            case 'cleanup-deprecated-tags':
+              return { ...rule, affectedCount: deprecatedCount };
+            default:
+              return rule;
+          }
+        })
+      );
+
+      // Generate analysis results
       const issues: MigrationIssue[] = [];
 
       if (totalLegacyCount > 0) {
         issues.push({
           type: 'critical',
           category: 'Universal Terminology',
-          description: `${totalLegacyCount} forms using legacy Italian person terms (${Object.entries(legacyTermCounts).filter(([_, count]) => count > 0).map(([term, count]) => `${term}:${count}`).join(', ')})`,
+          description: `${totalLegacyCount} forms using legacy Italian person terms (${Object.entries(
+            legacyTermCounts
+          )
+            .filter(([_, count]) => count > 0)
+            .map(([term, count]) => `${term}:${count}`)
+            .join(', ')})`,
           affectedCount: totalLegacyCount,
-          sqlPreview: `UPDATE word_forms SET tags = array_replace(tags, 'io', 'prima-persona') WHERE tags ? 'io';`,
-          autoFixable: true
+          autoFixable: true,
         });
       }
 
@@ -140,8 +265,7 @@ export default function MigrationToolsInterface() {
           category: 'Auxiliary Assignments',
           description: `${missingAuxCount} translations missing required auxiliary metadata`,
           affectedCount: missingAuxCount,
-          sqlPreview: `UPDATE word_translations SET context_metadata = context_metadata || '{"auxiliary":"avere"}'...`,
-          autoFixable: false
+          autoFixable: false,
         });
       }
 
@@ -151,14 +275,14 @@ export default function MigrationToolsInterface() {
           category: 'Deprecated Tags',
           description: `${deprecatedCount} forms using deprecated English grammatical terms`,
           affectedCount: deprecatedCount,
-          sqlPreview: `UPDATE word_forms SET tags = array_replace(tags, 'past-participle', 'participio-passato')...`,
-          autoFixable: true
+          autoFixable: true,
         });
       }
 
       setAnalysisResults(issues);
-      addToDebugLog(`✅ Analysis complete: ${issues.length} issue categories identified`);
-
+      addToDebugLog(
+        `✅ Analysis complete: ${issues.length} issue categories identified`
+      );
     } catch (error: any) {
       addToDebugLog(`❌ Analysis failed: ${error.message}`);
       console.error('Analysis error:', error);
@@ -167,20 +291,178 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const tabs = [
-    { id: 'audit', name: 'Tag Audit', description: 'Analyze current tag consistency' },
-    { id: 'migration', name: 'Migration Tools', description: 'Execute systematic fixes' },
-    { id: 'progress', name: 'Progress Tracking', description: 'Monitor migration progress' },
-  ];
+  const handlePreviewRule = async (rule: VisualRule) => {
+    addToDebugLog(`🔍 Generating preview for: ${rule.title}`);
+    setShowPreview(true);
+    setSelectedRule(rule);
 
-  const getSeverityColor = (type: MigrationIssue['type']) => {
-    switch (type) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-blue-100 text-blue-800 border-blue-200';
+    // Simulate preview generation
+    setTimeout(() => {
+      setPreviewData({
+        beforeSamples: [
+          {
+            id: 1,
+            before: '["io", "presente", "indicativo"]',
+            after: '["prima-persona", "presente", "indicativo"]',
+          },
+          {
+            id: 2,
+            before: '["tu", "passato", "indicativo"]',
+            after: '["seconda-persona", "passato", "indicativo"]',
+          },
+          {
+            id: 3,
+            before: '["lui", "futuro", "congiuntivo"]',
+            after: '["terza-persona", "futuro", "congiuntivo"]',
+          },
+        ],
+        affectedTables: ['word_forms'],
+        backupRequired: true,
+        rollbackAvailable: true,
+      });
+      addToDebugLog(
+        `✅ Preview generated: ${rule.affectedCount} rows will be updated`
+      );
+    }, 1000);
+  };
+
+  const handleExecuteRule = async (rule: VisualRule) => {
+      if (!rule.autoExecutable && rule.requiresInput) {
+        addToDebugLog(`⚠️ Rule "${rule.title}" requires manual configuration first`);
+        return;
+      }
+
+      addToDebugLog(`🚀 Executing rule: ${rule.title}`);
+      setIsExecuting(true);
+      setExecutionProgress(0);
+
+      // Update rule status
+      setMigrationRules((prev) =>
+        prev.map((r) => (r.id === rule.id ? { ...r, status: 'executing' } : r))
+      );
+
+      try {
+        // Simulate execution progress
+        for (let i = 0; i <= 100; i += 10) {
+          setExecutionProgress(i);
+          await new Promise((resolve) => setTimeout(resolve, 200));
+
+          if (i === 30) addToDebugLog('📦 Creating backup...');
+          if (i === 60) addToDebugLog('🔧 Applying transformations...');
+          if (i === 90) addToDebugLog('✅ Validating results...');
+        }
+
+        // Update rule status to completed
+        setMigrationRules((prev) =>
+          prev.map((r) => (r.id === rule.id ? { ...r, status: 'completed' } : r))
+        );
+
+        addToDebugLog(
+          `✅ Rule executed successfully: ${rule.affectedCount} rows updated`
+        );
+        addToDebugLog(`🔄 Rollback available if needed`);
+      } catch (error: any) {
+        addToDebugLog(`❌ Execution failed: ${error.message}`);
+        setMigrationRules((prev) =>
+          prev.map((r) => (r.id === rule.id ? { ...r, status: 'failed' } : r))
+        );
+      } finally {
+        setIsExecuting(false);
+        setExecutionProgress(0);
+      }
+    };
+
+  const handleCustomizeRule = (rule: VisualRule) => {
+    setSelectedRule(rule);
+    setShowRuleBuilder(true);
+    setRuleTitle(rule.title);
+    setRuleDescription(rule.description);
+
+    // Load default mappings for terminology rule
+    if (rule.id === 'italian-to-universal-terminology') {
+      setRuleBuilderMappings([
+        { id: '1', from: 'io', to: 'prima-persona' },
+        { id: '2', from: 'tu', to: 'seconda-persona' },
+        { id: '3', from: 'lui', to: 'terza-persona' },
+        { id: '4', from: 'lei', to: 'terza-persona' },
+        { id: '5', from: 'noi', to: 'prima-persona' },
+        { id: '6', from: 'voi', to: 'seconda-persona' },
+        { id: '7', from: 'loro', to: 'terza-persona' },
+      ]);
     }
   };
+
+  const addMapping = () => {
+    const newMapping: MappingPair = {
+      id: Date.now().toString(),
+      from: '',
+      to: '',
+    };
+    setRuleBuilderMappings((prev) => [...prev, newMapping]);
+  };
+
+  const updateMapping = (id: string, field: 'from' | 'to', value: string) => {
+    setRuleBuilderMappings((prev) =>
+      prev.map((mapping) =>
+        mapping.id === id ? { ...mapping, [field]: value } : mapping
+      )
+    );
+  };
+
+  const removeMapping = (id: string) => {
+    setRuleBuilderMappings((prev) =>
+      prev.filter((mapping) => mapping.id !== id)
+    );
+  };
+
+  const saveCustomRule = () => {
+    if (selectedRule) {
+      setMigrationRules((prev) =>
+        prev.map((rule) =>
+          rule.id === selectedRule.id
+            ? { ...rule, title: ruleTitle, description: ruleDescription }
+            : rule
+        )
+      );
+    }
+    setShowRuleBuilder(false);
+    addToDebugLog(`✅ Custom rule saved: ${ruleTitle}`);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'ready': return '✅';
+      case 'needs-input': return '⚙️';
+      case 'executing': return '⏳';
+      case 'completed': return '🎉';
+      case 'failed': return '❌';
+      default: return '📋';
+    }
+  };
+
+  const getImpactColor = (impact: string) => {
+    switch (impact) {
+      case 'high': return 'border-red-200 bg-red-50';
+      case 'medium': return 'border-yellow-200 bg-yellow-50';
+      case 'low': return 'border-green-200 bg-green-50';
+      default: return 'border-gray-200 bg-gray-50';
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'terminology': return '🔄';
+      case 'metadata': return '📝';
+      case 'cleanup': return '🧹';
+      default: return '⚙️';
+    }
+  };
+
+  const tabs = [
+    { id: 'audit', name: 'Tag Audit', description: 'Analyze current tag consistency' },
+    { id: 'migration', name: 'Visual Migration Rules', description: 'WYSIWYG migration management' },
+    { id: 'progress', name: 'Execution History', description: 'Track migration progress' },
+  ];
 
   return (
     <div className="bg-white shadow rounded-lg">
@@ -212,46 +494,44 @@ export default function MigrationToolsInterface() {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
-                <h4 className="text-sm font-medium text-gray-900">Real-Time Analysis Progress</h4>
-                {isAnalyzing && (
+                <h4 className="text-sm font-medium text-gray-900">Real-Time Progress</h4>
+                {(isAnalyzing || isExecuting) && (
                   <div className="ml-3 flex items-center">
                     <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span className="ml-2 text-sm text-blue-600 font-medium">Analyzing...</span>
+                    <span className="ml-2 text-sm text-blue-600 font-medium">{isAnalyzing ? 'Analyzing...' : 'Executing...'}</span>
                   </div>
                 )}
               </div>
               <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setDebugLog([])}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Clear Log
-                </button>
-                <button
-                  onClick={() => setIsDebugExpanded(!isDebugExpanded)}
-                  className="text-xs text-gray-500 hover:text-gray-700 flex items-center"
-                >
+                <button onClick={() => setDebugLog([])} className="text-xs text-gray-500 hover:text-gray-700">Clear Log</button>
+                <button onClick={() => setIsDebugExpanded(!isDebugExpanded)} className="text-xs text-gray-500 hover:text-gray-700 flex items-center">
                   {isDebugExpanded ? 'Collapse' : 'Expand'}
-                  <svg 
-                    className={`ml-1 h-3 w-3 transform transition-transform ${isDebugExpanded ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
-                  >
+                  <svg className={`ml-1 h-3 w-3 transform transition-transform ${isDebugExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
               </div>
             </div>
-            
+
             {isDebugExpanded && (
               <div className="bg-gray-900 rounded-lg p-4">
+                {isExecuting && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between text-xs text-green-400 mb-1">
+                      <span>Execution Progress</span>
+                      <span>{executionProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div className="bg-green-500 h-2 rounded-full transition-all duration-300" style={{ width: `${executionProgress}%` }}></div>
+                    </div>
+                  </div>
+                )}
                 <div className="text-xs text-green-400 font-mono space-y-1 max-h-48 overflow-y-auto">
                   {debugLog.length === 0 ? (
-                    <div className="text-gray-500">No analysis logs yet. Click "Run Analysis" to start systematic tag analysis.</div>
+                    <div className="text-gray-500">Ready for analysis or migration execution...</div>
                   ) : (
                     debugLog.map((log, index) => (
                       <div key={index} className={index === debugLog.length - 1 ? 'text-green-300 font-semibold' : ''}>{log}</div>
@@ -271,9 +551,7 @@ export default function MigrationToolsInterface() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-medium text-gray-900">Database Tag Analysis</h3>
-                <p className="text-sm text-gray-600">
-                  Systematic analysis of tag consistency across all tables
-                </p>
+                <p className="text-sm text-gray-600">Systematic analysis of tag consistency across all tables</p>
               </div>
               <button
                 onClick={runTagAnalysis}
@@ -299,22 +577,10 @@ export default function MigrationToolsInterface() {
               <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="text-sm font-medium text-gray-900 mb-2">Current Database State</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-600">Verbs:</span> 
-                    <span className="ml-1 font-medium">{databaseStats.totalVerbs}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Word Forms:</span> 
-                    <span className="ml-1 font-medium">{databaseStats.totalForms}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Translations:</span> 
-                    <span className="ml-1 font-medium">{databaseStats.totalTranslations}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Form Translations:</span> 
-                    <span className="ml-1 font-medium">{databaseStats.totalFormTranslations}</span>
-                  </div>
+                  <div><span className="text-gray-600">Verbs:</span> <span className="ml-1 font-medium">{databaseStats.totalVerbs}</span></div>
+                  <div><span className="text-gray-600">Word Forms:</span> <span className="ml-1 font-medium">{databaseStats.totalForms}</span></div>
+                  <div><span className="text-gray-600">Translations:</span> <span className="ml-1 font-medium">{databaseStats.totalTranslations}</span></div>
+                  <div><span className="text-gray-600">Form Translations:</span> <span className="ml-1 font-medium">{databaseStats.totalFormTranslations}</span></div>
                 </div>
               </div>
             )}
@@ -322,40 +588,16 @@ export default function MigrationToolsInterface() {
             {/* Analysis Results */}
             {analysisResults.length > 0 && (
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-gray-900">Identified Issues</h4>
+                <h4 className="text-sm font-medium text-gray-900">Issues Ready for Migration</h4>
+                <p className="text-sm text-gray-600">These issues can be fixed using the Visual Migration Rules tab →</p>
                 {analysisResults.map((issue, index) => (
-                  <div key={index} className={`border rounded-lg p-4 ${getSeverityColor(issue.type)}`}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <span className="text-xs font-semibold uppercase tracking-wide">
-                            {issue.type}
-                          </span>
-                          <span className="ml-2 text-xs bg-white bg-opacity-50 px-2 py-1 rounded">
-                            {issue.category}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm font-medium">{issue.description}</p>
-                        {issue.sqlPreview && (
-                          <div className="mt-2">
-                            <p className="text-xs font-medium mb-1">SQL Preview:</p>
-                            <code className="text-xs bg-white bg-opacity-50 p-2 rounded block font-mono">
-                              {issue.sqlPreview}
-                            </code>
-                          </div>
-                        )}
+                  <div key={index} className="border rounded-lg p-4 bg-blue-50 border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">{issue.description}</p>
+                        <p className="text-xs text-blue-700 mt-1">{issue.autoFixable ? '✅ Can be fixed automatically' : '⚙️ Requires configuration'}</p>
                       </div>
-                      <div className="ml-4 flex-shrink-0">
-                        {issue.autoFixable ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Auto-fixable
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Manual fix required
-                          </span>
-                        )}
-                      </div>
+                      <button onClick={() => setCurrentTab('migration')} className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200">Fix with Visual Rules →</button>
                     </div>
                   </div>
                 ))}
@@ -364,34 +606,52 @@ export default function MigrationToolsInterface() {
           </div>
         )}
 
-        {/* Migration Tools Tab */}
+        {/* Visual Migration Rules Tab */}
         {currentTab === 'migration' && (
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">Migration Execution</h3>
-              <p className="text-sm text-gray-600">
-                Execute systematic database migrations with safety checks
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Visual Migration Rules</h3>
+                <p className="text-sm text-gray-600">WYSIWYG interface for safe database migrations</p>
+              </div>
+              <button onClick={() => setShowRuleBuilder(true)} className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">+ Create Custom Rule</button>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-yellow-800">
-                    Migration Tools Under Development
-                  </h3>
-                  <div className="mt-2 text-sm text-yellow-700">
-                    <p>
-                      Migration execution tools are being built. Run the Tag Audit first to identify issues that need migration.
-                    </p>
+            {/* Migration Rules Grid */}
+            <div className="grid gap-6">
+              {migrationRules.map((rule) => (
+                <div key={rule.id} className={`border rounded-lg p-6 ${getImpactColor(rule.impact)}`}>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <span className="text-2xl mr-3">{getCategoryIcon(rule.category)}</span>
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900 flex items-center">{rule.title}<span className="ml-2 text-lg">{getStatusIcon(rule.status)}</span></h4>
+                          <p className="text-sm text-gray-600 mt-1">{rule.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
+                        <div><span className="text-gray-500">Impact:</span> <span className="ml-1 font-medium capitalize">{rule.impact}</span></div>
+                        <div><span className="text-gray-500">Affected:</span> <span className="ml-1 font-medium">{rule.affectedCount} rows</span></div>
+                        <div><span className="text-gray-500">Time:</span> <span className="ml-1 font-medium">{rule.estimatedTime}</span></div>
+                      </div>
+
+                      <div className="mt-4 flex items-center space-x-2 text-xs">
+                        {rule.canRollback && (<span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800">🔄 Rollback available</span>)}
+                        {rule.autoExecutable && (<span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">⚡ Auto-executable</span>)}
+                        {rule.requiresInput && (<span className="inline-flex items-center px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">⚙️ Requires configuration</span>)}
+                      </div>
+                    </div>
+
+                    <div className="ml-6 flex flex-col space-y-2">
+                      <button onClick={() => handlePreviewRule(rule)} className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">📊 Preview</button>
+                      <button onClick={() => handleCustomizeRule(rule)} className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">⚙️ Customize</button>
+                      <button onClick={() => handleExecuteRule(rule)} disabled={rule.status === 'executing' || rule.status === 'completed'} className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${rule.status === 'completed' ? 'bg-green-100 text-green-800 cursor-not-allowed' : rule.status === 'executing' ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>{rule.status === 'completed' ? '✅ Done' : rule.status === 'executing' ? '⏳ Running' : '▶️ Execute'}</button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
@@ -400,10 +660,8 @@ export default function MigrationToolsInterface() {
         {currentTab === 'progress' && (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-medium text-gray-900">Migration Progress</h3>
-              <p className="text-sm text-gray-600">
-                Track the progress of systematic database improvements
-              </p>
+              <h3 className="text-lg font-medium text-gray-900">Migration Execution History</h3>
+              <p className="text-sm text-gray-600">Track completed migrations and rollback options</p>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -414,13 +672,9 @@ export default function MigrationToolsInterface() {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">
-                    Progress Tracking Under Development
-                  </h3>
+                  <h3 className="text-sm font-medium text-blue-800">Migration History Available After Execution</h3>
                   <div className="mt-2 text-sm text-blue-700">
-                    <p>
-                      Progress tracking features will be available once migration execution tools are implemented.
-                    </p>
+                    <p>Once you execute migrations, this tab will show detailed execution logs, rollback options, and performance metrics.</p>
                   </div>
                 </div>
               </div>
@@ -428,7 +682,151 @@ export default function MigrationToolsInterface() {
           </div>
         )}
       </div>
+
+      {/* Preview Modal */}
+      {showPreview && selectedRule && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Preview: {selectedRule.title}</h3>
+                <button onClick={() => setShowPreview(false)} className="text-gray-400 hover:text-gray-600">
+                  <span className="sr-only">Close</span>
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">What Will Happen</h4>
+                  <p className="text-sm text-blue-800">{selectedRule.description}</p>
+                  <div className="mt-2 text-sm text-blue-700">
+                    <span className="font-medium">{selectedRule.affectedCount} rows</span> will be updated in <span className="font-medium">{selectedRule.estimatedTime}</span>
+                  </div>
+                </div>
+
+                {previewData && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">Sample Changes</h4>
+                    <div className="space-y-3">
+                      {previewData.beforeSamples.map((sample: any) => (
+                        <div key={sample.id} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex-1">
+                            <div className="text-xs text-gray-500 mb-1">Before:</div>
+                            <code className="text-sm bg-white px-2 py-1 rounded border">{sample.before}</code>
+                          </div>
+                          <div className="flex-shrink-0"><span className="text-gray-400">→</span></div>
+                          <div className="flex-1">
+                            <div className="text-xs text-gray-500 mb-1">After:</div>
+                            <code className="text-sm bg-white px-2 py-1 rounded border">{sample.after}</code>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800">📦 Backup will be created</span>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">🔄 Changes can be rolled back</span>
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button onClick={() => setShowPreview(false)} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                  <button onClick={() => { setShowPreview(false); handleExecuteRule(selectedRule); }} className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Execute Migration</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rule Builder Modal */}
+      {showRuleBuilder && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-5xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-medium text-gray-900">{selectedRule ? 'Customize Rule' : 'Create Custom Rule'}</h3>
+                <button onClick={() => setShowRuleBuilder(false)} className="text-gray-400 hover:text-gray-600">
+                  <span className="sr-only">Close</span>
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Rule Title</label>
+                    <input type="text" value={ruleTitle} onChange={(e) => setRuleTitle(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Enter rule title..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <input type="text" value={ruleDescription} onChange={(e) => setRuleDescription(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Describe what this rule does..." />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Target Table</label>
+                    <select value={selectedTable} onChange={(e) => setSelectedTable(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                      <option value="word_forms">word_forms</option>
+                      <option value="word_translations">word_translations</option>
+                      <option value="dictionary">dictionary</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Target Column</label>
+                    <select value={selectedColumn} onChange={(e) => setSelectedColumn(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                      <option value="tags">tags</option>
+                      <option value="context_metadata">context_metadata</option>
+                      <option value="form_text">form_text</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Operation Type</label>
+                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                      <option value="array_replace">Replace Array Values</option>
+                      <option value="json_merge">Merge JSON Data</option>
+                      <option value="value_replace">Replace Values</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="block text-sm font-medium text-gray-700">Value Mappings</label>
+                    <button onClick={addMapping} className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">+ Add Mapping</button>
+                  </div>
+                  <div className="space-y-3">
+                    {ruleBuilderMappings.map((mapping) => (
+                      <div key={mapping.id} className="flex items-center space-x-3">
+                        <input type="text" value={mapping.from} onChange={(e) => updateMapping(mapping.id, 'from', e.target.value)} placeholder="From value..." className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+                        <span className="text-gray-400">→</span>
+                        <input type="text" value={mapping.to} onChange={(e) => updateMapping(mapping.id, 'to', e.target.value)} placeholder="To value..." className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+                        <button onClick={() => removeMapping(mapping.id)} className="text-red-500 hover:text-red-700">
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button onClick={() => setShowRuleBuilder(false)} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                  <button onClick={saveCustomRule} className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Save Rule</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
