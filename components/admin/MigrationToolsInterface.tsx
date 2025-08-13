@@ -584,17 +584,59 @@ export default function MigrationToolsInterface() {
     setRuleDescription(rule.description);
     setOperationType(rule.operationType || 'replace');
     setPreventDuplicates(rule.preventDuplicates || false);
-    
-    if (rule.id === 'italian-to-universal-terminology') {
-      setRuleBuilderMappings([
-        { id: '1', from: 'io', to: 'prima-persona' },
-        { id: '2', from: 'tu', to: 'seconda-persona' },
-        { id: '3', from: 'lui', to: 'terza-persona' },
-        { id: '4', from: 'lei', to: 'terza-persona' },
-        { id: '5', from: 'noi', to: 'prima-persona' },
-        { id: '6', from: 'voi', to: 'seconda-persona' },
-        { id: '7', from: 'loro', to: 'terza-persona' }
-      ]);
+
+    // Load rule-specific mappings based on rule ID and type
+    switch (rule.id) {
+      case 'italian-to-universal-terminology':
+        setRuleBuilderMappings([
+          { id: '1', from: 'io', to: 'prima-persona' },
+          { id: '2', from: 'tu', to: 'seconda-persona' },
+          { id: '3', from: 'lui', to: 'terza-persona' },
+          { id: '4', from: 'lei', to: 'terza-persona' },
+          { id: '5', from: 'noi', to: 'prima-persona' },
+          { id: '6', from: 'voi', to: 'seconda-persona' },
+          { id: '7', from: 'loro', to: 'terza-persona' }
+        ]);
+        setTagsToRemove([]);
+        break;
+
+      case 'cleanup-deprecated-tags':
+        setRuleBuilderMappings([
+          { id: '1', from: 'past-participle', to: 'participio-passato' },
+          { id: '2', from: 'gerund', to: 'gerundio' },
+          { id: '3', from: 'infinitive', to: 'infinito' },
+          { id: '4', from: 'present-participle', to: 'participio-presente' }
+        ]);
+        setTagsToRemove([]);
+        break;
+
+      case 'standardize-auxiliary-tag-format':
+        setRuleBuilderMappings([
+          { id: '1', from: 'auxiliary-essere', to: 'essere-auxiliary' },
+          { id: '2', from: 'auxiliary-avere', to: 'avere-auxiliary' },
+          { id: '3', from: 'auxiliary-stare', to: 'stare-auxiliary' }
+        ]);
+        setTagsToRemove([]);
+        break;
+
+      case 'remove-obsolete-tags':
+        // For removal operations, clear mappings and set up tag removal
+        setRuleBuilderMappings([]);
+        setTagsToRemove(['deprecated-tag-1', 'obsolete-marker']);
+        break;
+
+      case 'add-missing-auxiliaries':
+      case 'add-missing-transitivity-metadata':
+        // These require manual input - clear mappings
+        setRuleBuilderMappings([]);
+        setTagsToRemove([]);
+        break;
+
+      default:
+        // For custom rules, start with empty mappings
+        setRuleBuilderMappings([]);
+        setTagsToRemove([]);
+        break;
     }
   };
 
@@ -961,6 +1003,14 @@ export default function MigrationToolsInterface() {
                             ⚙️ Requires configuration
                           </span>
                         )}
+                        {rule.preventDuplicates && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-purple-100 text-purple-800">
+                            🛡️ Prevents duplicates
+                          </span>
+                        )}
+                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-800">
+                          {getOperationIcon(rule.operationType)} {rule.operationType || 'replace'}
+                        </span>
                       </div>
                     </div>
 
@@ -1058,9 +1108,33 @@ export default function MigrationToolsInterface() {
                   <h4 className="text-sm font-medium text-blue-900 mb-2">What Will Happen</h4>
                   <p className="text-sm text-blue-800">{selectedRule.description}</p>
                   <div className="mt-2 text-sm text-blue-700">
-                    <span className="font-medium">{selectedRule.affectedCount} rows</span> will be updated in 
+                    <span className="font-medium">{selectedRule.affectedCount} rows</span> will be updated in
                     <span className="font-medium"> {selectedRule.estimatedTime}</span>
                   </div>
+                  {previewData?.duplicateAnalysis && (
+                    <div className="mt-3">
+                      {previewData.duplicateAnalysis.wouldCreateDuplicates ? (
+                        <div className="flex items-center p-2 bg-yellow-100 border border-yellow-300 rounded-md">
+                          <span className="text-yellow-600 mr-2">⚠️</span>
+                          <div className="text-sm">
+                            <span className="font-medium text-yellow-800">
+                              Duplicate Prevention Active:
+                            </span>
+                            <span className="text-yellow-700 ml-1">
+                              Would prevent {previewData.duplicateAnalysis.duplicateCount} duplicate tags ({previewData.duplicateAnalysis.affectedTags.join(', ')})
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center p-2 bg-green-100 border border-green-300 rounded-md">
+                          <span className="text-green-600 mr-2">✅</span>
+                          <span className="text-sm text-green-800 font-medium">
+                            No duplicate tags will be created
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {previewData && (
@@ -1170,6 +1244,136 @@ export default function MigrationToolsInterface() {
                   </div>
                 </div>
 
+                {/* NEW: Word-Specific Targeting Section */}
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-gray-900">Word-Specific Targeting</h4>
+                    <button
+                      onClick={() => setShowWordSearch(!showWordSearch)}
+                      className="text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      {showWordSearch ? 'Hide' : 'Show'} Word Selection
+                    </button>
+                  </div>
+
+                  {showWordSearch && (
+                    <div className="space-y-4">
+                      {/* Word Search */}
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={wordSearchTerm}
+                          onChange={(e) => setWordSearchTerm(e.target.value)}
+                          placeholder="Search for words to target..."
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <button
+                          onClick={searchWords}
+                          disabled={isSearchingWords}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {isSearchingWords ? 'Searching...' : 'Search'}
+                        </button>
+                      </div>
+
+                      {/* Word Search Results */}
+                      {wordSearchResults.length > 0 && (
+                        <div className="border rounded-md max-h-48 overflow-y-auto">
+                          <div className="p-2 bg-gray-100 border-b text-sm font-medium">
+                            Search Results ({wordSearchResults.length})
+                          </div>
+                          {wordSearchResults.map(word => (
+                            <div key={word.wordId} className="p-3 border-b hover:bg-gray-50">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-medium">{word.italian}</div>
+                                  <div className="text-sm text-gray-600">
+                                    {word.wordType} • {word.formsCount} forms • {word.translationsCount} translations
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    Tags: {word.tags.slice(0, 3).join(', ')}{word.tags.length > 3 && '...'}
+                                  </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => analyzeWordTags(word)}
+                                    className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
+                                  >
+                                    📊 Analyze
+                                  </button>
+                                  <button
+                                    onClick={() => addWordToTargets(word)}
+                                    className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                                  >
+                                    ➕ Target
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Selected Target Words */}
+                      {selectedWords.length > 0 && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Targeted Words ({selectedWords.length})
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedWords.map(word => (
+                              <span key={word.wordId} className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-sm">
+                                {word.italian}
+                                <button 
+                                  onClick={() => removeWordFromTargets(word.wordId)}
+                                  className="ml-1 text-blue-600 hover:text-blue-800"
+                                >
+                                  ✕
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Word Tag Analysis */}
+                      {wordTagAnalysis && (
+                        <div className="border rounded-md p-3 bg-white">
+                          <h5 className="font-medium mb-2">Tag Analysis: {wordTagAnalysis.italian}</h5>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <div className="font-medium text-gray-700">Dictionary Tags:</div>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {wordTagAnalysis.dictionary.tags.map(tag => (
+                                  <span key={tag} className="px-2 py-1 bg-gray-100 rounded text-xs">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-700">Form Tags Breakdown:</div>
+                              <div className="max-h-24 overflow-y-auto mt-1">
+                                {Object.entries(wordTagAnalysis.forms.tagBreakdown).slice(0, 8).map(([tag, count]) => (
+                                  <div key={tag} className="flex justify-between text-xs">
+                                    <span>{tag}</span>
+                                    <span className="text-gray-500">{count}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-3 text-xs text-gray-600">
+                            Forms: {wordTagAnalysis.forms.totalCount} • 
+                            Translations: {wordTagAnalysis.translations.totalCount} • 
+                            Metadata Keys: {wordTagAnalysis.translations.metadataKeys.join(', ')}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1180,10 +1384,17 @@ export default function MigrationToolsInterface() {
                       onChange={(e) => setSelectedTable(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value="word_forms">word_forms</option>
-                      <option value="word_translations">word_translations</option>
-                      <option value="dictionary">dictionary</option>
+                      {/* Dynamic table options based on selected words */}
+                      <option value="dictionary">dictionary {selectedWords.length > 0 && '(word-level tags)'}</option>
+                      <option value="word_forms">word_forms {selectedWords.length > 0 && '(form-level tags)'}</option>
+                      <option value="word_translations">word_translations {selectedWords.length > 0 && '(translation metadata)'}</option>
+                      <option value="form_translations">form_translations {selectedWords.length > 0 && '(relationship data)'}</option>
                     </select>
+                    {selectedWords.length > 0 && (
+                      <div className="mt-1 text-xs text-green-600">
+                        ✅ Will target {selectedWords.length} specific word(s)
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1194,10 +1405,44 @@ export default function MigrationToolsInterface() {
                       onChange={(e) => setSelectedColumn(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value="tags">tags</option>
-                      <option value="context_metadata">context_metadata</option>
-                      <option value="form_text">form_text</option>
+                      {/* Dynamic column options based on selected table */}
+                      {selectedTable === 'dictionary' && (
+                        <>
+                          <option value="tags">tags (word-level classifications)</option>
+                          <option value="italian">italian (word text)</option>
+                          <option value="word_type">word_type (VERB, NOUN, etc.)</option>
+                        </>
+                      )}
+                      {selectedTable === 'word_forms' && (
+                        <>
+                          <option value="tags">tags (form-level classifications)</option>
+                          <option value="form_text">form_text (conjugated form)</option>
+                          <option value="form_type">form_type (conjugation, plural, etc.)</option>
+                        </>
+                      )}
+                      {selectedTable === 'word_translations' && (
+                        <>
+                          <option value="context_metadata">context_metadata (auxiliary, transitivity, etc.)</option>
+                          <option value="translation">translation (English meaning)</option>
+                          <option value="display_priority">display_priority (ordering)</option>
+                        </>
+                      )}
+                      {selectedTable === 'form_translations' && (
+                        <>
+                          <option value="translation">translation (specific form meaning)</option>
+                          <option value="usage_examples">usage_examples (contextual examples)</option>
+                          <option value="assignment_method">assignment_method (how assigned)</option>
+                        </>
+                      )}
                     </select>
+                    {/* Show column type information */}
+                    <div className="mt-1 text-xs text-gray-500">
+                      {selectedTable === 'dictionary' && selectedColumn === 'tags' && 'Array of strings'}
+                      {selectedTable === 'word_forms' && selectedColumn === 'tags' && 'Array of strings'}
+                      {selectedTable === 'word_translations' && selectedColumn === 'context_metadata' && 'JSON object'}
+                      {selectedColumn === 'translation' && 'Text field'}
+                      {selectedColumn.includes('priority') && 'Integer field'}
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1208,10 +1453,35 @@ export default function MigrationToolsInterface() {
                       onChange={(e) => setOperationType(e.target.value as any)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value="replace">Replace</option>
-                      <option value="add">Add</option>
-                      <option value="remove">Remove</option>
+                      {/* Dynamic operation options based on column type */}
+                      {(selectedColumn === 'tags' || (selectedTable === 'dictionary' && selectedColumn === 'tags') || (selectedTable === 'word_forms' && selectedColumn === 'tags')) && (
+                        <>
+                          <option value="replace">Replace (tag → tag)</option>
+                          <option value="add">Add (append new tags)</option>
+                          <option value="remove">Remove (delete tags)</option>
+                        </>
+                      )}
+                      {selectedColumn === 'context_metadata' && (
+                        <>
+                          <option value="add">Add (merge JSON)</option>
+                          <option value="replace">Replace (key values)</option>
+                          <option value="remove">Remove (delete keys)</option>
+                        </>
+                      )}
+                      {!selectedColumn.includes('tags') && selectedColumn !== 'context_metadata' && (
+                        <>
+                          <option value="replace">Replace</option>
+                          <option value="add">Add</option>
+                        </>
+                      )}
                     </select>
+                    {/* Operation guidance */}
+                    <div className="mt-1 text-xs text-gray-500">
+                      {operationType === 'replace' && selectedColumn === 'tags' && 'Replace old tag with new tag'}
+                      {operationType === 'add' && selectedColumn === 'tags' && 'Add new tag to existing array'}
+                      {operationType === 'remove' && selectedColumn === 'tags' && 'Remove specified tags'}
+                      {operationType === 'add' && selectedColumn === 'context_metadata' && 'Merge new JSON keys'}
+                    </div>
                   </div>
                 </div>
 
@@ -1281,6 +1551,51 @@ export default function MigrationToolsInterface() {
                     </div>
                   </div>
                 )}
+
+                {/* NEW: Rule Impact Preview */}
+                <div className="border rounded-lg p-4 bg-yellow-50 border-yellow-200">
+                  <h4 className="text-sm font-medium text-yellow-900 mb-2">
+                    📊 Rule Impact Preview
+                  </h4>
+                  <div className="text-sm text-yellow-800 space-y-2">
+                    <div>
+                      <span className="font-medium">Target: </span>
+                      {selectedWords.length > 0
+                        ? `${selectedWords.length} specific word(s): ${selectedWords.map(w => w.italian).join(', ')}`
+                        : 'All matching records in database'
+                      }
+                    </div>
+                    <div>
+                      <span className="font-medium">Operation: </span>
+                      {operationType} operations on {selectedTable}.{selectedColumn}
+                    </div>
+                    {ruleBuilderMappings.length > 0 && (
+                      <div>
+                        <span className="font-medium">Mappings: </span>
+                        {ruleBuilderMappings.slice(0, 3).map(m => `${m.from}→${m.to}`).join(', ')}
+                        {ruleBuilderMappings.length > 3 && ` +${ruleBuilderMappings.length - 3} more`}
+                      </div>
+                    )}
+                    {tagsToRemove.length > 0 && (
+                      <div>
+                        <span className="font-medium">Removing: </span>
+                        {tagsToRemove.join(', ')}
+                      </div>
+                    )}
+                    <div className="flex items-center space-x-4 pt-2 border-t border-yellow-300">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                        preventDuplicates
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-orange-100 text-orange-800'
+                      }`}>
+                        {preventDuplicates ? '🛡️ Duplicates prevented' : '⚠️ Duplicates allowed'}
+                      </span>
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                        📋 {getOperationIcon(operationType)} {operationType}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="flex justify-end space-x-3">
                   <button
