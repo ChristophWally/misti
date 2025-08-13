@@ -60,14 +60,21 @@ interface WordTagAnalysis {
     tags: string[];
     tagCounts: Record<string, number>;
   };
+  translations: {
+    totalCount: number;
+    metadataKeys: string[];
+    sampleMetadata?: Record<string, any>[];
+  };
   forms: {
     totalCount: number;
     tagBreakdown: Record<string, number>;
     sampleTags: string[][];
   };
-  translations: {
+  formTranslations: {
     totalCount: number;
-    metadataKeys: string[];
+    coverageAnalysis: {
+      translationsWithForms: number;
+    };
   };
 }
 
@@ -118,6 +125,7 @@ export default function MigrationToolsInterface() {
   const [selectedWords, setSelectedWords] = useState<WordSearchResult[]>([]);
   const [wordTagAnalysis, setWordTagAnalysis] = useState<WordTagAnalysis | null>(null);
   const [isSearchingWords, setIsSearchingWords] = useState(false);
+  const [showGlobalConfirmation, setShowGlobalConfirmation] = useState(false);
   
   // NEW: Dynamic schema state
   const [tableSchemas, setTableSchemas] = useState<Record<string, TableSchema>>({});
@@ -266,6 +274,17 @@ export default function MigrationToolsInterface() {
 
       if (translationsError) throw translationsError;
 
+      const translationIds = (translations || []).map(t => t.id);
+      let formTranslations: any[] = [];
+      if (translationIds.length > 0) {
+        const { data: ftData, error: ftError } = await supabase
+          .from('form_translations')
+          .select('id, word_translation_id')
+          .in('word_translation_id', translationIds);
+        if (ftError) throw ftError;
+        formTranslations = ftData || [];
+      }
+
       const allFormTags = (forms || []).flatMap(f => f.tags || []);
       const tagBreakdown: Record<string, number> = {};
       allFormTags.forEach(tag => {
@@ -279,6 +298,10 @@ export default function MigrationToolsInterface() {
         }
       });
 
+      const translationsWithForms = new Set(
+        formTranslations.map(ft => ft.word_translation_id)
+      );
+
       const analysis: WordTagAnalysis = {
         wordId: word.wordId,
         italian: word.italian,
@@ -289,14 +312,23 @@ export default function MigrationToolsInterface() {
             return acc;
           }, {})
         },
+        translations: {
+          totalCount: translations?.length || 0,
+          metadataKeys: Array.from(metadataKeys),
+          sampleMetadata: (translations || [])
+            .slice(0, 3)
+            .map(t => t.context_metadata)
+        },
         forms: {
           totalCount: forms?.length || 0,
           tagBreakdown,
           sampleTags: (forms || []).slice(0, 5).map(f => f.tags || [])
         },
-        translations: {
-          totalCount: translations?.length || 0,
-          metadataKeys: Array.from(metadataKeys)
+        formTranslations: {
+          totalCount: formTranslations.length,
+          coverageAnalysis: {
+            translationsWithForms: translationsWithForms.size
+          }
         }
       };
 
@@ -689,11 +721,11 @@ export default function MigrationToolsInterface() {
 
   const saveCustomRule = () => {
     if (selectedRule) {
-      setMigrationRules(prev => prev.map(rule => 
-        rule.id === selectedRule.id 
-          ? { 
-              ...rule, 
-              title: ruleTitle, 
+      setMigrationRules(prev => prev.map(rule =>
+        rule.id === selectedRule.id
+          ? {
+              ...rule,
+              title: ruleTitle,
               description: ruleDescription,
               operationType,
               preventDuplicates,
@@ -704,6 +736,14 @@ export default function MigrationToolsInterface() {
     }
     setShowRuleBuilder(false);
     addToDebugLog(`✅ Custom rule saved: ${ruleTitle}`);
+  };
+
+  const handleSaveRule = () => {
+    if (selectedWords.length === 0) {
+      setShowGlobalConfirmation(true);
+    } else {
+      saveCustomRule();
+    }
   };
 
   // NEW: Get available columns for selected table
@@ -1276,55 +1316,99 @@ export default function MigrationToolsInterface() {
                         </button>
                       </div>
 
-                      {/* Word Search Results */}
+                      {/* Word Search Results with Multi-Select */}
                       {wordSearchResults.length > 0 && (
                         <div className="border rounded-md max-h-48 overflow-y-auto">
-                          <div className="p-2 bg-gray-100 border-b text-sm font-medium">
-                            Search Results ({wordSearchResults.length})
+                          <div className="p-2 bg-gray-100 border-b text-sm font-medium flex items-center justify-between">
+                            <span>Search Results ({wordSearchResults.length})</span>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => {
+                                  wordSearchResults.forEach(word => {
+                                    if (!selectedWords.find(w => w.wordId === word.wordId)) {
+                                      addWordToTargets(word);
+                                    }
+                                  });
+                                }}
+                                className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                              >
+                                Select All
+                              </button>
+                              <button
+                                onClick={() => {
+                                  wordSearchResults.forEach(word => {
+                                    removeWordFromTargets(word.wordId);
+                                  });
+                                }}
+                                className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+                              >
+                                Deselect All
+                              </button>
+                            </div>
                           </div>
-                          {wordSearchResults.map(word => (
-                            <div key={word.wordId} className="p-3 border-b hover:bg-gray-50">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="font-medium">{word.italian}</div>
-                                  <div className="text-sm text-gray-600">
-                                    {word.wordType} • {word.formsCount} forms • {word.translationsCount} translations
+                          {wordSearchResults.map(word => {
+                            const isSelected = selectedWords.find(w => w.wordId === word.wordId);
+                            return (
+                              <div key={word.wordId} className={`p-3 border-b hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={!!isSelected}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          addWordToTargets(word);
+                                        } else {
+                                          removeWordFromTargets(word.wordId);
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                    <div>
+                                      <div className="font-medium">{word.italian}</div>
+                                      <div className="text-sm text-gray-600">
+                                        {word.wordType} • {word.formsCount} forms • {word.translationsCount} translations
+                                      </div>
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        Tags: {word.tags.slice(0, 3).join(', ')}{word.tags.length > 3 && '...'}
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    Tags: {word.tags.slice(0, 3).join(', ')}{word.tags.length > 3 && '...'}
-                                  </div>
-                                </div>
-                                <div className="flex space-x-2">
                                   <button
                                     onClick={() => analyzeWordTags(word)}
                                     className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
                                   >
                                     📊 Analyze
                                   </button>
-                                  <button
-                                    onClick={() => addWordToTargets(word)}
-                                    className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-                                  >
-                                    ➕ Target
-                                  </button>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
 
-                      {/* Selected Target Words */}
+                      {/* Selected Target Words with Clear All Option */}
                       {selectedWords.length > 0 && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Targeted Words ({selectedWords.length})
-                          </label>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                              Targeted Words ({selectedWords.length})
+                            </label>
+                            <button
+                              onClick={() => {
+                                setSelectedWords([]);
+                                addToDebugLog('🧹 Cleared all targeted words - rule will apply globally');
+                              }}
+                              className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200"
+                            >
+                              🧹 Clear All (Apply Globally)
+                            </button>
+                          </div>
                           <div className="flex flex-wrap gap-2">
                             {selectedWords.map(word => (
                               <span key={word.wordId} className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-sm">
                                 {word.italian}
-                                <button 
+                                <button
                                   onClick={() => removeWordFromTargets(word.wordId)}
                                   className="ml-1 text-blue-600 hover:text-blue-800"
                                 >
@@ -1333,40 +1417,100 @@ export default function MigrationToolsInterface() {
                               </span>
                             ))}
                           </div>
+                          <div className="mt-1 text-xs text-green-600">
+                            ✅ Rule will only affect these {selectedWords.length} word(s)
+                          </div>
                         </div>
                       )}
 
-                      {/* Word Tag Analysis */}
+                      {selectedWords.length === 0 && (
+                        <div className="p-2 bg-orange-100 border border-orange-300 rounded text-sm">
+                          <span className="text-orange-800 font-medium">⚠️ Global Rule:</span>
+                          <span className="text-orange-700 ml-1">Will apply to ALL matching records in database</span>
+                        </div>
+                      )}
+
+                      {/* Enhanced Word Tag Analysis */}
                       {wordTagAnalysis && (
                         <div className="border rounded-md p-3 bg-white">
-                          <h5 className="font-medium mb-2">Tag Analysis: {wordTagAnalysis.italian}</h5>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <div className="font-medium text-gray-700">Dictionary Tags:</div>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {wordTagAnalysis.dictionary.tags.map(tag => (
-                                  <span key={tag} className="px-2 py-1 bg-gray-100 rounded text-xs">
-                                    {tag}
-                                  </span>
-                                ))}
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="font-medium">Comprehensive Tag Analysis: {wordTagAnalysis.italian}</h5>
+                            <button
+                              onClick={() => setWordTagAnalysis(null)}
+                              className="text-gray-400 hover:text-gray-600"
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4 text-sm">
+                            {/* Dictionary Level */}
+                            <div className="border rounded p-2 bg-blue-50">
+                              <div className="font-medium text-blue-900 mb-2">📚 Dictionary Level ({wordTagAnalysis.dictionary.tags.length} tags)</div>
+                              <div className="max-h-20 overflow-y-auto">
+                                <div className="flex flex-wrap gap-1">
+                                  {wordTagAnalysis.dictionary.tags.map(tag => (
+                                    <span key={tag} className="px-2 py-1 bg-blue-100 rounded text-xs border">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
                               </div>
                             </div>
-                            <div>
-                              <div className="font-medium text-gray-700">Form Tags Breakdown:</div>
-                              <div className="max-h-24 overflow-y-auto mt-1">
-                                {Object.entries(wordTagAnalysis.forms.tagBreakdown).slice(0, 8).map(([tag, count]) => (
-                                  <div key={tag} className="flex justify-between text-xs">
-                                    <span>{tag}</span>
-                                    <span className="text-gray-500">{count}</span>
+
+                            {/* Translations Level */}
+                            <div className="border rounded p-2 bg-green-50">
+                              <div className="font-medium text-green-900 mb-2">🌍 Translations Level ({wordTagAnalysis.translations.totalCount} translations)</div>
+                              <div className="max-h-32 overflow-y-auto space-y-2">
+                                {wordTagAnalysis.translations.sampleMetadata?.map((metadata, idx) => (
+                                  <div key={idx} className="p-2 bg-green-100 rounded text-xs">
+                                    <div className="font-medium">Translation {idx + 1}:</div>
+                                    <div className="text-gray-700">
+                                      {metadata ? Object.entries(metadata).map(([key, value]) => (
+                                        <span key={key} className="mr-2">
+                                          <span className="font-medium">{key}:</span> {String(value)}
+                                        </span>
+                                      )) : 'No metadata'}
+                                    </div>
                                   </div>
                                 ))}
+                                {wordTagAnalysis.translations.metadataKeys.length > 0 && (
+                                  <div className="text-xs text-gray-600">
+                                    Available metadata keys: {wordTagAnalysis.translations.metadataKeys.join(', ')}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Word Forms Level */}
+                            <div className="border rounded p-2 bg-yellow-50">
+                              <div className="font-medium text-yellow-900 mb-2">📝 Word Forms Level ({wordTagAnalysis.forms.totalCount} forms)</div>
+                              <div className="max-h-32 overflow-y-auto">
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  {Object.entries(wordTagAnalysis.forms.tagBreakdown).map(([tag, count]) => (
+                                    <div key={tag} className="flex justify-between p-1 bg-yellow-100 rounded">
+                                      <span className="truncate">{tag}</span>
+                                      <span className="text-yellow-700 font-medium">{count}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Form Translations Level */}
+                            <div className="border rounded p-2 bg-purple-50">
+                              <div className="font-medium text-purple-900 mb-2">🔗 Form Translations Level ({wordTagAnalysis.formTranslations.totalCount} relationships)</div>
+                              <div className="max-h-20 overflow-y-auto text-xs">
+                                <div className="p-2 bg-purple-100 rounded">
+                                  <div>Coverage: {wordTagAnalysis.formTranslations.coverageAnalysis.translationsWithForms} translations have form assignments</div>
+                                  <div className="text-purple-700">Total form-translation relationships: {wordTagAnalysis.formTranslations.totalCount}</div>
+                                </div>
                               </div>
                             </div>
                           </div>
-                          <div className="mt-3 text-xs text-gray-600">
-                            Forms: {wordTagAnalysis.forms.totalCount} • 
-                            Translations: {wordTagAnalysis.translations.totalCount} • 
-                            Metadata Keys: {wordTagAnalysis.translations.metadataKeys.join(', ')}
+
+                          <div className="mt-3 text-xs text-gray-600 border-t pt-2">
+                            💡 Select the table/column above to target specific levels for tag operations
                           </div>
                         </div>
                       )}
@@ -1485,48 +1629,89 @@ export default function MigrationToolsInterface() {
                   </div>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Value Mappings
-                    </label>
-                    <button
-                      onClick={addMapping}
-                      className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      + Add Mapping
-                    </button>
+                {/* Simplified Operations Based on Type */}
+                {operationType === 'replace' && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Tag Replacements (From → To)
+                      </label>
+                      <button
+                        onClick={addMapping}
+                        className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        + Add Replacement
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {ruleBuilderMappings.map((mapping) => (
+                        <div key={mapping.id} className="flex items-center space-x-3">
+                          <input
+                            type="text"
+                            value={mapping.from}
+                            onChange={(e) => updateMapping(mapping.id, 'from', e.target.value)}
+                            placeholder="Current tag to replace..."
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <span className="text-gray-400">→</span>
+                          <input
+                            type="text"
+                            value={mapping.to}
+                            onChange={(e) => updateMapping(mapping.id, 'to', e.target.value)}
+                            placeholder="New tag value..."
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          />
+                          <button
+                            onClick={() => removeMapping(mapping.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="space-y-3">
-                    {ruleBuilderMappings.map((mapping) => (
-                      <div key={mapping.id} className="flex items-center space-x-3">
-                        <input
-                          type="text"
-                          value={mapping.from}
-                          onChange={(e) => updateMapping(mapping.id, 'from', e.target.value)}
-                          placeholder="From value..."
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <span className="text-gray-400">→</span>
-                        <input
-                          type="text"
-                          value={mapping.to}
-                          onChange={(e) => updateMapping(mapping.id, 'to', e.target.value)}
-                          placeholder="To value..."
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        <button
-                          onClick={() => removeMapping(mapping.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+                )}
+
+                {operationType === 'add' && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Tags to Add
+                      </label>
+                      <button
+                        onClick={() => {
+                          const newTag = prompt('Enter tag to add:');
+                          if (newTag && newTag.trim()) {
+                            setRuleBuilderMappings(prev => [...prev, {
+                              id: Date.now().toString(),
+                              from: '',
+                              to: newTag.trim()
+                            }]);
+                          }
+                        }}
+                        className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        + Add Tag
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {ruleBuilderMappings.map((mapping) => (
+                        <span key={mapping.id} className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-sm">
+                          {mapping.to}
+                          <button
+                            onClick={() => removeMapping(mapping.id)}
+                            className="ml-1 text-green-600 hover:text-green-800"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {operationType === 'remove' && (
                   <div>
@@ -1538,21 +1723,51 @@ export default function MigrationToolsInterface() {
                         onClick={addTagToRemove}
                         className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                       >
-                        + Add Tag
+                        + Add Tag to Remove
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {tagsToRemove.map(tag => (
-                        <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs">
+                        <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-800 text-sm">
                           {tag}
-                          <button onClick={() => removeTagFromRemovalList(tag)} className="ml-1">✕</button>
+                          <button onClick={() => removeTagFromRemovalList(tag)} className="ml-1 text-red-600 hover:text-red-800">✕</button>
                         </span>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* NEW: Rule Impact Preview */}
+                {/* Duplicate Prevention */}
+                <div className="border rounded-lg p-3 bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Duplicate Prevention
+                    </label>
+                    <button
+                      onClick={() => setPreventDuplicates(!preventDuplicates)}
+                      className={`px-3 py-1 rounded text-sm font-medium ${
+                        preventDuplicates
+                          ? 'bg-green-100 text-green-800 border border-green-300'
+                          : 'bg-gray-100 text-gray-800 border border-gray-300'
+                      }`}
+                    >
+                      {preventDuplicates ? '🛡️ Enabled' : '⚠️ Disabled'}
+                    </button>
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {preventDuplicates ? (
+                      <div className="text-green-700">
+                        ✅ <strong>Duplicate prevention ON:</strong> If a tag already exists, it won't be added again. For replace operations, only replaces if the target tag doesn't already exist.
+                      </div>
+                    ) : (
+                      <div className="text-orange-700">
+                        ⚠️ <strong>Duplicate prevention OFF:</strong> Tags may be duplicated. Use this only if you specifically need duplicate tags (rare).
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Rule Impact Preview */}
                 <div className="border rounded-lg p-4 bg-yellow-50 border-yellow-200">
                   <h4 className="text-sm font-medium text-yellow-900 mb-2">
                     📊 Rule Impact Preview
@@ -1605,12 +1820,65 @@ export default function MigrationToolsInterface() {
                     Cancel
                   </button>
                   <button
-                    onClick={saveCustomRule}
+                    onClick={handleSaveRule}
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                   >
                     Save Rule
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Rule Confirmation Modal */}
+      {showGlobalConfirmation && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-center mb-4">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100">
+                  <span className="text-orange-600 text-2xl">⚠️</span>
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Global Rule Confirmation
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  You haven't selected any specific words to target. This rule will apply to
+                  <span className="font-medium text-orange-600"> ALL matching records</span> in the database.
+                </p>
+                <div className="bg-orange-50 border border-orange-200 rounded p-3 mb-4">
+                  <div className="text-sm text-orange-800">
+                    <div className="font-medium mb-1">This will affect:</div>
+                    <div>• Table: {selectedTable}</div>
+                    <div>• Column: {selectedColumn}</div>
+                    <div>• Operation: {operationType}</div>
+                    <div>• Potentially hundreds or thousands of records</div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  Are you sure you want to create a global rule?
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowGlobalConfirmation(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowGlobalConfirmation(false);
+                    saveCustomRule();
+                  }}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700"
+                >
+                  Yes, Create Global Rule
+                </button>
               </div>
             </div>
           </div>
