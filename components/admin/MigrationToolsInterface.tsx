@@ -133,10 +133,6 @@ export default function MigrationToolsInterface() {
   const [isLoadingGlobalTags, setIsLoadingGlobalTags] = useState(false);
   const [formSelectionMode, setFormSelectionMode] = useState('all-forms');
   const [translationSelectionMode, setTranslationSelectionMode] = useState('all-translations');
-  const [wordFormDetails, setWordFormDetails] = useState<Record<string, any[]> | null>(null);
-  const [translationDetails, setTranslationDetails] = useState<Record<string, any[]> | null>(null);
-  const [isLoadingWordForms, setIsLoadingWordForms] = useState(false);
-  const [isLoadingTranslations, setIsLoadingTranslations] = useState(false);
   const [selectedFormIds, setSelectedFormIds] = useState<string[]>([]);
   const [selectedTranslationIds, setSelectedTranslationIds] = useState<string[]>([]);
   const [textContentOptions, setTextContentOptions] = useState<any[] | null>(null);
@@ -147,6 +143,9 @@ export default function MigrationToolsInterface() {
   const [wordSpecificTags, setWordSpecificTags] = useState<Record<string, any> | null>(null);
   const [wordFormsData, setWordFormsData] = useState<Record<string, any[]> | null>(null);
   const [wordTranslationsData, setWordTranslationsData] = useState<Record<string, any[]> | null>(null);
+  const [isLoadingWordSpecificTags, setIsLoadingWordSpecificTags] = useState(false);
+  const [isLoadingWordForms, setIsLoadingWordForms] = useState(false);
+  const [isLoadingWordTranslations, setIsLoadingWordTranslations] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showFinalDeleteConfirmation, setShowFinalDeleteConfirmation] = useState(false);
@@ -155,8 +154,9 @@ export default function MigrationToolsInterface() {
   const resetTagLoadingStates = () => {
     setCurrentLocationTags(null);
     setGlobalTags(null);
-    setWordFormDetails(null);
-    setTranslationDetails(null);
+    setWordSpecificTags(null);
+    setWordFormsData(null);
+    setWordTranslationsData(null);
     setTextContentOptions(null);
     setSelectedTagsForMigration([]);
     setSelectedFormIds([]);
@@ -899,7 +899,7 @@ export default function MigrationToolsInterface() {
 
   const loadGlobalTags = async () => {
     setIsLoadingGlobalTags(true);
-    addToDebugLog(`🌍 Loading all tags from ${selectedTable}.${selectedColumn}...`);
+    addToDebugLog(`🌍 Loading ALL tags from ${selectedTable}.${selectedColumn}...`);
 
     try {
       let allTags: string[] = [];
@@ -908,6 +908,7 @@ export default function MigrationToolsInterface() {
         const { data, error } = await supabase
           .from(selectedTable)
           .select('tags');
+
         if (error) throw error;
 
         const tagSet = new Set<string>();
@@ -915,10 +916,12 @@ export default function MigrationToolsInterface() {
           (record.tags || []).forEach((tag: string) => tagSet.add(tag));
         });
         allTags = Array.from(tagSet).sort();
+
       } else if (selectedColumn === 'context_metadata') {
         const { data, error } = await supabase
           .from(selectedTable)
           .select('context_metadata');
+
         if (error) throw error;
 
         const keySet = new Set<string>();
@@ -931,59 +934,13 @@ export default function MigrationToolsInterface() {
       }
 
       setGlobalTags(allTags);
-      addToDebugLog(`✅ Loaded ${allTags.length} unique tags from database`);
+      addToDebugLog(`✅ Loaded ${allTags.length} unique tags from entire ${selectedTable}.${selectedColumn}`);
+
     } catch (error: any) {
       addToDebugLog(`❌ Failed to load global tags: ${error.message}`);
+      console.error('Error loading global tags:', error);
     } finally {
       setIsLoadingGlobalTags(false);
-    }
-  };
-
-  const loadWordFormDetails = async () => {
-    if (selectedWords.length === 0) return;
-    setIsLoadingWordForms(true);
-    addToDebugLog('📝 Loading word form details...');
-
-    try {
-      const details: Record<string, any[]> = {};
-      for (const word of selectedWords) {
-        const { data, error } = await supabase
-          .from('word_forms')
-          .select('id, form_text, form_type, tags')
-          .eq('word_id', word.wordId);
-        if (error) throw error;
-        details[word.wordId] = data || [];
-      }
-      setWordFormDetails(details);
-      addToDebugLog('✅ Loaded word form details');
-    } catch (error: any) {
-      addToDebugLog(`❌ Failed to load word form details: ${error.message}`);
-    } finally {
-      setIsLoadingWordForms(false);
-    }
-  };
-
-  const loadTranslationDetails = async () => {
-    if (selectedWords.length === 0) return;
-    setIsLoadingTranslations(true);
-    addToDebugLog('🌍 Loading translation details...');
-
-    try {
-      const details: Record<string, any[]> = {};
-      for (const word of selectedWords) {
-        const { data, error } = await supabase
-          .from('word_translations')
-          .select('id, translation, display_priority, context_metadata')
-          .eq('word_id', word.wordId);
-        if (error) throw error;
-        details[word.wordId] = data || [];
-      }
-      setTranslationDetails(details);
-      addToDebugLog('✅ Loaded translation details');
-    } catch (error: any) {
-      addToDebugLog(`❌ Failed to load translation details: ${error.message}`);
-    } finally {
-      setIsLoadingTranslations(false);
     }
   };
 
@@ -1039,15 +996,175 @@ export default function MigrationToolsInterface() {
 
   // NEW: Loading functions and delete execution placeholders
   const loadWordSpecificTags = async () => {
-    // Implementation for loading word-specific tags only
+    if (selectedWords.length === 0) {
+      addToDebugLog('⚠️ No words selected for tag loading');
+      return;
+    }
+
+    setIsLoadingWordSpecificTags(true);
+    addToDebugLog(`📋 Loading word-specific tags for ${selectedWords.length} words...`);
+
+    try {
+      const tagData: Record<string, any> = {};
+
+      for (const word of selectedWords) {
+        addToDebugLog(`🔍 Loading tags for: ${word.italian}`);
+
+        if (selectedTable === 'dictionary') {
+          const { data: dictData, error: dictError } = await supabase
+            .from('dictionary')
+            .select('tags')
+            .eq('id', word.wordId)
+            .single();
+
+          if (dictError) throw dictError;
+
+          tagData[word.wordId] = {
+            dictionaryTags: dictData?.tags || []
+          };
+
+        } else if (selectedTable === 'word_forms') {
+          const { data: formsData, error: formsError } = await supabase
+            .from('word_forms')
+            .select('tags')
+            .eq('word_id', word.wordId);
+
+          if (formsError) throw formsError;
+
+          const tagCounts: Record<string, number> = {};
+          (formsData || []).forEach((form: any) => {
+            (form.tags || []).forEach((tag: string) => {
+              tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+            });
+          });
+
+          tagData[word.wordId] = {
+            formTags: tagCounts
+          };
+
+        } else if (selectedTable === 'word_translations') {
+          const { data: transData, error: transError } = await supabase
+            .from('word_translations')
+            .select('context_metadata')
+            .eq('word_id', word.wordId);
+
+          if (transError) throw transError;
+
+          const metadataKeys = new Set<string>();
+          (transData || []).forEach((translation: any) => {
+            if (translation.context_metadata) {
+              Object.keys(translation.context_metadata).forEach(key => metadataKeys.add(key));
+            }
+          });
+
+          tagData[word.wordId] = {
+            metadataKeys: Array.from(metadataKeys)
+          };
+        }
+
+        addToDebugLog(`✅ Loaded tags for ${word.italian}: ${JSON.stringify(tagData[word.wordId])}`);
+      }
+
+      setWordSpecificTags(tagData);
+      addToDebugLog(`✅ Successfully loaded word-specific tags for ${selectedWords.length} words`);
+
+    } catch (error: any) {
+      addToDebugLog(`❌ Error loading word-specific tags: ${error.message}`);
+      console.error('Error loading word-specific tags:', error);
+    } finally {
+      setIsLoadingWordSpecificTags(false);
+    }
   };
 
   const loadWordFormsData = async () => {
-    // Implementation for loading word forms with tags
+    if (selectedWords.length === 0) {
+      addToDebugLog('⚠️ No words selected for forms loading');
+      return;
+    }
+
+    setIsLoadingWordForms(true);
+    addToDebugLog(`📝 Loading word forms for ${selectedWords.length} words...`);
+
+    try {
+      const formsData: Record<string, any[]> = {};
+
+      for (const word of selectedWords) {
+        addToDebugLog(`🔍 Loading forms for: ${word.italian}`);
+
+        const { data: forms, error } = await supabase
+          .from('word_forms')
+          .select(`
+          id,
+          form_text,
+          form_type,
+          tags,
+          created_at
+        `)
+          .eq('word_id', word.wordId)
+          .order('form_type', { ascending: true })
+          .order('form_text', { ascending: true });
+
+        if (error) throw error;
+
+        formsData[word.wordId] = forms || [];
+        addToDebugLog(`✅ Loaded ${forms?.length || 0} forms for ${word.italian}`);
+      }
+
+      setWordFormsData(formsData);
+      addToDebugLog(`✅ Successfully loaded word forms for all selected words`);
+
+    } catch (error: any) {
+      addToDebugLog(`❌ Error loading word forms: ${error.message}`);
+      console.error('Error loading word forms:', error);
+    } finally {
+      setIsLoadingWordForms(false);
+    }
   };
 
   const loadWordTranslationsData = async () => {
-    // Implementation for loading word translations with metadata
+    if (selectedWords.length === 0) {
+      addToDebugLog('⚠️ No words selected for translations loading');
+      return;
+    }
+
+    setIsLoadingWordTranslations(true);
+    addToDebugLog(`🌍 Loading translations for ${selectedWords.length} words...`);
+
+    try {
+      const translationsData: Record<string, any[]> = {};
+
+      for (const word of selectedWords) {
+        addToDebugLog(`🔍 Loading translations for: ${word.italian}`);
+
+        const { data: translations, error } = await supabase
+          .from('word_translations')
+          .select(`
+          id,
+          translation,
+          context_metadata,
+          display_priority,
+          usage_notes,
+          created_at
+        `)
+          .eq('word_id', word.wordId)
+          .order('display_priority', { ascending: true })
+          .order('translation', { ascending: true });
+
+        if (error) throw error;
+
+        translationsData[word.wordId] = translations || [];
+        addToDebugLog(`✅ Loaded ${translations?.length || 0} translations for ${word.italian}`);
+      }
+
+      setWordTranslationsData(translationsData);
+      addToDebugLog(`✅ Successfully loaded translations for all selected words`);
+
+    } catch (error: any) {
+      addToDebugLog(`❌ Error loading translations: ${error.message}`);
+      console.error('Error loading translations:', error);
+    } finally {
+      setIsLoadingWordTranslations(false);
+    }
   };
 
   const executeCascadingDelete = async () => {
@@ -2008,13 +2125,23 @@ export default function MigrationToolsInterface() {
                       🎯 Tags from selected word(s): {selectedWords.map(w => w.italian).join(', ')}
                     </div>
 
-                    {!wordSpecificTags && (
+                    {!wordSpecificTags && !isLoadingWordSpecificTags && (
                       <button
                         onClick={loadWordSpecificTags}
                         className="w-full py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
                       >
                         📋 Load Tags from Selected Words
                       </button>
+                    )}
+
+                    {isLoadingWordSpecificTags && (
+                      <div className="flex items-center justify-center p-2">
+                        <svg className="animate-spin h-4 w-4 text-blue-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-xs text-blue-700">Loading tags...</span>
+                      </div>
                     )}
 
                     {wordSpecificTags && (
@@ -2087,13 +2214,23 @@ export default function MigrationToolsInterface() {
                       📝 Word Forms for: {selectedWords.map(w => w.italian).join(', ')}
                     </div>
 
-                    {!wordFormsData && (
+                    {!wordFormsData && !isLoadingWordForms && (
                       <button
                         onClick={loadWordFormsData}
                         className="w-full py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700"
                       >
                         📝 Load Word Forms
                       </button>
+                    )}
+
+                    {isLoadingWordForms && (
+                      <div className="flex items-center justify-center p-2">
+                        <svg className="animate-spin h-4 w-4 text-yellow-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-xs text-yellow-700">Loading forms...</span>
+                      </div>
                     )}
 
                     {wordFormsData && (
@@ -2156,13 +2293,23 @@ export default function MigrationToolsInterface() {
                       🌍 Translations for: {selectedWords.map(w => w.italian).join(', ')}
                     </div>
 
-                    {!wordTranslationsData && (
+                    {!wordTranslationsData && !isLoadingWordTranslations && (
                       <button
                         onClick={loadWordTranslationsData}
                         className="w-full py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
                       >
                         🌍 Load Translations
                       </button>
+                    )}
+
+                    {isLoadingWordTranslations && (
+                      <div className="flex items-center justify-center p-2">
+                        <svg className="animate-spin h-4 w-4 text-green-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-xs text-green-700">Loading translations...</span>
+                      </div>
                     )}
 
                     {wordTranslationsData && (
