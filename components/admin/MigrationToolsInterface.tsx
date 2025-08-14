@@ -129,6 +129,33 @@ export default function MigrationToolsInterface() {
   const [currentLocationTags, setCurrentLocationTags] = useState<Record<string, any> | null>(null);
   const [isLoadingCurrentTags, setIsLoadingCurrentTags] = useState(false);
   const [selectedTagsForMigration, setSelectedTagsForMigration] = useState<string[]>([]);
+  const [globalTags, setGlobalTags] = useState<string[] | null>(null);
+  const [isLoadingGlobalTags, setIsLoadingGlobalTags] = useState(false);
+  const [formSelectionMode, setFormSelectionMode] = useState('all-forms');
+  const [translationSelectionMode, setTranslationSelectionMode] = useState('all-translations');
+  const [wordFormDetails, setWordFormDetails] = useState<Record<string, any[]> | null>(null);
+  const [translationDetails, setTranslationDetails] = useState<Record<string, any[]> | null>(null);
+  const [isLoadingWordForms, setIsLoadingWordForms] = useState(false);
+  const [isLoadingTranslations, setIsLoadingTranslations] = useState(false);
+  const [selectedFormIds, setSelectedFormIds] = useState<string[]>([]);
+  const [selectedTranslationIds, setSelectedTranslationIds] = useState<string[]>([]);
+  const [textContentOptions, setTextContentOptions] = useState<any[] | null>(null);
+  const [isLoadingTextContent, setIsLoadingTextContent] = useState(false);
+  const [selectedTextValues, setSelectedTextValues] = useState<string[]>([]);
+
+  const resetTagLoadingStates = () => {
+    setCurrentLocationTags(null);
+    setGlobalTags(null);
+    setWordFormDetails(null);
+    setTranslationDetails(null);
+    setTextContentOptions(null);
+    setSelectedTagsForMigration([]);
+    setSelectedFormIds([]);
+    setSelectedTranslationIds([]);
+    setSelectedTextValues([]);
+    setFormSelectionMode('all-forms');
+    setTranslationSelectionMode('all-translations');
+  };
 
   const selectAllTagsForWord = (wordId: string, type: 'forms' | 'dictionary' | 'translations') => {
     const wordTags = currentLocationTags?.[wordId];
@@ -185,16 +212,12 @@ export default function MigrationToolsInterface() {
   }, []);
 
   useEffect(() => {
-    if (selectedWords.length > 0) {
-      // Auto-load when selection changes
-      setCurrentLocationTags(null);
-    }
+    resetTagLoadingStates();
+    addToDebugLog('🔄 Reset tag cache due to word selection change');
   }, [selectedWords]);
 
   useEffect(() => {
-    // Clear current tags when switching tables/columns to prevent stale data
-    setCurrentLocationTags(null);
-    setSelectedTagsForMigration([]);
+    resetTagLoadingStates();
     addToDebugLog(`🔄 Cleared tag cache due to table/column change: ${selectedTable}.${selectedColumn}`);
   }, [selectedTable, selectedColumn]);
 
@@ -668,6 +691,7 @@ export default function MigrationToolsInterface() {
   };
 
   const handleCustomizeRule = (rule: VisualRule) => {
+    resetTagLoadingStates();
     setSelectedRule(rule);
     setShowRuleBuilder(true);
     setRuleTitle(rule.title);
@@ -861,6 +885,146 @@ export default function MigrationToolsInterface() {
       console.error('Error loading current tags:', error);
     } finally {
       setIsLoadingCurrentTags(false);
+    }
+  };
+
+  const loadGlobalTags = async () => {
+    setIsLoadingGlobalTags(true);
+    addToDebugLog(`🌍 Loading all tags from ${selectedTable}.${selectedColumn}...`);
+
+    try {
+      let allTags: string[] = [];
+
+      if (selectedColumn === 'tags') {
+        const { data, error } = await supabase
+          .from(selectedTable)
+          .select('tags');
+        if (error) throw error;
+
+        const tagSet = new Set<string>();
+        (data || []).forEach((record: any) => {
+          (record.tags || []).forEach((tag: string) => tagSet.add(tag));
+        });
+        allTags = Array.from(tagSet).sort();
+      } else if (selectedColumn === 'context_metadata') {
+        const { data, error } = await supabase
+          .from(selectedTable)
+          .select('context_metadata');
+        if (error) throw error;
+
+        const keySet = new Set<string>();
+        (data || []).forEach((record: any) => {
+          if (record.context_metadata) {
+            Object.keys(record.context_metadata).forEach(key => keySet.add(key));
+          }
+        });
+        allTags = Array.from(keySet).sort();
+      }
+
+      setGlobalTags(allTags);
+      addToDebugLog(`✅ Loaded ${allTags.length} unique tags from database`);
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load global tags: ${error.message}`);
+    } finally {
+      setIsLoadingGlobalTags(false);
+    }
+  };
+
+  const loadWordFormDetails = async () => {
+    if (selectedWords.length === 0) return;
+    setIsLoadingWordForms(true);
+    addToDebugLog('📝 Loading word form details...');
+
+    try {
+      const details: Record<string, any[]> = {};
+      for (const word of selectedWords) {
+        const { data, error } = await supabase
+          .from('word_forms')
+          .select('id, form_text, form_type, tags')
+          .eq('word_id', word.wordId);
+        if (error) throw error;
+        details[word.wordId] = data || [];
+      }
+      setWordFormDetails(details);
+      addToDebugLog('✅ Loaded word form details');
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load word form details: ${error.message}`);
+    } finally {
+      setIsLoadingWordForms(false);
+    }
+  };
+
+  const loadTranslationDetails = async () => {
+    if (selectedWords.length === 0) return;
+    setIsLoadingTranslations(true);
+    addToDebugLog('🌍 Loading translation details...');
+
+    try {
+      const details: Record<string, any[]> = {};
+      for (const word of selectedWords) {
+        const { data, error } = await supabase
+          .from('word_translations')
+          .select('id, translation, display_priority, context_metadata')
+          .eq('word_id', word.wordId);
+        if (error) throw error;
+        details[word.wordId] = data || [];
+      }
+      setTranslationDetails(details);
+      addToDebugLog('✅ Loaded translation details');
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load translation details: ${error.message}`);
+    } finally {
+      setIsLoadingTranslations(false);
+    }
+  };
+
+  const loadTextContent = async () => {
+    setIsLoadingTextContent(true);
+    addToDebugLog(`📝 Loading text content from ${selectedTable}.${selectedColumn}...`);
+
+    try {
+      const filter = selectedWords.length > 0 ? { in: selectedWords.map(w => w.wordId) } : null;
+      let data: any[] | null = null;
+
+      if (selectedTable === 'word_forms' && selectedColumn === 'form_text') {
+        let query = supabase.from('word_forms').select('form_text, form_type, word_id');
+        if (filter) query = query.in('word_id', filter.in);
+        const { data: d, error } = await query;
+        if (error) throw error;
+        data = d || [];
+      } else if (selectedTable === 'word_translations' && selectedColumn === 'translation') {
+        let query = supabase.from('word_translations').select('translation, display_priority, word_id');
+        if (filter) query = query.in('word_id', filter.in);
+        const { data: d, error } = await query;
+        if (error) throw error;
+        data = d || [];
+      } else if (selectedTable === 'dictionary' && selectedColumn === 'italian') {
+        let query = supabase.from('dictionary').select('italian, id');
+        if (filter) query = query.in('id', filter.in);
+        const { data: d, error } = await query;
+        if (error) throw error;
+        data = d || [];
+      }
+
+      const optionsMap: Record<string, { value: string; context: string; count: number }> = {};
+      (data || []).forEach((record: any) => {
+        const value = record[selectedColumn];
+        if (!value) return;
+        if (!optionsMap[value]) {
+          let context = '';
+          if (record.form_type) context = record.form_type;
+          if (record.display_priority !== undefined) context = `Priority ${record.display_priority}`;
+          optionsMap[value] = { value, context, count: 0 };
+        }
+        optionsMap[value].count += 1;
+      });
+
+      setTextContentOptions(Object.values(optionsMap));
+      addToDebugLog('✅ Loaded text content options');
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load text content: ${error.message}`);
+    } finally {
+      setIsLoadingTextContent(false);
     }
   };
 
@@ -1769,6 +1933,73 @@ export default function MigrationToolsInterface() {
                   </div>
                 </div>
 
+                {/* Global Tag Loading when no words selected */}
+                {selectedWords.length === 0 && (selectedTable === 'dictionary' || selectedTable === 'word_forms' || selectedTable === 'word_translations') && (
+                  <div className="border rounded-lg p-4 bg-orange-50 border-orange-200">
+                    <h4 className="text-sm font-medium text-orange-900 mb-3">🌍 Global Tag Selection - All Database Records</h4>
+                    <div className="text-xs text-orange-700 mb-3">Select tags from ALL records in {selectedTable}.{selectedColumn} across the entire database</div>
+                    {!globalTags && !isLoadingGlobalTags && (
+                      <button onClick={loadGlobalTags} className="w-full py-2 px-4 bg-orange-600 text-white rounded hover:bg-orange-700">
+                        🌍 Load All Available Tags from Database
+                      </button>
+                    )}
+                    {isLoadingGlobalTags && (
+                      <div className="flex items-center justify-center p-4">
+                        <svg className="animate-spin h-5 w-5 text-orange-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-sm text-orange-700">Loading all database tags...</span>
+                      </div>
+                    )}
+                    {globalTags && !isLoadingGlobalTags && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-orange-900">Available Tags ({globalTags.length})</span>
+                          <div className="flex space-x-2">
+                            <button onClick={() => setSelectedTagsForMigration(globalTags)} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Select All</button>
+                            <button onClick={() => setSelectedTagsForMigration([])} className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200">Deselect All</button>
+                          </div>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto border rounded p-2 bg-white">
+                          <div className="grid grid-cols-2 gap-1">
+                            {globalTags.map(tag => (
+                              <label key={tag} className="flex items-center space-x-2 p-1 hover:bg-orange-50 rounded cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedTagsForMigration.includes(tag)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedTagsForMigration(prev => [...prev, tag]);
+                                    } else {
+                                      setSelectedTagsForMigration(prev => prev.filter(t => t !== tag));
+                                    }
+                                  }}
+                                  className="w-3 h-3 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                                />
+                                <span className="text-xs truncate">{tag}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        {selectedTagsForMigration.length > 0 && (
+                          <div className="border-t border-orange-300 pt-2">
+                            <div className="text-sm font-medium text-orange-900 mb-1">Selected for {operationType} ({selectedTagsForMigration.length}):</div>
+                            <div className="flex flex-wrap gap-1">
+                              {selectedTagsForMigration.map(tag => (
+                                <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full bg-orange-100 text-orange-800 text-xs">
+                                  {tag}
+                                  <button onClick={() => setSelectedTagsForMigration(prev => prev.filter(t => t !== tag))} className="ml-1 text-orange-600 hover:text-orange-800">✕</button>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* NEW: Interactive Tag Selection from Current Location */}
                 {selectedWords.length > 0 && (selectedTable === 'dictionary' || selectedTable === 'word_forms' || selectedTable === 'word_translations') && (
                   <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
@@ -1976,6 +2207,231 @@ export default function MigrationToolsInterface() {
                                 </span>
                               ))}
                             </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Granular Word Form Selection */}
+                {selectedWords.length > 0 && selectedTable === 'word_forms' && (
+                  <div className="border rounded-lg p-4 bg-yellow-50 border-yellow-200">
+                    <h4 className="text-sm font-medium text-yellow-900 mb-3">📝 Granular Word Form Selection</h4>
+                    <div className="flex items-center space-x-4 mb-3">
+                      <label className="flex items-center">
+                        <input type="radio" name="formSelectionMode" value="all-forms" checked={formSelectionMode === 'all-forms'} onChange={(e) => setFormSelectionMode(e.target.value)} className="mr-2" />
+                        <span className="text-sm">All forms (bulk update)</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input type="radio" name="formSelectionMode" value="specific-forms" checked={formSelectionMode === 'specific-forms'} onChange={(e) => setFormSelectionMode(e.target.value)} className="mr-2" />
+                        <span className="text-sm">Specific forms (individual records)</span>
+                      </label>
+                    </div>
+                    {!wordFormDetails && !isLoadingWordForms && (
+                      <button onClick={loadWordFormDetails} className="w-full py-2 px-4 bg-yellow-600 text-white rounded hover:bg-yellow-700">
+                        📝 Load Word Form Details
+                      </button>
+                    )}
+                    {isLoadingWordForms && (
+                      <div className="flex items-center justify-center p-4">
+                        <svg className="animate-spin h-5 w-5 text-yellow-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-sm text-yellow-700">Loading word form details...</span>
+                      </div>
+                    )}
+                    {wordFormDetails && !isLoadingWordForms && (
+                      <div className="space-y-3">
+                        {formSelectionMode === 'all-forms' && (
+                          <div className="text-sm text-yellow-800 p-2 bg-yellow-100 rounded">
+                            💡 All forms mode: Selected tags will be updated across ALL forms for the selected words
+                          </div>
+                        )}
+                        {formSelectionMode === 'specific-forms' && (
+                          <div>
+                            <div className="text-sm font-medium text-yellow-900 mb-2">Select Specific Word Forms:</div>
+                            <div className="max-h-48 overflow-y-auto space-y-2">
+                              {selectedWords.map(word => (
+                                <div key={word.wordId} className="border rounded p-2 bg-white">
+                                  <div className="font-medium text-gray-900 mb-2">{word.italian}</div>
+                                  {wordFormDetails[word.wordId]?.map(form => (
+                                    <label key={form.id} className="flex items-start space-x-2 p-2 hover:bg-yellow-50 rounded cursor-pointer border-b last:border-b-0">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedFormIds.includes(form.id)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedFormIds(prev => [...prev, form.id]);
+                                          } else {
+                                            setSelectedFormIds(prev => prev.filter(id => id !== form.id));
+                                          }
+                                        }}
+                                        className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500 mt-0.5"
+                                      />
+                                      <div className="flex-1">
+                                        <div className="font-medium text-sm">{form.form_text}</div>
+                                        <div className="text-xs text-gray-600">{form.form_type}</div>
+                                        {selectedColumn === 'tags' && (
+                                          <div className="flex flex-wrap gap-1 mt-1">
+                                            {form.tags?.map((tag: string) => (
+                                              <span key={tag} className="px-1 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs">{tag}</span>
+                                            ))}
+                                          </div>
+                                        )}
+                                        {selectedColumn === 'form_text' && (
+                                          <div className="text-xs text-blue-600 mt-1">Current value: "{form.form_text}"</div>
+                                        )}
+                                      </div>
+                                    </label>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                            {selectedFormIds.length > 0 && (
+                              <div className="mt-2 p-2 bg-yellow-100 rounded text-sm">
+                                ✅ {selectedFormIds.length} specific word form(s) selected for {operationType}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Granular Translation Selection */}
+                {selectedWords.length > 0 && selectedTable === 'word_translations' && (
+                  <div className="border rounded-lg p-4 bg-green-50 border-green-200">
+                    <h4 className="text-sm font-medium text-green-900 mb-3">🌍 Granular Translation Selection</h4>
+                    <div className="flex items-center space-x-4 mb-3">
+                      <label className="flex items-center">
+                        <input type="radio" name="translationSelectionMode" value="all-translations" checked={translationSelectionMode === 'all-translations'} onChange={(e) => setTranslationSelectionMode(e.target.value)} className="mr-2" />
+                        <span className="text-sm">All translations (bulk update)</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input type="radio" name="translationSelectionMode" value="specific-translations" checked={translationSelectionMode === 'specific-translations'} onChange={(e) => setTranslationSelectionMode(e.target.value)} className="mr-2" />
+                        <span className="text-sm">Specific translations (individual records)</span>
+                      </label>
+                    </div>
+                    {!translationDetails && !isLoadingTranslations && (
+                      <button onClick={loadTranslationDetails} className="w-full py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700">
+                        🌍 Load Translation Details
+                      </button>
+                    )}
+                    {isLoadingTranslations && (
+                      <div className="flex items-center justify-center p-4">
+                        <svg className="animate-spin h-5 w-5 text-green-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-sm text-green-700">Loading translation details...</span>
+                      </div>
+                    )}
+                    {translationDetails && !isLoadingTranslations && (
+                      <div className="space-y-3">
+                        {translationSelectionMode === 'specific-translations' && (
+                          <div>
+                            <div className="text-sm font-medium text-green-900 mb-2">Select Specific Translations:</div>
+                            <div className="max-h-48 overflow-y-auto space-y-2">
+                              {selectedWords.map(word => (
+                                <div key={word.wordId} className="border rounded p-2 bg-white">
+                                  <div className="font-medium text-gray-900 mb-2">{word.italian}</div>
+                                  {translationDetails[word.wordId]?.map(tr => (
+                                    <label key={tr.id} className="flex items-start space-x-2 p-2 hover:bg-green-50 rounded cursor-pointer border-b last:border-b-0">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedTranslationIds.includes(tr.id)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedTranslationIds(prev => [...prev, tr.id]);
+                                          } else {
+                                            setSelectedTranslationIds(prev => prev.filter(id => id !== tr.id));
+                                          }
+                                        }}
+                                        className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-0.5"
+                                      />
+                                      <div className="flex-1">
+                                        <div className="font-medium text-sm">"{tr.translation}"</div>
+                                        <div className="text-xs text-gray-600">Priority: {tr.display_priority}</div>
+                                        {selectedColumn === 'context_metadata' && tr.context_metadata && (
+                                          <div className="text-xs text-green-700 mt-1">
+                                            {Object.entries(tr.context_metadata).map(([key, value]) => (
+                                              <span key={key} className="mr-2">
+                                                <span className="font-medium">{key}:</span> {String(value)}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                        {selectedColumn === 'translation' && (
+                                          <div className="text-xs text-blue-600 mt-1">Current value: "{tr.translation}"</div>
+                                        )}
+                                      </div>
+                                    </label>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                            {selectedTranslationIds.length > 0 && (
+                              <div className="mt-2 p-2 bg-green-100 rounded text-sm">
+                                ✅ {selectedTranslationIds.length} specific translation(s) selected for {operationType}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Text Content Selection for form_text, translation, italian columns */}
+                {(selectedColumn === 'form_text' || selectedColumn === 'translation' || selectedColumn === 'italian') && (
+                  <div className="border rounded-lg p-4 bg-purple-50 border-purple-200">
+                    <h4 className="text-sm font-medium text-purple-900 mb-3">📝 Text Content Selection</h4>
+                    <div className="text-xs text-purple-700 mb-3">Select specific text values to replace (not tags). Only replacement operations available.</div>
+                    {!textContentOptions && !isLoadingTextContent && (
+                      <button onClick={loadTextContent} className="w-full py-2 px-4 bg-purple-600 text-white rounded hover:bg-purple-700">
+                        📝 Load Current Text Values
+                      </button>
+                    )}
+                    {isLoadingTextContent && (
+                      <div className="flex items-center justify-center p-4">
+                        <svg className="animate-spin h-5 w-5 text-purple-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-sm text-purple-700">Loading text content...</span>
+                      </div>
+                    )}
+                    {textContentOptions && !isLoadingTextContent && (
+                      <div className="space-y-3">
+                        <div className="text-sm font-medium text-purple-900 mb-2">Available Text Values ({textContentOptions.length}):</div>
+                        <div className="max-h-48 overflow-y-auto border rounded p-2 bg-white">
+                          {textContentOptions.map((option, index) => (
+                            <label key={index} className="flex items-start space-x-2 p-2 hover:bg-purple-50 rounded cursor-pointer border-b last:border-b-0">
+                              <input
+                                type="checkbox"
+                                checked={selectedTextValues.includes(option.value)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedTextValues(prev => [...prev, option.value]);
+                                  } else {
+                                    setSelectedTextValues(prev => prev.filter(v => v !== option.value));
+                                  }
+                                }}
+                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 mt-0.5"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">"{option.value}"</div>
+                                <div className="text-xs text-gray-600">{option.context} • Used {option.count} time(s)</div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                        {selectedTextValues.length > 0 && (
+                          <div className="mt-2 p-2 bg-purple-100 rounded text-sm">
+                            ✅ {selectedTextValues.length} text value(s) selected for replacement
                           </div>
                         )}
                       </div>
