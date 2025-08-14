@@ -150,6 +150,10 @@ export default function MigrationToolsInterface() {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showFinalDeleteConfirmation, setShowFinalDeleteConfirmation] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{type: 'word' | 'translation', id: string, name: string} | null>(null);
+  const [selectedFormTags, setSelectedFormTags] = useState<Record<string, number> | null>(null);
+  const [isLoadingSelectedFormTags, setIsLoadingSelectedFormTags] = useState(false);
+  const [selectedTranslationMetadata, setSelectedTranslationMetadata] = useState<Record<string, any> | null>(null);
+  const [isLoadingSelectedTranslationMetadata, setIsLoadingSelectedTranslationMetadata] = useState(false);
 
   const resetTagLoadingStates = () => {
     setCurrentLocationTags(null);
@@ -164,6 +168,8 @@ export default function MigrationToolsInterface() {
     setSelectedTextValues([]);
     setFormSelectionMode('all-forms');
     setTranslationSelectionMode('all-translations');
+    setSelectedFormTags(null);
+    setSelectedTranslationMetadata(null);
   };
 
   const selectAllTagsForWord = (wordId: string, type: 'forms' | 'dictionary' | 'translations') => {
@@ -242,6 +248,14 @@ export default function MigrationToolsInterface() {
       setRuleBuilderMappings(newMappings);
     }
   }, [selectedTagsForMigration, operationType]);
+
+  useEffect(() => {
+    setSelectedFormTags(null);
+  }, [selectedFormIds]);
+
+  useEffect(() => {
+    setSelectedTranslationMetadata(null);
+  }, [selectedTranslationIds]);
 
   // NEW: Load dynamic table schemas
   const loadTableSchemas = async () => {
@@ -1164,6 +1178,80 @@ export default function MigrationToolsInterface() {
       console.error('Error loading translations:', error);
     } finally {
       setIsLoadingWordTranslations(false);
+    }
+  };
+
+  const loadSelectedFormTags = async () => {
+    if (selectedFormIds.length === 0) {
+      addToDebugLog('⚠️ No forms selected');
+      return;
+    }
+
+    setIsLoadingSelectedFormTags(true);
+    addToDebugLog(`📋 Loading tags from ${selectedFormIds.length} selected forms...`);
+
+    try {
+      const { data: forms, error } = await supabase
+        .from('word_forms')
+        .select('tags')
+        .in('id', selectedFormIds);
+
+      if (error) throw error;
+
+      const tagCounts: Record<string, number> = {};
+      (forms || []).forEach((form: any) => {
+        (form.tags || []).forEach((tag: string) => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+        });
+      });
+
+      setSelectedFormTags(tagCounts);
+      addToDebugLog(`✅ Loaded ${Object.keys(tagCounts).length} unique tags from selected forms`);
+    } catch (error: any) {
+      addToDebugLog(`❌ Error loading selected form tags: ${error.message}`);
+    } finally {
+      setIsLoadingSelectedFormTags(false);
+    }
+  };
+
+  const loadSelectedTranslationMetadata = async () => {
+    if (selectedTranslationIds.length === 0) {
+      addToDebugLog('⚠️ No translations selected');
+      return;
+    }
+
+    setIsLoadingSelectedTranslationMetadata(true);
+    addToDebugLog(`📋 Loading metadata from ${selectedTranslationIds.length} selected translations...`);
+
+    try {
+      const { data: translations, error } = await supabase
+        .from('word_translations')
+        .select('context_metadata')
+        .in('id', selectedTranslationIds);
+
+      if (error) throw error;
+
+      const metadataCounts: Record<string, any> = {};
+      (translations || []).forEach((translation: any) => {
+        if (translation.context_metadata) {
+          Object.entries(translation.context_metadata).forEach(([key, value]) => {
+            if (!metadataCounts[key]) {
+              metadataCounts[key] = { count: 0, sampleValues: [] as string[] };
+            }
+            metadataCounts[key].count++;
+            if (metadataCounts[key].sampleValues.length < 3) {
+              metadataCounts[key].sampleValues.push(String(value));
+            }
+          });
+        }
+      });
+
+      setSelectedTranslationMetadata(metadataCounts);
+      addToDebugLog(`✅ Loaded ${Object.keys(metadataCounts).length} unique metadata keys from selected translations`);
+    } catch (error: any) {
+      addToDebugLog(`❌ Error loading selected translation metadata: ${error.message}`);
+    } finally {
+      setIsLoadingSelectedTranslationMetadata(false);
     }
   };
 
@@ -2211,7 +2299,7 @@ export default function MigrationToolsInterface() {
                 {selectedWords.length > 0 && selectedTable === 'word_forms' && (
                   <div className="border rounded p-2 bg-yellow-50">
                     <div className="text-xs text-yellow-700 mb-2">
-                      📝 Word Forms for: {selectedWords.map(w => w.italian).join(', ')}
+                      📝 Select Word Forms for: {selectedWords.map(w => w.italian).join(', ')}
                     </div>
 
                     {!wordFormsData && !isLoadingWordForms && (
@@ -2237,7 +2325,29 @@ export default function MigrationToolsInterface() {
                       <div className="space-y-2">
                         {selectedWords.map(word => (
                           <div key={word.wordId} className="border rounded p-2 bg-white">
-                            <div className="text-xs font-medium text-gray-900 mb-2">{word.italian} Forms ({wordFormsData[word.wordId]?.length || 0})</div>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-xs font-medium text-gray-900">{word.italian} Forms ({wordFormsData[word.wordId]?.length || 0})</div>
+                              <div className="flex space-x-1">
+                                <button
+                                  onClick={() => {
+                                    const wordFormIds = wordFormsData[word.wordId]?.map((f: any) => f.id) || [];
+                                    setSelectedFormIds(prev => Array.from(new Set([...prev, ...wordFormIds])));
+                                  }}
+                                  className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
+                                >
+                                  All
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const wordFormIds = wordFormsData[word.wordId]?.map((f: any) => f.id) || [];
+                                    setSelectedFormIds(prev => prev.filter(id => !wordFormIds.includes(id)));
+                                  }}
+                                  className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+                                >
+                                  None
+                                </button>
+                              </div>
+                            </div>
 
                             <div className="max-h-32 overflow-y-auto space-y-1">
                               {wordFormsData[word.wordId]?.map(form => (
@@ -2257,30 +2367,100 @@ export default function MigrationToolsInterface() {
                                   <div className="flex-1 min-w-0">
                                     <div className="text-xs font-medium truncate">{form.form_text}</div>
                                     <div className="text-xs text-gray-500">{form.form_type}</div>
-                                    {selectedColumn === 'tags' && form.tags && (
-                                      <div className="flex flex-wrap gap-1 mt-1">
-                                        {form.tags.slice(0, 3).map(tag => (
-                                          <span key={tag} className="px-1 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs">
-                                            {tag}
-                                          </span>
-                                        ))}
-                                        {form.tags.length > 3 && (
-                                          <span className="text-xs text-gray-500">+{form.tags.length - 3}</span>
-                                        )}
-                                      </div>
-                                    )}
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {(form.tags || []).slice(0, 3).map((tag: string) => (
+                                        <span key={tag} className="px-1 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs">
+                                          {tag}
+                                        </span>
+                                      ))}
+                                      {(form.tags || []).length > 3 && (
+                                        <span className="text-xs text-gray-500">+{(form.tags || []).length - 3}</span>
+                                      )}
+                                    </div>
                                   </div>
                                 </label>
                               ))}
                             </div>
+                          </div>
+                        ))}
 
-                            {selectedFormIds.length > 0 && (
-                              <div className="mt-2 text-xs text-yellow-800">
-                                ✅ {selectedFormIds.length} form(s) selected for {operationType}
+                        {selectedFormIds.length > 0 && selectedColumn === 'tags' && (
+                          <div className="border-t pt-2 mt-2">
+                            <div className="text-xs font-medium text-yellow-900 mb-2">
+                              🏷️ Tags from Selected Forms ({selectedFormIds.length} forms selected)
+                            </div>
+
+                            {!selectedFormTags && !isLoadingSelectedFormTags && (
+                              <button
+                                onClick={loadSelectedFormTags}
+                                className="w-full py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700"
+                              >
+                                📋 Load Tags from Selected Forms
+                              </button>
+                            )}
+
+                            {isLoadingSelectedFormTags && (
+                              <div className="flex items-center justify-center p-2">
+                                <svg className="animate-spin h-4 w-4 text-yellow-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span className="text-xs text-yellow-700">Loading tags from selected forms...</span>
+                              </div>
+                            )}
+
+                            {selectedFormTags && (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-yellow-800">
+                                    Available tags ({Object.keys(selectedFormTags).length})
+                                  </span>
+                                  <div className="flex space-x-1">
+                                    <button
+                                      onClick={() => setSelectedTagsForMigration(Object.keys(selectedFormTags))}
+                                      className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
+                                    >
+                                      Select All
+                                    </button>
+                                    <button
+                                      onClick={() => setSelectedTagsForMigration([])}
+                                      className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+                                    >
+                                      Clear
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="max-h-24 overflow-y-auto grid grid-cols-2 gap-1">
+                                  {Object.entries(selectedFormTags).map(([tag, count]) => (
+                                    <label key={tag} className="flex items-center space-x-1 cursor-pointer p-1 hover:bg-yellow-50 rounded">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedTagsForMigration.includes(tag)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedTagsForMigration(prev => [...prev, tag]);
+                                          } else {
+                                            setSelectedTagsForMigration(prev => prev.filter(t => t !== tag));
+                                          }
+                                        }}
+                                        className="w-3 h-3"
+                                      />
+                                      <span className="text-xs truncate flex-1">{tag}</span>
+                                      <span className="text-xs text-yellow-700">({count})</span>
+                                    </label>
+                                  ))}
+                                </div>
+
+                                {selectedTagsForMigration.length > 0 && (
+                                  <div className="text-xs text-yellow-800 bg-yellow-100 p-2 rounded">
+                                    ✅ {selectedTagsForMigration.length} tag(s) selected for {operationType}: {selectedTagsForMigration.join(', ')}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                   </div>
@@ -2290,7 +2470,7 @@ export default function MigrationToolsInterface() {
                 {selectedWords.length > 0 && selectedTable === 'word_translations' && (
                   <div className="border rounded p-2 bg-green-50">
                     <div className="text-xs text-green-700 mb-2">
-                      🌍 Translations for: {selectedWords.map(w => w.italian).join(', ')}
+                      🌍 Select Translations for: {selectedWords.map(w => w.italian).join(', ')}
                     </div>
 
                     {!wordTranslationsData && !isLoadingWordTranslations && (
@@ -2316,7 +2496,29 @@ export default function MigrationToolsInterface() {
                       <div className="space-y-2">
                         {selectedWords.map(word => (
                           <div key={word.wordId} className="border rounded p-2 bg-white">
-                            <div className="text-xs font-medium text-gray-900 mb-2">{word.italian} Translations ({wordTranslationsData[word.wordId]?.length || 0})</div>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-xs font-medium text-gray-900">{word.italian} Translations ({wordTranslationsData[word.wordId]?.length || 0})</div>
+                              <div className="flex space-x-1">
+                                <button
+                                  onClick={() => {
+                                    const translationIds = wordTranslationsData[word.wordId]?.map((t: any) => t.id) || [];
+                                    setSelectedTranslationIds(prev => Array.from(new Set([...prev, ...translationIds])));
+                                  }}
+                                  className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
+                                >
+                                  All
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const translationIds = wordTranslationsData[word.wordId]?.map((t: any) => t.id) || [];
+                                    setSelectedTranslationIds(prev => prev.filter(id => !translationIds.includes(id)));
+                                  }}
+                                  className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+                                >
+                                  None
+                                </button>
+                              </div>
+                            </div>
 
                             <div className="max-h-32 overflow-y-auto space-y-1">
                               {wordTranslationsData[word.wordId]?.map(translation => (
@@ -2336,27 +2538,112 @@ export default function MigrationToolsInterface() {
                                   <div className="flex-1 min-w-0">
                                     <div className="text-xs font-medium">"{translation.translation}"</div>
                                     <div className="text-xs text-gray-500">Priority: {translation.display_priority}</div>
-                                    {selectedColumn === 'context_metadata' && translation.context_metadata && (
+                                    {translation.context_metadata && (
                                       <div className="text-xs text-green-700 mt-1">
                                         {Object.entries(translation.context_metadata).slice(0, 2).map(([key, value]) => (
                                           <span key={key} className="mr-2">
                                             <span className="font-medium">{key}:</span> {String(value)}
                                           </span>
                                         ))}
+                                        {Object.keys(translation.context_metadata).length > 2 && (
+                                          <span className="text-gray-500">+{Object.keys(translation.context_metadata).length - 2} more</span>
+                                        )}
                                       </div>
                                     )}
                                   </div>
                                 </label>
                               ))}
                             </div>
+                          </div>
+                        ))}
 
-                            {selectedTranslationIds.length > 0 && (
-                              <div className="mt-2 text-xs text-green-800">
-                                ✅ {selectedTranslationIds.length} translation(s) selected for {operationType}
+                        {selectedTranslationIds.length > 0 && selectedColumn === 'context_metadata' && (
+                          <div className="border-t pt-2 mt-2">
+                            <div className="text-xs font-medium text-green-900 mb-2">
+                              📋 Metadata from Selected Translations ({selectedTranslationIds.length} translations selected)
+                            </div>
+
+                            {!selectedTranslationMetadata && !isLoadingSelectedTranslationMetadata && (
+                              <button
+                                onClick={loadSelectedTranslationMetadata}
+                                className="w-full py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                              >
+                                📋 Load Metadata from Selected Translations
+                              </button>
+                            )}
+
+                            {isLoadingSelectedTranslationMetadata && (
+                              <div className="flex items-center justify-center p-2">
+                                <svg className="animate-spin h-4 w-4 text-green-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span className="text-xs text-green-700">Loading metadata from selected translations...</span>
+                              </div>
+                            )}
+
+                            {selectedTranslationMetadata && (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-green-800">
+                                    Available metadata keys ({Object.keys(selectedTranslationMetadata).length})
+                                  </span>
+                                  <div className="flex space-x-1">
+                                    <button
+                                      onClick={() => setSelectedTagsForMigration(Object.keys(selectedTranslationMetadata))}
+                                      className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
+                                    >
+                                      Select All
+                                    </button>
+                                    <button
+                                      onClick={() => setSelectedTagsForMigration([])}
+                                      className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+                                    >
+                                      Clear
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="max-h-24 overflow-y-auto grid grid-cols-2 gap-1">
+                                  {Object.entries(selectedTranslationMetadata).map(([key, info]) => (
+                                    <label key={key} className="flex items-center space-x-1 cursor-pointer p-1 hover:bg-green-50 rounded">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedTagsForMigration.includes(key)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedTagsForMigration(prev => [...prev, key]);
+                                          } else {
+                                            setSelectedTagsForMigration(prev => prev.filter(t => t !== key));
+                                          }
+                                        }}
+                                        className="w-3 h-3"
+                                      />
+                                      <span className="text-xs truncate flex-1">{key}</span>
+                                      <span className="text-xs text-green-700">({info.count})</span>
+                                    </label>
+                                  ))}
+                                </div>
+
+                                {selectedTagsForMigration.length > 0 && (
+                                  <div className="space-y-2">
+                                    <div className="text-xs text-green-800 bg-green-100 p-2 rounded">
+                                      ✅ {selectedTagsForMigration.length} metadata key(s) selected for {operationType}: {selectedTagsForMigration.join(', ')}
+                                    </div>
+                                    <div className="text-xs text-green-700 bg-green-50 p-2 rounded max-h-16 overflow-y-auto">
+                                      <div className="font-medium mb-1">Sample values:</div>
+                                      {selectedTagsForMigration.slice(0, 3).map(key => (
+                                        <div key={key}>
+                                          <span className="font-medium">{key}:</span> {selectedTranslationMetadata[key].sampleValues?.slice(0, 2).join(', ') || 'No samples'}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                   </div>
