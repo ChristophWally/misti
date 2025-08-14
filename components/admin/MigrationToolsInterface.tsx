@@ -1961,10 +1961,10 @@ export default function MigrationToolsInterface() {
                             <button onClick={() => setSelectedTagsForMigration([])} className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200">Deselect All</button>
                           </div>
                         </div>
-                        <div className="max-h-48 overflow-y-auto border rounded p-2 bg-white">
-                          <div className="grid grid-cols-2 gap-1">
+                        <div className="max-h-48 sm:max-h-32 overflow-y-auto border rounded p-2 bg-white">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                             {globalTags.map(tag => (
-                              <label key={tag} className="flex items-center space-x-2 p-1 hover:bg-orange-50 rounded cursor-pointer">
+                              <label key={tag} className="flex items-center space-x-2 p-2 sm:p-1 hover:bg-orange-50 rounded cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={selectedTagsForMigration.includes(tag)}
@@ -1975,9 +1975,9 @@ export default function MigrationToolsInterface() {
                                       setSelectedTagsForMigration(prev => prev.filter(t => t !== tag));
                                     }
                                   }}
-                                  className="w-3 h-3 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                                  className="w-4 h-4 sm:w-3 sm:h-3 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
                                 />
-                                <span className="text-xs truncate">{tag}</span>
+                                <span className="text-sm sm:text-xs truncate flex-1">{tag}</span>
                               </label>
                             ))}
                           </div>
