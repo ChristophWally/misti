@@ -1304,94 +1304,147 @@ export default function MigrationToolsInterface() {
               </button>
             </div>
 
-            {/* Migration Rules Grid */}
-            <div className="grid gap-6">
+            {/* Much More Compact Status Cards */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="bg-white p-2 rounded shadow">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-red-100 rounded flex items-center justify-center mr-2">
+                    <span className="text-red-600 text-xs">!</span>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Critical</div>
+                    <div className="text-sm font-medium">27</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-2 rounded shadow">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-yellow-100 rounded flex items-center justify-center mr-2">
+                    <span className="text-yellow-600 text-xs">⚠</span>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Forms</div>
+                    <div className="text-sm font-medium">581</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-2 rounded shadow">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center mr-2">
+                    <span className="text-orange-600 text-xs">◐</span>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Missing</div>
+                    <div className="text-sm font-medium">25</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-2 rounded shadow">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-green-100 rounded flex items-center justify-center mr-2">
+                    <span className="text-green-600 text-xs">✓</span>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Complete</div>
+                    <div className="text-sm font-medium">7/7</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Much More Compact Mobile Rule Cards */}
+            <div className="space-y-3">
               {migrationRules.map((rule) => (
-                <div key={rule.id} className={`border rounded-lg p-6 ${getImpactColor(rule.impact)}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <span className="text-2xl mr-3">{getCategoryIcon(rule.category)}</span>
-                        <div>
-                          <h4 className="text-lg font-medium text-gray-900 flex items-center">
-                            {rule.title}
-                            <span className="ml-2 text-lg">{getStatusIcon(rule.status)}</span>
-                          </h4>
-                          <p className="text-sm text-gray-600 mt-1">{rule.description}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-500">Impact:</span>
-                          <span className="ml-1 font-medium capitalize">{rule.impact}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Affected:</span>
-                          <span className="ml-1 font-medium">{rule.affectedCount} rows</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Time:</span>
-                          <span className="ml-1 font-medium">{rule.estimatedTime}</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center space-x-2 text-xs">
-                        {rule.canRollback && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800">
-                            🔄 Rollback available
-                          </span>
-                        )}
-                        {rule.autoExecutable && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                            ⚡ Auto-executable
-                          </span>
-                        )}
-                        {rule.requiresInput && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
-                            ⚙️ Requires configuration
-                          </span>
-                        )}
-                        {rule.preventDuplicates && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-purple-100 text-purple-800">
-                            🛡️ Prevents duplicates
-                          </span>
-                        )}
-                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-800">
-                          {getOperationIcon(rule.operationType)} {rule.operationType || 'replace'}
-                        </span>
+                <div key={rule.id} className={`border rounded-lg p-3 ${getImpactColor(rule.impact)}`}>
+                  {/* Compact Header */}
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center min-w-0 flex-1">
+                      <span className="text-lg mr-2 flex-shrink-0">{getCategoryIcon(rule.category)}</span>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 flex items-center truncate">
+                          {rule.title}
+                          <span className="ml-1 text-sm flex-shrink-0">{getStatusIcon(rule.status)}</span>
+                        </h4>
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">{rule.description}</p>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="ml-6 flex flex-col space-y-2">
-                      <button
-                        onClick={() => handlePreviewRule(rule)}
-                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        📊 Preview
-                      </button>
-                      <button
-                        onClick={() => handleCustomizeRule(rule)}
-                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        ⚙️ Customize
-                      </button>
-                      <button
-                        onClick={() => handleExecuteRule(rule)}
-                        disabled={rule.status === 'executing' || rule.status === 'completed'}
-                        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                          rule.status === 'completed' 
-                            ? 'bg-green-100 text-green-800 cursor-not-allowed'
-                            : rule.status === 'executing'
-                            ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        {rule.status === 'completed' ? '✅ Done' : 
-                         rule.status === 'executing' ? '⏳ Running' : 
-                         '▶️ Execute'}
-                      </button>
+                  {/* Compact Stats */}
+                  <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+                    <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                      <div className="font-medium capitalize">{rule.impact}</div>
+                      <div className="text-gray-500">Impact</div>
                     </div>
+                    <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                      <div className="font-medium">{rule.affectedCount}</div>
+                      <div className="text-gray-500">Rows</div>
+                    </div>
+                    <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                      <div className="font-medium">{rule.estimatedTime}</div>
+                      <div className="text-gray-500">Time</div>
+                    </div>
+                  </div>
+
+                  {/* Compact Status Badges */}
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {rule.canRollback && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                        🔄
+                      </span>
+                    )}
+                    {rule.autoExecutable && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                        ⚡
+                      </span>
+                    )}
+                    {rule.requiresInput && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800">
+                        ⚙️
+                      </span>
+                    )}
+                    {rule.preventDuplicates && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-800">
+                        🛡️
+                      </span>
+                    )}
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-800">
+                      {getOperationIcon(rule.operationType)} {rule.operationType || 'replace'}
+                    </span>
+                  </div>
+
+                  {/* Compact Action Buttons */}
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      onClick={() => handlePreviewRule(rule)}
+                      className="text-xs py-2 px-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      📊 Preview
+                    </button>
+                    <button
+                      onClick={() => handleCustomizeRule(rule)}
+                      className="text-xs py-2 px-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      ⚙️ Edit
+                    </button>
+                    <button
+                      onClick={() => handleExecuteRule(rule)}
+                      disabled={rule.status === 'executing' || rule.status === 'completed'}
+                      className={`text-xs py-2 px-2 rounded font-medium ${
+                        rule.status === 'completed'
+                          ? 'bg-green-100 text-green-800 cursor-not-allowed'
+                          : rule.status === 'executing'
+                          ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {rule.status === 'completed' ? '✅' :
+                       rule.status === 'executing' ? '⏳' :
+                       '▶️'}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1545,1103 +1598,286 @@ export default function MigrationToolsInterface() {
         </div>
       )}
 
-      {/* Rule Builder Modal */}
+      {/* Much More Compact Mobile Rule Builder */}
       {showRuleBuilder && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-5xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {selectedRule ? 'Customize Rule' : 'Create Custom Rule'}
+          <div className="min-h-screen p-2 flex items-start justify-center">
+            <div className="bg-white rounded-lg w-full max-w-lg shadow-xl mt-4 mb-4">
+              {/* Compact Header */}
+              <div className="flex items-center justify-between p-3 border-b">
+                <h3 className="text-base font-medium text-gray-900 truncate">
+                  {selectedRule ? 'Edit Rule' : 'New Rule'}
                 </h3>
                 <button
                   onClick={() => setShowRuleBuilder(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="p-1 text-gray-400 hover:text-gray-600"
                 >
-                  <span className="sr-only">Close</span>
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Rule Title
-                    </label>
-                    <input
-                      type="text"
-                      value={ruleTitle}
-                      onChange={(e) => setRuleTitle(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter rule title..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
-                    </label>
-                    <input
-                      type="text"
-                      value={ruleDescription}
-                      onChange={(e) => setRuleDescription(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Describe what this rule does..."
-                    />
-                  </div>
+              <div className="p-3 space-y-3 max-h-[80vh] overflow-y-auto">
+                {/* Compact Title/Description */}
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={ruleTitle}
+                    onChange={(e) => setRuleTitle(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Rule title..."
+                  />
+                  <textarea
+                    value={ruleDescription}
+                    onChange={(e) => setRuleDescription(e.target.value)}
+                    rows={2}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Description..."
+                  />
                 </div>
 
-                {/* NEW: Word-Specific Targeting Section */}
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-gray-900">Word-Specific Targeting</h4>
-                    <button
-                      onClick={() => setShowWordSearch(!showWordSearch)}
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      {showWordSearch ? 'Hide' : 'Show'} Word Selection
-                    </button>
-                  </div>
+                {/* Compact Table/Column/Operation */}
+                <div className="space-y-2">
+                  <select
+                    value={selectedTable}
+                    onChange={(e) => setSelectedTable(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="dictionary">📚 Dictionary</option>
+                    <option value="word_forms">📝 Word Forms</option>
+                    <option value="word_translations">🌍 Translations</option>
+                  </select>
+
+                  <select
+                    value={selectedColumn}
+                    onChange={(e) => setSelectedColumn(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    {selectedTable === 'dictionary' && (
+                      <>
+                        <option value="tags">🏷️ Tags</option>
+                        <option value="italian">🇮🇹 Italian Text</option>
+                      </>
+                    )}
+                    {selectedTable === 'word_forms' && (
+                      <>
+                        <option value="tags">🏷️ Tags</option>
+                        <option value="form_text">📝 Form Text</option>
+                      </>
+                    )}
+                    {selectedTable === 'word_translations' && (
+                      <>
+                        <option value="context_metadata">📋 Metadata</option>
+                        <option value="translation">🌍 Translation</option>
+                      </>
+                    )}
+                  </select>
+
+                  <select
+                    value={operationType}
+                    onChange={(e) => setOperationType(e.target.value as any)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="replace">🔄 Replace</option>
+                    <option value="add">➕ Add</option>
+                    <option value="remove">🗑️ Remove</option>
+                  </select>
+                </div>
+
+                {/* Word Targeting - Collapsible */}
+                <div className="border rounded p-2 bg-gray-50">
+                  <button
+                    onClick={() => setShowWordSearch(!showWordSearch)}
+                    className="w-full flex items-center justify-between text-sm font-medium text-gray-700"
+                  >
+                    <span>🎯 Target Words ({selectedWords.length})</span>
+                    <span className="text-xs">{showWordSearch ? '▼' : '▶️'}</span>
+                  </button>
 
                   {showWordSearch && (
-                    <div className="space-y-4">
-                      {/* Word Search */}
-                      <div className="flex space-x-2">
+                    <div className="mt-2 space-y-2">
+                      <div className="flex space-x-1">
                         <input
                           type="text"
                           value={wordSearchTerm}
                           onChange={(e) => setWordSearchTerm(e.target.value)}
-                          placeholder="Search for words to target..."
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Search words..."
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                         <button
                           onClick={searchWords}
                           disabled={isSearchingWords}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                          className="px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
                         >
-                          {isSearchingWords ? 'Searching...' : 'Search'}
+                          🔍
                         </button>
                       </div>
 
-                      {/* Word Search Results with Multi-Select */}
+                      {selectedWords.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {selectedWords.map(word => (
+                            <span key={word.wordId} className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-xs">
+                              {word.italian}
+                              <button
+                                onClick={() => removeWordFromTargets(word.wordId)}
+                                className="ml-1 text-blue-600 hover:text-blue-800"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       {wordSearchResults.length > 0 && (
-                        <div className="border rounded-md max-h-48 overflow-y-auto">
-                          <div className="p-2 bg-gray-100 border-b text-sm font-medium flex items-center justify-between">
-                            <span>Search Results ({wordSearchResults.length})</span>
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => {
-                                  wordSearchResults.forEach(word => {
-                                    if (!selectedWords.find(w => w.wordId === word.wordId)) {
-                                      addWordToTargets(word);
-                                    }
-                                  });
-                                }}
-                                className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-                              >
-                                Select All
-                              </button>
-                              <button
-                                onClick={() => {
-                                  wordSearchResults.forEach(word => {
-                                    removeWordFromTargets(word.wordId);
-                                  });
-                                }}
-                                className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
-                              >
-                                Deselect All
-                              </button>
-                            </div>
-                          </div>
+                        <div className="max-h-32 overflow-y-auto border rounded bg-white">
                           {wordSearchResults.map(word => {
                             const isSelected = selectedWords.find(w => w.wordId === word.wordId);
                             return (
-                              <div key={word.wordId} className={`p-3 border-b hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}`}>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-3">
-                                    <input
-                                      type="checkbox"
-                                      checked={!!isSelected}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          addWordToTargets(word);
-                                        } else {
-                                          removeWordFromTargets(word.wordId);
-                                        }
-                                      }}
-                                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                    />
-                                    <div>
-                                      <div className="font-medium">{word.italian}</div>
-                                      <div className="text-sm text-gray-600">
-                                        {word.wordType} • {word.formsCount} forms • {word.translationsCount} translations
-                                      </div>
-                                      <div className="text-xs text-gray-500 mt-1">
-                                        Tags: {word.tags.slice(0, 3).join(', ')}{word.tags.length > 3 && '...'}
-                                      </div>
-                                    </div>
+                              <div key={word.wordId} className={`p-2 border-b last:border-b-0 ${isSelected ? 'bg-blue-50' : ''}`}> 
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        addWordToTargets(word);
+                                      } else {
+                                        removeWordFromTargets(word.wordId);
+                                      }
+                                    }}
+                                    className="w-3 h-3"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium truncate">{word.italian}</div>
+                                    <div className="text-xs text-gray-500">{word.formsCount} forms</div>
                                   </div>
-                                  <button
-                                    onClick={() => analyzeWordTags(word)}
-                                    className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
-                                  >
-                                    📊 Analyze
-                                  </button>
-                                </div>
+                                </label>
                               </div>
                             );
                           })}
-                        </div>
-                      )}
-
-                      {/* Selected Target Words with Clear All Option */}
-                      {selectedWords.length > 0 && (
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <label className="block text-sm font-medium text-gray-700">
-                              Targeted Words ({selectedWords.length})
-                            </label>
-                            <button
-                              onClick={() => {
-                                setSelectedWords([]);
-                                addToDebugLog('🧹 Cleared all targeted words - rule will apply globally');
-                              }}
-                              className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200"
-                            >
-                              🧹 Clear All (Apply Globally)
-                            </button>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedWords.map(word => (
-                              <span key={word.wordId} className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-sm">
-                                {word.italian}
-                                <button
-                                  onClick={() => removeWordFromTargets(word.wordId)}
-                                  className="ml-1 text-blue-600 hover:text-blue-800"
-                                >
-                                  ✕
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                          <div className="mt-1 text-xs text-green-600">
-                            ✅ Rule will only affect these {selectedWords.length} word(s)
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedWords.length === 0 && (
-                        <div className="p-2 bg-orange-100 border border-orange-300 rounded text-sm">
-                          <span className="text-orange-800 font-medium">⚠️ Global Rule:</span>
-                          <span className="text-orange-700 ml-1">Will apply to ALL matching records in database</span>
-                        </div>
-                      )}
-
-                      {/* Enhanced Word Tag Analysis */}
-                      {wordTagAnalysis && (
-                        <div className="border rounded-md p-3 bg-white">
-                          <div className="flex items-center justify-between mb-3">
-                            <h5 className="font-medium">Comprehensive Tag Analysis: {wordTagAnalysis.italian}</h5>
-                            <button
-                              onClick={() => setWordTagAnalysis(null)}
-                              className="text-gray-400 hover:text-gray-600"
-                            >
-                              ✕
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-1 gap-4 text-sm">
-                            {/* Dictionary Level */}
-                            <div className="border rounded p-2 bg-blue-50">
-                              <div className="font-medium text-blue-900 mb-2">📚 Dictionary Level ({wordTagAnalysis.dictionary.tags.length} tags)</div>
-                              <div className="max-h-20 overflow-y-auto">
-                                <div className="flex flex-wrap gap-1">
-                                  {wordTagAnalysis.dictionary.tags.map(tag => (
-                                    <span key={tag} className="px-2 py-1 bg-blue-100 rounded text-xs border">
-                                      {tag}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Translations Level */}
-                            <div className="border rounded p-2 bg-green-50">
-                              <div className="font-medium text-green-900 mb-2">🌍 Translations Level ({wordTagAnalysis.translations.totalCount} translations)</div>
-                              <div className="max-h-32 overflow-y-auto space-y-2">
-                                {wordTagAnalysis.translations.sampleMetadata?.map((metadata, idx) => (
-                                  <div key={idx} className="p-2 bg-green-100 rounded text-xs">
-                                    <div className="font-medium">Translation {idx + 1}:</div>
-                                    <div className="text-gray-700">
-                                      {metadata ? Object.entries(metadata).map(([key, value]) => (
-                                        <span key={key} className="mr-2">
-                                          <span className="font-medium">{key}:</span> {String(value)}
-                                        </span>
-                                      )) : 'No metadata'}
-                                    </div>
-                                  </div>
-                                ))}
-                                {wordTagAnalysis.translations.metadataKeys.length > 0 && (
-                                  <div className="text-xs text-gray-600">
-                                    Available metadata keys: {wordTagAnalysis.translations.metadataKeys.join(', ')}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Word Forms Level */}
-                            <div className="border rounded p-2 bg-yellow-50">
-                              <div className="font-medium text-yellow-900 mb-2">📝 Word Forms Level ({wordTagAnalysis.forms.totalCount} forms)</div>
-                              <div className="max-h-32 overflow-y-auto">
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  {Object.entries(wordTagAnalysis.forms.tagBreakdown).map(([tag, count]) => (
-                                    <div key={tag} className="flex justify-between p-1 bg-yellow-100 rounded">
-                                      <span className="truncate">{tag}</span>
-                                      <span className="text-yellow-700 font-medium">{count}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Form Translations Level */}
-                            <div className="border rounded p-2 bg-purple-50">
-                              <div className="font-medium text-purple-900 mb-2">🔗 Form Translations Level ({wordTagAnalysis.formTranslations.totalCount} relationships)</div>
-                              <div className="max-h-20 overflow-y-auto text-xs">
-                                <div className="p-2 bg-purple-100 rounded">
-                                  <div>Coverage: {wordTagAnalysis.formTranslations.coverageAnalysis.translationsWithForms} translations have form assignments</div>
-                                  <div className="text-purple-700">Total form-translation relationships: {wordTagAnalysis.formTranslations.totalCount}</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="mt-3 text-xs text-gray-600 border-t pt-2">
-                            💡 Select the table/column above to target specific levels for tag operations
-                          </div>
                         </div>
                       )}
                     </div>
                   )}
                 </div>
 
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Target Table
-                    </label>
-                    <select
-                      value={selectedTable}
-                      onChange={(e) => setSelectedTable(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="dictionary">dictionary (word-level data)</option>
-                      <option value="word_forms">word_forms (form-level data)</option>
-                      <option value="word_translations">word_translations (translation data)</option>
-                    </select>
-                    {selectedWords.length > 0 && (
-                      <div className="mt-1 text-xs text-green-600">
-                        ✅ Will target {selectedWords.length} specific word(s)
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Target Column
-                    </label>
-                    <select
-                      value={selectedColumn}
-                      onChange={(e) => setSelectedColumn(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {selectedTable === 'dictionary' && (
-                        <>
-                          <option value="tags">tags (word-level classifications)</option>
-                          <option value="italian" disabled={selectedWords.length !== 1}>
-                            italian (word text) {selectedWords.length !== 1 && '- Single word only'}
-                          </option>
-                          <option value="word_type">word_type (VERB, NOUN, etc.)</option>
-                        </>
-                      )}
-                      {selectedTable === 'word_forms' && (
-                        <>
-                          <option value="tags">tags (form-level classifications)</option>
-                          <option value="form_text" disabled={selectedWords.length !== 1}>
-                            form_text (conjugated form) {selectedWords.length !== 1 && '- Single word only'}
-                          </option>
-                          <option value="form_type">form_type (conjugation, plural, etc.)</option>
-                        </>
-                      )}
-                      {selectedTable === 'word_translations' && (
-                        <>
-                          <option value="context_metadata">context_metadata (auxiliary, transitivity, etc.)</option>
-                          <option value="translation" disabled={selectedWords.length !== 1}>
-                            translation (English meaning) {selectedWords.length !== 1 && '- Single word only'}
-                          </option>
-                          <option value="display_priority">display_priority (ordering)</option>
-                        </>
-                      )}
-                    </select>
-                    {(selectedColumn === 'italian' || selectedColumn === 'form_text' || selectedColumn === 'translation') && selectedWords.length !== 1 && (
-                      <div className="mt-1 text-xs text-orange-600">
-                        ⚠️ Text changes require exactly one word selected
-                      </div>
-                    )}
-                    <div className="mt-1 text-xs text-gray-500">
-                      {selectedColumn === 'tags' && 'Array of strings - tag operations'}
-                      {selectedColumn === 'context_metadata' && 'JSON object - metadata operations'}
-                      {(selectedColumn === 'italian' || selectedColumn === 'form_text' || selectedColumn === 'translation') && 'Text field - direct value replacement'}
-                      {selectedColumn.includes('priority') && 'Integer field - numeric operations'}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Operation Type
-                    </label>
-                    <select
-                      value={operationType}
-                      onChange={(e) => setOperationType(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {selectedColumn === 'tags' && (
-                        <>
-                          <option value="replace">Replace (tag → tag)</option>
-                          <option value="add">Add (append new tags)</option>
-                          <option value="remove">Remove (delete tags)</option>
-                        </>
-                      )}
-                      {selectedColumn === 'context_metadata' && (
-                        <>
-                          <option value="add">Add (merge JSON)</option>
-                          <option value="replace">Replace (key values)</option>
-                          <option value="remove">Remove (delete keys)</option>
-                        </>
-                      )}
-                      {(selectedColumn === 'italian' || selectedColumn === 'form_text' || selectedColumn === 'translation') && (
-                        <option value="replace">Replace (direct text change)</option>
-                      )}
-                      {selectedColumn.includes('priority') && (
-                        <>
-                          <option value="replace">Replace (set value)</option>
-                          <option value="add">Add (increment)</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Global Tag Loading when no words selected */}
-                {selectedWords.length === 0 && (selectedTable === 'dictionary' || selectedTable === 'word_forms' || selectedTable === 'word_translations') && (
-                  <div className="border rounded-lg p-4 bg-orange-50 border-orange-200">
-                    <h4 className="text-sm font-medium text-orange-900 mb-3">🌍 Global Tag Selection - All Database Records</h4>
-                    <div className="text-xs text-orange-700 mb-3">Select tags from ALL records in {selectedTable}.{selectedColumn} across the entire database</div>
-                    {!globalTags && !isLoadingGlobalTags && (
-                      <button onClick={loadGlobalTags} className="w-full py-2 px-4 bg-orange-600 text-white rounded hover:bg-orange-700">
-                        🌍 Load All Available Tags from Database
-                      </button>
-                    )}
-                    {isLoadingGlobalTags && (
-                      <div className="flex items-center justify-center p-4">
-                        <svg className="animate-spin h-5 w-5 text-orange-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span className="text-sm text-orange-700">Loading all database tags...</span>
-                      </div>
-                    )}
-                    {globalTags && !isLoadingGlobalTags && (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-orange-900">Available Tags ({globalTags.length})</span>
-                          <div className="flex space-x-2">
-                            <button onClick={() => setSelectedTagsForMigration(globalTags)} className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Select All</button>
-                            <button onClick={() => setSelectedTagsForMigration([])} className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200">Deselect All</button>
-                          </div>
-                        </div>
-                        <div className="max-h-48 sm:max-h-32 overflow-y-auto border rounded p-2 bg-white">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                            {globalTags.map(tag => (
-                              <label key={tag} className="flex items-center space-x-2 p-2 sm:p-1 hover:bg-orange-50 rounded cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedTagsForMigration.includes(tag)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedTagsForMigration(prev => [...prev, tag]);
-                                    } else {
-                                      setSelectedTagsForMigration(prev => prev.filter(t => t !== tag));
-                                    }
-                                  }}
-                                  className="w-4 h-4 sm:w-3 sm:h-3 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                                />
-                                <span className="text-sm sm:text-xs truncate flex-1">{tag}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                        {selectedTagsForMigration.length > 0 && (
-                          <div className="border-t border-orange-300 pt-2">
-                            <div className="text-sm font-medium text-orange-900 mb-1">Selected for {operationType} ({selectedTagsForMigration.length}):</div>
-                            <div className="flex flex-wrap gap-1">
-                              {selectedTagsForMigration.map(tag => (
-                                <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full bg-orange-100 text-orange-800 text-xs">
-                                  {tag}
-                                  <button onClick={() => setSelectedTagsForMigration(prev => prev.filter(t => t !== tag))} className="ml-1 text-orange-600 hover:text-orange-800">✕</button>
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* NEW: Interactive Tag Selection from Current Location */}
-                {selectedWords.length > 0 && (selectedTable === 'dictionary' || selectedTable === 'word_forms' || selectedTable === 'word_translations') && (
-                  <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
-                    <h4 className="text-sm font-medium text-blue-900 mb-3">
-                      🎯 Select Tags to {operationType === 'remove' ? 'Remove' : 'Migrate'}
-                    </h4>
-                    <div className="text-xs text-blue-700 mb-3">
-                      Select specific tags from {selectedWords.map(w => w.italian).join(', ')} to operate on
-                    </div>
-
-                    {!currentLocationTags && !isLoadingCurrentTags && (
+                {/* Global Tags - Compact */}
+                {selectedWords.length === 0 && selectedColumn === 'tags' && (
+                  <div className="border rounded p-2 bg-orange-50">
+                    {!globalTags && (
                       <button
-                        onClick={loadCurrentLocationTags}
-                        className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        onClick={loadGlobalTags}
+                        className="w-full py-1.5 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
                       >
-                        📋 Load Available Tags
+                        🌍 Load All Tags
                       </button>
                     )}
 
-                    {isLoadingCurrentTags && (
-                      <div className="flex items-center justify-center p-4">
-                        <svg className="animate-spin h-5 w-5 text-blue-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span className="text-sm text-blue-700">Loading available tags...</span>
-                      </div>
-                    )}
-
-                    {currentLocationTags && !isLoadingCurrentTags && (
-                      <div className="space-y-4">
-                        {selectedTable === 'word_forms' && (
-                          <div className="space-y-3">
-                            {selectedWords.map(word => (
-                              <div key={word.wordId} className="border rounded p-3 bg-white">
-                                <div className="font-medium text-gray-900 mb-2 flex items-center justify-between">
-                                  <span>{word.italian} - Form Tags</span>
-                                  <div className="flex space-x-2">
-                                    <button
-                                      onClick={() => selectAllTagsForWord(word.wordId, 'forms')}
-                                      className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
-                                    >
-                                      Select All
-                                    </button>
-                                    <button
-                                      onClick={() => deselectAllTagsForWord(word.wordId, 'forms')}
-                                      className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
-                                    >
-                                      Deselect All
-                                    </button>
-                                  </div>
-                                </div>
-
-                                <div className="max-h-32 overflow-y-auto">
-                                  <div className="grid grid-cols-2 gap-1">
-                                    {Object.entries(currentLocationTags[word.wordId]?.tagBreakdown || {}).map(([tag, count]) => (
-                                      <label key={tag} className="flex items-center space-x-2 p-1 hover:bg-yellow-50 rounded cursor-pointer">
-                                        <input
-                                          type="checkbox"
-                                          checked={selectedTagsForMigration.includes(tag)}
-                                          onChange={(e) => {
-                                            if (e.target.checked) {
-                                              setSelectedTagsForMigration(prev => [...prev, tag]);
-                                            } else {
-                                              setSelectedTagsForMigration(prev => prev.filter(t => t !== tag));
-                                            }
-                                          }}
-                                          className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                        />
-                                        <div className="flex justify-between items-center w-full">
-                                          <span className="text-xs truncate">{tag}</span>
-                                          <span className="text-xs text-yellow-700 font-medium ml-1">{count as number}</span>
-                                        </div>
-                                      </label>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {selectedTable === 'dictionary' && (
-                          <div className="space-y-3">
-                            {selectedWords.map(word => (
-                              <div key={word.wordId} className="border rounded p-3 bg-white">
-                                <div className="font-medium text-gray-900 mb-2 flex items-center justify-between">
-                                  <span>{word.italian} - Dictionary Tags</span>
-                                  <div className="flex space-x-2">
-                                    <button
-                                      onClick={() => selectAllTagsForWord(word.wordId, 'dictionary')}
-                                      className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
-                                    >
-                                      Select All
-                                    </button>
-                                    <button
-                                      onClick={() => deselectAllTagsForWord(word.wordId, 'dictionary')}
-                                      className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
-                                    >
-                                      Deselect All
-                                    </button>
-                                  </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-1">
-                                  {(currentLocationTags[word.wordId]?.tags || []).map(tag => (
-                                    <label key={tag} className="flex items-center space-x-1 p-1 hover:bg-blue-50 rounded cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedTagsForMigration.includes(tag)}
-                                        onChange={(e) => {
-                                          if (e.target.checked) {
-                                            setSelectedTagsForMigration(prev => [...prev, tag]);
-                                          } else {
-                                            setSelectedTagsForMigration(prev => prev.filter(t => t !== tag));
-                                          }
-                                        }}
-                                        className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                      />
-                                      <span className="text-xs px-1 py-0.5 bg-blue-100 text-blue-800 rounded border">{tag}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {selectedTable === 'word_translations' && selectedColumn === 'context_metadata' && (
-                          <div className="space-y-3">
-                            {selectedWords.map(word => (
-                              <div key={word.wordId} className="border rounded p-3 bg-white">
-                                <div className="font-medium text-gray-900 mb-2 flex items-center justify-between">
-                                  <span>{word.italian} - Translation Metadata</span>
-                                  <div className="flex space-x-2">
-                                    <button
-                                      onClick={() => selectAllTagsForWord(word.wordId, 'translations')}
-                                      className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
-                                    >
-                                      Select All
-                                    </button>
-                                    <button
-                                      onClick={() => deselectAllTagsForWord(word.wordId, 'translations')}
-                                      className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
-                                    >
-                                      Deselect All
-                                    </button>
-                                  </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-1">
-                                  {(currentLocationTags[word.wordId]?.metadataKeys || []).map(key => (
-                                    <label key={key} className="flex items-center space-x-1 p-1 hover:bg-green-50 rounded cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedTagsForMigration.includes(key)}
-                                        onChange={(e) => {
-                                          if (e.target.checked) {
-                                            setSelectedTagsForMigration(prev => [...prev, key]);
-                                          } else {
-                                            setSelectedTagsForMigration(prev => prev.filter(t => t !== key));
-                                          }
-                                        }}
-                                        className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                      />
-                                      <span className="text-xs px-1 py-0.5 bg-green-100 text-green-800 rounded border">{key}</span>
-                                    </label>
-                                  ))}
-                                </div>
-
-                                {currentLocationTags[word.wordId]?.sampleMetadata && (
-                                  <div className="mt-2 p-2 bg-green-50 rounded text-xs">
-                                    <div className="font-medium text-green-900 mb-1">Sample Values:</div>
-                                    {currentLocationTags[word.wordId].sampleMetadata.slice(0, 2).map((metadata: Record<string, any>, idx: number) => (
-                                      <div key={idx} className="text-green-700 mb-1">
-                                        {Object.entries(metadata).map(([key, value]) => (
-                                          <span key={key} className="mr-2">
-                                            <span className="font-medium">{key}:</span> {String(value)}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {selectedTagsForMigration.length > 0 && (
-                          <div className="border-t border-blue-300 pt-3">
-                            <div className="text-sm font-medium text-blue-900 mb-2">
-                              Selected Tags for {operationType} ({selectedTagsForMigration.length}):
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {selectedTagsForMigration.map(tag => (
-                                <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800 text-xs">
-                                  {tag}
-                                  <button
-                                    onClick={() => setSelectedTagsForMigration(prev => prev.filter(t => t !== tag))}
-                                    className="ml-1 text-blue-600 hover:text-blue-800"
-                                  >
-                                    ✕
-                                  </button>
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Granular Word Form Selection */}
-                {selectedWords.length > 0 && selectedTable === 'word_forms' && (
-                  <div className="border rounded-lg p-4 bg-yellow-50 border-yellow-200">
-                    <h4 className="text-sm font-medium text-yellow-900 mb-3">📝 Granular Word Form Selection</h4>
-                    <div className="flex items-center space-x-4 mb-3">
-                      <label className="flex items-center">
-                        <input type="radio" name="formSelectionMode" value="all-forms" checked={formSelectionMode === 'all-forms'} onChange={(e) => setFormSelectionMode(e.target.value)} className="mr-2" />
-                        <span className="text-sm">All forms (bulk update)</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input type="radio" name="formSelectionMode" value="specific-forms" checked={formSelectionMode === 'specific-forms'} onChange={(e) => setFormSelectionMode(e.target.value)} className="mr-2" />
-                        <span className="text-sm">Specific forms (individual records)</span>
-                      </label>
-                    </div>
-                    {!wordFormDetails && !isLoadingWordForms && (
-                      <button onClick={loadWordFormDetails} className="w-full py-2 px-4 bg-yellow-600 text-white rounded hover:bg-yellow-700">
-                        📝 Load Word Form Details
-                      </button>
-                    )}
-                    {isLoadingWordForms && (
-                      <div className="flex items-center justify-center p-4">
-                        <svg className="animate-spin h-5 w-5 text-yellow-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span className="text-sm text-yellow-700">Loading word form details...</span>
-                      </div>
-                    )}
-                    {wordFormDetails && !isLoadingWordForms && (
-                      <div className="space-y-3">
-                        {formSelectionMode === 'all-forms' && (
-                          <div className="text-sm text-yellow-800 p-2 bg-yellow-100 rounded">
-                            💡 All forms mode: Selected tags will be updated across ALL forms for the selected words
-                          </div>
-                        )}
-                        {formSelectionMode === 'specific-forms' && (
-                          <div>
-                            <div className="text-sm font-medium text-yellow-900 mb-2">Select Specific Word Forms:</div>
-                            <div className="max-h-48 overflow-y-auto space-y-2">
-                              {selectedWords.map(word => (
-                                <div key={word.wordId} className="border rounded p-2 bg-white">
-                                  <div className="font-medium text-gray-900 mb-2">{word.italian}</div>
-                                  {wordFormDetails[word.wordId]?.map(form => (
-                                    <label key={form.id} className="flex items-start space-x-2 p-2 hover:bg-yellow-50 rounded cursor-pointer border-b last:border-b-0">
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedFormIds.includes(form.id)}
-                                        onChange={(e) => {
-                                          if (e.target.checked) {
-                                            setSelectedFormIds(prev => [...prev, form.id]);
-                                          } else {
-                                            setSelectedFormIds(prev => prev.filter(id => id !== form.id));
-                                          }
-                                        }}
-                                        className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500 mt-0.5"
-                                      />
-                                      <div className="flex-1">
-                                        <div className="font-medium text-sm">{form.form_text}</div>
-                                        <div className="text-xs text-gray-600">{form.form_type}</div>
-                                        {selectedColumn === 'tags' && (
-                                          <div className="flex flex-wrap gap-1 mt-1">
-                                            {form.tags?.map((tag: string) => (
-                                              <span key={tag} className="px-1 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs">{tag}</span>
-                                            ))}
-                                          </div>
-                                        )}
-                                        {selectedColumn === 'form_text' && (
-                                          <div className="text-xs text-blue-600 mt-1">Current value: "{form.form_text}"</div>
-                                        )}
-                                      </div>
-                                    </label>
-                                  ))}
-                                </div>
-                              ))}
-                            </div>
-                            {selectedFormIds.length > 0 && (
-                              <div className="mt-2 p-2 bg-yellow-100 rounded text-sm">
-                                ✅ {selectedFormIds.length} specific word form(s) selected for {operationType}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Granular Translation Selection */}
-                {selectedWords.length > 0 && selectedTable === 'word_translations' && (
-                  <div className="border rounded-lg p-4 bg-green-50 border-green-200">
-                    <h4 className="text-sm font-medium text-green-900 mb-3">🌍 Granular Translation Selection</h4>
-                    <div className="flex items-center space-x-4 mb-3">
-                      <label className="flex items-center">
-                        <input type="radio" name="translationSelectionMode" value="all-translations" checked={translationSelectionMode === 'all-translations'} onChange={(e) => setTranslationSelectionMode(e.target.value)} className="mr-2" />
-                        <span className="text-sm">All translations (bulk update)</span>
-                      </label>
-                      <label className="flex items-center">
-                        <input type="radio" name="translationSelectionMode" value="specific-translations" checked={translationSelectionMode === 'specific-translations'} onChange={(e) => setTranslationSelectionMode(e.target.value)} className="mr-2" />
-                        <span className="text-sm">Specific translations (individual records)</span>
-                      </label>
-                    </div>
-                    {!translationDetails && !isLoadingTranslations && (
-                      <button onClick={loadTranslationDetails} className="w-full py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700">
-                        🌍 Load Translation Details
-                      </button>
-                    )}
-                    {isLoadingTranslations && (
-                      <div className="flex items-center justify-center p-4">
-                        <svg className="animate-spin h-5 w-5 text-green-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span className="text-sm text-green-700">Loading translation details...</span>
-                      </div>
-                    )}
-                    {translationDetails && !isLoadingTranslations && (
-                      <div className="space-y-3">
-                        {translationSelectionMode === 'specific-translations' && (
-                          <div>
-                            <div className="text-sm font-medium text-green-900 mb-2">Select Specific Translations:</div>
-                            <div className="max-h-48 overflow-y-auto space-y-2">
-                              {selectedWords.map(word => (
-                                <div key={word.wordId} className="border rounded p-2 bg-white">
-                                  <div className="font-medium text-gray-900 mb-2">{word.italian}</div>
-                                  {translationDetails[word.wordId]?.map(tr => (
-                                    <label key={tr.id} className="flex items-start space-x-2 p-2 hover:bg-green-50 rounded cursor-pointer border-b last:border-b-0">
-                                      <input
-                                        type="checkbox"
-                                        checked={selectedTranslationIds.includes(tr.id)}
-                                        onChange={(e) => {
-                                          if (e.target.checked) {
-                                            setSelectedTranslationIds(prev => [...prev, tr.id]);
-                                          } else {
-                                            setSelectedTranslationIds(prev => prev.filter(id => id !== tr.id));
-                                          }
-                                        }}
-                                        className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-0.5"
-                                      />
-                                      <div className="flex-1">
-                                        <div className="font-medium text-sm">"{tr.translation}"</div>
-                                        <div className="text-xs text-gray-600">Priority: {tr.display_priority}</div>
-                                        {selectedColumn === 'context_metadata' && tr.context_metadata && (
-                                          <div className="text-xs text-green-700 mt-1">
-                                            {Object.entries(tr.context_metadata).map(([key, value]) => (
-                                              <span key={key} className="mr-2">
-                                                <span className="font-medium">{key}:</span> {String(value)}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        )}
-                                        {selectedColumn === 'translation' && (
-                                          <div className="text-xs text-blue-600 mt-1">Current value: "{tr.translation}"</div>
-                                        )}
-                                      </div>
-                                    </label>
-                                  ))}
-                                </div>
-                              ))}
-                            </div>
-                            {selectedTranslationIds.length > 0 && (
-                              <div className="mt-2 p-2 bg-green-100 rounded text-sm">
-                                ✅ {selectedTranslationIds.length} specific translation(s) selected for {operationType}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Text Content Selection for form_text, translation, italian columns */}
-                {(selectedColumn === 'form_text' || selectedColumn === 'translation' || selectedColumn === 'italian') && (
-                  <div className="border rounded-lg p-4 bg-purple-50 border-purple-200">
-                    <h4 className="text-sm font-medium text-purple-900 mb-3">📝 Text Content Selection</h4>
-                    <div className="text-xs text-purple-700 mb-3">Select specific text values to replace (not tags). Only replacement operations available.</div>
-                    {!textContentOptions && !isLoadingTextContent && (
-                      <button onClick={loadTextContent} className="w-full py-2 px-4 bg-purple-600 text-white rounded hover:bg-purple-700">
-                        📝 Load Current Text Values
-                      </button>
-                    )}
-                    {isLoadingTextContent && (
-                      <div className="flex items-center justify-center p-4">
-                        <svg className="animate-spin h-5 w-5 text-purple-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span className="text-sm text-purple-700">Loading text content...</span>
-                      </div>
-                    )}
-                    {textContentOptions && !isLoadingTextContent && (
-                      <div className="space-y-3">
-                        <div className="text-sm font-medium text-purple-900 mb-2">Available Text Values ({textContentOptions.length}):</div>
-                        <div className="max-h-48 overflow-y-auto border rounded p-2 bg-white">
-                          {textContentOptions.map((option, index) => (
-                            <label key={index} className="flex items-start space-x-2 p-2 hover:bg-purple-50 rounded cursor-pointer border-b last:border-b-0">
+                    {globalTags && (
+                      <div className="space-y-2">
+                        <div className="text-xs text-orange-700">Select tags ({globalTags.length} available):</div>
+                        <div className="max-h-24 overflow-y-auto grid grid-cols-2 gap-1 text-xs">
+                          {globalTags.slice(0, 20).map(tag => (
+                            <label key={tag} className="flex items-center space-x-1 cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={selectedTextValues.includes(option.value)}
+                                checked={selectedTagsForMigration.includes(tag)}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    setSelectedTextValues(prev => [...prev, option.value]);
+                                    setSelectedTagsForMigration(prev => [...prev, tag]);
                                   } else {
-                                    setSelectedTextValues(prev => prev.filter(v => v !== option.value));
+                                    setSelectedTagsForMigration(prev => prev.filter(t => t !== tag));
                                   }
                                 }}
-                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 mt-0.5"
+                                className="w-3 h-3"
                               />
-                              <div className="flex-1">
-                                <div className="font-medium text-sm">"{option.value}"</div>
-                                <div className="text-xs text-gray-600">{option.context} • Used {option.count} time(s)</div>
-                              </div>
+                              <span className="truncate text-xs">{tag}</span>
                             </label>
                           ))}
                         </div>
-                        {selectedTextValues.length > 0 && (
-                          <div className="mt-2 p-2 bg-purple-100 rounded text-sm">
-                            ✅ {selectedTextValues.length} text value(s) selected for replacement
-                          </div>
+                        {globalTags.length > 20 && (
+                          <div className="text-xs text-gray-500">... and {globalTags.length - 20} more</div>
                         )}
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Simplified Operations Based on Type */}
+                {/* Compact Replace Mappings */}
                 {operationType === 'replace' && (
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Tag Replacements (From → To)
-                      </label>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Replacements</span>
                       <button
                         onClick={addMapping}
-                        className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                        className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
                       >
-                        + Add Replacement
+                        + Add
                       </button>
                     </div>
-                    <div className="space-y-3">
-                      {ruleBuilderMappings.map((mapping) => (
-                        <div key={mapping.id} className="flex items-center space-x-3">
-                          <input
-                            type="text"
-                            value={mapping.from}
-                            onChange={(e) => updateMapping(mapping.id, 'from', e.target.value)}
-                            placeholder="Current tag to replace..."
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <span className="text-gray-400">→</span>
-                          <input
-                            type="text"
-                            value={mapping.to}
-                            onChange={(e) => updateMapping(mapping.id, 'to', e.target.value)}
-                            placeholder="New tag value..."
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <button
-                            onClick={() => removeMapping(mapping.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                    {ruleBuilderMappings.map((mapping) => (
+                      <div key={mapping.id} className="flex space-x-1 items-center">
+                        <input
+                          type="text"
+                          value={mapping.from}
+                          onChange={(e) => updateMapping(mapping.id, 'from', e.target.value)}
+                          placeholder="From..."
+                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                        <span className="text-xs text-gray-400">→</span>
+                        <input
+                          type="text"
+                          value={mapping.to}
+                          onChange={(e) => updateMapping(mapping.id, 'to', e.target.value)}
+                          placeholder="To..."
+                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={() => removeMapping(mapping.id)}
+                          className="p-1 text-red-500 hover:text-red-700"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                {operationType === 'add' && (
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Tags to Add
-                      </label>
-                      <button
-                        onClick={() => {
-                          const newTag = prompt('Enter tag to add:');
-                          if (newTag && newTag.trim()) {
-                            setRuleBuilderMappings(prev => [...prev, {
-                              id: Date.now().toString(),
-                              from: '',
-                              to: newTag.trim()
-                            }]);
-                          }
-                        }}
-                        className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        + Add Tag
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {ruleBuilderMappings.map((mapping) => (
-                        <span key={mapping.id} className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800 text-sm">
-                          {mapping.to}
-                          <button
-                            onClick={() => removeMapping(mapping.id)}
-                            className="ml-1 text-green-600 hover:text-green-800"
-                          >
-                            ✕
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Compact Duplicate Prevention */}
+                <label className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <span className="text-sm">🛡️ Prevent Duplicates</span>
+                  <input
+                    type="checkbox"
+                    checked={preventDuplicates}
+                    onChange={(e) => setPreventDuplicates(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                </label>
+              </div>
 
-                {operationType === 'remove' && (
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Tags to Remove
-                      </label>
-                      <button
-                        onClick={addTagToRemove}
-                        className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        + Add Tag to Remove
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {tagsToRemove.map(tag => (
-                        <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-800 text-sm">
-                          {tag}
-                          <button onClick={() => removeTagFromRemovalList(tag)} className="ml-1 text-red-600 hover:text-red-800">✕</button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Duplicate Prevention */}
-                <div className="border rounded-lg p-3 bg-gray-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Duplicate Prevention
-                    </label>
-                    <button
-                      onClick={() => setPreventDuplicates(!preventDuplicates)}
-                      className={`px-3 py-1 rounded text-sm font-medium ${
-                        preventDuplicates
-                          ? 'bg-green-100 text-green-800 border border-green-300'
-                          : 'bg-gray-100 text-gray-800 border border-gray-300'
-                      }`}
-                    >
-                      {preventDuplicates ? '🛡️ Enabled' : '⚠️ Disabled'}
-                    </button>
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {preventDuplicates ? (
-                      <div className="text-green-700">
-                        ✅ <strong>Duplicate prevention ON:</strong> If a tag already exists, it won't be added again. For replace operations, only replaces if the target tag doesn't already exist.
-                      </div>
-                    ) : (
-                      <div className="text-orange-700">
-                        ⚠️ <strong>Duplicate prevention OFF:</strong> Tags may be duplicated. Use this only if you specifically need duplicate tags (rare).
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Rule Impact Preview */}
-                <div className="border rounded-lg p-4 bg-yellow-50 border-yellow-200">
-                  <h4 className="text-sm font-medium text-yellow-900 mb-2">
-                    📊 Rule Impact Preview
-                  </h4>
-                  <div className="text-sm text-yellow-800 space-y-2">
-                    <div>
-                      <span className="font-medium">Target: </span>
-                      {selectedWords.length > 0
-                        ? `${selectedWords.length} specific word(s): ${selectedWords.map(w => w.italian).join(', ')}`
-                        : 'All matching records in database'
-                      }
-                    </div>
-                    <div>
-                      <span className="font-medium">Operation: </span>
-                      {operationType} operations on {selectedTable}.{selectedColumn}
-                    </div>
-                    {ruleBuilderMappings.length > 0 && (
-                      <div>
-                        <span className="font-medium">Mappings: </span>
-                        {ruleBuilderMappings.slice(0, 3).map(m => `${m.from}→${m.to}`).join(', ')}
-                        {ruleBuilderMappings.length > 3 && ` +${ruleBuilderMappings.length - 3} more`}
-                      </div>
-                    )}
-                    {tagsToRemove.length > 0 && (
-                      <div>
-                        <span className="font-medium">Removing: </span>
-                        {tagsToRemove.join(', ')}
-                      </div>
-                    )}
-                    <div className="flex items-center space-x-4 pt-2 border-t border-yellow-300">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                        preventDuplicates
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-orange-100 text-orange-800'
-                      }`}>
-                        {preventDuplicates ? '🛡️ Duplicates prevented' : '⚠️ Duplicates allowed'}
-                      </span>
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                        📋 {getOperationIcon(operationType)} {operationType}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-end space-x-3">
-                  <button
-                    onClick={() => setShowRuleBuilder(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveRule}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    Save Rule
-                  </button>
-                </div>
+              {/* Compact Footer */}
+              <div className="flex space-x-2 p-3 border-t">
+                <button
+                  onClick={() => setShowRuleBuilder(false)}
+                  className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveRule}
+                  className="flex-1 py-2 px-3 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Save
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
-
       {/* Global Rule Confirmation Modal */}
       {showGlobalConfirmation && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
