@@ -60,14 +60,21 @@ interface WordTagAnalysis {
     tags: string[];
     tagCounts: Record<string, number>;
   };
+  translations: {
+    totalCount: number;
+    metadataKeys: string[];
+    sampleMetadata?: Record<string, any>[];
+  };
   forms: {
     totalCount: number;
     tagBreakdown: Record<string, number>;
     sampleTags: string[][];
   };
-  translations: {
+  formTranslations: {
     totalCount: number;
-    metadataKeys: string[];
+    coverageAnalysis: {
+      translationsWithForms: number;
+    };
   };
 }
 
@@ -118,10 +125,78 @@ export default function MigrationToolsInterface() {
   const [selectedWords, setSelectedWords] = useState<WordSearchResult[]>([]);
   const [wordTagAnalysis, setWordTagAnalysis] = useState<WordTagAnalysis | null>(null);
   const [isSearchingWords, setIsSearchingWords] = useState(false);
-  
+  const [showGlobalConfirmation, setShowGlobalConfirmation] = useState(false);
+  const [currentLocationTags, setCurrentLocationTags] = useState<Record<string, any> | null>(null);
+  const [isLoadingCurrentTags, setIsLoadingCurrentTags] = useState(false);
+  const [selectedTagsForMigration, setSelectedTagsForMigration] = useState<string[]>([]);
+  const [globalTags, setGlobalTags] = useState<string[] | null>(null);
+  const [isLoadingGlobalTags, setIsLoadingGlobalTags] = useState(false);
+  const [formSelectionMode, setFormSelectionMode] = useState('all-forms');
+  const [translationSelectionMode, setTranslationSelectionMode] = useState('all-translations');
+  const [wordFormDetails, setWordFormDetails] = useState<Record<string, any[]> | null>(null);
+  const [translationDetails, setTranslationDetails] = useState<Record<string, any[]> | null>(null);
+  const [isLoadingWordForms, setIsLoadingWordForms] = useState(false);
+  const [isLoadingTranslations, setIsLoadingTranslations] = useState(false);
+  const [selectedFormIds, setSelectedFormIds] = useState<string[]>([]);
+  const [selectedTranslationIds, setSelectedTranslationIds] = useState<string[]>([]);
+  const [textContentOptions, setTextContentOptions] = useState<any[] | null>(null);
+  const [isLoadingTextContent, setIsLoadingTextContent] = useState(false);
+  const [selectedTextValues, setSelectedTextValues] = useState<string[]>([]);
+
+  const resetTagLoadingStates = () => {
+    setCurrentLocationTags(null);
+    setGlobalTags(null);
+    setWordFormDetails(null);
+    setTranslationDetails(null);
+    setTextContentOptions(null);
+    setSelectedTagsForMigration([]);
+    setSelectedFormIds([]);
+    setSelectedTranslationIds([]);
+    setSelectedTextValues([]);
+    setFormSelectionMode('all-forms');
+    setTranslationSelectionMode('all-translations');
+  };
+
+  const selectAllTagsForWord = (wordId: string, type: 'forms' | 'dictionary' | 'translations') => {
+    const wordTags = currentLocationTags?.[wordId];
+    if (!wordTags) return;
+
+    let tagsToAdd: string[] = [];
+
+    if (type === 'forms' && wordTags.tagBreakdown) {
+      tagsToAdd = Object.keys(wordTags.tagBreakdown);
+    } else if (type === 'dictionary' && wordTags.tags) {
+      tagsToAdd = wordTags.tags;
+    } else if (type === 'translations' && wordTags.metadataKeys) {
+      tagsToAdd = wordTags.metadataKeys;
+    }
+
+    setSelectedTagsForMigration(prev => {
+      const newTags = tagsToAdd.filter(tag => !prev.includes(tag));
+      return [...prev, ...newTags];
+    });
+  };
+
+  const deselectAllTagsForWord = (wordId: string, type: 'forms' | 'dictionary' | 'translations') => {
+    const wordTags = currentLocationTags?.[wordId];
+    if (!wordTags) return;
+
+    let tagsToRemove: string[] = [];
+
+    if (type === 'forms' && wordTags.tagBreakdown) {
+      tagsToRemove = Object.keys(wordTags.tagBreakdown);
+    } else if (type === 'dictionary' && wordTags.tags) {
+      tagsToRemove = wordTags.tags;
+    } else if (type === 'translations' && wordTags.metadataKeys) {
+      tagsToRemove = wordTags.metadataKeys;
+    }
+
+    setSelectedTagsForMigration(prev => prev.filter(tag => !tagsToRemove.includes(tag)));
+  };
+
   // NEW: Dynamic schema state
   const [tableSchemas, setTableSchemas] = useState<Record<string, TableSchema>>({});
-  const [availableTables] = useState(['dictionary', 'word_forms', 'word_translations', 'form_translations']);
+  const [availableTables] = useState(['dictionary', 'word_forms', 'word_translations']);
   
   const supabase = createClientComponentClient();
 
@@ -135,6 +210,29 @@ export default function MigrationToolsInterface() {
     initializeDefaultRules();
     loadTableSchemas();
   }, []);
+
+  useEffect(() => {
+    resetTagLoadingStates();
+    addToDebugLog('🔄 Reset tag cache due to word selection change');
+  }, [selectedWords]);
+
+  useEffect(() => {
+    resetTagLoadingStates();
+    addToDebugLog(`🔄 Cleared tag cache due to table/column change: ${selectedTable}.${selectedColumn}`);
+  }, [selectedTable, selectedColumn]);
+
+  useEffect(() => {
+    if (selectedTagsForMigration.length > 0 && operationType === 'remove') {
+      setTagsToRemove(selectedTagsForMigration);
+    } else if (selectedTagsForMigration.length > 0 && operationType === 'replace') {
+      const newMappings = selectedTagsForMigration.map((tag, index) => ({
+        id: `auto-${index}`,
+        from: tag,
+        to: '',
+      }));
+      setRuleBuilderMappings(newMappings);
+    }
+  }, [selectedTagsForMigration, operationType]);
 
   // NEW: Load dynamic table schemas
   const loadTableSchemas = async () => {
@@ -182,15 +280,6 @@ export default function MigrationToolsInterface() {
           { columnName: 'translation', dataType: 'text', isArray: false, isJson: false },
           { columnName: 'context_metadata', dataType: 'jsonb', isArray: false, isJson: true },
           { columnName: 'display_priority', dataType: 'integer', isArray: false, isJson: false }
-        ]
-      },
-      form_translations: {
-        tableName: 'form_translations',
-        columns: [
-          { columnName: 'id', dataType: 'uuid', isArray: false, isJson: false },
-          { columnName: 'form_id', dataType: 'uuid', isArray: false, isJson: false },
-          { columnName: 'word_translation_id', dataType: 'uuid', isArray: false, isJson: false },
-          { columnName: 'translation', dataType: 'text', isArray: false, isJson: false }
         ]
       }
     };
@@ -266,6 +355,17 @@ export default function MigrationToolsInterface() {
 
       if (translationsError) throw translationsError;
 
+      const translationIds = (translations || []).map(t => t.id);
+      let formTranslations: any[] = [];
+      if (translationIds.length > 0) {
+        const { data: ftData, error: ftError } = await supabase
+          .from('form_translations')
+          .select('id, word_translation_id')
+          .in('word_translation_id', translationIds);
+        if (ftError) throw ftError;
+        formTranslations = ftData || [];
+      }
+
       const allFormTags = (forms || []).flatMap(f => f.tags || []);
       const tagBreakdown: Record<string, number> = {};
       allFormTags.forEach(tag => {
@@ -279,6 +379,10 @@ export default function MigrationToolsInterface() {
         }
       });
 
+      const translationsWithForms = new Set(
+        formTranslations.map(ft => ft.word_translation_id)
+      );
+
       const analysis: WordTagAnalysis = {
         wordId: word.wordId,
         italian: word.italian,
@@ -289,14 +393,23 @@ export default function MigrationToolsInterface() {
             return acc;
           }, {})
         },
+        translations: {
+          totalCount: translations?.length || 0,
+          metadataKeys: Array.from(metadataKeys),
+          sampleMetadata: (translations || [])
+            .slice(0, 3)
+            .map(t => t.context_metadata)
+        },
         forms: {
           totalCount: forms?.length || 0,
           tagBreakdown,
           sampleTags: (forms || []).slice(0, 5).map(f => f.tags || [])
         },
-        translations: {
-          totalCount: translations?.length || 0,
-          metadataKeys: Array.from(metadataKeys)
+        formTranslations: {
+          totalCount: formTranslations.length,
+          coverageAnalysis: {
+            translationsWithForms: translationsWithForms.size
+          }
         }
       };
 
@@ -578,23 +691,66 @@ export default function MigrationToolsInterface() {
   };
 
   const handleCustomizeRule = (rule: VisualRule) => {
+    resetTagLoadingStates();
     setSelectedRule(rule);
     setShowRuleBuilder(true);
     setRuleTitle(rule.title);
     setRuleDescription(rule.description);
     setOperationType(rule.operationType || 'replace');
     setPreventDuplicates(rule.preventDuplicates || false);
-    
-    if (rule.id === 'italian-to-universal-terminology') {
-      setRuleBuilderMappings([
-        { id: '1', from: 'io', to: 'prima-persona' },
-        { id: '2', from: 'tu', to: 'seconda-persona' },
-        { id: '3', from: 'lui', to: 'terza-persona' },
-        { id: '4', from: 'lei', to: 'terza-persona' },
-        { id: '5', from: 'noi', to: 'prima-persona' },
-        { id: '6', from: 'voi', to: 'seconda-persona' },
-        { id: '7', from: 'loro', to: 'terza-persona' }
-      ]);
+
+    // Load rule-specific mappings based on rule ID and type
+    switch (rule.id) {
+      case 'italian-to-universal-terminology':
+        setRuleBuilderMappings([
+          { id: '1', from: 'io', to: 'prima-persona' },
+          { id: '2', from: 'tu', to: 'seconda-persona' },
+          { id: '3', from: 'lui', to: 'terza-persona' },
+          { id: '4', from: 'lei', to: 'terza-persona' },
+          { id: '5', from: 'noi', to: 'prima-persona' },
+          { id: '6', from: 'voi', to: 'seconda-persona' },
+          { id: '7', from: 'loro', to: 'terza-persona' }
+        ]);
+        setTagsToRemove([]);
+        break;
+
+      case 'cleanup-deprecated-tags':
+        setRuleBuilderMappings([
+          { id: '1', from: 'past-participle', to: 'participio-passato' },
+          { id: '2', from: 'gerund', to: 'gerundio' },
+          { id: '3', from: 'infinitive', to: 'infinito' },
+          { id: '4', from: 'present-participle', to: 'participio-presente' }
+        ]);
+        setTagsToRemove([]);
+        break;
+
+      case 'standardize-auxiliary-tag-format':
+        setRuleBuilderMappings([
+          { id: '1', from: 'auxiliary-essere', to: 'essere-auxiliary' },
+          { id: '2', from: 'auxiliary-avere', to: 'avere-auxiliary' },
+          { id: '3', from: 'auxiliary-stare', to: 'stare-auxiliary' }
+        ]);
+        setTagsToRemove([]);
+        break;
+
+      case 'remove-obsolete-tags':
+        // For removal operations, clear mappings and set up tag removal
+        setRuleBuilderMappings([]);
+        setTagsToRemove(['deprecated-tag-1', 'obsolete-marker']);
+        break;
+
+      case 'add-missing-auxiliaries':
+      case 'add-missing-transitivity-metadata':
+        // These require manual input - clear mappings
+        setRuleBuilderMappings([]);
+        setTagsToRemove([]);
+        break;
+
+      default:
+        // For custom rules, start with empty mappings
+        setRuleBuilderMappings([]);
+        setTagsToRemove([]);
+        break;
     }
   };
 
@@ -645,13 +801,240 @@ export default function MigrationToolsInterface() {
     }
   };
 
+  // NEW: Load current tags from selected table/column for targeted words
+  const loadCurrentLocationTags = async () => {
+    if (selectedWords.length === 0) {
+      addToDebugLog('⚠️ No words selected to analyze');
+      return;
+    }
+
+    setIsLoadingCurrentTags(true);
+    addToDebugLog(`📋 Loading current tags from ${selectedTable}.${selectedColumn} for ${selectedWords.length} words...`);
+
+    try {
+      const tagData: Record<string, any> = {};
+
+      for (const word of selectedWords) {
+        addToDebugLog(`🔍 Analyzing ${word.italian} in ${selectedTable}.${selectedColumn}...`);
+
+        if (selectedTable === 'dictionary' && selectedColumn === 'tags') {
+          const { data, error } = await supabase
+            .from('dictionary')
+            .select('tags')
+            .eq('id', word.wordId)
+            .single();
+
+          if (error) throw error;
+
+          tagData[word.wordId] = {
+            tags: data?.tags || [],
+            totalRecords: 1
+          };
+        } else if (selectedTable === 'word_forms' && selectedColumn === 'tags') {
+          const { data, error } = await supabase
+            .from('word_forms')
+            .select('tags')
+            .eq('word_id', word.wordId);
+
+          if (error) throw error;
+
+          const allTags = (data || []).flatMap(form => form.tags || []);
+          const tagBreakdown: Record<string, number> = {};
+          allTags.forEach(tag => {
+            tagBreakdown[tag] = (tagBreakdown[tag] || 0) + 1;
+          });
+
+          tagData[word.wordId] = {
+            tagBreakdown,
+            totalRecords: data?.length || 0
+          };
+        } else if (selectedTable === 'word_translations' && selectedColumn === 'context_metadata') {
+          const { data, error } = await supabase
+            .from('word_translations')
+            .select('context_metadata')
+            .eq('word_id', word.wordId);
+
+          if (error) throw error;
+
+          const metadataKeys = new Set<string>();
+          const sampleMetadata: any[] = [];
+
+          (data || []).forEach(translation => {
+            if (translation.context_metadata) {
+              Object.keys(translation.context_metadata).forEach(key => metadataKeys.add(key));
+              if (sampleMetadata.length < 3) {
+                sampleMetadata.push(translation.context_metadata);
+              }
+            }
+          });
+
+          tagData[word.wordId] = {
+            metadataKeys: Array.from(metadataKeys),
+            sampleMetadata,
+            totalRecords: data?.length || 0
+          };
+        }
+
+        addToDebugLog(`✅ Loaded data for ${word.italian}: ${JSON.stringify(tagData[word.wordId])}`);
+      }
+
+      setCurrentLocationTags(tagData);
+      addToDebugLog(`✅ Successfully loaded current tags for ${selectedWords.length} words`);
+    } catch (error: any) {
+      addToDebugLog(`❌ Error loading current tags: ${error.message}`);
+      console.error('Error loading current tags:', error);
+    } finally {
+      setIsLoadingCurrentTags(false);
+    }
+  };
+
+  const loadGlobalTags = async () => {
+    setIsLoadingGlobalTags(true);
+    addToDebugLog(`🌍 Loading all tags from ${selectedTable}.${selectedColumn}...`);
+
+    try {
+      let allTags: string[] = [];
+
+      if (selectedColumn === 'tags') {
+        const { data, error } = await supabase
+          .from(selectedTable)
+          .select('tags');
+        if (error) throw error;
+
+        const tagSet = new Set<string>();
+        (data || []).forEach((record: any) => {
+          (record.tags || []).forEach((tag: string) => tagSet.add(tag));
+        });
+        allTags = Array.from(tagSet).sort();
+      } else if (selectedColumn === 'context_metadata') {
+        const { data, error } = await supabase
+          .from(selectedTable)
+          .select('context_metadata');
+        if (error) throw error;
+
+        const keySet = new Set<string>();
+        (data || []).forEach((record: any) => {
+          if (record.context_metadata) {
+            Object.keys(record.context_metadata).forEach(key => keySet.add(key));
+          }
+        });
+        allTags = Array.from(keySet).sort();
+      }
+
+      setGlobalTags(allTags);
+      addToDebugLog(`✅ Loaded ${allTags.length} unique tags from database`);
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load global tags: ${error.message}`);
+    } finally {
+      setIsLoadingGlobalTags(false);
+    }
+  };
+
+  const loadWordFormDetails = async () => {
+    if (selectedWords.length === 0) return;
+    setIsLoadingWordForms(true);
+    addToDebugLog('📝 Loading word form details...');
+
+    try {
+      const details: Record<string, any[]> = {};
+      for (const word of selectedWords) {
+        const { data, error } = await supabase
+          .from('word_forms')
+          .select('id, form_text, form_type, tags')
+          .eq('word_id', word.wordId);
+        if (error) throw error;
+        details[word.wordId] = data || [];
+      }
+      setWordFormDetails(details);
+      addToDebugLog('✅ Loaded word form details');
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load word form details: ${error.message}`);
+    } finally {
+      setIsLoadingWordForms(false);
+    }
+  };
+
+  const loadTranslationDetails = async () => {
+    if (selectedWords.length === 0) return;
+    setIsLoadingTranslations(true);
+    addToDebugLog('🌍 Loading translation details...');
+
+    try {
+      const details: Record<string, any[]> = {};
+      for (const word of selectedWords) {
+        const { data, error } = await supabase
+          .from('word_translations')
+          .select('id, translation, display_priority, context_metadata')
+          .eq('word_id', word.wordId);
+        if (error) throw error;
+        details[word.wordId] = data || [];
+      }
+      setTranslationDetails(details);
+      addToDebugLog('✅ Loaded translation details');
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load translation details: ${error.message}`);
+    } finally {
+      setIsLoadingTranslations(false);
+    }
+  };
+
+  const loadTextContent = async () => {
+    setIsLoadingTextContent(true);
+    addToDebugLog(`📝 Loading text content from ${selectedTable}.${selectedColumn}...`);
+
+    try {
+      const filter = selectedWords.length > 0 ? { in: selectedWords.map(w => w.wordId) } : null;
+      let data: any[] | null = null;
+
+      if (selectedTable === 'word_forms' && selectedColumn === 'form_text') {
+        let query = supabase.from('word_forms').select('form_text, form_type, word_id');
+        if (filter) query = query.in('word_id', filter.in);
+        const { data: d, error } = await query;
+        if (error) throw error;
+        data = d || [];
+      } else if (selectedTable === 'word_translations' && selectedColumn === 'translation') {
+        let query = supabase.from('word_translations').select('translation, display_priority, word_id');
+        if (filter) query = query.in('word_id', filter.in);
+        const { data: d, error } = await query;
+        if (error) throw error;
+        data = d || [];
+      } else if (selectedTable === 'dictionary' && selectedColumn === 'italian') {
+        let query = supabase.from('dictionary').select('italian, id');
+        if (filter) query = query.in('id', filter.in);
+        const { data: d, error } = await query;
+        if (error) throw error;
+        data = d || [];
+      }
+
+      const optionsMap: Record<string, { value: string; context: string; count: number }> = {};
+      (data || []).forEach((record: any) => {
+        const value = record[selectedColumn];
+        if (!value) return;
+        if (!optionsMap[value]) {
+          let context = '';
+          if (record.form_type) context = record.form_type;
+          if (record.display_priority !== undefined) context = `Priority ${record.display_priority}`;
+          optionsMap[value] = { value, context, count: 0 };
+        }
+        optionsMap[value].count += 1;
+      });
+
+      setTextContentOptions(Object.values(optionsMap));
+      addToDebugLog('✅ Loaded text content options');
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load text content: ${error.message}`);
+    } finally {
+      setIsLoadingTextContent(false);
+    }
+  };
+
   const saveCustomRule = () => {
     if (selectedRule) {
-      setMigrationRules(prev => prev.map(rule => 
-        rule.id === selectedRule.id 
-          ? { 
-              ...rule, 
-              title: ruleTitle, 
+      setMigrationRules(prev => prev.map(rule =>
+        rule.id === selectedRule.id
+          ? {
+              ...rule,
+              title: ruleTitle,
               description: ruleDescription,
               operationType,
               preventDuplicates,
@@ -662,6 +1045,14 @@ export default function MigrationToolsInterface() {
     }
     setShowRuleBuilder(false);
     addToDebugLog(`✅ Custom rule saved: ${ruleTitle}`);
+  };
+
+  const handleSaveRule = () => {
+    if (selectedWords.length === 0) {
+      setShowGlobalConfirmation(true);
+    } else {
+      saveCustomRule();
+    }
   };
 
   // NEW: Get available columns for selected table
@@ -913,86 +1304,147 @@ export default function MigrationToolsInterface() {
               </button>
             </div>
 
-            {/* Migration Rules Grid */}
-            <div className="grid gap-6">
+            {/* Much More Compact Status Cards */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="bg-white p-2 rounded shadow">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-red-100 rounded flex items-center justify-center mr-2">
+                    <span className="text-red-600 text-xs">!</span>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Critical</div>
+                    <div className="text-sm font-medium">27</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-2 rounded shadow">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-yellow-100 rounded flex items-center justify-center mr-2">
+                    <span className="text-yellow-600 text-xs">⚠</span>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Forms</div>
+                    <div className="text-sm font-medium">581</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-2 rounded shadow">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-orange-100 rounded flex items-center justify-center mr-2">
+                    <span className="text-orange-600 text-xs">◐</span>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Missing</div>
+                    <div className="text-sm font-medium">25</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-2 rounded shadow">
+                <div className="flex items-center">
+                  <div className="w-4 h-4 bg-green-100 rounded flex items-center justify-center mr-2">
+                    <span className="text-green-600 text-xs">✓</span>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Complete</div>
+                    <div className="text-sm font-medium">7/7</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Much More Compact Mobile Rule Cards */}
+            <div className="space-y-3">
               {migrationRules.map((rule) => (
-                <div key={rule.id} className={`border rounded-lg p-6 ${getImpactColor(rule.impact)}`}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <span className="text-2xl mr-3">{getCategoryIcon(rule.category)}</span>
-                        <div>
-                          <h4 className="text-lg font-medium text-gray-900 flex items-center">
-                            {rule.title}
-                            <span className="ml-2 text-lg">{getStatusIcon(rule.status)}</span>
-                          </h4>
-                          <p className="text-sm text-gray-600 mt-1">{rule.description}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-500">Impact:</span>
-                          <span className="ml-1 font-medium capitalize">{rule.impact}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Affected:</span>
-                          <span className="ml-1 font-medium">{rule.affectedCount} rows</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Time:</span>
-                          <span className="ml-1 font-medium">{rule.estimatedTime}</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center space-x-2 text-xs">
-                        {rule.canRollback && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800">
-                            🔄 Rollback available
-                          </span>
-                        )}
-                        {rule.autoExecutable && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                            ⚡ Auto-executable
-                          </span>
-                        )}
-                        {rule.requiresInput && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-yellow-100 text-yellow-800">
-                            ⚙️ Requires configuration
-                          </span>
-                        )}
+                <div key={rule.id} className={`border rounded-lg p-3 ${getImpactColor(rule.impact)}`}>
+                  {/* Compact Header */}
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center min-w-0 flex-1">
+                      <span className="text-lg mr-2 flex-shrink-0">{getCategoryIcon(rule.category)}</span>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 flex items-center truncate">
+                          {rule.title}
+                          <span className="ml-1 text-sm flex-shrink-0">{getStatusIcon(rule.status)}</span>
+                        </h4>
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">{rule.description}</p>
                       </div>
                     </div>
+                  </div>
 
-                    <div className="ml-6 flex flex-col space-y-2">
-                      <button
-                        onClick={() => handlePreviewRule(rule)}
-                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        📊 Preview
-                      </button>
-                      <button
-                        onClick={() => handleCustomizeRule(rule)}
-                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        ⚙️ Customize
-                      </button>
-                      <button
-                        onClick={() => handleExecuteRule(rule)}
-                        disabled={rule.status === 'executing' || rule.status === 'completed'}
-                        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-                          rule.status === 'completed' 
-                            ? 'bg-green-100 text-green-800 cursor-not-allowed'
-                            : rule.status === 'executing'
-                            ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        {rule.status === 'completed' ? '✅ Done' : 
-                         rule.status === 'executing' ? '⏳ Running' : 
-                         '▶️ Execute'}
-                      </button>
+                  {/* Compact Stats */}
+                  <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+                    <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                      <div className="font-medium capitalize">{rule.impact}</div>
+                      <div className="text-gray-500">Impact</div>
                     </div>
+                    <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                      <div className="font-medium">{rule.affectedCount}</div>
+                      <div className="text-gray-500">Rows</div>
+                    </div>
+                    <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                      <div className="font-medium">{rule.estimatedTime}</div>
+                      <div className="text-gray-500">Time</div>
+                    </div>
+                  </div>
+
+                  {/* Compact Status Badges */}
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {rule.canRollback && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                        🔄
+                      </span>
+                    )}
+                    {rule.autoExecutable && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                        ⚡
+                      </span>
+                    )}
+                    {rule.requiresInput && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800">
+                        ⚙️
+                      </span>
+                    )}
+                    {rule.preventDuplicates && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-800">
+                        🛡️
+                      </span>
+                    )}
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-800">
+                      {getOperationIcon(rule.operationType)} {rule.operationType || 'replace'}
+                    </span>
+                  </div>
+
+                  {/* Compact Action Buttons */}
+                  <div className="grid grid-cols-3 gap-1">
+                    <button
+                      onClick={() => handlePreviewRule(rule)}
+                      className="text-xs py-2 px-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      📊 Preview
+                    </button>
+                    <button
+                      onClick={() => handleCustomizeRule(rule)}
+                      className="text-xs py-2 px-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      ⚙️ Edit
+                    </button>
+                    <button
+                      onClick={() => handleExecuteRule(rule)}
+                      disabled={rule.status === 'executing' || rule.status === 'completed'}
+                      className={`text-xs py-2 px-2 rounded font-medium ${
+                        rule.status === 'completed'
+                          ? 'bg-green-100 text-green-800 cursor-not-allowed'
+                          : rule.status === 'executing'
+                          ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {rule.status === 'completed' ? '✅' :
+                       rule.status === 'executing' ? '⏳' :
+                       '▶️'}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1058,9 +1510,33 @@ export default function MigrationToolsInterface() {
                   <h4 className="text-sm font-medium text-blue-900 mb-2">What Will Happen</h4>
                   <p className="text-sm text-blue-800">{selectedRule.description}</p>
                   <div className="mt-2 text-sm text-blue-700">
-                    <span className="font-medium">{selectedRule.affectedCount} rows</span> will be updated in 
+                    <span className="font-medium">{selectedRule.affectedCount} rows</span> will be updated in
                     <span className="font-medium"> {selectedRule.estimatedTime}</span>
                   </div>
+                  {previewData?.duplicateAnalysis && (
+                    <div className="mt-3">
+                      {previewData.duplicateAnalysis.wouldCreateDuplicates ? (
+                        <div className="flex items-center p-2 bg-yellow-100 border border-yellow-300 rounded-md">
+                          <span className="text-yellow-600 mr-2">⚠️</span>
+                          <div className="text-sm">
+                            <span className="font-medium text-yellow-800">
+                              Duplicate Prevention Active:
+                            </span>
+                            <span className="text-yellow-700 ml-1">
+                              Would prevent {previewData.duplicateAnalysis.duplicateCount} duplicate tags ({previewData.duplicateAnalysis.affectedTags.join(', ')})
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center p-2 bg-green-100 border border-green-300 rounded-md">
+                          <span className="text-green-600 mr-2">✅</span>
+                          <span className="text-sm text-green-800 font-medium">
+                            No duplicate tags will be created
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {previewData && (
@@ -1122,180 +1598,333 @@ export default function MigrationToolsInterface() {
         </div>
       )}
 
-      {/* Rule Builder Modal */}
+      {/* Much More Compact Mobile Rule Builder */}
       {showRuleBuilder && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-11/12 max-w-5xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {selectedRule ? 'Customize Rule' : 'Create Custom Rule'}
+          <div className="min-h-screen p-2 flex items-start justify-center">
+            <div className="bg-white rounded-lg w-full max-w-lg shadow-xl mt-4 mb-4">
+              {/* Compact Header */}
+              <div className="flex items-center justify-between p-3 border-b">
+                <h3 className="text-base font-medium text-gray-900 truncate">
+                  {selectedRule ? 'Edit Rule' : 'New Rule'}
                 </h3>
                 <button
                   onClick={() => setShowRuleBuilder(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="p-1 text-gray-400 hover:text-gray-600"
                 >
-                  <span className="sr-only">Close</span>
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Rule Title
-                    </label>
-                    <input
-                      type="text"
-                      value={ruleTitle}
-                      onChange={(e) => setRuleTitle(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter rule title..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
-                    </label>
-                    <input
-                      type="text"
-                      value={ruleDescription}
-                      onChange={(e) => setRuleDescription(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Describe what this rule does..."
-                    />
-                  </div>
+              <div className="p-3 space-y-3 max-h-[80vh] overflow-y-auto">
+                {/* Compact Title/Description */}
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={ruleTitle}
+                    onChange={(e) => setRuleTitle(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Rule title..."
+                  />
+                  <textarea
+                    value={ruleDescription}
+                    onChange={(e) => setRuleDescription(e.target.value)}
+                    rows={2}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Description..."
+                  />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Target Table
-                    </label>
-                    <select
-                      value={selectedTable}
-                      onChange={(e) => setSelectedTable(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="word_forms">word_forms</option>
-                      <option value="word_translations">word_translations</option>
-                      <option value="dictionary">dictionary</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Target Column
-                    </label>
-                    <select
-                      value={selectedColumn}
-                      onChange={(e) => setSelectedColumn(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="tags">tags</option>
-                      <option value="context_metadata">context_metadata</option>
-                      <option value="form_text">form_text</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Operation Type
-                    </label>
-                    <select
-                      value={operationType}
-                      onChange={(e) => setOperationType(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="replace">Replace</option>
-                      <option value="add">Add</option>
-                      <option value="remove">Remove</option>
-                    </select>
-                  </div>
+                {/* Compact Table/Column/Operation */}
+                <div className="space-y-2">
+                  <select
+                    value={selectedTable}
+                    onChange={(e) => setSelectedTable(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="dictionary">📚 Dictionary</option>
+                    <option value="word_forms">📝 Word Forms</option>
+                    <option value="word_translations">🌍 Translations</option>
+                  </select>
+
+                  <select
+                    value={selectedColumn}
+                    onChange={(e) => setSelectedColumn(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    {selectedTable === 'dictionary' && (
+                      <>
+                        <option value="tags">🏷️ Tags</option>
+                        <option value="italian">🇮🇹 Italian Text</option>
+                      </>
+                    )}
+                    {selectedTable === 'word_forms' && (
+                      <>
+                        <option value="tags">🏷️ Tags</option>
+                        <option value="form_text">📝 Form Text</option>
+                      </>
+                    )}
+                    {selectedTable === 'word_translations' && (
+                      <>
+                        <option value="context_metadata">📋 Metadata</option>
+                        <option value="translation">🌍 Translation</option>
+                      </>
+                    )}
+                  </select>
+
+                  <select
+                    value={operationType}
+                    onChange={(e) => setOperationType(e.target.value as any)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="replace">🔄 Replace</option>
+                    <option value="add">➕ Add</option>
+                    <option value="remove">🗑️ Remove</option>
+                  </select>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Value Mappings
-                    </label>
-                    <button
-                      onClick={addMapping}
-                      className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      + Add Mapping
-                    </button>
+                {/* Word Targeting - Collapsible */}
+                <div className="border rounded p-2 bg-gray-50">
+                  <button
+                    onClick={() => setShowWordSearch(!showWordSearch)}
+                    className="w-full flex items-center justify-between text-sm font-medium text-gray-700"
+                  >
+                    <span>🎯 Target Words ({selectedWords.length})</span>
+                    <span className="text-xs">{showWordSearch ? '▼' : '▶️'}</span>
+                  </button>
+
+                  {showWordSearch && (
+                    <div className="mt-2 space-y-2">
+                      <div className="flex space-x-1">
+                        <input
+                          type="text"
+                          value={wordSearchTerm}
+                          onChange={(e) => setWordSearchTerm(e.target.value)}
+                          placeholder="Search words..."
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={searchWords}
+                          disabled={isSearchingWords}
+                          className="px-2 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          🔍
+                        </button>
+                      </div>
+
+                      {selectedWords.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {selectedWords.map(word => (
+                            <span key={word.wordId} className="inline-flex items-center px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-xs">
+                              {word.italian}
+                              <button
+                                onClick={() => removeWordFromTargets(word.wordId)}
+                                className="ml-1 text-blue-600 hover:text-blue-800"
+                              >
+                                ✕
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {wordSearchResults.length > 0 && (
+                        <div className="max-h-32 overflow-y-auto border rounded bg-white">
+                          {wordSearchResults.map(word => {
+                            const isSelected = selectedWords.find(w => w.wordId === word.wordId);
+                            return (
+                              <div key={word.wordId} className={`p-2 border-b last:border-b-0 ${isSelected ? 'bg-blue-50' : ''}`}> 
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        addWordToTargets(word);
+                                      } else {
+                                        removeWordFromTargets(word.wordId);
+                                      }
+                                    }}
+                                    className="w-3 h-3"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium truncate">{word.italian}</div>
+                                    <div className="text-xs text-gray-500">{word.formsCount} forms</div>
+                                  </div>
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Global Tags - Compact */}
+                {selectedWords.length === 0 && selectedColumn === 'tags' && (
+                  <div className="border rounded p-2 bg-orange-50">
+                    {!globalTags && (
+                      <button
+                        onClick={loadGlobalTags}
+                        className="w-full py-1.5 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
+                      >
+                        🌍 Load All Tags
+                      </button>
+                    )}
+
+                    {globalTags && (
+                      <div className="space-y-2">
+                        <div className="text-xs text-orange-700">Select tags ({globalTags.length} available):</div>
+                        <div className="max-h-24 overflow-y-auto grid grid-cols-2 gap-1 text-xs">
+                          {globalTags.slice(0, 20).map(tag => (
+                            <label key={tag} className="flex items-center space-x-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedTagsForMigration.includes(tag)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedTagsForMigration(prev => [...prev, tag]);
+                                  } else {
+                                    setSelectedTagsForMigration(prev => prev.filter(t => t !== tag));
+                                  }
+                                }}
+                                className="w-3 h-3"
+                              />
+                              <span className="truncate text-xs">{tag}</span>
+                            </label>
+                          ))}
+                        </div>
+                        {globalTags.length > 20 && (
+                          <div className="text-xs text-gray-500">... and {globalTags.length - 20} more</div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="space-y-3">
+                )}
+
+                {/* Compact Replace Mappings */}
+                {operationType === 'replace' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Replacements</span>
+                      <button
+                        onClick={addMapping}
+                        className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
+                      >
+                        + Add
+                      </button>
+                    </div>
                     {ruleBuilderMappings.map((mapping) => (
-                      <div key={mapping.id} className="flex items-center space-x-3">
+                      <div key={mapping.id} className="flex space-x-1 items-center">
                         <input
                           type="text"
                           value={mapping.from}
                           onChange={(e) => updateMapping(mapping.id, 'from', e.target.value)}
-                          placeholder="From value..."
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="From..."
+                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
-                        <span className="text-gray-400">→</span>
+                        <span className="text-xs text-gray-400">→</span>
                         <input
                           type="text"
                           value={mapping.to}
                           onChange={(e) => updateMapping(mapping.id, 'to', e.target.value)}
-                          placeholder="To value..."
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="To..."
+                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                         />
                         <button
                           onClick={() => removeMapping(mapping.id)}
-                          className="text-red-500 hover:text-red-700"
+                          className="p-1 text-red-500 hover:text-red-700"
                         >
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {operationType === 'remove' && (
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Tags to Remove
-                      </label>
-                      <button
-                        onClick={addTagToRemove}
-                        className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        + Add Tag
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {tagsToRemove.map(tag => (
-                        <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full bg-red-100 text-red-800 text-xs">
-                          {tag}
-                          <button onClick={() => removeTagFromRemovalList(tag)} className="ml-1">✕</button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
                 )}
 
-                <div className="flex justify-end space-x-3">
-                  <button
-                    onClick={() => setShowRuleBuilder(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={saveCustomRule}
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    Save Rule
-                  </button>
+                {/* Compact Duplicate Prevention */}
+                <label className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <span className="text-sm">🛡️ Prevent Duplicates</span>
+                  <input
+                    type="checkbox"
+                    checked={preventDuplicates}
+                    onChange={(e) => setPreventDuplicates(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                </label>
+              </div>
+
+              {/* Compact Footer */}
+              <div className="flex space-x-2 p-3 border-t">
+                <button
+                  onClick={() => setShowRuleBuilder(false)}
+                  className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveRule}
+                  className="flex-1 py-2 px-3 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Global Rule Confirmation Modal */}
+      {showGlobalConfirmation && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-center mb-4">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100">
+                  <span className="text-orange-600 text-2xl">⚠️</span>
                 </div>
+              </div>
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Global Rule Confirmation
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  You haven't selected any specific words to target. This rule will apply to
+                  <span className="font-medium text-orange-600"> ALL matching records</span> in the database.
+                </p>
+                <div className="bg-orange-50 border border-orange-200 rounded p-3 mb-4">
+                  <div className="text-sm text-orange-800">
+                    <div className="font-medium mb-1">This will affect:</div>
+                    <div>• Table: {selectedTable}</div>
+                    <div>• Column: {selectedColumn}</div>
+                    <div>• Operation: {operationType}</div>
+                    <div>• Potentially hundreds or thousands of records</div>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  Are you sure you want to create a global rule?
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowGlobalConfirmation(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowGlobalConfirmation(false);
+                    saveCustomRule();
+                  }}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700"
+                >
+                  Yes, Create Global Rule
+                </button>
               </div>
             </div>
           </div>
