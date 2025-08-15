@@ -125,7 +125,7 @@ export default function MigrationToolsInterface() {
   const [selectedWords, setSelectedWords] = useState<WordSearchResult[]>([]);
   const [wordTagAnalysis, setWordTagAnalysis] = useState<WordTagAnalysis | null>(null);
   const [isSearchingWords, setIsSearchingWords] = useState(false);
-  const [showGlobalConfirmation, setShowGlobalConfirmation] = useState(false);
+  const [currentStep, setCurrentStep] = useState<'config' | 'targets' | 'mappings'>('config');
   const [currentLocationTags, setCurrentLocationTags] = useState<Record<string, any> | null>(null);
   const [isLoadingCurrentTags, setIsLoadingCurrentTags] = useState(false);
   const [selectedTagsForMigration, setSelectedTagsForMigration] = useState<string[]>([]);
@@ -1277,10 +1277,6 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const executeCascadingDelete = async () => {
-    // Implementation for cascading deletion
-  };
-
   const handleDeleteOperation = () => {
     if (operationType === 'delete' && selectedColumn === 'italian' && selectedWords.length === 1) {
       setDeleteTarget({ type: 'word', id: selectedWords[0].wordId, name: selectedWords[0].italian });
@@ -1311,14 +1307,6 @@ export default function MigrationToolsInterface() {
     }
     setShowRuleBuilder(false);
     addToDebugLog(`✅ Custom rule saved: ${ruleTitle}`);
-  };
-
-  const handleSaveRule = () => {
-    if (selectedWords.length === 0) {
-      setShowGlobalConfirmation(true);
-    } else {
-      saveCustomRule();
-    }
   };
 
   // NEW: Get available columns for selected table
@@ -1466,112 +1454,6 @@ export default function MigrationToolsInterface() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* First Deletion Confirmation Modal */}
-      {showDeleteConfirmation && deleteTarget && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-sm w-full p-4">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <span className="text-red-600 text-2xl">⚠️</span>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Delete {deleteTarget.type === 'word' ? 'Word' : 'Translation'}?
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                You're about to delete "{deleteTarget.name}". This action will:
-              </p>
-              <div className="text-left text-sm text-red-700 bg-red-50 p-3 rounded mb-4">
-                {deleteTarget.type === 'word' ? (
-                  <ul className="space-y-1">
-                    <li>• Delete the word from dictionary</li>
-                    <li>• Delete ALL word forms</li>
-                    <li>• Delete ALL translations</li>
-                    <li>• Delete ALL form-translation relationships</li>
-                  </ul>
-                ) : (
-                  <ul className="space-y-1">
-                    <li>• Delete the translation</li>
-                    <li>• Delete ALL form-translation relationships</li>
-                    <li>• Orphan related word forms</li>
-                  </ul>
-                )}
-              </div>
-              <p className="text-xs text-gray-500 mb-4">
-                This cannot be undone without database backup restoration.
-              </p>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  setShowDeleteConfirmation(false);
-                  setDeleteTarget(null);
-                }}
-                className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowDeleteConfirmation(false);
-                  setShowFinalDeleteConfirmation(true);
-                }}
-                className="flex-1 py-2 px-3 text-sm bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Final Deletion Confirmation Modal */}
-      {showFinalDeleteConfirmation && deleteTarget && (
-        <div className="fixed inset-0 bg-red-600 bg-opacity-75 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-sm w-full p-4 border-2 border-red-500">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                <span className="text-red-600 text-3xl">🗑️</span>
-              </div>
-              <h3 className="text-xl font-bold text-red-900 mb-2">
-                FINAL CONFIRMATION
-              </h3>
-              <p className="text-sm text-red-800 mb-4 font-medium">
-                Type "{deleteTarget.name}" to confirm deletion:
-              </p>
-              <input
-                type="text"
-                value={deleteConfirmationText}
-                onChange={(e) => setDeleteConfirmationText(e.target.value)}
-                className="w-full px-3 py-2 border-2 border-red-300 rounded text-center font-medium"
-                placeholder={`Type "${deleteTarget.name}" here`}
-              />
-              <p className="text-xs text-red-600 mt-2">
-                This will permanently delete ALL related data!
-              </p>
-            </div>
-            <div className="flex space-x-2 mt-4">
-              <button
-                onClick={() => {
-                  setShowFinalDeleteConfirmation(false);
-                  setDeleteTarget(null);
-                  setDeleteConfirmationText('');
-                }}
-                className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={executeCascadingDelete}
-                disabled={deleteConfirmationText !== deleteTarget.name}
-                className="flex-1 py-2 px-3 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                DELETE PERMANENTLY
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -2619,37 +2501,55 @@ export default function MigrationToolsInterface() {
                         + Add
                       </button>
                     </div>
-                    {ruleBuilderMappings.map((mapping) => (
-                      <div key={mapping.id} className="flex space-x-1 items-center">
-                        <input
-                          type="text"
-                          value={mapping.from}
-                          onChange={(e) => updateMapping(mapping.id, 'from', e.target.value)}
-                          placeholder="From..."
-                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                        <span className="text-xs text-gray-400">→</span>
-                        <input
-                          type="text"
-                          value={mapping.to}
-                          onChange={(e) => updateMapping(mapping.id, 'to', e.target.value)}
-                          placeholder="To..."
-                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                        <button
-                          onClick={() => removeMapping(mapping.id)}
-                          className="p-1 text-red-500 hover:text-red-700"
-                        >
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                  {ruleBuilderMappings.map((mapping) => (
+                    <div key={mapping.id} className="flex space-x-1 items-center">
+                      <input
+                        type="text"
+                        value={mapping.from}
+                        onChange={(e) => updateMapping(mapping.id, 'from', e.target.value)}
+                        placeholder="From..."
+                        className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <span className="text-xs text-gray-400">→</span>
+                      <input
+                        type="text"
+                        value={mapping.to}
+                        onChange={(e) => updateMapping(mapping.id, 'to', e.target.value)}
+                        placeholder="To..."
+                        className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <button
+                        onClick={() => removeMapping(mapping.id)}
+                        className="p-1 text-red-500 hover:text-red-700"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-                {/* Compact Duplicate Prevention */}
+              {currentStep === 'mappings' && (
+                <div className="flex space-x-2 p-3 border-t">
+                  <button
+                    onClick={() => setCurrentStep('config')}
+                    className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    onClick={saveCustomRule}
+                    disabled={operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())}
+                    className="flex-1 py-2 px-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                  >
+                    Save Rule
+                  </button>
+                </div>
+              )}
+
+                {/* Duplicate Prevention */}
                 <label className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <span className="text-sm">🛡️ Prevent Duplicates</span>
                   <input
@@ -2661,73 +2561,145 @@ export default function MigrationToolsInterface() {
                 </label>
               </div>
 
-              {/* Compact Footer */}
-              <div className="flex space-x-2 p-3 border-t">
-                <button
-                  onClick={() => setShowRuleBuilder(false)}
-                  className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveRule}
-                  className="flex-1 py-2 px-3 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Save
-                </button>
-              </div>
+              {/* Footer - Only show if not in step-by-step mode */}
+              {currentStep === 'config' && (
+                <div className="flex space-x-2 p-3 border-t">
+                  <button
+                    onClick={() => {
+                      resetAllRuleBuilderState();
+                      setShowRuleBuilder(false);
+                      setSelectedRule(null);
+                    }}
+                    className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveCustomRule}
+                    disabled={
+                      !ruleTitle.trim() ||
+                      (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
+                      selectedTagsForMigration.length === 0
+                    }
+                    className="flex-1 py-2 px-3 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Save Rule
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
-      {/* Global Rule Confirmation Modal */}
-      {showGlobalConfirmation && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-center mb-4">
-                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100">
-                  <span className="text-orange-600 text-2xl">⚠️</span>
-                </div>
+
+      {/* Deletion Confirmation Modals */}
+      {showDeleteConfirmation && deleteTarget && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-sm w-full p-4">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <span className="text-red-600 text-2xl">⚠️</span>
               </div>
-              <div className="text-center">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Global Rule Confirmation
-                </h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  You haven't selected any specific words to target. This rule will apply to
-                  <span className="font-medium text-orange-600"> ALL matching records</span> in the database.
-                </p>
-                <div className="bg-orange-50 border border-orange-200 rounded p-3 mb-4">
-                  <div className="text-sm text-orange-800">
-                    <div className="font-medium mb-1">This will affect:</div>
-                    <div>• Table: {selectedTable}</div>
-                    <div>• Column: {selectedColumn}</div>
-                    <div>• Operation: {operationType}</div>
-                    <div>• Potentially hundreds or thousands of records</div>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mb-4">
-                  Are you sure you want to create a global rule?
-                </p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Delete {deleteTarget.type === 'word' ? 'Word' : 'Translation'}?
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                You're about to delete "{deleteTarget.name}". This action will:
+              </p>
+              <div className="text-left text-sm text-red-700 bg-red-50 p-3 rounded mb-4">
+                {deleteTarget.type === 'word' ? (
+                  <ul className="space-y-1">
+                    <li>• Delete the word from dictionary</li>
+                    <li>• Delete ALL word forms</li>
+                    <li>• Delete ALL translations</li>
+                    <li>• Delete ALL form-translation relationships</li>
+                  </ul>
+                ) : (
+                  <ul className="space-y-1">
+                    <li>• Delete the translation</li>
+                    <li>• Delete ALL form-translation relationships</li>
+                    <li>• Orphan related word forms</li>
+                  </ul>
+                )}
               </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowGlobalConfirmation(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    setShowGlobalConfirmation(false);
-                    saveCustomRule();
-                  }}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700"
-                >
-                  Yes, Create Global Rule
-                </button>
+              <p className="text-xs text-gray-500 mb-4">
+                This cannot be undone without database backup restoration.
+              </p>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmation(false);
+                  setDeleteTarget(null);
+                }}
+                className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirmation(false);
+                  setShowFinalDeleteConfirmation(true);
+                }}
+                className="flex-1 py-2 px-3 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Final Deletion Confirmation Modal */}
+      {showFinalDeleteConfirmation && deleteTarget && (
+        <div className="fixed inset-0 bg-red-600 bg-opacity-75 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-sm w-full p-4 border-2 border-red-500">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                <span className="text-red-600 text-3xl">🗑️</span>
               </div>
+              <h3 className="text-xl font-bold text-red-900 mb-2">
+                FINAL CONFIRMATION
+              </h3>
+              <p className="text-sm text-red-800 mb-4 font-medium">
+                Type "{deleteTarget.name}" to confirm deletion:
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmationText}
+                onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                className="w-full px-3 py-2 border-2 border-red-300 rounded text-center font-medium"
+                placeholder={`Type "${deleteTarget.name}" here`}
+              />
+              <p className="text-xs text-red-600 mt-2">
+                This will permanently delete ALL related data!
+              </p>
+            </div>
+            <div className="flex space-x-2 mt-4">
+              <button
+                onClick={() => {
+                  setShowFinalDeleteConfirmation(false);
+                  setDeleteTarget(null);
+                  setDeleteConfirmationText('');
+                }}
+                className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  // Execute deletion logic here
+                  addToDebugLog(`🗑️ Executing cascading delete for ${deleteTarget.type}: ${deleteTarget.name}`);
+                  setShowFinalDeleteConfirmation(false);
+                  setDeleteTarget(null);
+                  setDeleteConfirmationText('');
+                  resetAllRuleBuilderState();
+                }}
+                disabled={deleteConfirmationText !== deleteTarget.name}
+                className="flex-1 py-2 px-3 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                DELETE PERMANENTLY
+              </button>
             </div>
           </div>
         </div>
