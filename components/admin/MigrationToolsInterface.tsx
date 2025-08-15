@@ -118,14 +118,15 @@ export default function MigrationToolsInterface() {
   const [operationType, setOperationType] = useState<'replace' | 'add' | 'remove' | 'delete'>('replace');
   const [preventDuplicates, setPreventDuplicates] = useState(true);
   const [tagsToRemove, setTagsToRemove] = useState<string[]>([]);
-  
+  const [newTagToAdd, setNewTagToAdd] = useState('');
+
   // NEW: Word targeting state
   const [wordSearchTerm, setWordSearchTerm] = useState('');
   const [wordSearchResults, setWordSearchResults] = useState<WordSearchResult[]>([]);
   const [selectedWords, setSelectedWords] = useState<WordSearchResult[]>([]);
   const [wordTagAnalysis, setWordTagAnalysis] = useState<WordTagAnalysis | null>(null);
   const [isSearchingWords, setIsSearchingWords] = useState(false);
-  const [currentStep, setCurrentStep] = useState<'config' | 'targets' | 'mappings'>('config');
+  const [currentStep, setCurrentStep] = useState<'config' | 'mappings' | 'words' | 'forms' | 'translations' | 'tags'>('config');
   const [currentLocationTags, setCurrentLocationTags] = useState<Record<string, any> | null>(null);
   const [isLoadingCurrentTags, setIsLoadingCurrentTags] = useState(false);
   const [selectedTagsForMigration, setSelectedTagsForMigration] = useState<string[]>([]);
@@ -187,6 +188,7 @@ export default function MigrationToolsInterface() {
     setRuleDescription('');
     setRuleBuilderMappings([]);
     setTagsToRemove([]);
+    setNewTagToAdd('');
     setOperationType('replace');
     setPreventDuplicates(true);
     setSelectedTable('dictionary');
@@ -201,6 +203,7 @@ export default function MigrationToolsInterface() {
     setIsLoadingWordForms(false);
     setIsLoadingWordTranslations(false);
     setIsSearchingWords(false);
+    setCurrentStep('config');
     addToDebugLog('🧹 Complete rule builder state reset');
   };
 
@@ -288,6 +291,54 @@ export default function MigrationToolsInterface() {
   useEffect(() => {
     setSelectedTranslationMetadata(null);
   }, [selectedTranslationIds]);
+
+  // Auto-populate Italian text replacements when words selected
+  useEffect(() => {
+    if (selectedWords.length > 0 && selectedColumn === 'italian' && operationType === 'replace') {
+      const newMappings = selectedWords.map((word, index) => ({
+        id: `italian-${index}`,
+        from: word.italian,
+        to: '', // User fills this in
+      }));
+      setRuleBuilderMappings(newMappings);
+    }
+  }, [selectedWords, selectedColumn, operationType]);
+
+  // Auto-load forms and advance steps when words selected
+  useEffect(() => {
+    if (selectedWords.length > 0 && currentStep === 'words') {
+      if (selectedTable === 'word_forms') {
+        // Auto-load forms and advance to forms step
+        loadWordFormsData();
+        setCurrentStep('forms');
+      } else if (selectedTable === 'word_translations') {
+        setCurrentStep('translations');
+      } else {
+        setCurrentStep('tags');
+      }
+    }
+  }, [selectedWords.length, selectedTable, currentStep]);
+
+  // Auto-load tags when forms are selected/deselected
+  useEffect(() => {
+    if (selectedFormIds.length > 0 && wordFormsData && selectedTable === 'word_forms' && selectedColumn === 'tags') {
+      loadSelectedFormTags();
+    }
+  }, [selectedFormIds, wordFormsData, selectedTable, selectedColumn]);
+
+  // Auto-load translations when words selected for word_translations table
+  useEffect(() => {
+    if (selectedWords.length > 0 && selectedTable === 'word_translations' && currentStep === 'translations') {
+      loadWordTranslationsData();
+    }
+  }, [selectedWords, selectedTable, currentStep]);
+
+  // Auto-load metadata when translations are selected
+  useEffect(() => {
+    if (selectedTranslationIds.length > 0 && wordTranslationsData && selectedTable === 'word_translations' && selectedColumn === 'context_metadata') {
+      loadSelectedTranslationMetadata();
+    }
+  }, [selectedTranslationIds, wordTranslationsData, selectedTable, selectedColumn]);
 
   // NEW: Load dynamic table schemas
   const loadTableSchemas = async () => {
@@ -1970,17 +2021,20 @@ export default function MigrationToolsInterface() {
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="replace">🔄 Replace</option>
-                    {(selectedWords.length > 0 || selectedFormIds.length > 0 || selectedTranslationIds.length > 0) ? (
+                    {/* Add only available for tags and metadata */}
+                    {(selectedColumn === 'tags' || selectedColumn === 'context_metadata') && (
                       <option value="add">➕ Add</option>
-                    ) : (
-                      <option value="add" disabled>➕ Add (Select targets first)</option>
                     )}
-                    <option value="remove">🗑️ Remove</option>
-                    {selectedWords.length === 1 && selectedColumn === 'italian' && (
-                      <option value="delete">❌ Delete Word (Cascading)</option>
+                    {/* Remove only available for tags and metadata */}
+                    {(selectedColumn === 'tags' || selectedColumn === 'context_metadata') && (
+                      <option value="remove">🗑️ Remove</option>
                     )}
-                    {selectedTranslationIds.length === 1 && selectedColumn === 'translation' && (
-                      <option value="delete">❌ Delete Translation (Cascading)</option>
+                    {/* Delete only for dictionary words and translations */}
+                    {selectedWords.length >= 1 && selectedColumn === 'italian' && (
+                      <option value="delete">❌ Delete Word(s) (Cascading)</option>
+                    )}
+                    {selectedTranslationIds.length >= 1 && selectedColumn === 'translation' && (
+                      <option value="delete">❌ Delete Translation(s) (Cascading)</option>
                     )}
                   </select>
 
@@ -2267,18 +2321,23 @@ export default function MigrationToolsInterface() {
                                           setSelectedFormIds(prev => prev.filter(id => id !== form.id));
                                         }
                                       }}
-                                      className="w-3 h-3 mt-0.5"
-                                    />
-                                    <div className="flex-1 min-w-0">
+                                    className="w-3 h-3 mt-0.5"
+                                  />
+                                  <div className="flex-1 min-w-0">
                                       <div className="text-xs font-medium truncate">{form.form_text}</div>
-                                      <div className="text-xs text-gray-500">{form.form_type}</div>
-                                      <div className="text-xs text-gray-400">
-                                        {form.tags?.length || 0} tags available
+                                      <div className="text-xs text-gray-500 mb-1">{form.form_type}</div>
+                                      <div className="text-xs text-blue-600 flex flex-wrap gap-1">
+                                        {(form.tags || []).slice(0, 3).map(tag => (
+                                          <span key={tag} className="bg-blue-100 px-1 rounded">{tag}</span>
+                                        ))}
+                                        {(form.tags || []).length > 3 && (
+                                          <span className="text-gray-500">+{(form.tags || []).length - 3} more</span>
+                                        )}
                                       </div>
-                                    </div>
-                                  </label>
-                                ))}
-                              </div>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
 
                               {selectedFormIds.length > 0 && (
                                 <div className="mt-2 text-xs text-yellow-800">
@@ -2489,6 +2548,22 @@ export default function MigrationToolsInterface() {
                   </div>
                 )}
 
+                {operationType === 'add' && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium">Tag to add:</div>
+                    <input
+                      type="text"
+                      value={newTagToAdd}
+                      onChange={(e) => setNewTagToAdd(e.target.value)}
+                      placeholder="Enter tag to add..."
+                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <div className="text-xs text-gray-600">
+                      This tag will be added to {selectedFormIds.length || selectedTranslationIds.length} selected items.
+                    </div>
+                  </div>
+                )}
+
                 {/* Compact Replace Mappings */}
                 {operationType === 'replace' && (
                   <div className="space-y-2">
@@ -2556,7 +2631,8 @@ export default function MigrationToolsInterface() {
                     type="checkbox"
                     checked={preventDuplicates}
                     onChange={(e) => setPreventDuplicates(e.target.checked)}
-                    className="w-4 h-4"
+                    disabled={operationType === 'remove' || operationType === 'delete'}
+                    className="w-4 h-4 disabled:opacity-50"
                   />
                 </label>
               </div>
@@ -2579,7 +2655,9 @@ export default function MigrationToolsInterface() {
                     disabled={
                       !ruleTitle.trim() ||
                       (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
-                      selectedTagsForMigration.length === 0
+                      (operationType === 'add' && !newTagToAdd.trim()) ||
+                      (operationType === 'remove' && selectedTagsForMigration.length === 0) ||
+                      ((operationType === 'replace' || operationType === 'add') && selectedTagsForMigration.length === 0)
                     }
                     className="flex-1 py-2 px-3 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                   >
