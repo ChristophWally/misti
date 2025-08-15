@@ -880,7 +880,9 @@ export default function MigrationToolsInterface() {
   const handleCreateNewRule = () => {
     resetAllRuleBuilderState();
     setShowRuleBuilder(true);
-    setSelectedRule(null);
+    setSelectedRule(null); // This ensures we're creating NEW rule
+    setRuleTitle('New Custom Rule');
+    setRuleDescription('Custom migration rule created by user');
     addToDebugLog('🆕 Creating new rule (fresh state)');
   };
 
@@ -1364,6 +1366,7 @@ export default function MigrationToolsInterface() {
 
   const saveCustomRule = () => {
     if (selectedRule) {
+      // Editing existing rule
       setMigrationRules(prev => prev.map(rule =>
         rule.id === selectedRule.id
           ? {
@@ -1372,13 +1375,37 @@ export default function MigrationToolsInterface() {
               description: ruleDescription,
               operationType,
               preventDuplicates,
-              targetedWords: selectedWords.map(w => w.italian)
+              targetedWords: selectedWords.map(w => w.italian),
+              affectedCount: selectedTagsForMigration.length || ruleBuilderMappings.length || 1
             }
           : rule
       ));
+      addToDebugLog(`✅ Updated existing rule: ${ruleTitle}`);
+    } else {
+      // Creating new rule
+      const newRule: VisualRule = {
+        id: `custom-${Date.now()}`,
+        title: ruleTitle,
+        description: ruleDescription,
+        impact: selectedTagsForMigration.length > 50 ? 'high' : selectedTagsForMigration.length > 10 ? 'medium' : 'low',
+        status: 'ready',
+        affectedCount: selectedTagsForMigration.length || ruleBuilderMappings.length || 1,
+        autoExecutable: operationType !== 'delete',
+        requiresInput: operationType === 'add' || operationType === 'replace',
+        category: 'custom',
+        estimatedTime: operationType === 'delete' ? '5-10 seconds' : '1-2 seconds',
+        canRollback: true,
+        targetedWords: selectedWords.map(w => w.italian),
+        preventDuplicates,
+        operationType
+      };
+
+      setMigrationRules(prev => [...prev, newRule]);
+      addToDebugLog(`✅ Created new rule: ${ruleTitle}`);
     }
+
     setShowRuleBuilder(false);
-    addToDebugLog(`✅ Custom rule saved: ${ruleTitle}`);
+    resetAllRuleBuilderState();
   };
 
   // NEW: Get available columns for selected table
@@ -1937,7 +1964,7 @@ export default function MigrationToolsInterface() {
               {/* Compact Header */}
               <div className="flex items-center justify-between p-3 border-b">
                 <h3 className="text-base font-medium text-gray-900 truncate">
-                  {selectedRule ? 'Edit Rule' : 'New Rule'}
+                  {selectedRule ? `Edit Rule: ${selectedRule.title}` : 'Create New Rule'}
                 </h3>
                 <button
                   onClick={handleCloseRuleBuilder}
@@ -2516,7 +2543,7 @@ export default function MigrationToolsInterface() {
                       )}
                     </div>
                     
-                    {selectedTranslationIds.length > 0 && selectedColumn === 'context_metadata' && (
+                    {selectedTable === 'word_translations' && selectedTranslationIds.length > 0 && selectedColumn === 'context_metadata' && (
                       <div className="border rounded p-2 bg-purple-50">
                         <div className="text-xs text-purple-700 mb-2">
                           📋 Step 2: Select Metadata Keys from {selectedTranslationIds.length} Selected Translation(s)
