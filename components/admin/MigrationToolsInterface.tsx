@@ -304,6 +304,22 @@ export default function MigrationToolsInterface() {
     }
   }, [selectedWords, selectedColumn, operationType]);
 
+  // Auto-populate form text replacements when forms selected
+  useEffect(() => {
+    if (selectedFormIds.length > 0 && selectedColumn === 'form_text' && operationType === 'replace' && wordFormsData) {
+      const forms = Object.values(wordFormsData)
+        .flat()
+        .filter((form: any) => selectedFormIds.includes(form.id));
+
+      const newMappings = forms.map((form: any, index) => ({
+        id: `form-text-${index}`,
+        from: form.form_text,
+        to: '', // User fills this in
+      }));
+      setRuleBuilderMappings(newMappings);
+    }
+  }, [selectedFormIds, selectedColumn, operationType, wordFormsData]);
+
   // Auto-load forms and advance steps when words selected
   useEffect(() => {
     if (selectedWords.length > 0 && currentStep === 'words') {
@@ -1312,6 +1328,8 @@ export default function MigrationToolsInterface() {
         .flat()
         .filter((translation: any) => selectedTranslationIds.includes(translation.id));
 
+      addToDebugLog(`Found ${selectedTranslations.length} matching translations`);
+
       const metadataCounts: Record<string, number> = {};
       selectedTranslations.forEach((translation: any) => {
         if (translation.context_metadata) {
@@ -1323,6 +1341,9 @@ export default function MigrationToolsInterface() {
 
       setSelectedTranslationMetadata(metadataCounts);
       addToDebugLog(`✅ Loaded ${Object.keys(metadataCounts).length} unique metadata keys from selected translations`);
+
+      // Auto-populate selected tags for migration
+      setSelectedTagsForMigration(Object.keys(metadataCounts));
     } catch (error: any) {
       addToDebugLog(`❌ Error loading selected translation metadata: ${error.message}`);
     }
@@ -2129,9 +2150,10 @@ export default function MigrationToolsInterface() {
                     {!globalTags && (
                       <button
                         onClick={loadGlobalTags}
-                        className="w-full py-1.5 text-sm bg-orange-600 text-white rounded hover:bg-orange-700"
+                        disabled={isLoadingGlobalTags}
+                        className="w-full py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
                       >
-                        🌍 Load All Tags
+                        {isLoadingGlobalTags ? '⏳ Loading...' : '🌍 Load All Tags From Selected Words'}
                       </button>
                     )}
 
@@ -2326,13 +2348,10 @@ export default function MigrationToolsInterface() {
                                   <div className="flex-1 min-w-0">
                                       <div className="text-xs font-medium truncate">{form.form_text}</div>
                                       <div className="text-xs text-gray-500 mb-1">{form.form_type}</div>
-                                      <div className="text-xs text-blue-600 flex flex-wrap gap-1">
-                                        {(form.tags || []).slice(0, 3).map(tag => (
-                                          <span key={tag} className="bg-blue-100 px-1 rounded">{tag}</span>
+                                      <div className="text-xs text-blue-600 flex flex-wrap gap-1 max-h-12 overflow-y-auto">
+                                        {(form.tags || []).map(tag => (
+                                          <span key={tag} className="bg-blue-100 px-1 rounded text-xs">{tag}</span>
                                         ))}
-                                        {(form.tags || []).length > 3 && (
-                                          <span className="text-gray-500">+{(form.tags || []).length - 3} more</span>
-                                        )}
                                       </div>
                                   </div>
                                 </label>
@@ -2475,9 +2494,11 @@ export default function MigrationToolsInterface() {
                                     />
                                     <div className="flex-1 min-w-0">
                                       <div className="text-xs font-medium">"{translation.translation}"</div>
-                                      <div className="text-xs text-gray-500">Priority: {translation.display_priority}</div>
-                                      <div className="text-xs text-gray-400">
-                                        {Object.keys(translation.context_metadata || {}).length} metadata keys
+                                      <div className="text-xs text-gray-500 mb-1">Priority: {translation.display_priority}</div>
+                                      <div className="text-xs text-purple-600 flex flex-wrap gap-1 max-h-12 overflow-y-auto">
+                                        {Object.keys(translation.context_metadata || {}).map(key => (
+                                          <span key={key} className="bg-purple-100 px-1 rounded text-xs">{key}</span>
+                                        ))}
                                       </div>
                                     </div>
                                   </label>
@@ -2565,7 +2586,7 @@ export default function MigrationToolsInterface() {
                 )}
 
                 {/* Compact Replace Mappings */}
-                {operationType === 'replace' && (
+                {operationType === 'replace' && selectedColumn !== 'form_text' && selectedColumn !== 'context_metadata' && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Replacements</span>
@@ -2606,6 +2627,81 @@ export default function MigrationToolsInterface() {
                 </div>
               )}
 
+                {operationType === 'replace' && selectedColumn === 'form_text' && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium">Form text replacements:</div>
+                    {selectedFormIds.map((formId, index) => {
+                      const form = Object.values(wordFormsData || {})
+                        .flat()
+                        .find((f: any) => f.id === formId);
+                      if (!form) return null;
+
+                      return (
+                        <div key={formId} className="flex space-x-1 items-center">
+                          <input
+                            type="text"
+                            value={form.form_text}
+                            disabled
+                            className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded bg-gray-50"
+                          />
+                          <span className="text-xs text-gray-400">→</span>
+                          <input
+                            type="text"
+                            value={ruleBuilderMappings.find(m => m.from === form.form_text)?.to || ''}
+                            onChange={(e) => {
+                              const mappingId = `form-${index}`;
+                              setRuleBuilderMappings(prev => {
+                                const existing = prev.find(m => m.from === form.form_text);
+                                if (existing) {
+                                  return prev.map(m => m.from === form.form_text ? { ...m, to: e.target.value } : m);
+                                } else {
+                                  return [...prev, { id: mappingId, from: form.form_text, to: e.target.value }];
+                                }
+                              });
+                            }}
+                            placeholder="Replace with..."
+                            className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {operationType === 'replace' && selectedColumn === 'context_metadata' && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium">Metadata replacements:</div>
+                    {selectedTagsForMigration.map((key, index) => (
+                      <div key={key} className="flex space-x-1 items-center">
+                        <input
+                          type="text"
+                          value={key}
+                          disabled
+                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded bg-gray-50"
+                        />
+                        <span className="text-xs text-gray-400">→</span>
+                        <input
+                          type="text"
+                          value={ruleBuilderMappings.find(m => m.from === key)?.to || ''}
+                          onChange={(e) => {
+                            const mappingId = `metadata-${index}`;
+                            setRuleBuilderMappings(prev => {
+                              const existing = prev.find(m => m.from === key);
+                              if (existing) {
+                                return prev.map(m => m.from === key ? { ...m, to: e.target.value } : m);
+                              } else {
+                                return [...prev, { id: mappingId, from: key, to: e.target.value }];
+                              }
+                            });
+                          }}
+                          placeholder="Replace with..."
+                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
               {currentStep === 'mappings' && (
                 <div className="flex space-x-2 p-3 border-t">
                   <button
@@ -2616,7 +2712,13 @@ export default function MigrationToolsInterface() {
                   </button>
                   <button
                     onClick={saveCustomRule}
-                    disabled={operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())}
+                    disabled={
+                      !ruleTitle.trim() ||
+                      (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
+                      (operationType === 'add' && !newTagToAdd.trim()) ||
+                      (operationType === 'remove' && selectedTagsForMigration.length === 0) ||
+                      (operationType === 'replace' && selectedTagsForMigration.length === 0 && ruleBuilderMappings.length === 0)
+                    }
                     className="flex-1 py-2 px-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
                   >
                     Save Rule
@@ -2657,7 +2759,7 @@ export default function MigrationToolsInterface() {
                       (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
                       (operationType === 'add' && !newTagToAdd.trim()) ||
                       (operationType === 'remove' && selectedTagsForMigration.length === 0) ||
-                      ((operationType === 'replace' || operationType === 'add') && selectedTagsForMigration.length === 0)
+                      (operationType === 'replace' && selectedTagsForMigration.length === 0 && ruleBuilderMappings.length === 0)
                     }
                     className="flex-1 py-2 px-3 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                   >
