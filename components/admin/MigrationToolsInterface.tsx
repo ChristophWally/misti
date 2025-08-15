@@ -28,7 +28,7 @@ interface VisualRule {
   affectedCount: number;
   autoExecutable: boolean;
   requiresInput: boolean;
-  category: 'terminology' | 'metadata' | 'cleanup';
+  category: 'terminology' | 'metadata' | 'cleanup' | 'custom';
   estimatedTime: string;
   canRollback: boolean;
   // NEW: Enhanced properties
