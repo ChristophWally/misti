@@ -2151,9 +2151,9 @@ export default function MigrationToolsInterface() {
                       <button
                         onClick={loadGlobalTags}
                         disabled={isLoadingGlobalTags}
-                        className="w-full py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                        className="w-full py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50"
                       >
-                        {isLoadingGlobalTags ? '⏳ Loading...' : '🌍 Load All Tags From Selected Words'}
+                        {isLoadingGlobalTags ? '⏳ Loading...' : '🌍 Load All Tags'}
                       </button>
                     )}
 
@@ -2196,7 +2196,7 @@ export default function MigrationToolsInterface() {
                     {!wordSpecificTags && !isLoadingWordSpecificTags && (
                       <button
                         onClick={loadWordSpecificTags}
-                        className="w-full py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                        className="w-full py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
                       >
                         📋 Load Tags from Selected Words
                       </button>
@@ -2378,7 +2378,7 @@ export default function MigrationToolsInterface() {
                         {!selectedFormTags && (
                           <button
                             onClick={loadSelectedFormTags}
-                            className="w-full py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                            className="w-full py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
                           >
                             🏷️ Load Tags from Selected Forms
                           </button>
