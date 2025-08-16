@@ -2045,7 +2045,10 @@ export default function MigrationToolsInterface() {
               </div>
 
               <div className="p-3 space-y-3 max-h-[80vh] overflow-y-auto">
-                {currentStep === 'config' && selectedTagsForMigration.length > 0 && (
+                {currentStep === 'config' && (
+                  (operationType === 'add' && (selectedWords.length > 0 || selectedFormIds.length > 0 || selectedTranslationIds.length > 0)) ||
+                  (operationType !== 'add' && selectedTagsForMigration.length > 0)
+                ) && (
                   <div className="space-y-2">
                     <div className="text-xs text-gray-600">Step 4: Configure migration operation</div>
 
@@ -2822,7 +2825,10 @@ export default function MigrationToolsInterface() {
               </div>
 
               {/* Footer - Only show if not in step-by-step mode */}
-              {currentStep === 'config' && selectedTagsForMigration.length > 0 && (
+              {currentStep === 'config' && (
+                (operationType === 'add' && (selectedWords.length > 0 || selectedFormIds.length > 0 || selectedTranslationIds.length > 0)) ||
+                (operationType !== 'add' && selectedTagsForMigration.length > 0)
+              ) && (
                 <div className="flex space-x-2 p-3 border-t">
                   <button
                     onClick={() => {
