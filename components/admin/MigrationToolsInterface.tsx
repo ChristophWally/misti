@@ -992,19 +992,53 @@ export default function MigrationToolsInterface() {
 
   const loadGlobalTags = async () => {
     setIsLoadingGlobalTags(true);
-    addToDebugLog(`🌍 Loading ALL tags from ${selectedTable}.${selectedColumn}...`);
+    addToDebugLog(`🌍 Loading ALL tags/metadata from ${selectedTable === 'all_tables' ? 'all tables' : selectedTable}...`);
 
     try {
       let allTags: string[] = [];
+      const tagSet = new Set<string>();
 
-      if (selectedColumn === 'tags') {
+      if (selectedTable === 'all_tables') {
+        // Load tags from dictionary
+        const { data: dictData, error: dictError } = await supabase
+          .from('dictionary')
+          .select('tags');
+        if (!dictError) {
+          (dictData || []).forEach((record: any) => {
+            (record.tags || []).forEach((tag: string) => tagSet.add(tag));
+          });
+        }
+
+        // Load tags from word_forms
+        const { data: formsData, error: formsError } = await supabase
+          .from('word_forms')
+          .select('tags');
+        if (!formsError) {
+          (formsData || []).forEach((record: any) => {
+            (record.tags || []).forEach((tag: string) => tagSet.add(tag));
+          });
+        }
+
+        // Load metadata from word_translations
+        const { data: transData, error: transError } = await supabase
+          .from('word_translations')
+          .select('context_metadata');
+        if (!transError) {
+          (transData || []).forEach((record: any) => {
+            if (record.context_metadata) {
+              Object.keys(record.context_metadata).forEach(key => tagSet.add(key));
+            }
+          });
+        }
+
+        allTags = Array.from(tagSet).sort();
+      } else if (selectedColumn === 'tags') {
         const { data, error } = await supabase
           .from(selectedTable)
           .select('tags');
 
         if (error) throw error;
 
-        const tagSet = new Set<string>();
         (data || []).forEach((record: any) => {
           (record.tags || []).forEach((tag: string) => tagSet.add(tag));
         });
@@ -1017,24 +1051,103 @@ export default function MigrationToolsInterface() {
 
         if (error) throw error;
 
-        const keySet = new Set<string>();
         (data || []).forEach((record: any) => {
           if (record.context_metadata) {
-            Object.keys(record.context_metadata).forEach(key => keySet.add(key));
+            Object.keys(record.context_metadata).forEach(key => tagSet.add(key));
           }
         });
-        allTags = Array.from(keySet).sort();
+        allTags = Array.from(tagSet).sort();
       }
 
       setGlobalTags(allTags);
-      addToDebugLog(`✅ Loaded ${allTags.length} unique tags from entire ${selectedTable}.${selectedColumn}`);
+      addToDebugLog(`✅ Loaded ${allTags.length} unique tags/metadata from ${selectedTable === 'all_tables' ? 'all tables' : selectedTable}`);
+
+      } catch (error: any) {
+        addToDebugLog(`❌ Failed to load global tags: ${error.message}`);
+        console.error('Error loading global tags:', error);
+      } finally {
+        setIsLoadingGlobalTags(false);
+      }
+  };
+
+  const loadAllTagsFromSelectedWords = async () => {
+    if (selectedWords.length === 0) {
+      addToDebugLog('⚠️ No words selected for comprehensive tag loading');
+      return;
+    }
+
+    setIsLoadingGlobalTags(true);
+    addToDebugLog(`🎯 Loading ALL tags & metadata from ${selectedWords.length} selected words...`);
+
+    try {
+      const allTags = new Set<string>();
+
+      for (const word of selectedWords) {
+        // Load dictionary tags
+        const { data: dictData, error: dictError } = await supabase
+          .from('dictionary')
+          .select('tags')
+          .eq('id', word.wordId);
+
+        if (!dictError && dictData?.[0]?.tags) {
+          dictData[0].tags.forEach((tag: string) => allTags.add(tag));
+        }
+
+        // Load form tags
+        const { data: formsData, error: formsError } = await supabase
+          .from('word_forms')
+          .select('tags')
+          .eq('word_id', word.wordId);
+
+        if (!formsError) {
+          (formsData || []).forEach((form: any) => {
+            (form.tags || []).forEach((tag: string) => allTags.add(tag));
+          });
+        }
+
+        // Load translation metadata
+        const { data: transData, error: transError } = await supabase
+          .from('word_translations')
+          .select('context_metadata')
+          .eq('word_id', word.wordId);
+
+        if (!transError) {
+          (transData || []).forEach((translation: any) => {
+            if (translation.context_metadata) {
+              Object.keys(translation.context_metadata).forEach(key => allTags.add(key));
+            }
+          });
+        }
+      }
+
+      const sortedTags = Array.from(allTags).sort();
+      setGlobalTags(sortedTags);
+      addToDebugLog(`✅ Loaded ${sortedTags.length} unique tags & metadata from selected words`);
 
     } catch (error: any) {
-      addToDebugLog(`❌ Failed to load global tags: ${error.message}`);
-      console.error('Error loading global tags:', error);
+      addToDebugLog(`❌ Failed to load tags from selected words: ${error.message}`);
     } finally {
       setIsLoadingGlobalTags(false);
     }
+  };
+
+  const getActionDescription = () => {
+    const targetScope = selectedWords.length > 0
+      ? `${selectedWords.length} selected word(s): ${selectedWords.map(w => w.italian).join(', ')}`
+      : 'ALL records in database';
+
+    const operationTarget = selectedTable === 'all_tables'
+      ? 'across all tables (dictionary, word_forms, word_translations)'
+      : selectedTable === 'dictionary'
+      ? 'in dictionary entries'
+      : selectedTable === 'word_forms'
+      ? `in ${selectedFormIds.length || 'all'} word forms`
+      : `in ${selectedTranslationIds.length || 'all'} translations`;
+
+    const selectedCount = selectedTagsForMigration.length;
+    const tagType = selectedColumn === 'context_metadata' ? 'metadata keys' : 'tags';
+
+    return `${operationType.toUpperCase()} ${selectedCount} ${tagType} ${operationTarget} for ${targetScope}`;
   };
 
   const loadTextContent = async () => {
@@ -1929,6 +2042,18 @@ export default function MigrationToolsInterface() {
               </div>
 
               <div className="p-3 space-y-3 max-h-[80vh] overflow-y-auto">
+                {currentStep === 'config' && (
+                  <div className="space-y-2">
+                    <div className="text-xs text-gray-600">Step 4: Configure migration operation</div>
+
+                    {/* Action Description */}
+                    <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs">
+                      <div className="font-medium text-blue-900">Action Summary:</div>
+                      <div className="text-blue-800 mt-1">{getActionDescription()}</div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Compact Title/Description */}
                 <div className="space-y-2">
                   <input
@@ -1951,9 +2076,20 @@ export default function MigrationToolsInterface() {
                 <div className="space-y-2">
                   <select
                     value={selectedTable}
-                    onChange={(e) => setSelectedTable(e.target.value)}
+                    onChange={(e) => {
+                      const table = e.target.value;
+                      setSelectedTable(table);
+                      if (table === 'all_tables') {
+                        setSelectedColumn('tags_and_metadata');
+                      } else if (table === 'word_translations') {
+                        setSelectedColumn('context_metadata');
+                      } else {
+                        setSelectedColumn('tags');
+                      }
+                    }}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
+                    <option value="all_tables">🌐 All Tables</option>
                     <option value="dictionary">📚 Dictionary</option>
                     <option value="word_forms">📝 Word Forms</option>
                     <option value="word_translations">🌍 Translations</option>
@@ -1964,6 +2100,9 @@ export default function MigrationToolsInterface() {
                     onChange={(e) => setSelectedColumn(e.target.value)}
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
+                    {selectedTable === 'all_tables' && (
+                      <option value="tags_and_metadata">🏷️ Tags & Metadata</option>
+                    )}
                     {selectedTable === 'dictionary' && (
                       <option value="tags">🏷️ Tags</option>
                     )}
@@ -2071,7 +2210,7 @@ export default function MigrationToolsInterface() {
                 </div>
 
                 {/* Global Tags - Compact */}
-                {selectedWords.length === 0 && selectedColumn === 'tags' && (
+                {selectedWords.length === 0 && ((selectedTable === 'all_tables' && selectedColumn === 'tags_and_metadata') || selectedColumn === 'tags' || selectedColumn === 'context_metadata') && (
                   <div className="border rounded p-2 bg-orange-50">
                     {!globalTags && (
                       <button
@@ -2079,13 +2218,13 @@ export default function MigrationToolsInterface() {
                         disabled={isLoadingGlobalTags}
                         className="w-full py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50"
                       >
-                        {isLoadingGlobalTags ? '⏳ Loading...' : '🌍 Load All Tags'}
+                        {isLoadingGlobalTags ? '⏳ Loading...' : (selectedTable === 'all_tables' || selectedColumn === 'context_metadata' ? '🌍 Load All Tags/Metadata' : '🌍 Load All Tags')}
                       </button>
                     )}
 
                     {globalTags && (
                       <div className="space-y-2">
-                        <div className="text-xs text-orange-700">Select tags ({globalTags.length} available):</div>
+                        <div className="text-xs text-orange-700">Select {selectedTable === 'all_tables' || selectedColumn === 'context_metadata' ? 'tags/metadata' : 'tags'} ({globalTags.length} available):</div>
                         <div className="max-h-32 overflow-y-auto grid grid-cols-2 gap-1 text-xs">
                           {globalTags.map(tag => (
                             <label key={tag} className="flex items-center space-x-1 cursor-pointer">
@@ -2106,7 +2245,63 @@ export default function MigrationToolsInterface() {
                           ))}
                         </div>
                         <div className="text-xs text-gray-500 text-center">
-                          {selectedTagsForMigration.length} of {globalTags.length} tags selected
+                          {selectedTagsForMigration.length} of {globalTags.length} {selectedTable === 'all_tables' || selectedColumn === 'context_metadata' ? 'items' : 'tags'} selected
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selectedWords.length > 0 && selectedTable === 'all_tables' && selectedColumn === 'tags_and_metadata' && (
+                  <div className="border rounded p-2 bg-blue-50">
+                    <div className="text-xs text-blue-700 mb-2">
+                      🎯 Tags & metadata from selected word(s): {selectedWords.map(w => w.italian).join(', ')}
+                    </div>
+
+                    {!globalTags && (
+                      <button
+                        onClick={loadAllTagsFromSelectedWords}
+                        disabled={isLoadingGlobalTags}
+                        className="w-full py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                      >
+                        {isLoadingGlobalTags ? '⏳ Loading...' : '📋 Load Tags & Metadata from Selected Words'}
+                      </button>
+                    )}
+
+                    {isLoadingGlobalTags && (
+                      <div className="flex items-center justify-center p-2">
+                        <svg className="animate-spin h-4 w-4 text-blue-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="text-xs text-blue-700">Loading tags/metadata...</span>
+                      </div>
+                    )}
+
+                    {globalTags && (
+                      <div className="space-y-2">
+                        <div className="text-xs text-blue-800 mb-1">Available tags & metadata:</div>
+                        <div className="max-h-32 overflow-y-auto grid grid-cols-2 gap-1 text-xs">
+                          {globalTags.map(tag => (
+                            <label key={tag} className="flex items-center space-x-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedTagsForMigration.includes(tag)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedTagsForMigration(prev => [...prev, tag]);
+                                  } else {
+                                    setSelectedTagsForMigration(prev => prev.filter(t => t !== tag));
+                                  }
+                                }}
+                                className="w-3 h-3"
+                              />
+                              <span className="truncate text-xs">{tag}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <div className="text-xs text-gray-500 text-center">
+                          {selectedTagsForMigration.length} of {globalTags.length} items selected
                         </div>
                       </div>
                     )}
@@ -2349,33 +2544,22 @@ export default function MigrationToolsInterface() {
                 )}
 
                 {/* Word Translations Drill-Down */}
-                {selectedWords.length > 0 && selectedTable === 'word_translations' && (
-                  <div className="space-y-3">
-                    <div className="border rounded p-2 bg-green-50">
-                      <div className="text-xs text-green-700 mb-2">
-                        🌍 Step 1: Select Translations from: {selectedWords.map(w => w.italian).join(', ')}
-                      </div>
-                      
-                      {!wordTranslationsData && !isLoadingWordTranslations && (
-                        <button
-                          onClick={loadWordTranslationsData}
-                          className="w-full py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-                        >
-                          🌍 Load Translations
-                        </button>
-                      )}
-                      
-                      {isLoadingWordTranslations && (
-                        <div className="flex items-center justify-center p-2">
-                          <svg className="animate-spin h-4 w-4 text-green-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span className="text-xs text-green-700">Loading translations...</span>
-                        </div>
-                      )}
-                      
-                      {wordTranslationsData && (
+                {currentStep === 'translations' && selectedTable === 'word_translations' && selectedWords.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-xs text-gray-600">Step 2: Select specific translations from {selectedWords.map(w => w.italian).join(', ')}</div>
+
+                    {!wordTranslationsData && (
+                      <button
+                        onClick={loadWordTranslationsData}
+                        disabled={isLoadingWordTranslations}
+                        className="w-full py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {isLoadingWordTranslations ? '⏳ Loading...' : '🌍 Load Translations'}
+                      </button>
+                    )}
+
+                    {wordTranslationsData && (
+                      <div className="space-y-2">
                         <div className="space-y-2">
                           {selectedWords.map(word => (
                             <div key={word.wordId} className="border rounded p-2 bg-white">
@@ -2402,7 +2586,7 @@ export default function MigrationToolsInterface() {
                                   </button>
                                 </div>
                               </div>
-                              
+
                               <div className="max-h-32 overflow-y-auto space-y-1">
                                 {wordTranslationsData[word.wordId]?.map(translation => (
                                   <label key={translation.id} className="flex items-start space-x-2 p-1 hover:bg-green-50 rounded cursor-pointer">
@@ -2430,7 +2614,7 @@ export default function MigrationToolsInterface() {
                                   </label>
                                 ))}
                               </div>
-                              
+
                               {selectedTranslationIds.length > 0 && (
                                 <div className="mt-2 text-xs text-green-800">
                                   ✅ {selectedTranslationIds.length} translation(s) selected
@@ -2439,55 +2623,71 @@ export default function MigrationToolsInterface() {
                             </div>
                           ))}
                         </div>
-                      )}
-                    </div>
-                    
-                    {selectedTable === 'word_translations' && selectedTranslationIds.length > 0 && selectedColumn === 'context_metadata' && (
-                      <div className="border rounded p-2 bg-purple-50">
-                        <div className="text-xs text-purple-700 mb-2">
-                          📋 Step 2: Select Metadata Keys from {selectedTranslationIds.length} Selected Translation(s)
-                        </div>
-                        
-                        {!selectedTranslationMetadata && (
+
+                        <div className="flex space-x-2">
                           <button
-                            onClick={loadSelectedTranslationMetadata}
-                            className="w-full py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+                            onClick={() => setCurrentStep('words')}
+                            className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
                           >
-                            📋 Load Metadata from Selected Translations
+                            ← Back
                           </button>
-                        )}
-                        
-                        {selectedTranslationMetadata && (
-                          <div className="space-y-2">
-                            <div className="text-xs text-purple-800 mb-2">
-                              Available metadata keys from your {selectedTranslationIds.length} selected translations:
-                            </div>
-                            <div className="max-h-32 overflow-y-auto grid grid-cols-2 gap-1">
-                              {Object.entries(selectedTranslationMetadata).map(([key, count]) => (
-                                <label key={key} className="flex items-center space-x-1 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedTagsForMigration.includes(key)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setSelectedTagsForMigration(prev => [...prev, key]);
-                                      } else {
-                                        setSelectedTagsForMigration(prev => prev.filter(t => t !== key));
-                                      }
-                                    }}
-                                    className="w-3 h-3"
-                                  />
-                                  <span className="text-xs truncate">{key}</span>
-                                  <span className="text-xs text-purple-600">({count})</span>
-                                </label>
-                              ))}
-                            </div>
-                            
-                            {selectedTagsForMigration.length > 0 && (
-                              <div className="mt-2 text-xs text-purple-800">
-                                ✅ {selectedTagsForMigration.length} metadata key(s) selected for {operationType}
-                              </div>
-                            )}
+                          <button
+                            onClick={() => setCurrentStep('tags')}
+                            disabled={selectedTranslationIds.length === 0}
+                            className="flex-1 py-2 px-3 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            Next: Metadata ({selectedTranslationIds.length} translations)
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {currentStep === 'tags' && selectedTable === 'word_translations' && selectedTranslationIds.length > 0 && selectedColumn === 'context_metadata' && (
+                  <div className="border rounded p-2 bg-purple-50">
+                    <div className="text-xs text-purple-700 mb-2">
+                      📋 Step 2: Select Metadata Keys from {selectedTranslationIds.length} Selected Translation(s)
+                    </div>
+
+                    {!selectedTranslationMetadata && (
+                      <button
+                        onClick={loadSelectedTranslationMetadata}
+                        className="w-full py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+                      >
+                        📋 Load Metadata from Selected Translations
+                      </button>
+                    )}
+
+                    {selectedTranslationMetadata && (
+                      <div className="space-y-2">
+                        <div className="text-xs text-purple-800 mb-2">
+                          Available metadata keys from your {selectedTranslationIds.length} selected translations:
+                        </div>
+                        <div className="max-h-32 overflow-y-auto grid grid-cols-2 gap-1">
+                          {Object.entries(selectedTranslationMetadata).map(([key, count]) => (
+                            <label key={key} className="flex items-center space-x-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedTagsForMigration.includes(key)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedTagsForMigration(prev => [...prev, key]);
+                                  } else {
+                                    setSelectedTagsForMigration(prev => prev.filter(t => t !== key));
+                                  }
+                                }}
+                                className="w-3 h-3"
+                              />
+                              <span className="text-xs truncate">{key}</span>
+                              <span className="text-xs text-purple-600">({count})</span>
+                            </label>
+                          ))}
+                        </div>
+
+                        {selectedTagsForMigration.length > 0 && (
+                          <div className="mt-2 text-xs text-purple-800">
+                            ✅ {selectedTagsForMigration.length} metadata key(s) selected for {operationType}
                           </div>
                         )}
                       </div>
