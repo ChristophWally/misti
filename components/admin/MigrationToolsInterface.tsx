@@ -298,6 +298,7 @@ export default function MigrationToolsInterface() {
         loadWordFormsData();
         setCurrentStep('forms');
       } else if (selectedTable === 'word_translations') {
+        // Advance to translations step (don't auto-load yet)
         setCurrentStep('translations');
       } else {
         setCurrentStep('tags');
@@ -312,12 +313,17 @@ export default function MigrationToolsInterface() {
     }
   }, [selectedFormIds, wordFormsData, selectedTable, selectedColumn]);
 
-  // Auto-load translations when words selected for word_translations table
+  // Auto-load translations when entering translations step
   useEffect(() => {
-    if (selectedWords.length > 0 && selectedTable === 'word_translations' && currentStep === 'translations') {
+    if (
+      currentStep === 'translations' &&
+      selectedTable === 'word_translations' &&
+      selectedWords.length > 0 &&
+      !wordTranslationsData
+    ) {
       loadWordTranslationsData();
     }
-  }, [selectedWords, selectedTable, currentStep]);
+  }, [currentStep, selectedTable, selectedWords.length, wordTranslationsData]);
 
   // Auto-load metadata when translations are selected
   useEffect(() => {
@@ -2042,6 +2048,13 @@ export default function MigrationToolsInterface() {
               </div>
 
               <div className="p-3 space-y-3 max-h-[80vh] overflow-y-auto">
+                <div className="text-xs font-medium text-gray-700 mb-2">
+                  📍 Current Step: {currentStep === 'words' ? '1. Select Words' :
+                    currentStep === 'forms' ? '2. Select Forms' :
+                    currentStep === 'translations' ? '2. Select Translations' :
+                    currentStep === 'tags' ? `3. Select ${selectedColumn === 'context_metadata' ? 'Metadata' : 'Tags'}` :
+                    '4. Configure Rule'}
+                </div>
                 {currentStep === 'config' && (
                   <div className="space-y-2">
                     <div className="text-xs text-gray-600">Step 4: Configure migration operation</div>
@@ -2451,7 +2464,7 @@ export default function MigrationToolsInterface() {
                                 </div>
                               </div>
 
-                              <div className="max-h-32 overflow-y-auto space-y-1">
+                              <div className="max-h-24 overflow-y-auto space-y-1">
                                 {wordFormsData[word.wordId]?.map(form => (
                                   <label key={form.id} className="flex items-start space-x-2 p-1 hover:bg-yellow-50 rounded cursor-pointer">
                                     <input
@@ -2544,7 +2557,7 @@ export default function MigrationToolsInterface() {
                 )}
 
                 {/* Word Translations Drill-Down */}
-                {currentStep === 'translations' && selectedTable === 'word_translations' && selectedWords.length > 0 && (
+                {currentStep === 'translations' && selectedTable === 'word_translations' && (
                   <div className="space-y-2">
                     <div className="text-xs text-gray-600">Step 2: Select specific translations from {selectedWords.map(w => w.italian).join(', ')}</div>
 
@@ -2560,11 +2573,10 @@ export default function MigrationToolsInterface() {
 
                     {wordTranslationsData && (
                       <div className="space-y-2">
-                        <div className="space-y-2">
-                          {selectedWords.map(word => (
+                        {selectedWords.map(word => (
                             <div key={word.wordId} className="border rounded p-2 bg-white">
                               <div className="flex items-center justify-between mb-2">
-                                <div className="text-xs font-medium text-gray-900">{word.italian} Translations ({wordTranslationsData[word.wordId]?.length || 0})</div>
+                                <div className="text-xs font-medium text-gray-900">{word.italian} ({wordTranslationsData[word.wordId]?.length || 0} translations)</div>
                                 <div className="flex space-x-1">
                                   <button
                                     onClick={() => {
@@ -2587,7 +2599,7 @@ export default function MigrationToolsInterface() {
                                 </div>
                               </div>
 
-                              <div className="max-h-32 overflow-y-auto space-y-1">
+                              <div className="max-h-24 overflow-y-auto space-y-1">
                                 {wordTranslationsData[word.wordId]?.map(translation => (
                                   <label key={translation.id} className="flex items-start space-x-2 p-1 hover:bg-green-50 rounded cursor-pointer">
                                     <input
@@ -2615,14 +2627,8 @@ export default function MigrationToolsInterface() {
                                 ))}
                               </div>
 
-                              {selectedTranslationIds.length > 0 && (
-                                <div className="mt-2 text-xs text-green-800">
-                                  ✅ {selectedTranslationIds.length} translation(s) selected
-                                </div>
-                              )}
                             </div>
                           ))}
-                        </div>
 
                         <div className="flex space-x-2">
                           <button
@@ -2647,7 +2653,7 @@ export default function MigrationToolsInterface() {
                 {currentStep === 'tags' && selectedTable === 'word_translations' && selectedTranslationIds.length > 0 && selectedColumn === 'context_metadata' && (
                   <div className="border rounded p-2 bg-purple-50">
                     <div className="text-xs text-purple-700 mb-2">
-                      📋 Step 2: Select Metadata Keys from {selectedTranslationIds.length} Selected Translation(s)
+                      📋 Step 3: Select Metadata Keys from {selectedTranslationIds.length} Selected Translation(s)
                     </div>
 
                     {!selectedTranslationMetadata && (
