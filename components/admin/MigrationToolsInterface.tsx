@@ -290,9 +290,9 @@ export default function MigrationToolsInterface() {
 
   // Removed Italian and form text auto-population effects
 
-  // Advance steps when words selected
+  // Advance steps when words selected (from any step, not just 'words')
   useEffect(() => {
-    if (selectedWords.length > 0 && currentStep === 'words') {
+    if (selectedWords.length > 0) {
       if (selectedTable === 'word_forms') {
         setCurrentStep('forms');
       } else if (selectedTable === 'word_translations') {
@@ -302,7 +302,7 @@ export default function MigrationToolsInterface() {
         setCurrentStep('tags');
       }
     }
-  }, [selectedWords.length, selectedTable, currentStep]);
+  }, [selectedWords.length, selectedTable]);
 
   // Auto-load tags when forms are selected/deselected
   useEffect(() => {
