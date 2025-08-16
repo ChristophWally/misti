@@ -317,11 +317,8 @@ export default function MigrationToolsInterface() {
     }
   }, [selectedWords, selectedTable, currentStep]);
 
-  useEffect(() => {
-    if (selectedTranslationIds.length > 0 && currentStep === 'translations') {
-      setCurrentStep('tags');
-    }
-  }, [selectedTranslationIds.length, currentStep]);
+  // Removed automatic step advancement to allow two-step translation review
+  // Users now manually proceed to tags step via the "Next: Metadata" button
 
   // Auto-load metadata when translations are selected
   useEffect(() => {
