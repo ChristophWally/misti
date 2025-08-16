@@ -34,7 +34,7 @@ interface VisualRule {
   // NEW: Enhanced properties
   targetedWords?: string[];
   preventDuplicates?: boolean;
-  operationType?: 'replace' | 'add' | 'remove' | 'delete';
+  operationType?: 'replace' | 'add' | 'remove';
 }
 
 interface MappingPair {
@@ -115,7 +115,7 @@ export default function MigrationToolsInterface() {
   const [selectedColumn, setSelectedColumn] = useState('tags');
   const [ruleTitle, setRuleTitle] = useState('');
   const [ruleDescription, setRuleDescription] = useState('');
-  const [operationType, setOperationType] = useState<'replace' | 'add' | 'remove' | 'delete'>('replace');
+  const [operationType, setOperationType] = useState<'replace' | 'add' | 'remove'>('replace');
   const [preventDuplicates, setPreventDuplicates] = useState(true);
   const [tagsToRemove, setTagsToRemove] = useState<string[]>([]);
   const [newTagToAdd, setNewTagToAdd] = useState('');
@@ -147,10 +147,6 @@ export default function MigrationToolsInterface() {
   const [isLoadingWordSpecificTags, setIsLoadingWordSpecificTags] = useState(false);
   const [isLoadingWordForms, setIsLoadingWordForms] = useState(false);
   const [isLoadingWordTranslations, setIsLoadingWordTranslations] = useState(false);
-  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [showFinalDeleteConfirmation, setShowFinalDeleteConfirmation] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{type: 'word' | 'translation', id: string, name: string} | null>(null);
   const [selectedFormTags, setSelectedFormTags] = useState<Record<string, number> | null>(null);
   const [selectedTranslationMetadata, setSelectedTranslationMetadata] = useState<Record<string, number> | null>(null);
 
@@ -291,34 +287,6 @@ export default function MigrationToolsInterface() {
   useEffect(() => {
     setSelectedTranslationMetadata(null);
   }, [selectedTranslationIds]);
-
-  // Auto-populate Italian text replacements when words selected
-  useEffect(() => {
-    if (selectedWords.length > 0 && selectedColumn === 'italian' && operationType === 'replace') {
-      const newMappings = selectedWords.map((word, index) => ({
-        id: `italian-${index}`,
-        from: word.italian,
-        to: '', // User fills this in
-      }));
-      setRuleBuilderMappings(newMappings);
-    }
-  }, [selectedWords, selectedColumn, operationType]);
-
-  // Auto-populate form text replacements when forms selected
-  useEffect(() => {
-    if (selectedFormIds.length > 0 && selectedColumn === 'form_text' && operationType === 'replace' && wordFormsData) {
-      const forms = Object.values(wordFormsData)
-        .flat()
-        .filter((form: any) => selectedFormIds.includes(form.id));
-
-      const newMappings = forms.map((form: any, index) => ({
-        id: `form-text-${index}`,
-        from: form.form_text,
-        to: '', // User fills this in
-      }));
-      setRuleBuilderMappings(newMappings);
-    }
-  }, [selectedFormIds, selectedColumn, operationType, wordFormsData]);
 
   // Auto-load forms and advance steps when words selected
   useEffect(() => {
@@ -1117,7 +1085,7 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  // NEW: Loading functions and delete execution placeholders
+  // NEW: Loading functions
   const loadWordSpecificTags = async () => {
     if (selectedWords.length === 0) {
       addToDebugLog('⚠️ No words selected for tag loading');
@@ -1351,19 +1319,6 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const handleDeleteOperation = () => {
-    if (operationType === 'delete' && selectedColumn === 'italian' && selectedWords.length === 1) {
-      setDeleteTarget({ type: 'word', id: selectedWords[0].wordId, name: selectedWords[0].italian });
-      setShowDeleteConfirmation(true);
-    } else if (operationType === 'delete' && selectedColumn === 'translation' && selectedTranslationIds.length === 1) {
-      const translation = wordTranslationsData?.[selectedWords[0]?.wordId]?.find(t => t.id === selectedTranslationIds[0]);
-      if (translation) {
-        setDeleteTarget({ type: 'translation', id: translation.id, name: translation.translation });
-        setShowDeleteConfirmation(true);
-      }
-    }
-  };
-
   const saveCustomRule = () => {
     if (selectedRule) {
       // Editing existing rule
@@ -1390,10 +1345,10 @@ export default function MigrationToolsInterface() {
         impact: selectedTagsForMigration.length > 50 ? 'high' : selectedTagsForMigration.length > 10 ? 'medium' : 'low',
         status: 'ready',
         affectedCount: selectedTagsForMigration.length || ruleBuilderMappings.length || 1,
-        autoExecutable: operationType !== 'delete',
+        autoExecutable: true,
         requiresInput: operationType === 'add' || operationType === 'replace',
         category: 'custom',
-        estimatedTime: operationType === 'delete' ? '5-10 seconds' : '1-2 seconds',
+        estimatedTime: '1-2 seconds',
         canRollback: true,
         targetedWords: selectedWords.map(w => w.italian),
         preventDuplicates,
@@ -1448,7 +1403,6 @@ export default function MigrationToolsInterface() {
       case 'replace': return '🔄';
       case 'add': return '➕';
       case 'remove': return '🗑️';
-      case 'delete': return '❌';
       default: return '⚙️';
     }
   };
@@ -1939,11 +1893,7 @@ export default function MigrationToolsInterface() {
                   <button
                     onClick={() => {
                       setShowPreview(false);
-                      if (operationType === 'delete') {
-                        handleDeleteOperation();
-                      } else {
-                        handleExecuteRule(selectedRule);
-                      }
+                      handleExecuteRule(selectedRule);
                     }}
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                   >
@@ -2013,55 +1963,15 @@ export default function MigrationToolsInterface() {
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     {selectedTable === 'dictionary' && (
-                      <>
-                        <option value="tags">🏷️ Tags</option>
-                        {selectedWords.length >= 1 ? (
-                          <option value="italian">🇮🇹 Italian Text {selectedWords.length === 1 ? '(Editable)' : '(View Only)'}</option>
-                        ) : (
-                          <option value="italian" disabled>🇮🇹 Italian Text (Select words first)</option>
-                        )}
-                        <option value="word_type">📝 Word Type</option>
-                      </>
+                      <option value="tags">🏷️ Tags</option>
                     )}
                     {selectedTable === 'word_forms' && (
-                      <>
-                        <option value="tags">🏷️ Tags</option>
-                        {selectedFormIds.length >= 1 ? (
-                          <option value="form_text">📝 Form Text {selectedFormIds.length === 1 ? '(Editable)' : '(Bulk Edit)'}</option>
-                        ) : (
-                          <option value="form_text" disabled>📝 Form Text (Select forms first)</option>
-                        )}
-                        <option value="form_type">📝 Form Type</option>
-                      </>
+                      <option value="tags">🏷️ Tags</option>
                     )}
                     {selectedTable === 'word_translations' && (
-                      <>
-                        <option value="context_metadata">📋 Metadata</option>
-                        {selectedTranslationIds.length >= 1 ? (
-                          <option value="translation">🌍 Translation {selectedTranslationIds.length === 1 ? '(Editable)' : '(Bulk Edit)'}</option>
-                        ) : (
-                          <option value="translation" disabled>🌍 Translation (Select translations first)</option>
-                        )}
-                        <option value="display_priority">📊 Priority</option>
-                      </>
+                      <option value="context_metadata">📋 Metadata</option>
                     )}
                   </select>
-
-                  {selectedColumn === 'italian' && selectedWords.length !== 1 && (
-                    <div className="text-xs text-orange-600 mt-1">
-                      ⚠️ Italian text editing requires exactly one word selected
-                    </div>
-                  )}
-                  {selectedColumn === 'form_text' && selectedFormIds.length !== 1 && (
-                    <div className="text-xs text-orange-600 mt-1">
-                      ⚠️ Form text editing requires exactly one form selected
-                    </div>
-                  )}
-                  {selectedColumn === 'translation' && selectedTranslationIds.length !== 1 && (
-                    <div className="text-xs text-orange-600 mt-1">
-                      ⚠️ Translation editing requires exactly one translation selected
-                    </div>
-                  )}
 
                   <select
                     value={operationType}
@@ -2069,21 +1979,8 @@ export default function MigrationToolsInterface() {
                     className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="replace">🔄 Replace</option>
-                    {/* Add only available for tags and metadata */}
-                    {(selectedColumn === 'tags' || selectedColumn === 'context_metadata') && (
-                      <option value="add">➕ Add</option>
-                    )}
-                    {/* Remove only available for tags and metadata */}
-                    {(selectedColumn === 'tags' || selectedColumn === 'context_metadata') && (
-                      <option value="remove">🗑️ Remove</option>
-                    )}
-                    {/* Delete only for dictionary words and translations */}
-                    {selectedWords.length >= 1 && selectedColumn === 'italian' && (
-                      <option value="delete">❌ Delete Word(s) (Cascading)</option>
-                    )}
-                    {selectedTranslationIds.length >= 1 && selectedColumn === 'translation' && (
-                      <option value="delete">❌ Delete Translation(s) (Cascading)</option>
-                    )}
+                    <option value="add">➕ Add</option>
+                    <option value="remove">🗑️ Remove</option>
                   </select>
 
                   {operationType === 'add' && selectedWords.length === 0 && selectedFormIds.length === 0 && selectedTranslationIds.length === 0 && (
@@ -2613,7 +2510,7 @@ export default function MigrationToolsInterface() {
                 )}
 
                 {/* Compact Replace Mappings */}
-                {operationType === 'replace' && selectedColumn !== 'form_text' && selectedColumn !== 'context_metadata' && (
+                {operationType === 'replace' && selectedColumn === 'tags' && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Replacements</span>
@@ -2653,48 +2550,6 @@ export default function MigrationToolsInterface() {
                   ))}
                 </div>
               )}
-
-                {operationType === 'replace' && selectedColumn === 'form_text' && (
-                  <div className="space-y-2">
-                    <div className="text-xs font-medium">Form text replacements:</div>
-                    {selectedFormIds.map((formId, index) => {
-                      const form = Object.values(wordFormsData || {})
-                        .flat()
-                        .find((f: any) => f.id === formId);
-                      if (!form) return null;
-
-                      return (
-                        <div key={formId} className="flex space-x-1 items-center">
-                          <input
-                            type="text"
-                            value={form.form_text}
-                            disabled
-                            className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded bg-gray-50"
-                          />
-                          <span className="text-xs text-gray-400">→</span>
-                          <input
-                            type="text"
-                            value={ruleBuilderMappings.find(m => m.from === form.form_text)?.to || ''}
-                            onChange={(e) => {
-                              const mappingId = `form-${index}`;
-                              setRuleBuilderMappings(prev => {
-                                const existing = prev.find(m => m.from === form.form_text);
-                                if (existing) {
-                                  return prev.map(m => m.from === form.form_text ? { ...m, to: e.target.value } : m);
-                                } else {
-                                  return [...prev, { id: mappingId, from: form.form_text, to: e.target.value }];
-                                }
-                              });
-                            }}
-                            placeholder="Replace with..."
-                            className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
                 {operationType === 'replace' && selectedColumn === 'context_metadata' && (
                   <div className="space-y-2">
                     <div className="text-xs font-medium">Metadata replacements:</div>
@@ -2760,7 +2615,7 @@ export default function MigrationToolsInterface() {
                     type="checkbox"
                     checked={preventDuplicates}
                     onChange={(e) => setPreventDuplicates(e.target.checked)}
-                    disabled={operationType === 'remove' || operationType === 'delete'}
+                    disabled={operationType === 'remove'}
                     className="w-4 h-4 disabled:opacity-50"
                   />
                 </label>
@@ -2794,119 +2649,6 @@ export default function MigrationToolsInterface() {
                   </button>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Deletion Confirmation Modals */}
-      {showDeleteConfirmation && deleteTarget && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-sm w-full p-4">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <span className="text-red-600 text-2xl">⚠️</span>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Delete {deleteTarget.type === 'word' ? 'Word' : 'Translation'}?
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                You're about to delete "{deleteTarget.name}". This action will:
-              </p>
-              <div className="text-left text-sm text-red-700 bg-red-50 p-3 rounded mb-4">
-                {deleteTarget.type === 'word' ? (
-                  <ul className="space-y-1">
-                    <li>• Delete the word from dictionary</li>
-                    <li>• Delete ALL word forms</li>
-                    <li>• Delete ALL translations</li>
-                    <li>• Delete ALL form-translation relationships</li>
-                  </ul>
-                ) : (
-                  <ul className="space-y-1">
-                    <li>• Delete the translation</li>
-                    <li>• Delete ALL form-translation relationships</li>
-                    <li>• Orphan related word forms</li>
-                  </ul>
-                )}
-              </div>
-              <p className="text-xs text-gray-500 mb-4">
-                This cannot be undone without database backup restoration.
-              </p>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  setShowDeleteConfirmation(false);
-                  setDeleteTarget(null);
-                }}
-                className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  setShowDeleteConfirmation(false);
-                  setShowFinalDeleteConfirmation(true);
-                }}
-                className="flex-1 py-2 px-3 text-sm bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Final Deletion Confirmation Modal */}
-      {showFinalDeleteConfirmation && deleteTarget && (
-        <div className="fixed inset-0 bg-red-600 bg-opacity-75 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-sm w-full p-4 border-2 border-red-500">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                <span className="text-red-600 text-3xl">🗑️</span>
-              </div>
-              <h3 className="text-xl font-bold text-red-900 mb-2">
-                FINAL CONFIRMATION
-              </h3>
-              <p className="text-sm text-red-800 mb-4 font-medium">
-                Type "{deleteTarget.name}" to confirm deletion:
-              </p>
-              <input
-                type="text"
-                value={deleteConfirmationText}
-                onChange={(e) => setDeleteConfirmationText(e.target.value)}
-                className="w-full px-3 py-2 border-2 border-red-300 rounded text-center font-medium"
-                placeholder={`Type "${deleteTarget.name}" here`}
-              />
-              <p className="text-xs text-red-600 mt-2">
-                This will permanently delete ALL related data!
-              </p>
-            </div>
-            <div className="flex space-x-2 mt-4">
-              <button
-                onClick={() => {
-                  setShowFinalDeleteConfirmation(false);
-                  setDeleteTarget(null);
-                  setDeleteConfirmationText('');
-                }}
-                className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  // Execute deletion logic here
-                  addToDebugLog(`🗑️ Executing cascading delete for ${deleteTarget.type}: ${deleteTarget.name}`);
-                  setShowFinalDeleteConfirmation(false);
-                  setDeleteTarget(null);
-                  setDeleteConfirmationText('');
-                  resetAllRuleBuilderState();
-                }}
-                disabled={deleteConfirmationText !== deleteTarget.name}
-                className="flex-1 py-2 px-3 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                DELETE PERMANENTLY
-              </button>
             </div>
           </div>
         </div>
