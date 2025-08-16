@@ -290,12 +290,10 @@ export default function MigrationToolsInterface() {
 
   // Removed Italian and form text auto-population effects
 
-  // Auto-load forms and advance steps when words selected
+  // Advance steps when words selected
   useEffect(() => {
     if (selectedWords.length > 0 && currentStep === 'words') {
       if (selectedTable === 'word_forms') {
-        // Auto-load forms and advance to forms step
-        loadWordFormsData();
         setCurrentStep('forms');
       } else if (selectedTable === 'word_translations') {
         setCurrentStep('translations');
@@ -318,6 +316,12 @@ export default function MigrationToolsInterface() {
       loadWordTranslationsData();
     }
   }, [selectedWords, selectedTable, currentStep]);
+
+  useEffect(() => {
+    if (selectedTranslationIds.length > 0 && currentStep === 'translations') {
+      setCurrentStep('tags');
+    }
+  }, [selectedTranslationIds.length, currentStep]);
 
   // Auto-load metadata when translations are selected
   useEffect(() => {
@@ -2042,7 +2046,7 @@ export default function MigrationToolsInterface() {
               </div>
 
               <div className="p-3 space-y-3 max-h-[80vh] overflow-y-auto">
-                {currentStep === 'config' && (
+                {currentStep === 'config' && selectedTagsForMigration.length > 0 && (
                   <div className="space-y-2">
                     <div className="text-xs text-gray-600">Step 4: Configure migration operation</div>
 
@@ -2543,8 +2547,8 @@ export default function MigrationToolsInterface() {
                   </div>
                 )}
 
-                {/* Word Translations Drill-Down */}
-                {currentStep === 'translations' && selectedTable === 'word_translations' && selectedWords.length > 0 && (
+                {/* Step 2b: Translation Selection */}
+                {currentStep === 'translations' && selectedTable === 'word_translations' && (
                   <div className="space-y-2">
                     <div className="text-xs text-gray-600">Step 2: Select specific translations from {selectedWords.map(w => w.italian).join(', ')}</div>
 
@@ -2560,69 +2564,61 @@ export default function MigrationToolsInterface() {
 
                     {wordTranslationsData && (
                       <div className="space-y-2">
-                        <div className="space-y-2">
-                          {selectedWords.map(word => (
-                            <div key={word.wordId} className="border rounded p-2 bg-white">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="text-xs font-medium text-gray-900">{word.italian} Translations ({wordTranslationsData[word.wordId]?.length || 0})</div>
-                                <div className="flex space-x-1">
-                                  <button
-                                    onClick={() => {
-                                      const wordTransIds = wordTranslationsData[word.wordId]?.map((t: any) => t.id) || [];
-                                      setSelectedTranslationIds(prev => Array.from(new Set([...prev, ...wordTransIds])));
-                                    }}
-                                    className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
-                                  >
-                                    All
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      const wordTransIds = wordTranslationsData[word.wordId]?.map((t: any) => t.id) || [];
-                                      setSelectedTranslationIds(prev => prev.filter(id => !wordTransIds.includes(id)));
-                                    }}
-                                    className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded"
-                                  >
-                                    None
-                                  </button>
-                                </div>
+                        {selectedWords.map(word => (
+                          <div key={word.wordId} className="border rounded p-2 bg-white">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-xs font-medium text-gray-900">{word.italian} ({wordTranslationsData[word.wordId]?.length || 0} translations)</div>
+                              <div className="flex space-x-1">
+                                <button
+                                  onClick={() => {
+                                    const wordTransIds = wordTranslationsData[word.wordId]?.map((t: any) => t.id) || [];
+                                    setSelectedTranslationIds(prev => Array.from(new Set([...prev, ...wordTransIds])));
+                                  }}
+                                  className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded"
+                                >
+                                  All
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const wordTransIds = wordTranslationsData[word.wordId]?.map((t: any) => t.id) || [];
+                                    setSelectedTranslationIds(prev => prev.filter(id => !wordTransIds.includes(id)));
+                                  }}
+                                  className="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded"
+                                >
+                                  None
+                                </button>
                               </div>
-
-                              <div className="max-h-32 overflow-y-auto space-y-1">
-                                {wordTranslationsData[word.wordId]?.map(translation => (
-                                  <label key={translation.id} className="flex items-start space-x-2 p-1 hover:bg-green-50 rounded cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedTranslationIds.includes(translation.id)}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedTranslationIds(prev => [...prev, translation.id]);
-                                        } else {
-                                          setSelectedTranslationIds(prev => prev.filter(id => id !== translation.id));
-                                        }
-                                      }}
-                                      className="w-3 h-3 mt-0.5"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="text-xs font-medium">"{translation.translation}"</div>
-                                      <div className="text-xs text-gray-500 mb-1">Priority: {translation.display_priority}</div>
-                                      <div className="text-xs text-purple-600 flex flex-wrap gap-1 max-h-12 overflow-y-auto">
-                                        {Object.keys(translation.context_metadata || {}).map(key => (
-                                          <span key={key} className="bg-purple-100 px-1 rounded text-xs">{key}</span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  </label>
-                                ))}
-                              </div>
-
-                              {selectedTranslationIds.length > 0 && (
-                                <div className="mt-2 text-xs text-green-800">
-                                  ✅ {selectedTranslationIds.length} translation(s) selected
-                                </div>
-                              )}
                             </div>
-                          ))}
-                        </div>
+
+                            <div className="max-h-24 overflow-y-auto space-y-1">
+                              {wordTranslationsData[word.wordId]?.map(translation => (
+                                <label key={translation.id} className="flex items-start space-x-2 p-1 hover:bg-green-50 rounded cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedTranslationIds.includes(translation.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedTranslationIds(prev => [...prev, translation.id]);
+                                      } else {
+                                        setSelectedTranslationIds(prev => prev.filter(id => id !== translation.id));
+                                      }
+                                    }}
+                                    className="w-3 h-3 mt-0.5"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-medium">"{translation.translation}"</div>
+                                    <div className="text-xs text-gray-500 mb-1">Priority: {translation.display_priority}</div>
+                                    <div className="text-xs text-purple-600 flex flex-wrap gap-1 max-h-12 overflow-y-auto">
+                                      {Object.keys(translation.context_metadata || {}).map(key => (
+                                        <span key={key} className="bg-purple-100 px-1 rounded text-xs">{key}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
 
                         <div className="flex space-x-2">
                           <button
@@ -2647,7 +2643,7 @@ export default function MigrationToolsInterface() {
                 {currentStep === 'tags' && selectedTable === 'word_translations' && selectedTranslationIds.length > 0 && selectedColumn === 'context_metadata' && (
                   <div className="border rounded p-2 bg-purple-50">
                     <div className="text-xs text-purple-700 mb-2">
-                      📋 Step 2: Select Metadata Keys from {selectedTranslationIds.length} Selected Translation(s)
+                      📋 Step 3: Select Metadata Keys from {selectedTranslationIds.length} Selected Translation(s)
                     </div>
 
                     {!selectedTranslationMetadata && (
@@ -2826,7 +2822,7 @@ export default function MigrationToolsInterface() {
               </div>
 
               {/* Footer - Only show if not in step-by-step mode */}
-              {currentStep === 'config' && (
+              {currentStep === 'config' && selectedTagsForMigration.length > 0 && (
                 <div className="flex space-x-2 p-3 border-t">
                   <button
                     onClick={() => {
