@@ -296,6 +296,7 @@ export default function MigrationToolsInterface() {
       if (selectedTable === 'word_forms') {
         setCurrentStep('forms');
       } else if (selectedTable === 'word_translations') {
+        setSelectedColumn('context_metadata'); // Ensure column is set for metadata workflow
         setCurrentStep('translations');
       } else {
         setCurrentStep('tags');
@@ -319,6 +320,13 @@ export default function MigrationToolsInterface() {
 
   // Removed automatic step advancement to allow two-step translation review
   // Users now manually proceed to tags step via the "Next: Metadata" button
+
+  // Ensure selectedColumn is set when reaching tags step for translations
+  useEffect(() => {
+    if (currentStep === 'tags' && selectedTable === 'word_translations' && selectedColumn !== 'context_metadata') {
+      setSelectedColumn('context_metadata');
+    }
+  }, [currentStep, selectedTable, selectedColumn]);
 
   // Auto-load metadata when translations are selected
   useEffect(() => {
@@ -2637,7 +2645,7 @@ export default function MigrationToolsInterface() {
                   </div>
                 )}
 
-                {currentStep === 'tags' && selectedTable === 'word_translations' && selectedTranslationIds.length > 0 && selectedColumn === 'context_metadata' && (
+                {currentStep === 'tags' && selectedTable === 'word_translations' && selectedTranslationIds.length > 0 && (
                   <div className="border rounded p-2 bg-purple-50">
                     <div className="text-xs text-purple-700 mb-2">
                       📋 Step 3: Select Metadata Keys from {selectedTranslationIds.length} Selected Translation(s)
