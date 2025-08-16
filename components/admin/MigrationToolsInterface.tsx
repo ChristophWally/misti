@@ -290,12 +290,10 @@ export default function MigrationToolsInterface() {
 
   // Removed Italian and form text auto-population effects
 
-  // Auto-load forms and advance steps when words selected
+  // Advance steps when words selected
   useEffect(() => {
     if (selectedWords.length > 0 && currentStep === 'words') {
       if (selectedTable === 'word_forms') {
-        // Auto-load forms and advance to forms step
-        loadWordFormsData();
         setCurrentStep('forms');
       } else if (selectedTable === 'word_translations') {
         setCurrentStep('translations');
@@ -325,6 +323,12 @@ export default function MigrationToolsInterface() {
       loadSelectedTranslationMetadata();
     }
   }, [selectedTranslationIds, wordTranslationsData, selectedTable, selectedColumn]);
+
+  useEffect(() => {
+    if (selectedTranslationIds.length > 0 && currentStep === 'translations') {
+      setCurrentStep('tags');
+    }
+  }, [selectedTranslationIds.length, currentStep]);
 
   // NEW: Load dynamic table schemas
   const loadTableSchemas = async () => {
@@ -2042,7 +2046,7 @@ export default function MigrationToolsInterface() {
               </div>
 
               <div className="p-3 space-y-3 max-h-[80vh] overflow-y-auto">
-                {currentStep === 'config' && (
+                {currentStep === 'config' && selectedTagsForMigration.length > 0 && (
                   <div className="space-y-2">
                     <div className="text-xs text-gray-600">Step 4: Configure migration operation</div>
 
@@ -2543,7 +2547,7 @@ export default function MigrationToolsInterface() {
                   </div>
                 )}
 
-                {/* Word Translations Drill-Down */}
+                {/* Step 2b: Translation Selection */}
                 {currentStep === 'translations' && selectedTable === 'word_translations' && selectedWords.length > 0 && (
                   <div className="space-y-2">
                     <div className="text-xs text-gray-600">Step 2: Select specific translations from {selectedWords.map(w => w.italian).join(', ')}</div>
@@ -2587,7 +2591,7 @@ export default function MigrationToolsInterface() {
                                 </div>
                               </div>
 
-                              <div className="max-h-32 overflow-y-auto space-y-1">
+                              <div className="max-h-24 overflow-y-auto space-y-1">
                                 {wordTranslationsData[word.wordId]?.map(translation => (
                                   <label key={translation.id} className="flex items-start space-x-2 p-1 hover:bg-green-50 rounded cursor-pointer">
                                     <input
@@ -2647,7 +2651,7 @@ export default function MigrationToolsInterface() {
                 {currentStep === 'tags' && selectedTable === 'word_translations' && selectedTranslationIds.length > 0 && selectedColumn === 'context_metadata' && (
                   <div className="border rounded p-2 bg-purple-50">
                     <div className="text-xs text-purple-700 mb-2">
-                      📋 Step 2: Select Metadata Keys from {selectedTranslationIds.length} Selected Translation(s)
+                      📋 Step 3: Select Metadata Keys from {selectedTranslationIds.length} Selected Translation(s)
                     </div>
 
                     {!selectedTranslationMetadata && (
@@ -2826,7 +2830,7 @@ export default function MigrationToolsInterface() {
               </div>
 
               {/* Footer - Only show if not in step-by-step mode */}
-              {currentStep === 'config' && (
+              {currentStep === 'config' && selectedTagsForMigration.length > 0 && (
                 <div className="flex space-x-2 p-3 border-t">
                   <button
                     onClick={() => {
