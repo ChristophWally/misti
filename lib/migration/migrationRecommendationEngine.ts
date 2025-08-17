@@ -266,7 +266,7 @@ export class MigrationRecommendationEngine {
       if (legacyTermsData && universalTermsData) {
         const legacyIds = new Set(legacyTermsData.map(f => f.id));
         const universalIds = new Set(universalTermsData.map(f => f.id));
-        mixedUsage = [...legacyIds].filter(id => universalIds.has(id)).length;
+        mixedUsage = Array.from(legacyIds).filter(id => universalIds.has(id)).length;
       }
       
       const legacyTerms = legacyTermsData?.length || 0;
