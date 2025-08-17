@@ -1649,7 +1649,7 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const saveCustomRule = async (rule: VisualRule, customName?: string, customDescription?: string) => {
+  const saveRuleToDatabase = async (rule: VisualRule, customName?: string, customDescription?: string) => {
     setIsSavingRule(true);
     const ruleName = customName || saveRuleName || rule.title;
     const ruleDescription = customDescription || saveRuleDescription || rule.description;
@@ -3483,7 +3483,7 @@ export default function MigrationToolsInterface() {
                 Cancel
               </button>
               <button
-                onClick={() => saveCustomRule(ruleToSave)}
+                onClick={() => saveRuleToDatabase(ruleToSave)}
                 disabled={isSavingRule}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
               >
