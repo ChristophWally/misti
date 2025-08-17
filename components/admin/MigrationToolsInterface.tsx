@@ -147,6 +147,16 @@ export default function MigrationToolsInterface() {
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [selectedRecommendation, setSelectedRecommendation] = useState<MigrationRecommendation | null>(null);
   const [dataStateAnalysis, setDataStateAnalysis] = useState<DataStateAnalysis | null>(null);
+  
+  // NEW: Custom Rules Persistence State
+  const [savedCustomRules, setSavedCustomRules] = useState<any[]>([]);
+  const [isLoadingSavedRules, setIsLoadingSavedRules] = useState(false);
+  const [isSavingRule, setIsSavingRule] = useState(false);
+  const [showSaveRuleModal, setShowSaveRuleModal] = useState(false);
+  const [showLoadRulesModal, setShowLoadRulesModal] = useState(false);
+  const [ruleToSave, setRuleToSave] = useState<VisualRule | null>(null);
+  const [saveRuleName, setSaveRuleName] = useState('');
+  const [saveRuleDescription, setSaveRuleDescription] = useState('');
 
   // NEW: Word-specific and drill-down state
   const [wordSpecificTags, setWordSpecificTags] = useState<Record<string, any> | null>(null);
@@ -1613,6 +1623,162 @@ export default function MigrationToolsInterface() {
     { id: 'progress', name: 'Execution History', description: 'Track migration progress' },
   ];
 
+  // NEW: Custom Rules Persistence Functions
+  const loadSavedCustomRules = async () => {
+    setIsLoadingSavedRules(true);
+    addToDebugLog('📚 Loading saved custom rules from database...');
+    
+    try {
+      const { data, error } = await supabase
+        .from('custom_migration_rules')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      setSavedCustomRules(data || []);
+      addToDebugLog(`✅ Loaded ${data?.length || 0} saved custom rules`);
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load saved rules: ${error.message}`);
+    } finally {
+      setIsLoadingSavedRules(false);
+    }
+  };
+
+  const saveCustomRule = async (rule: VisualRule, customName?: string, customDescription?: string) => {
+    setIsSavingRule(true);
+    const ruleName = customName || saveRuleName || rule.title;
+    const ruleDescription = customDescription || saveRuleDescription || rule.description;
+    
+    addToDebugLog(`💾 Saving custom rule: ${ruleName}`);
+    
+    try {
+      // Convert VisualRule to database format
+      const ruleData = {
+        rule_id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: ruleName,
+        description: ruleDescription,
+        category: rule.category,
+        priority: rule.impact === 'high' ? 'critical' : rule.impact === 'medium' ? 'high' : 'medium',
+        pattern: {
+          table: 'word_forms', // Default, could be extracted from rule
+          column: 'tags',
+          condition: 'array_contains',
+          value: 'placeholder', // Would need to extract from rule logic
+          targetWords: rule.targetedWords || []
+        },
+        transformation: {
+          type: rule.operationType === 'replace' ? 'array_replace' : 'array_add',
+          preventDuplicates: rule.preventDuplicates || true,
+          mappings: {} // Would extract from rule mappings
+        },
+        safety_checks: [
+          {
+            type: 'preview_required',
+            message: 'Preview changes before execution'
+          }
+        ],
+        requires_manual_input: rule.requiresInput,
+        estimated_affected_rows: rule.affectedCount,
+        estimated_execution_time: rule.estimatedTime,
+        rollback_strategy: {
+          type: rule.canRollback ? 'automatic' : 'manual',
+          backupRequired: true
+        },
+        editable: true,
+        auto_executable: rule.autoExecutable
+      };
+      
+      const { data, error } = await supabase
+        .from('custom_migration_rules')
+        .insert([ruleData])
+        .select();
+      
+      if (error) {
+        throw error;
+      }
+      
+      addToDebugLog(`✅ Custom rule saved successfully: ${ruleName}`);
+      
+      // Reload saved rules
+      await loadSavedCustomRules();
+      
+      // Close modal and reset form
+      setShowSaveRuleModal(false);
+      setSaveRuleName('');
+      setSaveRuleDescription('');
+      setRuleToSave(null);
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to save custom rule: ${error.message}`);
+    } finally {
+      setIsSavingRule(false);
+    }
+  };
+
+  const loadCustomRule = async (savedRule: any) => {
+    addToDebugLog(`📤 Loading custom rule: ${savedRule.name}`);
+    
+    try {
+      // Convert database format back to VisualRule
+      const visualRule: VisualRule = {
+        id: savedRule.rule_id,
+        title: savedRule.name,
+        description: savedRule.description,
+        impact: savedRule.priority === 'critical' ? 'high' : savedRule.priority === 'high' ? 'medium' : 'low',
+        status: 'ready',
+        affectedCount: savedRule.estimated_affected_rows || 0,
+        autoExecutable: savedRule.auto_executable,
+        requiresInput: savedRule.requires_manual_input,
+        category: savedRule.category,
+        estimatedTime: savedRule.estimated_execution_time || '< 1 min',
+        canRollback: savedRule.rollback_strategy?.type === 'automatic',
+        targetedWords: savedRule.pattern?.targetWords || [],
+        preventDuplicates: savedRule.transformation?.preventDuplicates || true,
+        operationType: savedRule.transformation?.type === 'array_replace' ? 'replace' : 'add'
+      };
+      
+      // Add to current migration rules
+      setMigrationRules(prev => [...prev, visualRule]);
+      addToDebugLog(`✅ Custom rule loaded: ${savedRule.name}`);
+      
+      setShowLoadRulesModal(false);
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load custom rule: ${error.message}`);
+    }
+  };
+
+  const deleteCustomRule = async (ruleId: string, ruleName: string) => {
+    addToDebugLog(`🗑️ Deleting custom rule: ${ruleName}`);
+    
+    try {
+      const { error } = await supabase
+        .from('custom_migration_rules')
+        .update({ status: 'archived' })
+        .eq('rule_id', ruleId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      addToDebugLog(`✅ Custom rule deleted: ${ruleName}`);
+      await loadSavedCustomRules();
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to delete custom rule: ${error.message}`);
+    }
+  };
+
+  // Load saved rules on component mount
+  useEffect(() => {
+    loadSavedCustomRules();
+  }, []);
+
   return (
     <div className="bg-white shadow rounded-lg">
       {/* Tab Navigation */}
@@ -2096,12 +2262,20 @@ export default function MigrationToolsInterface() {
                   WYSIWYG interface for safe database migrations
                 </p>
               </div>
-              <button
-                onClick={handleCreateNewRule}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                + Create Custom Rule
-              </button>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowLoadRulesModal(true)}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  📚 Load Saved ({savedCustomRules.length})
+                </button>
+                <button
+                  onClick={handleCreateNewRule}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  + Create Custom Rule
+                </button>
+              </div>
             </div>
 
             {/* Much More Compact Status Cards */}
@@ -2217,23 +2391,35 @@ export default function MigrationToolsInterface() {
                   </div>
 
                   {/* Compact Action Buttons */}
-                  <div className="grid grid-cols-3 gap-1">
+                  <div className="grid grid-cols-4 gap-1">
                     <button
                       onClick={() => handlePreviewRule(rule)}
-                      className="text-xs py-2 px-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                      className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                      title="Preview"
                     >
-                      📊 Preview
+                      📊
                     </button>
                     <button
                       onClick={() => handleCustomizeRule(rule)}
-                      className="text-xs py-2 px-2 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                      className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                      title="Edit"
                     >
-                      ⚙️ Edit
+                      ⚙️
+                    </button>
+                    <button
+                      onClick={() => {
+                        setRuleToSave(rule);
+                        setShowSaveRuleModal(true);
+                      }}
+                      className="text-xs py-2 px-1 border border-green-300 rounded text-green-700 bg-green-50 hover:bg-green-100"
+                      title="Save Rule"
+                    >
+                      💾
                     </button>
                     <button
                       onClick={() => handleExecuteRule(rule)}
                       disabled={rule.status === 'executing' || rule.status === 'completed'}
-                      className={`text-xs py-2 px-2 rounded font-medium ${
+                      className={`text-xs py-2 px-1 rounded font-medium ${
                         rule.status === 'completed'
                           ? 'bg-green-100 text-green-800 cursor-not-allowed'
                           : rule.status === 'executing'
@@ -3223,6 +3409,175 @@ export default function MigrationToolsInterface() {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Rule Modal */}
+      {showSaveRuleModal && ruleToSave && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Save Custom Rule</h3>
+              <button
+                onClick={() => {
+                  setShowSaveRuleModal(false);
+                  setRuleToSave(null);
+                  setSaveRuleName('');
+                  setSaveRuleDescription('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rule Name
+                </label>
+                <input
+                  type="text"
+                  value={saveRuleName}
+                  onChange={(e) => setSaveRuleName(e.target.value)}
+                  placeholder={ruleToSave.title}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={saveRuleDescription}
+                  onChange={(e) => setSaveRuleDescription(e.target.value)}
+                  placeholder={ruleToSave.description}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="bg-gray-50 p-3 rounded-md">
+                <div className="text-sm text-gray-600">
+                  <strong>Rule Details:</strong>
+                  <div>Category: {ruleToSave.category}</div>
+                  <div>Impact: {ruleToSave.impact}</div>
+                  <div>Affected Rows: {ruleToSave.affectedCount}</div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowSaveRuleModal(false);
+                  setRuleToSave(null);
+                  setSaveRuleName('');
+                  setSaveRuleDescription('');
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => saveCustomRule(ruleToSave)}
+                disabled={isSavingRule}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isSavingRule ? 'Saving...' : 'Save Rule'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Load Rules Modal */}
+      {showLoadRulesModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Load Saved Rules</h3>
+              <button
+                onClick={() => setShowLoadRulesModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {isLoadingSavedRules ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-gray-500">Loading saved rules...</div>
+              </div>
+            ) : savedCustomRules.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-500 mb-4">No saved rules found</div>
+                <p className="text-sm text-gray-400">
+                  Create and save custom rules to see them here
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {savedCustomRules.map((savedRule) => (
+                  <div key={savedRule.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900">{savedRule.name}</h4>
+                        <p className="text-xs text-gray-600 mt-1">{savedRule.description}</p>
+                        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                          <span className="bg-gray-100 px-2 py-1 rounded">
+                            {savedRule.category}
+                          </span>
+                          <span className={`px-2 py-1 rounded ${
+                            savedRule.priority === 'critical' ? 'bg-red-100 text-red-700' :
+                            savedRule.priority === 'high' ? 'bg-orange-100 text-orange-700' :
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {savedRule.priority}
+                          </span>
+                          <span>{savedRule.estimated_affected_rows || 0} rows</span>
+                          <span>
+                            {new Date(savedRule.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-4">
+                        <button
+                          onClick={() => loadCustomRule(savedRule)}
+                          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                        >
+                          Load
+                        </button>
+                        <button
+                          onClick={() => deleteCustomRule(savedRule.rule_id, savedRule.name)}
+                          className="px-3 py-1 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center mt-6">
+              <button
+                onClick={loadSavedCustomRules}
+                disabled={isLoadingSavedRules}
+                className="px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              >
+                🔄 Refresh
+              </button>
+              <button
+                onClick={() => setShowLoadRulesModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
