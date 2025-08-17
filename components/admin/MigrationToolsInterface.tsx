@@ -32,10 +32,22 @@ interface VisualRule {
   category: 'terminology' | 'metadata' | 'cleanup' | 'custom';
   estimatedTime: string;
   canRollback: boolean;
-  // NEW: Enhanced properties
+  // Enhanced properties
   targetedWords?: string[];
   preventDuplicates?: boolean;
   operationType?: 'replace' | 'add' | 'remove';
+  // NEW: Full rule configuration data
+  ruleConfig?: {
+    selectedTable: string;
+    selectedColumn: string;
+    selectedTagsForMigration: string[];
+    ruleBuilderMappings: MappingPair[];
+    tagsToRemove: string[];
+    newTagToAdd: string;
+    selectedWords: WordSearchResult[];
+    selectedFormIds: string[];
+    selectedTranslationIds: string[];
+  };
 }
 
 interface MappingPair {
@@ -1561,7 +1573,19 @@ export default function MigrationToolsInterface() {
         canRollback: true,
         targetedWords: selectedWords.map(w => w.italian),
         preventDuplicates,
-        operationType
+        operationType,
+        // NEW: Capture full rule configuration
+        ruleConfig: {
+          selectedTable,
+          selectedColumn,
+          selectedTagsForMigration: [...selectedTagsForMigration],
+          ruleBuilderMappings: [...ruleBuilderMappings],
+          tagsToRemove: [...tagsToRemove],
+          newTagToAdd,
+          selectedWords: [...selectedWords],
+          selectedFormIds: [...selectedFormIds],
+          selectedTranslationIds: [...selectedTranslationIds]
+        }
       };
 
       setMigrationRules(prev => [...prev, newRule]);
@@ -1657,7 +1681,8 @@ export default function MigrationToolsInterface() {
     addToDebugLog(`💾 Saving custom rule: ${ruleName}`);
     
     try {
-      // Convert VisualRule to database format
+      // Convert VisualRule to database format with real configuration
+      const config = rule.ruleConfig;
       const ruleData = {
         rule_id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: ruleName,
@@ -1665,16 +1690,24 @@ export default function MigrationToolsInterface() {
         category: rule.category,
         priority: rule.impact === 'high' ? 'critical' : rule.impact === 'medium' ? 'high' : 'medium',
         pattern: {
-          table: 'word_forms', // Default, could be extracted from rule
-          column: 'tags',
+          table: config?.selectedTable || 'word_forms',
+          column: config?.selectedColumn || 'tags',
           condition: 'array_contains',
-          value: 'placeholder', // Would need to extract from rule logic
-          targetWords: rule.targetedWords || []
+          targetTags: config?.selectedTagsForMigration || [],
+          targetWords: rule.targetedWords || [],
+          targetFormIds: config?.selectedFormIds || [],
+          targetTranslationIds: config?.selectedTranslationIds || []
         },
         transformation: {
-          type: rule.operationType === 'replace' ? 'array_replace' : 'array_add',
+          type: rule.operationType === 'replace' ? 'array_replace' : 
+                rule.operationType === 'add' ? 'array_add' : 'array_remove',
           preventDuplicates: rule.preventDuplicates || true,
-          mappings: {} // Would extract from rule mappings
+          mappings: config?.ruleBuilderMappings?.reduce((acc, mapping) => {
+            acc[mapping.from] = mapping.to;
+            return acc;
+          }, {} as Record<string, string>) || {},
+          tagsToRemove: config?.tagsToRemove || [],
+          newTagToAdd: config?.newTagToAdd || ''
         },
         safety_checks: [
           {
@@ -1724,7 +1757,10 @@ export default function MigrationToolsInterface() {
     addToDebugLog(`📤 Loading custom rule: ${savedRule.name}`);
     
     try {
-      // Convert database format back to VisualRule
+      // Convert database format back to VisualRule with full configuration
+      const pattern = savedRule.pattern || {};
+      const transformation = savedRule.transformation || {};
+      
       const visualRule: VisualRule = {
         id: savedRule.rule_id,
         title: savedRule.name,
@@ -1737,9 +1773,26 @@ export default function MigrationToolsInterface() {
         category: savedRule.category,
         estimatedTime: savedRule.estimated_execution_time || '< 1 min',
         canRollback: savedRule.rollback_strategy?.type === 'automatic',
-        targetedWords: savedRule.pattern?.targetWords || [],
-        preventDuplicates: savedRule.transformation?.preventDuplicates || true,
-        operationType: savedRule.transformation?.type === 'array_replace' ? 'replace' : 'add'
+        targetedWords: pattern.targetWords || [],
+        preventDuplicates: transformation.preventDuplicates || true,
+        operationType: transformation.type === 'array_replace' ? 'replace' : 
+                      transformation.type === 'array_add' ? 'add' : 'remove',
+        // Reconstruct rule configuration
+        ruleConfig: {
+          selectedTable: pattern.table || 'word_forms',
+          selectedColumn: pattern.column || 'tags',
+          selectedTagsForMigration: pattern.targetTags || [],
+          ruleBuilderMappings: Object.entries(transformation.mappings || {}).map(([from, to], index) => ({
+            id: `loaded-${index}`,
+            from,
+            to: to as string
+          })),
+          tagsToRemove: transformation.tagsToRemove || [],
+          newTagToAdd: transformation.newTagToAdd || '',
+          selectedWords: [], // Cannot reconstruct full WordSearchResult objects
+          selectedFormIds: pattern.targetFormIds || [],
+          selectedTranslationIds: pattern.targetTranslationIds || []
+        }
       };
       
       // Add to current migration rules
@@ -1771,6 +1824,15 @@ export default function MigrationToolsInterface() {
       
     } catch (error: any) {
       addToDebugLog(`❌ Failed to delete custom rule: ${error.message}`);
+    }
+  };
+
+  // NEW: Delete rule from current session
+  const deleteRuleFromSession = (ruleId: string) => {
+    const rule = migrationRules.find(r => r.id === ruleId);
+    if (rule) {
+      setMigrationRules(prev => prev.filter(r => r.id !== ruleId));
+      addToDebugLog(`🗑️ Deleted rule from session: ${rule.title}`);
     }
   };
 
@@ -2391,7 +2453,7 @@ export default function MigrationToolsInterface() {
                   </div>
 
                   {/* Compact Action Buttons */}
-                  <div className="grid grid-cols-4 gap-1">
+                  <div className="grid grid-cols-5 gap-1">
                     <button
                       onClick={() => handlePreviewRule(rule)}
                       className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
@@ -2415,6 +2477,13 @@ export default function MigrationToolsInterface() {
                       title="Save Rule"
                     >
                       💾
+                    </button>
+                    <button
+                      onClick={() => deleteRuleFromSession(rule.id)}
+                      className="text-xs py-2 px-1 border border-red-300 rounded text-red-700 bg-red-50 hover:bg-red-100"
+                      title="Delete Rule"
+                    >
+                      🗑️
                     </button>
                     <button
                       onClick={() => handleExecuteRule(rule)}
