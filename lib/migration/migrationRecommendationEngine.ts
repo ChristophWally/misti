@@ -77,6 +77,9 @@ export class MigrationRecommendationEngine {
   private analysisCache: Map<string, any> = new Map();
   
   constructor(supabaseClient?: any) {
+    if (supabaseClient === null) {
+      throw new Error('Invalid Supabase client: cannot be null');
+    }
     this.supabase = supabaseClient || createClientComponentClient();
     this.migrationEngine = new EnhancedMigrationRuleEngine(this.supabase);
   }
@@ -609,15 +612,15 @@ export class MigrationRecommendationEngine {
     const issues: string[] = [];
     const improvements: string[] = [];
     
-    // Calculate weighted score based on completion percentages
+    // Calculate weighted score based on completion percentages (ensure non-negative)
     const weights = { terminology: 0.3, metadata: 0.4, cleanup: 0.2, structure: 0.1 };
     
-    const score = Math.round(
-      dataState.terminology.completionPercentage * weights.terminology +
-      dataState.metadata.completionPercentage * weights.metadata +
-      dataState.cleanup.completionPercentage * weights.cleanup +
-      dataState.structure.completionPercentage * weights.structure
-    );
+    const score = Math.max(0, Math.round(
+      Math.max(0, dataState.terminology.completionPercentage) * weights.terminology +
+      Math.max(0, dataState.metadata.completionPercentage) * weights.metadata +
+      Math.max(0, dataState.cleanup.completionPercentage) * weights.cleanup +
+      Math.max(0, dataState.structure.completionPercentage) * weights.structure
+    ));
     
     // Identify specific issues
     if (dataState.terminology.completionPercentage < 100) {
