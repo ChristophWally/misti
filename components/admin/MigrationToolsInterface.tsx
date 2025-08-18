@@ -2556,111 +2556,71 @@ export default function MigrationToolsInterface() {
                     </div>
                   </div>
 
-                  {/* Compact Stats */}
-                  <div className="grid grid-cols-3 gap-2 text-xs mb-2">
-                    <div className="text-center p-1 bg-white bg-opacity-50 rounded">
-                      <div className="font-medium capitalize">{rule.impact}</div>
-                      <div className="text-gray-500">Impact</div>
-                    </div>
-                    <div className="text-center p-1 bg-white bg-opacity-50 rounded">
-                      <div className="font-medium">{rule.affectedCount}</div>
-                      <div className="text-gray-500">Rows</div>
-                    </div>
-                    <div className="text-center p-1 bg-white bg-opacity-50 rounded">
-                      <div className="font-medium">{rule.estimatedTime}</div>
-                      <div className="text-gray-500">Time</div>
-                    </div>
-                  </div>
+                      {/* Compact Stats */}
+                      <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+                        <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                          <div className="font-medium capitalize">{rule.impact}</div>
+                          <div className="text-gray-500">Impact</div>
+                        </div>
+                        <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                          <div className="font-medium">{rule.affectedCount}</div>
+                          <div className="text-gray-500">Rows</div>
+                        </div>
+                        <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                          <div className="font-medium">{rule.estimatedTime}</div>
+                          <div className="text-gray-500">Time</div>
+                        </div>
+                      </div>
 
-                  {/* Compact Status Badges */}
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {rule.canRollback && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
-                        🔄
-                      </span>
-                    )}
-                    {rule.autoExecutable && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
-                        ⚡
-                      </span>
-                    )}
-                    {rule.requiresInput && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 text-yellow-800">
-                        ⚙️
-                      </span>
-                    )}
-                    {rule.preventDuplicates && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-800">
-                        🛡️
-                      </span>
-                    )}
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-800">
-                      {getOperationIcon(rule.operationType)} {rule.operationType || 'replace'}
-                    </span>
-                  </div>
-
-                  {/* Compact Action Buttons */}
-                  <div className="grid grid-cols-5 gap-1">
-                    <button
-                      onClick={() => handlePreviewRule(rule)}
-                      className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
-                      title="Preview"
-                    >
-                      📊
-                    </button>
-                    <button
-                      onClick={() => handleCustomizeRule(rule)}
-                      className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
-                      title="Edit"
-                    >
-                      ⚙️
-                    </button>
-                    <button
-                      onClick={() => {
-                        setRuleToSave(rule);
-                        setShowSaveRuleModal(true);
-                      }}
-                      className="text-xs py-2 px-1 border border-green-300 rounded text-green-700 bg-green-50 hover:bg-green-100"
-                      title="Save Rule"
-                    >
-                      💾
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (rule.ruleSource === 'default') {
-                          addToDebugLog(`⚠️ Cannot permanently delete default rule: ${rule.title}`);
-                        } else {
-                          deleteRuleFromSession(rule.id);
-                        }
-                      }}
-                      className={`text-xs py-2 px-1 border rounded ${
-                        rule.ruleSource === 'default' 
-                          ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
-                          : 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100'
-                      }`}
-                      title={rule.ruleSource === 'default' 
-                        ? 'Default rules cannot be permanently deleted' 
-                        : 'Delete Rule'
-                      }
-                    >
-                      🗑️
-                    </button>
-                    <button
-                      onClick={() => handleExecuteRule(rule)}
-                      disabled={rule.status === 'executing' || rule.status === 'completed'}
-                      className={`text-xs py-2 px-1 rounded font-medium ${
-                        rule.status === 'completed'
-                          ? 'bg-green-100 text-green-800 cursor-not-allowed'
-                          : rule.status === 'executing'
-                          ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
-                          : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      {rule.status === 'completed' ? '✅' :
-                       rule.status === 'executing' ? '⏳' :
-                       '▶️'}
-                    </button>
-                  </div>
+                      {/* Action Buttons */}
+                      <div className="grid grid-cols-5 gap-1">
+                        <button
+                          onClick={() => handlePreviewRule(rule)}
+                          className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                          title="Preview"
+                        >
+                          📊
+                        </button>
+                        <button
+                          onClick={() => handleCustomizeRule(rule)}
+                          className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                          title="Edit"
+                        >
+                          ⚙️
+                        </button>
+                        <button
+                          onClick={() => {
+                            setRuleToSave(rule);
+                            setShowSaveRuleModal(true);
+                          }}
+                          className="text-xs py-2 px-1 border border-green-300 rounded text-green-700 bg-green-50 hover:bg-green-100"
+                          title="Save Rule"
+                        >
+                          💾
+                        </button>
+                        <button
+                          onClick={() => deleteRuleFromSession(rule.id)}
+                          className="text-xs py-2 px-1 border border-red-300 rounded text-red-700 bg-red-50 hover:bg-red-100"
+                          title="Delete Rule"
+                        >
+                          🗑️
+                        </button>
+                        <button
+                          onClick={() => handleExecuteRule(rule)}
+                          disabled={rule.status === 'executing' || rule.status === 'completed'}
+                          className={`text-xs py-2 px-1 rounded font-medium ${
+                            rule.status === 'completed'
+                              ? 'bg-green-100 text-green-800 cursor-not-allowed'
+                              : rule.status === 'executing'
+                              ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                        >
+                          {rule.status === 'completed' ? '✅' :
+                           rule.status === 'executing' ? '⏳' :
+                           '▶️'}
+                        </button>
+                      </div>
                 </div>
               ))}
             </div>
