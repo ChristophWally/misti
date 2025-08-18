@@ -48,6 +48,8 @@ interface VisualRule {
     selectedFormIds: string[];
     selectedTranslationIds: string[];
   };
+  // NEW: Rule source tracking
+  ruleSource?: 'default' | 'custom' | 'loaded';
 }
 
 interface MappingPair {
@@ -567,7 +569,8 @@ export default function MigrationToolsInterface() {
         estimatedTime: '2-3 seconds',
         canRollback: true,
         preventDuplicates: true,
-        operationType: 'replace'
+        operationType: 'replace',
+        ruleSource: 'default'
       },
       {
         id: 'add-missing-auxiliaries',
@@ -581,7 +584,8 @@ export default function MigrationToolsInterface() {
         category: 'metadata',
         estimatedTime: '1-2 seconds',
         canRollback: true,
-        operationType: 'add'
+        operationType: 'add',
+        ruleSource: 'default'
       },
       {
         id: 'cleanup-deprecated-tags',
@@ -596,7 +600,8 @@ export default function MigrationToolsInterface() {
         estimatedTime: 'Under 1 second',
         canRollback: true,
         preventDuplicates: true,
-        operationType: 'replace'
+        operationType: 'replace',
+        ruleSource: 'default'
       },
       {
         id: 'remove-obsolete-tags',
@@ -610,7 +615,8 @@ export default function MigrationToolsInterface() {
         category: 'cleanup',
         estimatedTime: 'Variable',
         canRollback: true,
-        operationType: 'remove'
+        operationType: 'remove',
+        ruleSource: 'default'
       }
     ];
     
@@ -897,6 +903,23 @@ export default function MigrationToolsInterface() {
     setOperationType(rule.operationType || 'replace');
     setPreventDuplicates(rule.preventDuplicates !== false);
 
+    // If rule has stored configuration (loaded/custom rules), restore it
+    if (rule.ruleConfig) {
+      const config = rule.ruleConfig;
+      setSelectedTable(config.selectedTable);
+      setSelectedColumn(config.selectedColumn);
+      setSelectedTagsForMigration(config.selectedTagsForMigration);
+      setRuleBuilderMappings(config.ruleBuilderMappings);
+      setTagsToRemove(config.tagsToRemove);
+      setNewTagToAdd(config.newTagToAdd);
+      setSelectedWords(config.selectedWords);
+      setSelectedFormIds(config.selectedFormIds);
+      setSelectedTranslationIds(config.selectedTranslationIds);
+      addToDebugLog(`✅ Restored rule configuration for: ${rule.title}`);
+      return;
+    }
+
+    // Fallback for default rules without stored config
     switch (rule.id) {
       case 'italian-to-universal-terminology':
         setRuleBuilderMappings([
@@ -1574,6 +1597,7 @@ export default function MigrationToolsInterface() {
         targetedWords: selectedWords.map(w => w.italian),
         preventDuplicates,
         operationType,
+        ruleSource: 'custom',
         // NEW: Capture full rule configuration
         ruleConfig: {
           selectedTable,
@@ -1777,6 +1801,7 @@ export default function MigrationToolsInterface() {
         preventDuplicates: transformation.preventDuplicates || true,
         operationType: transformation.type === 'array_replace' ? 'replace' : 
                       transformation.type === 'array_add' ? 'add' : 'remove',
+        ruleSource: 'loaded',
         // Reconstruct rule configuration
         ruleConfig: {
           selectedTable: pattern.table || 'word_forms',
@@ -2479,9 +2504,22 @@ export default function MigrationToolsInterface() {
                       💾
                     </button>
                     <button
-                      onClick={() => deleteRuleFromSession(rule.id)}
-                      className="text-xs py-2 px-1 border border-red-300 rounded text-red-700 bg-red-50 hover:bg-red-100"
-                      title="Delete Rule"
+                      onClick={() => {
+                        if (rule.ruleSource === 'default') {
+                          addToDebugLog(`⚠️ Cannot permanently delete default rule: ${rule.title}`);
+                        } else {
+                          deleteRuleFromSession(rule.id);
+                        }
+                      }}
+                      className={`text-xs py-2 px-1 border rounded ${
+                        rule.ruleSource === 'default' 
+                          ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
+                          : 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100'
+                      }`}
+                      title={rule.ruleSource === 'default' 
+                        ? 'Default rules cannot be permanently deleted' 
+                        : 'Delete Rule'
+                      }
                     >
                       🗑️
                     </button>
@@ -3427,8 +3465,17 @@ export default function MigrationToolsInterface() {
                       !ruleTitle.trim() ||
                       (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
                       (operationType === 'add' && !newTagToAdd.trim()) ||
-                      (operationType === 'remove' && selectedTagsForMigration.length === 0) ||
-                      (operationType === 'replace' && selectedTagsForMigration.length === 0 && ruleBuilderMappings.length === 0)
+                      (operationType === 'remove' && 
+                        selectedTagsForMigration.length === 0 && 
+                        selectedWords.length === 0 && 
+                        selectedFormIds.length === 0 && 
+                        selectedTranslationIds.length === 0) ||
+                      (operationType === 'replace' && 
+                        selectedTagsForMigration.length === 0 && 
+                        ruleBuilderMappings.length === 0 && 
+                        selectedWords.length === 0 && 
+                        selectedFormIds.length === 0 && 
+                        selectedTranslationIds.length === 0)
                     }
                     className="flex-1 py-2 px-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
                   >
@@ -3469,8 +3516,17 @@ export default function MigrationToolsInterface() {
                       !ruleTitle.trim() ||
                       (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
                       (operationType === 'add' && !newTagToAdd.trim()) ||
-                      (operationType === 'remove' && selectedTagsForMigration.length === 0) ||
-                      (operationType === 'replace' && selectedTagsForMigration.length === 0 && ruleBuilderMappings.length === 0)
+                      (operationType === 'remove' && 
+                        selectedTagsForMigration.length === 0 && 
+                        selectedWords.length === 0 && 
+                        selectedFormIds.length === 0 && 
+                        selectedTranslationIds.length === 0) ||
+                      (operationType === 'replace' && 
+                        selectedTagsForMigration.length === 0 && 
+                        ruleBuilderMappings.length === 0 && 
+                        selectedWords.length === 0 && 
+                        selectedFormIds.length === 0 && 
+                        selectedTranslationIds.length === 0)
                     }
                     className="flex-1 py-2 px-3 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                   >
