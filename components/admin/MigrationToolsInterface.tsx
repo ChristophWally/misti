@@ -2621,8 +2621,10 @@ export default function MigrationToolsInterface() {
                            '▶️'}
                         </button>
                       </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}
