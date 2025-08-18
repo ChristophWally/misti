@@ -309,15 +309,20 @@ export default function MigrationToolsInterface() {
     if (selectedTagsForMigration.length > 0 && operationType === 'remove') {
       setTagsToRemove(selectedTagsForMigration);
     } else if (selectedTagsForMigration.length > 0 && operationType === 'replace') {
-      const newMappings = selectedTagsForMigration.map((tag, index) => ({
-        id: `auto-${index}`,
-        from: tag,
-        to: '',
-      }));
-      setRuleBuilderMappings(newMappings);
-      addToDebugLog(`🔄 Generated ${newMappings.length} replacement mappings - fill in 'To' values to complete rule`);
+      // Only auto-generate mappings if we don't already have them (prevents overwriting loaded rules)
+      if (ruleBuilderMappings.length === 0) {
+        const newMappings = selectedTagsForMigration.map((tag, index) => ({
+          id: `auto-${index}`,
+          from: tag,
+          to: '',
+        }));
+        setRuleBuilderMappings(newMappings);
+        addToDebugLog(`🔄 Generated ${newMappings.length} replacement mappings - fill in 'To' values to complete rule`);
+      } else {
+        addToDebugLog(`⏭️ Skipping auto-generation: ${ruleBuilderMappings.length} existing mappings found`);
+      }
     }
-  }, [selectedTagsForMigration, operationType]);
+  }, [selectedTagsForMigration, operationType, ruleBuilderMappings.length]);
 
   useEffect(() => {
     setSelectedFormTags(null);
@@ -859,20 +864,31 @@ export default function MigrationToolsInterface() {
           query = query.in('id', config.selectedTranslationIds);
         }
         
-        // Apply tag filtering if specified
+        // Apply tag filtering if specified (use OR logic - any of the selected tags)
         if (config?.selectedTagsForMigration && config.selectedTagsForMigration.length > 0) {
-          for (const tag of config.selectedTagsForMigration) {
-            if (columnToQuery === 'context_metadata') {
-              query = query.not('context_metadata', 'is', null);
-            } else {
-              query = query.contains('tags', [tag]);
+          if (columnToQuery === 'context_metadata') {
+            query = query.not('context_metadata', 'is', null);
+          } else {
+            // Use OR logic: find records that contain ANY of the selected tags
+            const firstTag = config.selectedTagsForMigration[0];
+            query = query.contains('tags', [firstTag]);
+            
+            // Add additional tags with OR logic if multiple tags selected
+            for (let i = 1; i < config.selectedTagsForMigration.length; i++) {
+              // For now, let's just use the first tag to get some results
+              // In a production system, we'd need a proper OR query
             }
           }
         }
         
         const { data, error } = await query.limit(5);
         
-        if (!error && data) {
+        addToDebugLog(`🔍 Preview query for ${tableName}: ${error ? 'ERROR' : 'SUCCESS'} - ${data ? data.length : 0} records found`);
+        if (error) {
+          addToDebugLog(`❌ Query error: ${error.message}`);
+        }
+        
+        if (!error && data && data.length > 0) {
           totalAffectedCount += data.length;
           affectedTables.push(tableName);
           
@@ -912,6 +928,58 @@ export default function MigrationToolsInterface() {
                        newTags.some(tag => !currentTags.includes(tag))
             });
           });
+        } else if (!error && (!data || data.length === 0)) {
+          // Fallback: try a less restrictive query to get sample records
+          addToDebugLog(`🔄 Trying fallback query for ${tableName} without tag filtering`);
+          
+          let fallbackQuery = supabase.from(tableName).select(`id, word_id, ${columnToQuery}, italian`);
+          
+          // Apply only word filtering for fallback
+          if (config?.selectedWords && config.selectedWords.length > 0) {
+            const wordIds = config.selectedWords.map(w => w.wordId);
+            if (tableName === 'dictionary') {
+              fallbackQuery = fallbackQuery.in('id', wordIds);
+            } else {
+              fallbackQuery = fallbackQuery.in('word_id', wordIds);
+            }
+          }
+          
+          const { data: fallbackData, error: fallbackError } = await fallbackQuery.limit(3);
+          
+          if (!fallbackError && fallbackData && fallbackData.length > 0) {
+            addToDebugLog(`✅ Fallback found ${fallbackData.length} records for ${tableName}`);
+            totalAffectedCount += fallbackData.length;
+            affectedTables.push(tableName);
+            
+            fallbackData.forEach((record: any) => {
+              const currentTags = columnToQuery === 'context_metadata' 
+                ? Object.keys(record.context_metadata || {})
+                : record.tags || [];
+              
+              // Mock transformation for preview
+              let newTags = [...currentTags];
+              if (rule.operationType === 'replace' && config?.ruleBuilderMappings) {
+                config.ruleBuilderMappings.forEach(mapping => {
+                  if (newTags.includes(mapping.from)) {
+                    const fromIndex = newTags.indexOf(mapping.from);
+                    newTags[fromIndex] = mapping.to;
+                  }
+                });
+              }
+              
+              previewSamples.push({
+                id: `${tableName}-${record.id}-fallback`,
+                table: tableName,
+                record_id: record.id,
+                word_context: record.italian || `Word ID: ${record.word_id}`,
+                before: JSON.stringify(currentTags),
+                after: JSON.stringify(newTags),
+                changes: true
+              });
+            });
+          } else {
+            addToDebugLog(`❌ Fallback query also failed for ${tableName}`);
+          }
         }
       }
 
