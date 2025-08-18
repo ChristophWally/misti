@@ -1703,6 +1703,7 @@ export default function MigrationToolsInterface() {
     const ruleDescription = customDescription || saveRuleDescription || rule.description;
     
     addToDebugLog(`💾 Saving custom rule: ${ruleName}`);
+    addToDebugLog(`🔍 Rule mappings: ${JSON.stringify(rule.ruleConfig?.ruleBuilderMappings || [])}`);
     
     try {
       // Convert VisualRule to database format with real configuration
@@ -3213,6 +3214,40 @@ export default function MigrationToolsInterface() {
                   </div>
                 )}
 
+                {/* Save Rule Button for Forms Step */}
+                {selectedWords.length > 0 && selectedTable === 'word_forms' && (
+                  <div className="flex space-x-2 p-3 border-t">
+                    <button
+                      onClick={() => setCurrentStep('config')}
+                      className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                    >
+                      ← Back to Config
+                    </button>
+                    <button
+                      onClick={saveCustomRule}
+                      disabled={
+                        !ruleTitle.trim() ||
+                        (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
+                        (operationType === 'add' && !newTagToAdd.trim()) ||
+                        (operationType === 'remove' && 
+                          selectedTagsForMigration.length === 0 && 
+                          selectedWords.length === 0 && 
+                          selectedFormIds.length === 0 && 
+                          selectedTranslationIds.length === 0) ||
+                        (operationType === 'replace' && 
+                          selectedTagsForMigration.length === 0 && 
+                          ruleBuilderMappings.length === 0 && 
+                          selectedWords.length === 0 && 
+                          selectedFormIds.length === 0 && 
+                          selectedTranslationIds.length === 0)
+                      }
+                      className="flex-1 py-2 px-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Save Rule
+                    </button>
+                  </div>
+                )}
+
                 {/* Translation Selection - Following Forms Pattern */}
                 {currentStep === 'translations' && selectedTable === 'word_translations' && (
                   <div className="space-y-2">
@@ -3357,6 +3392,39 @@ export default function MigrationToolsInterface() {
                   </div>
                 )}
 
+                {/* Save Rule Button for Translations Step */}
+                {currentStep === 'translations' && (
+                  <div className="flex space-x-2 p-3 border-t">
+                    <button
+                      onClick={() => setCurrentStep('config')}
+                      className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                    >
+                      ← Back to Config
+                    </button>
+                    <button
+                      onClick={saveCustomRule}
+                      disabled={
+                        !ruleTitle.trim() ||
+                        (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
+                        (operationType === 'add' && !newTagToAdd.trim()) ||
+                        (operationType === 'remove' && 
+                          selectedTagsForMigration.length === 0 && 
+                          selectedWords.length === 0 && 
+                          selectedFormIds.length === 0 && 
+                          selectedTranslationIds.length === 0) ||
+                        (operationType === 'replace' && 
+                          selectedTagsForMigration.length === 0 && 
+                          ruleBuilderMappings.length === 0 && 
+                          selectedWords.length === 0 && 
+                          selectedFormIds.length === 0 && 
+                          selectedTranslationIds.length === 0)
+                      }
+                      className="flex-1 py-2 px-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Save Rule
+                    </button>
+                  </div>
+                )}
 
                 {operationType === 'add' && (
                   <div className="space-y-2">
