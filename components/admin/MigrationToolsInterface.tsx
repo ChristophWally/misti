@@ -1012,19 +1012,23 @@ export default function MigrationToolsInterface() {
     // If rule has stored configuration (loaded/custom rules), restore it
     if (rule.ruleConfig) {
       const config = rule.ruleConfig;
-      setSelectedTable(config.selectedTable);
-      setSelectedColumn(config.selectedColumn);
-      setSelectedTagsForMigration(config.selectedTagsForMigration);
-      setRuleBuilderMappings(config.ruleBuilderMappings);
-      setTagsToRemove(config.tagsToRemove);
-      setNewTagToAdd(config.newTagToAdd);
-      setSelectedWords(config.selectedWords);
-      setSelectedFormIds(config.selectedFormIds);
-      setSelectedTranslationIds(config.selectedTranslationIds);
       
-      addToDebugLog(`🔧 Restored rule configuration for: ${rule.title}`);
-      addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
-      addToDebugLog(`🏷️ Tags for migration: ${JSON.stringify(config.selectedTagsForMigration)}`);
+      // Use setTimeout to ensure state updates happen after render cycle
+      setTimeout(() => {
+        setSelectedTable(config.selectedTable);
+        setSelectedColumn(config.selectedColumn);
+        setSelectedTagsForMigration(config.selectedTagsForMigration);
+        setRuleBuilderMappings(config.ruleBuilderMappings);
+        setTagsToRemove(config.tagsToRemove);
+        setNewTagToAdd(config.newTagToAdd);
+        setSelectedWords(config.selectedWords);
+        setSelectedFormIds(config.selectedFormIds);
+        setSelectedTranslationIds(config.selectedTranslationIds);
+        
+        addToDebugLog(`🔧 Restored rule configuration for: ${rule.title}`);
+        addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
+        addToDebugLog(`🏷️ Tags for migration: ${JSON.stringify(config.selectedTagsForMigration)}`);
+      }, 100);
       return;
     }
 
@@ -2894,9 +2898,41 @@ export default function MigrationToolsInterface() {
                   <h4 className="text-sm font-medium text-blue-900 mb-2">What Will Happen</h4>
                   <p className="text-sm text-blue-800">{selectedRule.description}</p>
                   <div className="mt-2 text-sm text-blue-700">
-                    <span className="font-medium">{selectedRule.affectedCount} rows</span> will be updated in
+                    <span className="font-medium">{previewData?.totalAffectedCount || selectedRule.affectedCount} rows</span> will be updated in
                     <span className="font-medium"> {selectedRule.estimatedTime}</span>
                   </div>
+                  
+                  {/* Detailed Rule Configuration */}
+                  {selectedRule.ruleConfig && (
+                    <div className="mt-4 p-3 bg-white border border-blue-200 rounded">
+                      <div className="text-xs font-medium text-blue-900 mb-2">Rule Configuration:</div>
+                      <div className="space-y-1 text-xs text-blue-800">
+                        <div><span className="font-medium">Operation:</span> {selectedRule.operationType?.toUpperCase()} on {selectedRule.ruleConfig.selectedTable}:{selectedRule.ruleConfig.selectedColumn}</div>
+                        {selectedRule.ruleConfig.selectedTagsForMigration?.length > 0 && (
+                          <div><span className="font-medium">Target Tags:</span> {selectedRule.ruleConfig.selectedTagsForMigration.join(', ')}</div>
+                        )}
+                        {selectedRule.ruleConfig.ruleBuilderMappings?.length > 0 && (
+                          <div>
+                            <span className="font-medium">Mappings:</span>
+                            <div className="ml-2 mt-1">
+                              {selectedRule.ruleConfig.ruleBuilderMappings.map(m => (
+                                <div key={m.id} className="text-xs">"{m.from}" → "{m.to}"</div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {selectedRule.ruleConfig.newTagToAdd && (
+                          <div><span className="font-medium">Adding:</span> "{selectedRule.ruleConfig.newTagToAdd}"</div>
+                        )}
+                        {selectedRule.ruleConfig.selectedWords?.length > 0 && (
+                          <div><span className="font-medium">Target Words:</span> {selectedRule.ruleConfig.selectedWords.map(w => w.italian).join(', ')}</div>
+                        )}
+                        {previewData?.affectedTables?.length > 0 && (
+                          <div><span className="font-medium">Affected Tables:</span> {previewData.affectedTables.join(', ')}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   {previewData?.duplicateAnalysis && (
                     <div className="mt-3">
                       {previewData.duplicateAnalysis.wouldCreateDuplicates ? (
@@ -2925,27 +2961,55 @@ export default function MigrationToolsInterface() {
 
                 {previewData && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-3">Sample Changes</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3">
+                      Sample Changes 
+                      {previewData.totalAffectedCount && (
+                        <span className="text-xs text-gray-500 ml-2">
+                          (showing {previewData.beforeSamples.length} of {previewData.totalAffectedCount} affected records)
+                        </span>
+                      )}
+                    </h4>
                     <div className="space-y-3">
                       {previewData.beforeSamples.map((sample: any) => (
-                        <div key={sample.id} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                          <div className="flex-1">
-                            <div className="text-xs text-gray-500 mb-1">Before:</div>
-                            <code className="text-sm bg-white px-2 py-1 rounded border">
-                              {sample.before}
-                            </code>
+                        <div key={sample.id} className="border rounded-lg p-3 bg-gray-50">
+                          {/* Record context */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs text-gray-600">
+                              <span className="font-medium">{sample.table || 'word_forms'}</span>
+                              {sample.word_context && <span className="ml-2">• {sample.word_context}</span>}
+                              {sample.record_id && <span className="ml-2">• ID: {sample.record_id}</span>}
+                            </div>
+                            {sample.changes && (
+                              <span className="text-xs text-green-600 font-medium">✓ Changes</span>
+                            )}
                           </div>
-                          <div className="flex-shrink-0">
-                            <span className="text-gray-400">→</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="text-xs text-gray-500 mb-1">After:</div>
-                            <code className="text-sm bg-white px-2 py-1 rounded border">
-                              {sample.after}
-                            </code>
+                          
+                          {/* Before/After comparison */}
+                          <div className="flex items-start space-x-4">
+                            <div className="flex-1">
+                              <div className="text-xs text-gray-500 mb-1">Before:</div>
+                              <code className="text-sm bg-white px-2 py-1 rounded border block">
+                                {sample.before}
+                              </code>
+                            </div>
+                            <div className="flex-shrink-0 mt-6">
+                              <span className="text-gray-400">→</span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="text-xs text-gray-500 mb-1">After:</div>
+                              <code className="text-sm bg-white px-2 py-1 rounded border block">
+                                {sample.after}
+                              </code>
+                            </div>
                           </div>
                         </div>
                       ))}
+                      
+                      {previewData.beforeSamples.length === 0 && (
+                        <div className="text-center py-4 text-gray-500 text-sm">
+                          No matching records found for this rule configuration.
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
