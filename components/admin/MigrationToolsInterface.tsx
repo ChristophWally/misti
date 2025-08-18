@@ -134,6 +134,7 @@ export default function MigrationToolsInterface() {
   const [preventDuplicates, setPreventDuplicates] = useState(true);
   const [tagsToRemove, setTagsToRemove] = useState<string[]>([]);
   const [newTagToAdd, setNewTagToAdd] = useState('');
+  const [tagsToAdd, setTagsToAdd] = useState<string[]>([]); // NEW: Multiple tags support
 
   // NEW: Word targeting state
   const [wordSearchTerm, setWordSearchTerm] = useState('');
@@ -864,24 +865,8 @@ export default function MigrationToolsInterface() {
           query = query.in('id', config.selectedTranslationIds);
         }
         
-        // Apply tag filtering if specified (use OR logic - any of the selected tags)
-        if (config?.selectedTagsForMigration && config.selectedTagsForMigration.length > 0) {
-          if (columnToQuery === 'context_metadata') {
-            query = query.not('context_metadata', 'is', null);
-          } else {
-            // Use OR logic: find records that contain ANY of the selected tags
-            const firstTag = config.selectedTagsForMigration[0];
-            query = query.contains('tags', [firstTag]);
-            
-            // Add additional tags with OR logic if multiple tags selected
-            for (let i = 1; i < config.selectedTagsForMigration.length; i++) {
-              // For now, let's just use the first tag to get some results
-              // In a production system, we'd need a proper OR query
-            }
-          }
-        }
-        
-        const { data, error } = await query.limit(5);
+        // Simplified approach: get sample records and filter in memory
+        const { data, error } = await query.limit(50); // Get more records for filtering
         
         addToDebugLog(`🔍 Preview query for ${tableName}: ${error ? 'ERROR' : 'SUCCESS'} - ${data ? data.length : 0} records found`);
         if (error) {
@@ -889,45 +874,92 @@ export default function MigrationToolsInterface() {
         }
         
         if (!error && data && data.length > 0) {
-          totalAffectedCount += data.length;
-          affectedTables.push(tableName);
+          // Filter records in memory based on rule configuration
+          let filteredRecords = data;
           
-          // Generate preview samples showing before/after
-          data.forEach((record: any, index: number) => {
-            const currentTags = columnToQuery === 'context_metadata' 
-              ? Object.keys(record.context_metadata || {})
-              : record.tags || [];
+          // Apply tag-based filtering if specified
+          if (config?.selectedTagsForMigration && config.selectedTagsForMigration.length > 0) {
+            filteredRecords = data.filter((record: any) => {
+              const currentTags = columnToQuery === 'context_metadata' 
+                ? Object.keys(record.context_metadata || {})
+                : record.tags || [];
+              
+              // Check if record contains any of the target tags
+              return config.selectedTagsForMigration.some(tag => currentTags.includes(tag));
+            });
+          }
+          
+          // For remove operations, also check tagsToRemove
+          if (rule.operationType === 'remove' && config?.tagsToRemove && config.tagsToRemove.length > 0) {
+            const removeRecords = data.filter((record: any) => {
+              const currentTags = columnToQuery === 'context_metadata' 
+                ? Object.keys(record.context_metadata || {})
+                : record.tags || [];
+              
+              // Check if record contains any of the tags to remove
+              return config.tagsToRemove.some(tag => currentTags.includes(tag));
+            });
             
-            let newTags = [...currentTags];
-            
-            // Apply rule transformations
-            if (rule.operationType === 'replace' && config?.ruleBuilderMappings) {
-              config.ruleBuilderMappings.forEach(mapping => {
-                const fromIndex = newTags.indexOf(mapping.from);
-                if (fromIndex !== -1) {
-                  newTags[fromIndex] = mapping.to;
-                }
-              });
-            } else if (rule.operationType === 'add' && config?.newTagToAdd) {
-              if (!newTags.includes(config.newTagToAdd)) {
-                newTags.push(config.newTagToAdd);
-              }
-            } else if (rule.operationType === 'remove' && config?.selectedTagsForMigration) {
-              newTags = newTags.filter(tag => !config.selectedTagsForMigration.includes(tag));
+            // Merge with existing filtered records
+            filteredRecords = [...new Set([...filteredRecords, ...removeRecords])];
+          }
+          
+          // If no specific filtering, show sample records anyway
+          if (!config?.selectedTagsForMigration?.length && !config?.tagsToRemove?.length) {
+            filteredRecords = data.slice(0, 5);
+          }
+          
+          addToDebugLog(`📊 ${tableName}: ${filteredRecords.length} records match rule criteria`);
+          
+          if (filteredRecords.length > 0) {
+            totalAffectedCount += filteredRecords.length;
+            if (!affectedTables.includes(tableName)) {
+              affectedTables.push(tableName);
             }
             
-            previewSamples.push({
-              id: `${tableName}-${record.id}`,
-              table: tableName,
-              record_id: record.id,
-              word_context: record.italian || `Word ID: ${record.word_id}`,
-              before: JSON.stringify(currentTags),
-              after: JSON.stringify(newTags),
-              changes: currentTags.length !== newTags.length || 
-                       currentTags.some(tag => !newTags.includes(tag)) ||
-                       newTags.some(tag => !currentTags.includes(tag))
+            // Generate preview samples showing before/after (limit to 5 per table)
+            filteredRecords.slice(0, 5).forEach((record: any) => {
+              const currentTags = columnToQuery === 'context_metadata' 
+                ? Object.keys(record.context_metadata || {})
+                : record.tags || [];
+              
+              let newTags = [...currentTags];
+              
+              // Apply rule transformations based on operation type
+              if (rule.operationType === 'replace' && config?.ruleBuilderMappings) {
+                config.ruleBuilderMappings.forEach(mapping => {
+                  const fromIndex = newTags.indexOf(mapping.from);
+                  if (fromIndex !== -1 && mapping.to) {
+                    newTags[fromIndex] = mapping.to;
+                  }
+                });
+              } else if (rule.operationType === 'add' && config?.newTagToAdd) {
+                if (!newTags.includes(config.newTagToAdd)) {
+                  newTags.push(config.newTagToAdd);
+                }
+              } else if (rule.operationType === 'remove') {
+                // Remove tags from selectedTagsForMigration or tagsToRemove
+                const tagsToRemove = config?.tagsToRemove?.length > 0 ? config.tagsToRemove : config?.selectedTagsForMigration || [];
+                newTags = newTags.filter(tag => !tagsToRemove.includes(tag));
+              }
+              
+              const hasChanges = currentTags.length !== newTags.length || 
+                               currentTags.some(tag => !newTags.includes(tag)) ||
+                               newTags.some(tag => !currentTags.includes(tag));
+              
+              if (hasChanges) {
+                previewSamples.push({
+                  id: `${tableName}-${record.id}`,
+                  table: tableName,
+                  record_id: record.id,
+                  word_context: record.italian || `Word ID: ${record.word_id}`,
+                  before: JSON.stringify(currentTags),
+                  after: JSON.stringify(newTags),
+                  changes: true
+                });
+              }
             });
-          });
+          }
         } else if (!error && (!data || data.length === 0)) {
           // Fallback: try a less restrictive query to get sample records
           addToDebugLog(`🔄 Trying fallback query for ${tableName} without tag filtering`);
