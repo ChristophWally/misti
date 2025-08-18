@@ -1021,7 +1021,10 @@ export default function MigrationToolsInterface() {
       setSelectedWords(config.selectedWords);
       setSelectedFormIds(config.selectedFormIds);
       setSelectedTranslationIds(config.selectedTranslationIds);
-      addToDebugLog(`✅ Restored rule configuration for: ${rule.title}`);
+      
+      addToDebugLog(`🔧 Restored rule configuration for: ${rule.title}`);
+      addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
+      addToDebugLog(`🏷️ Tags for migration: ${JSON.stringify(config.selectedTagsForMigration)}`);
       return;
     }
 
@@ -1714,6 +1717,8 @@ export default function MigrationToolsInterface() {
   const saveCustomRule = () => {
     if (selectedRule) {
       // Editing existing rule
+      addToDebugLog(`🔧 Updating existing rule with mappings: ${JSON.stringify(ruleBuilderMappings)}`);
+      
       setMigrationRules(prev => prev.map(rule =>
         rule.id === selectedRule.id
           ? {
@@ -1723,13 +1728,27 @@ export default function MigrationToolsInterface() {
               operationType,
               preventDuplicates,
               targetedWords: selectedWords.map(w => w.italian),
-              affectedCount: selectedTagsForMigration.length || ruleBuilderMappings.length || 1
+              affectedCount: selectedTagsForMigration.length || ruleBuilderMappings.length || 1,
+              // Update rule configuration
+              ruleConfig: {
+                selectedTable,
+                selectedColumn,
+                selectedTagsForMigration: [...selectedTagsForMigration],
+                ruleBuilderMappings: [...ruleBuilderMappings],
+                tagsToRemove: [...tagsToRemove],
+                newTagToAdd,
+                selectedWords: [...selectedWords],
+                selectedFormIds: [...selectedFormIds],
+                selectedTranslationIds: [...selectedTranslationIds]
+              }
             }
           : rule
       ));
       addToDebugLog(`✅ Updated existing rule: ${ruleTitle}`);
     } else {
       // Creating new rule
+      addToDebugLog(`💾 Saving rule with mappings: ${JSON.stringify(ruleBuilderMappings)}`);
+      
       const newRule: VisualRule = {
         id: `custom-${Date.now()}`,
         title: ruleTitle,
@@ -1760,6 +1779,7 @@ export default function MigrationToolsInterface() {
         }
       };
 
+      addToDebugLog(`📦 Complete rule config: ${JSON.stringify(newRule.ruleConfig)}`);
       setMigrationRules(prev => [...prev, newRule]);
       addToDebugLog(`✅ Created new rule: ${ruleTitle}`);
     }
