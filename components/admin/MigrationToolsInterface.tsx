@@ -835,31 +835,29 @@ export default function MigrationToolsInterface() {
         : [config?.selectedTable || 'word_forms'];
       
       for (const tableName of tablesToQuery) {
-        let query = supabase.from(tableName);
+        // Select appropriate columns first
+        const columnToQuery = config?.selectedColumn === 'context_metadata' ? 'context_metadata' : 'tags';
+        let query = supabase.from(tableName).select(`id, word_id, ${columnToQuery}, italian`);
         
         // Apply word-specific filtering if configured
         if (config?.selectedWords && config.selectedWords.length > 0) {
           const wordIds = config.selectedWords.map(w => w.wordId);
           if (tableName === 'dictionary') {
-            query = query.filter('id', 'in', `(${wordIds.join(',')})`);
+            query = query.in('id', wordIds);
           } else {
-            query = query.filter('word_id', 'in', `(${wordIds.join(',')})`);
+            query = query.in('word_id', wordIds);
           }
         }
         
         // Apply form-specific filtering
         if (tableName === 'word_forms' && config?.selectedFormIds && config.selectedFormIds.length > 0) {
-          query = query.filter('id', 'in', `(${config.selectedFormIds.join(',')})`);
+          query = query.in('id', config.selectedFormIds);
         }
         
         // Apply translation-specific filtering  
         if (tableName === 'word_translations' && config?.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
-          query = query.filter('id', 'in', `(${config.selectedTranslationIds.join(',')})`);
+          query = query.in('id', config.selectedTranslationIds);
         }
-        
-        // Select appropriate columns
-        const columnToQuery = config?.selectedColumn === 'context_metadata' ? 'context_metadata' : 'tags';
-        query = query.select(`id, word_id, ${columnToQuery}, italian`);
         
         // Apply tag filtering if specified
         if (config?.selectedTagsForMigration && config.selectedTagsForMigration.length > 0) {
@@ -867,7 +865,7 @@ export default function MigrationToolsInterface() {
             if (columnToQuery === 'context_metadata') {
               query = query.not('context_metadata', 'is', null);
             } else {
-              query = query.filter('tags', 'cs', `{"${tag}"}`);
+              query = query.contains('tags', [tag]);
             }
           }
         }
