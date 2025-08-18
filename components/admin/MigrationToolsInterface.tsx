@@ -853,18 +853,60 @@ export default function MigrationToolsInterface() {
       
       // Determine which tables to query based on rule configuration
       const config = rule.ruleConfig;
-      const tablesToQuery = config?.selectedTable === 'all_tables' 
+      
+      // Special handling for default rules without detailed config
+      let tablesToQuery: string[];
+      let effectiveConfig = config;
+      
+      if (!config && rule.ruleSource !== 'custom') {
+        // This is a default rule - create mock config based on rule ID
+        addToDebugLog(`🔧 Creating mock config for default rule: ${rule.id}`);
+        if (rule.id === 'italian-to-universal-terminology') {
+          effectiveConfig = {
+            selectedTable: 'word_forms',
+            selectedColumn: 'tags',
+            selectedTagsForMigration: ['io', 'tu', 'lui'],
+            ruleBuilderMappings: [
+              { id: '1', from: 'io', to: 'prima-persona' },
+              { id: '2', from: 'tu', to: 'seconda-persona' },
+              { id: '3', from: 'lui', to: 'terza-persona' }
+            ],
+            tagsToRemove: [],
+            newTagToAdd: '',
+            tagsToAdd: [],
+            selectedWords: [],
+            selectedFormIds: [],
+            selectedTranslationIds: []
+          };
+        } else {
+          // Generic fallback for other default rules
+          effectiveConfig = {
+            selectedTable: 'word_forms',
+            selectedColumn: 'tags', 
+            selectedTagsForMigration: [],
+            ruleBuilderMappings: [],
+            tagsToRemove: [],
+            newTagToAdd: '',
+            tagsToAdd: [],
+            selectedWords: [],
+            selectedFormIds: [],
+            selectedTranslationIds: []
+          };
+        }
+      }
+      
+      tablesToQuery = effectiveConfig?.selectedTable === 'all_tables' 
         ? ['dictionary', 'word_forms', 'word_translations']
-        : [config?.selectedTable || 'word_forms'];
+        : [effectiveConfig?.selectedTable || 'word_forms'];
       
       for (const tableName of tablesToQuery) {
         // Select appropriate columns first
-        const columnToQuery = config?.selectedColumn === 'context_metadata' ? 'context_metadata' : 'tags';
+        const columnToQuery = effectiveConfig?.selectedColumn === 'context_metadata' ? 'context_metadata' : 'tags';
         let query = supabase.from(tableName).select(`id, word_id, ${columnToQuery}, italian`);
         
         // Apply word-specific filtering if configured
-        if (config?.selectedWords && config.selectedWords.length > 0) {
-          const wordIds = config.selectedWords.map(w => w.wordId);
+        if (effectiveConfig?.selectedWords && effectiveConfig.selectedWords.length > 0) {
+          const wordIds = effectiveConfig.selectedWords.map(w => w.wordId);
           if (tableName === 'dictionary') {
             query = query.in('id', wordIds);
           } else {
@@ -873,13 +915,13 @@ export default function MigrationToolsInterface() {
         }
         
         // Apply form-specific filtering
-        if (tableName === 'word_forms' && config?.selectedFormIds && config.selectedFormIds.length > 0) {
-          query = query.in('id', config.selectedFormIds);
+        if (tableName === 'word_forms' && effectiveConfig?.selectedFormIds && effectiveConfig.selectedFormIds.length > 0) {
+          query = query.in('id', effectiveConfig.selectedFormIds);
         }
         
         // Apply translation-specific filtering  
-        if (tableName === 'word_translations' && config?.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
-          query = query.in('id', config.selectedTranslationIds);
+        if (tableName === 'word_translations' && effectiveConfig?.selectedTranslationIds && effectiveConfig.selectedTranslationIds.length > 0) {
+          query = query.in('id', effectiveConfig.selectedTranslationIds);
         }
         
         // Simplified approach: get sample records and filter in memory
@@ -888,7 +930,7 @@ export default function MigrationToolsInterface() {
         addToDebugLog(`🔍 Preview query for ${tableName}: ${error ? 'ERROR' : 'SUCCESS'} - ${data ? data.length : 0} records found`);
         if (error) {
           addToDebugLog(`❌ Query error: ${error.message}`);
-          addToDebugLog(`🐛 Query details: table=${tableName}, column=${columnToQuery}, config=${JSON.stringify(config, null, 2)}`);
+          addToDebugLog(`🐛 Query details: table=${tableName}, column=${columnToQuery}, effectiveConfig=${JSON.stringify(effectiveConfig, null, 2)}`);
         }
         
         // Debug: Log sample record structure
@@ -901,8 +943,8 @@ export default function MigrationToolsInterface() {
           let filteredRecords = data;
           
           // Apply tag-based filtering if specified
-          if (config?.selectedTagsForMigration && config.selectedTagsForMigration.length > 0) {
-            addToDebugLog(`🏷️ Filtering by tags: ${config.selectedTagsForMigration.join(', ')} in column: ${columnToQuery}`);
+          if (effectiveConfig?.selectedTagsForMigration && effectiveConfig.selectedTagsForMigration.length > 0) {
+            addToDebugLog(`🏷️ Filtering by tags: ${effectiveConfig.selectedTagsForMigration.join(', ')} in column: ${columnToQuery}`);
             filteredRecords = data.filter((record: any) => {
               const currentTags = columnToQuery === 'context_metadata' 
                 ? Object.keys(record.context_metadata || {})
@@ -910,25 +952,25 @@ export default function MigrationToolsInterface() {
               
               // Debug: Log tag comparison for first few records
               if (data.indexOf(record) < 3) {
-                addToDebugLog(`🔍 Record ${record.id} tags: ${JSON.stringify(currentTags)} vs target: ${JSON.stringify(config.selectedTagsForMigration)}`);
+                addToDebugLog(`🔍 Record ${record.id} tags: ${JSON.stringify(currentTags)} vs target: ${JSON.stringify(effectiveConfig.selectedTagsForMigration)}`);
               }
               
               // Check if record contains any of the target tags
-              const hasMatch = config.selectedTagsForMigration.some(tag => currentTags.includes(tag));
+              const hasMatch = effectiveConfig.selectedTagsForMigration.some(tag => currentTags.includes(tag));
               return hasMatch;
             });
             addToDebugLog(`✅ Tag filtering result: ${filteredRecords.length} of ${data.length} records match`);
           }
           
           // For remove operations, also check tagsToRemove
-          if (rule.operationType === 'remove' && config?.tagsToRemove && config.tagsToRemove.length > 0) {
+          if (rule.operationType === 'remove' && effectiveConfig?.tagsToRemove && effectiveConfig.tagsToRemove.length > 0) {
             const removeRecords = data.filter((record: any) => {
               const currentTags = columnToQuery === 'context_metadata' 
                 ? Object.keys(record.context_metadata || {})
                 : record.tags || [];
               
               // Check if record contains any of the tags to remove
-              return config.tagsToRemove.some(tag => currentTags.includes(tag));
+              return effectiveConfig.tagsToRemove.some(tag => currentTags.includes(tag));
             });
             
             // Merge with existing filtered records (deduplicate by id)
@@ -938,7 +980,8 @@ export default function MigrationToolsInterface() {
           }
           
           // If no specific filtering, show sample records anyway
-          if (!config?.selectedTagsForMigration?.length && !config?.tagsToRemove?.length) {
+          if (!effectiveConfig?.selectedTagsForMigration?.length && !effectiveConfig?.tagsToRemove?.length) {
+            addToDebugLog(`📋 No tag filtering specified, showing ${Math.min(data.length, 5)} sample records`);
             filteredRecords = data.slice(0, 5);
           }
           
@@ -959,8 +1002,8 @@ export default function MigrationToolsInterface() {
               let newTags = [...currentTags];
               
               // Apply rule transformations based on operation type
-              if (rule.operationType === 'replace' && config?.ruleBuilderMappings) {
-                config.ruleBuilderMappings.forEach(mapping => {
+              if (rule.operationType === 'replace' && effectiveConfig?.ruleBuilderMappings) {
+                effectiveConfig.ruleBuilderMappings.forEach(mapping => {
                   const fromIndex = newTags.indexOf(mapping.from);
                   if (fromIndex !== -1 && mapping.to) {
                     newTags[fromIndex] = mapping.to;
@@ -968,11 +1011,11 @@ export default function MigrationToolsInterface() {
                 });
               } else if (rule.operationType === 'add') {
                 // Handle both single and multiple tag additions
-                if (config?.newTagToAdd && !newTags.includes(config.newTagToAdd)) {
-                  newTags.push(config.newTagToAdd);
+                if (effectiveConfig?.newTagToAdd && !newTags.includes(effectiveConfig.newTagToAdd)) {
+                  newTags.push(effectiveConfig.newTagToAdd);
                 }
-                if (config?.tagsToAdd?.length > 0) {
-                  config.tagsToAdd.forEach(tag => {
+                if (effectiveConfig?.tagsToAdd?.length > 0) {
+                  effectiveConfig.tagsToAdd.forEach(tag => {
                     if (!newTags.includes(tag)) {
                       newTags.push(tag);
                     }
@@ -980,7 +1023,7 @@ export default function MigrationToolsInterface() {
                 }
               } else if (rule.operationType === 'remove') {
                 // Remove tags from selectedTagsForMigration or tagsToRemove
-                const tagsToRemove = config?.tagsToRemove?.length > 0 ? config.tagsToRemove : config?.selectedTagsForMigration || [];
+                const tagsToRemove = effectiveConfig?.tagsToRemove?.length > 0 ? effectiveConfig.tagsToRemove : effectiveConfig?.selectedTagsForMigration || [];
                 newTags = newTags.filter(tag => !tagsToRemove.includes(tag));
               }
               
@@ -1008,8 +1051,8 @@ export default function MigrationToolsInterface() {
           let fallbackQuery = supabase.from(tableName).select(`id, word_id, ${columnToQuery}, italian`);
           
           // Apply only word filtering for fallback
-          if (config?.selectedWords && config.selectedWords.length > 0) {
-            const wordIds = config.selectedWords.map(w => w.wordId);
+          if (effectiveConfig?.selectedWords && effectiveConfig.selectedWords.length > 0) {
+            const wordIds = effectiveConfig.selectedWords.map(w => w.wordId);
             if (tableName === 'dictionary') {
               fallbackQuery = fallbackQuery.in('id', wordIds);
             } else {
@@ -1031,8 +1074,8 @@ export default function MigrationToolsInterface() {
               
               // Mock transformation for preview
               let newTags = [...currentTags];
-              if (rule.operationType === 'replace' && config?.ruleBuilderMappings) {
-                config.ruleBuilderMappings.forEach(mapping => {
+              if (rule.operationType === 'replace' && effectiveConfig?.ruleBuilderMappings) {
+                effectiveConfig.ruleBuilderMappings.forEach(mapping => {
                   if (newTags.includes(mapping.from)) {
                     const fromIndex = newTags.indexOf(mapping.from);
                     newTags[fromIndex] = mapping.to;
@@ -3958,7 +4001,12 @@ export default function MigrationToolsInterface() {
                             >
                               {tag}
                               <button
-                                onClick={() => setTagsToAdd(prev => prev.filter((_, i) => i !== index))}
+                                onClick={() => {
+                                  const tagToRemove = tag;
+                                  setTagsToAdd(prev => prev.filter((_, i) => i !== index));
+                                  // Also remove from selectedTagsForMigration if it exists there
+                                  setSelectedTagsForMigration(prev => prev.filter(t => t !== tagToRemove));
+                                }}
                                 className="ml-1 text-green-600 hover:text-green-800"
                               >
                                 ×
