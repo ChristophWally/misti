@@ -841,20 +841,20 @@ export default function MigrationToolsInterface() {
         if (config?.selectedWords && config.selectedWords.length > 0) {
           const wordIds = config.selectedWords.map(w => w.wordId);
           if (tableName === 'dictionary') {
-            query = query.in('id', wordIds);
+            query = query.filter('id', 'in', `(${wordIds.join(',')})`);
           } else {
-            query = query.in('word_id', wordIds);
+            query = query.filter('word_id', 'in', `(${wordIds.join(',')})`);
           }
         }
         
         // Apply form-specific filtering
         if (tableName === 'word_forms' && config?.selectedFormIds && config.selectedFormIds.length > 0) {
-          query = query.in('id', config.selectedFormIds);
+          query = query.filter('id', 'in', `(${config.selectedFormIds.join(',')})`);
         }
         
         // Apply translation-specific filtering  
         if (tableName === 'word_translations' && config?.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
-          query = query.in('id', config.selectedTranslationIds);
+          query = query.filter('id', 'in', `(${config.selectedTranslationIds.join(',')})`);
         }
         
         // Select appropriate columns
@@ -867,7 +867,7 @@ export default function MigrationToolsInterface() {
             if (columnToQuery === 'context_metadata') {
               query = query.not('context_metadata', 'is', null);
             } else {
-              query = query.contains('tags', [tag]);
+              query = query.filter('tags', 'cs', `{"${tag}"}`);
             }
           }
         }
