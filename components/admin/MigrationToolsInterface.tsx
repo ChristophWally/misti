@@ -44,6 +44,7 @@ interface VisualRule {
     ruleBuilderMappings: MappingPair[];
     tagsToRemove: string[];
     newTagToAdd: string;
+    tagsToAdd: string[];
     selectedWords: WordSearchResult[];
     selectedFormIds: string[];
     selectedTranslationIds: string[];
