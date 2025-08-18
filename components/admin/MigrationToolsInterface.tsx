@@ -901,8 +901,10 @@ export default function MigrationToolsInterface() {
               return config.tagsToRemove.some(tag => currentTags.includes(tag));
             });
             
-            // Merge with existing filtered records
-            filteredRecords = [...new Set([...filteredRecords, ...removeRecords])];
+            // Merge with existing filtered records (deduplicate by id)
+            const existingIds = new Set(filteredRecords.map(r => r.id));
+            const newRecords = removeRecords.filter(r => !existingIds.has(r.id));
+            filteredRecords = [...filteredRecords, ...newRecords];
           }
           
           // If no specific filtering, show sample records anyway
