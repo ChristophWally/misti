@@ -311,21 +311,36 @@ export default function MigrationToolsInterface() {
   useEffect(() => {
     if (selectedTagsForMigration.length > 0 && operationType === 'remove') {
       setTagsToRemove(selectedTagsForMigration);
-    } else if (selectedTagsForMigration.length > 0 && operationType === 'replace') {
-      // Only auto-generate mappings if we don't already have them (prevents overwriting loaded rules)
-      if (ruleBuilderMappings.length === 0) {
-        const newMappings = selectedTagsForMigration.map((tag, index) => ({
-          id: `auto-${index}`,
-          from: tag,
-          to: '',
-        }));
-        setRuleBuilderMappings(newMappings);
-        addToDebugLog(`🔄 Generated ${newMappings.length} replacement mappings - fill in 'To' values to complete rule`);
-      } else {
-        addToDebugLog(`⏭️ Skipping auto-generation: ${ruleBuilderMappings.length} existing mappings found`);
+    } else if (operationType === 'replace') {
+      // For replace operations, sync mappings with selected tags
+      if (selectedTagsForMigration.length > 0) {
+        // Add mappings for new tags that don't have mappings yet
+        const existingFromTags = ruleBuilderMappings.map(m => m.from);
+        const newTags = selectedTagsForMigration.filter(tag => !existingFromTags.includes(tag));
+        
+        if (newTags.length > 0) {
+          const newMappings = newTags.map((tag, index) => ({
+            id: `auto-${Date.now()}-${index}`,
+            from: tag,
+            to: '',
+          }));
+          setRuleBuilderMappings(prev => [...prev, ...newMappings]);
+          addToDebugLog(`🔄 Added ${newMappings.length} new replacement mappings for: ${newTags.join(', ')}`);
+        }
+      }
+      
+      // Remove mappings for tags that are no longer selected
+      if (ruleBuilderMappings.length > 0) {
+        const validMappings = ruleBuilderMappings.filter(mapping => 
+          selectedTagsForMigration.includes(mapping.from)
+        );
+        if (validMappings.length !== ruleBuilderMappings.length) {
+          setRuleBuilderMappings(validMappings);
+          addToDebugLog(`🧹 Removed ${ruleBuilderMappings.length - validMappings.length} mappings for unselected tags`);
+        }
       }
     }
-  }, [selectedTagsForMigration, operationType, ruleBuilderMappings.length]);
+  }, [selectedTagsForMigration, operationType]);
 
   useEffect(() => {
     setSelectedFormTags(null);
@@ -873,6 +888,12 @@ export default function MigrationToolsInterface() {
         addToDebugLog(`🔍 Preview query for ${tableName}: ${error ? 'ERROR' : 'SUCCESS'} - ${data ? data.length : 0} records found`);
         if (error) {
           addToDebugLog(`❌ Query error: ${error.message}`);
+          addToDebugLog(`🐛 Query details: table=${tableName}, column=${columnToQuery}, config=${JSON.stringify(config, null, 2)}`);
+        }
+        
+        // Debug: Log sample record structure
+        if (data && data.length > 0) {
+          addToDebugLog(`📋 Sample record structure: ${JSON.stringify(data[0], null, 2)}`);
         }
         
         if (!error && data && data.length > 0) {
@@ -881,14 +902,22 @@ export default function MigrationToolsInterface() {
           
           // Apply tag-based filtering if specified
           if (config?.selectedTagsForMigration && config.selectedTagsForMigration.length > 0) {
+            addToDebugLog(`🏷️ Filtering by tags: ${config.selectedTagsForMigration.join(', ')} in column: ${columnToQuery}`);
             filteredRecords = data.filter((record: any) => {
               const currentTags = columnToQuery === 'context_metadata' 
                 ? Object.keys(record.context_metadata || {})
                 : record.tags || [];
               
+              // Debug: Log tag comparison for first few records
+              if (data.indexOf(record) < 3) {
+                addToDebugLog(`🔍 Record ${record.id} tags: ${JSON.stringify(currentTags)} vs target: ${JSON.stringify(config.selectedTagsForMigration)}`);
+              }
+              
               // Check if record contains any of the target tags
-              return config.selectedTagsForMigration.some(tag => currentTags.includes(tag));
+              const hasMatch = config.selectedTagsForMigration.some(tag => currentTags.includes(tag));
+              return hasMatch;
             });
+            addToDebugLog(`✅ Tag filtering result: ${filteredRecords.length} of ${data.length} records match`);
           }
           
           // For remove operations, also check tagsToRemove
@@ -1827,9 +1856,6 @@ export default function MigrationToolsInterface() {
 
       setSelectedTranslationMetadata(metadataCounts);
       addToDebugLog(`✅ Loaded ${Object.keys(metadataCounts).length} unique metadata keys from selected translations`);
-
-      // Auto-populate selected tags for migration
-      setSelectedTagsForMigration(Object.keys(metadataCounts));
     } catch (error: any) {
       addToDebugLog(`❌ Error loading selected translation metadata: ${error.message}`);
     }
@@ -4042,7 +4068,7 @@ export default function MigrationToolsInterface() {
                     disabled={
                       !ruleTitle.trim() ||
                       (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
-                      (operationType === 'add' && tagsToAdd.length === 0 && !newTagToAdd.trim()) ||
+                      (operationType === 'add' && tagsToAdd.length === 0) ||
                       (operationType === 'remove' && 
                         selectedTagsForMigration.length === 0 && 
                         selectedWords.length === 0 && 
@@ -4092,7 +4118,7 @@ export default function MigrationToolsInterface() {
                     disabled={
                       !ruleTitle.trim() ||
                       (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
-                      (operationType === 'add' && tagsToAdd.length === 0 && !newTagToAdd.trim()) ||
+                      (operationType === 'add' && tagsToAdd.length === 0) ||
                       (operationType === 'remove' && 
                         selectedTagsForMigration.length === 0 && 
                         selectedWords.length === 0 && 
