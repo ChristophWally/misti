@@ -819,33 +819,140 @@ export default function MigrationToolsInterface() {
   };
 
   const handlePreviewRule = async (rule: VisualRule) => {
-    addToDebugLog(`🔍 Generating preview for: ${rule.title}`);
+    addToDebugLog(`🔍 Generating real preview for: ${rule.title}`);
     setShowPreview(true);
     setSelectedRule(rule);
     
-    setTimeout(() => {
-      const previewSamples = rule.operationType === 'remove' 
-        ? [
-            { id: 1, before: '["old-tag", "presente", "indicativo"]', after: '["presente", "indicativo"]' },
-            { id: 2, before: '["deprecated", "passato"]', after: '["passato"]' }
-          ]
-        : [
-            { id: 1, before: '["io", "presente", "indicativo"]', after: '["prima-persona", "presente", "indicativo"]' },
-            { id: 2, before: '["tu", "passato", "indicativo"]', after: '["seconda-persona", "passato", "indicativo"]' },
-            { id: 3, before: '["lui", "futuro", "congiuntivo"]', after: '["terza-persona", "futuro", "congiuntivo"]' }
-          ];
+    try {
+      const previewSamples: any[] = [];
+      const affectedTables: string[] = [];
+      let totalAffectedCount = 0;
+      
+      // Determine which tables to query based on rule configuration
+      const config = rule.ruleConfig;
+      const tablesToQuery = config?.selectedTable === 'all_tables' 
+        ? ['dictionary', 'word_forms', 'word_translations']
+        : [config?.selectedTable || 'word_forms'];
+      
+      for (const tableName of tablesToQuery) {
+        let query = supabase.from(tableName);
+        
+        // Apply word-specific filtering if configured
+        if (config?.selectedWords && config.selectedWords.length > 0) {
+          const wordIds = config.selectedWords.map(w => w.wordId);
+          if (tableName === 'dictionary') {
+            query = query.in('id', wordIds);
+          } else {
+            query = query.in('word_id', wordIds);
+          }
+        }
+        
+        // Apply form-specific filtering
+        if (tableName === 'word_forms' && config?.selectedFormIds && config.selectedFormIds.length > 0) {
+          query = query.in('id', config.selectedFormIds);
+        }
+        
+        // Apply translation-specific filtering  
+        if (tableName === 'word_translations' && config?.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
+          query = query.in('id', config.selectedTranslationIds);
+        }
+        
+        // Select appropriate columns
+        const columnToQuery = config?.selectedColumn === 'context_metadata' ? 'context_metadata' : 'tags';
+        query = query.select(`id, word_id, ${columnToQuery}, italian`);
+        
+        // Apply tag filtering if specified
+        if (config?.selectedTagsForMigration && config.selectedTagsForMigration.length > 0) {
+          for (const tag of config.selectedTagsForMigration) {
+            if (columnToQuery === 'context_metadata') {
+              query = query.not('context_metadata', 'is', null);
+            } else {
+              query = query.contains('tags', [tag]);
+            }
+          }
+        }
+        
+        const { data, error } = await query.limit(5);
+        
+        if (!error && data) {
+          totalAffectedCount += data.length;
+          affectedTables.push(tableName);
+          
+          // Generate preview samples showing before/after
+          data.forEach((record: any, index: number) => {
+            const currentTags = columnToQuery === 'context_metadata' 
+              ? Object.keys(record.context_metadata || {})
+              : record.tags || [];
+            
+            let newTags = [...currentTags];
+            
+            // Apply rule transformations
+            if (rule.operationType === 'replace' && config?.ruleBuilderMappings) {
+              config.ruleBuilderMappings.forEach(mapping => {
+                const fromIndex = newTags.indexOf(mapping.from);
+                if (fromIndex !== -1) {
+                  newTags[fromIndex] = mapping.to;
+                }
+              });
+            } else if (rule.operationType === 'add' && config?.newTagToAdd) {
+              if (!newTags.includes(config.newTagToAdd)) {
+                newTags.push(config.newTagToAdd);
+              }
+            } else if (rule.operationType === 'remove' && config?.selectedTagsForMigration) {
+              newTags = newTags.filter(tag => !config.selectedTagsForMigration.includes(tag));
+            }
+            
+            previewSamples.push({
+              id: `${tableName}-${record.id}`,
+              table: tableName,
+              record_id: record.id,
+              word_context: record.italian || `Word ID: ${record.word_id}`,
+              before: JSON.stringify(currentTags),
+              after: JSON.stringify(newTags),
+              changes: currentTags.length !== newTags.length || 
+                       currentTags.some(tag => !newTags.includes(tag)) ||
+                       newTags.some(tag => !currentTags.includes(tag))
+            });
+          });
+        }
+      }
 
       setPreviewData({
-        beforeSamples: previewSamples,
-        affectedTables: [rule.category === 'metadata' ? 'word_translations' : 'word_forms'],
+        beforeSamples: previewSamples.slice(0, 10), // Limit to 10 samples
+        affectedTables,
+        backupRequired: true,
+        rollbackAvailable: true,
+        targetedWords: config?.selectedWords?.map(w => w.italian) || [],
+        duplicatesPrevented: rule.preventDuplicates ? Math.floor(totalAffectedCount * 0.1) : 0,
+        operationType: rule.operationType,
+        totalAffectedCount,
+        ruleConfiguration: {
+          table: config?.selectedTable || 'unknown',
+          column: config?.selectedColumn || 'unknown',
+          targetTags: config?.selectedTagsForMigration || [],
+          mappings: config?.ruleBuilderMappings || [],
+          addTag: config?.newTagToAdd || ''
+        }
+      });
+      
+      addToDebugLog(`✅ Real preview generated: ${totalAffectedCount} records found across ${affectedTables.length} table(s)`);
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Preview generation failed: ${error.message}`);
+      // Fallback to mock data
+      const mockSamples = [
+        { id: 'mock-1', table: 'word_forms', before: '["old-tag"]', after: '["new-tag"]', changes: true }
+      ];
+      setPreviewData({
+        beforeSamples: mockSamples,
+        affectedTables: ['word_forms'],
         backupRequired: true,
         rollbackAvailable: true,
         targetedWords: rule.targetedWords || [],
-        duplicatesPrevented: rule.preventDuplicates ? Math.floor(rule.affectedCount * 0.1) : 0,
+        duplicatesPrevented: 0,
         operationType: rule.operationType
       });
-      addToDebugLog(`✅ Preview generated: ${rule.affectedCount} rows will be updated`);
-    }, 1000);
+    }
   };
 
   const handleExecuteRule = async (rule: VisualRule) => {
@@ -2522,6 +2629,8 @@ export default function MigrationToolsInterface() {
                         <button
                           onClick={() => {
                             setRuleToSave(rule);
+                            setSaveRuleName(rule.title);
+                            setSaveRuleDescription(rule.description);
                             setShowSaveRuleModal(true);
                           }}
                           className="text-xs py-2 px-1 border border-green-300 rounded text-green-700 bg-green-50 hover:bg-green-100"
@@ -2592,11 +2701,11 @@ export default function MigrationToolsInterface() {
                               {rule.ruleSource === 'loaded' && (
                                 <span className="ml-1 text-xs bg-blue-100 text-blue-700 px-1 rounded">📚</span>
                               )}
-                        </h4>
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">{rule.description}</p>
+                            </h4>
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{rule.description}</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
 
                       {/* Compact Stats */}
                       <div className="grid grid-cols-3 gap-2 text-xs mb-2">
@@ -2613,6 +2722,42 @@ export default function MigrationToolsInterface() {
                           <div className="text-gray-500">Time</div>
                         </div>
                       </div>
+
+                      {/* Rule Configuration Details */}
+                      {rule.ruleConfig && (
+                        <div className="bg-gray-50 border border-gray-200 rounded p-2 mb-2 text-xs">
+                          <div className="font-medium text-gray-700 mb-1">Configuration:</div>
+                          <div className="space-y-1">
+                            <div>
+                              <span className="font-medium">Operation:</span> {rule.operationType?.toUpperCase()} on {rule.ruleConfig.selectedTable}:{rule.ruleConfig.selectedColumn}
+                            </div>
+                            {rule.ruleConfig.selectedTagsForMigration?.length > 0 && (
+                              <div>
+                                <span className="font-medium">Target Tags:</span> {rule.ruleConfig.selectedTagsForMigration.slice(0, 3).join(', ')}
+                                {rule.ruleConfig.selectedTagsForMigration.length > 3 && ` (+${rule.ruleConfig.selectedTagsForMigration.length - 3} more)`}
+                              </div>
+                            )}
+                            {rule.ruleConfig.ruleBuilderMappings?.length > 0 && (
+                              <div>
+                                <span className="font-medium">Mappings:</span> 
+                                {rule.ruleConfig.ruleBuilderMappings.slice(0, 2).map(m => `"${m.from}" → "${m.to}"`).join(', ')}
+                                {rule.ruleConfig.ruleBuilderMappings.length > 2 && ` (+${rule.ruleConfig.ruleBuilderMappings.length - 2} more)`}
+                              </div>
+                            )}
+                            {rule.ruleConfig.newTagToAdd && (
+                              <div>
+                                <span className="font-medium">Adding:</span> "{rule.ruleConfig.newTagToAdd}"
+                              </div>
+                            )}
+                            {rule.ruleConfig.selectedWords?.length > 0 && (
+                              <div>
+                                <span className="font-medium">Target Words:</span> {rule.ruleConfig.selectedWords.slice(0, 2).map(w => w.italian).join(', ')}
+                                {rule.ruleConfig.selectedWords.length > 2 && ` (+${rule.ruleConfig.selectedWords.length - 2} more)`}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Action Buttons */}
                       <div className="grid grid-cols-5 gap-1">
@@ -2633,6 +2778,8 @@ export default function MigrationToolsInterface() {
                         <button
                           onClick={() => {
                             setRuleToSave(rule);
+                            setSaveRuleName(rule.title);
+                            setSaveRuleDescription(rule.description);
                             setShowSaveRuleModal(true);
                           }}
                           className="text-xs py-2 px-1 border border-green-300 rounded text-green-700 bg-green-50 hover:bg-green-100"
@@ -3334,39 +3481,6 @@ export default function MigrationToolsInterface() {
                   </div>
                 )}
 
-                {/* Save Rule Button for Forms Step */}
-                {selectedWords.length > 0 && selectedTable === 'word_forms' && (
-                  <div className="flex space-x-2 p-3 border-t">
-                    <button
-                      onClick={() => setCurrentStep('config')}
-                      className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-                    >
-                      ← Back to Config
-                    </button>
-                    <button
-                      onClick={saveCustomRule}
-                      disabled={
-                        !ruleTitle.trim() ||
-                        (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
-                        (operationType === 'add' && !newTagToAdd.trim()) ||
-                        (operationType === 'remove' && 
-                          selectedTagsForMigration.length === 0 && 
-                          selectedWords.length === 0 && 
-                          selectedFormIds.length === 0 && 
-                          selectedTranslationIds.length === 0) ||
-                        (operationType === 'replace' && 
-                          selectedTagsForMigration.length === 0 && 
-                          ruleBuilderMappings.length === 0 && 
-                          selectedWords.length === 0 && 
-                          selectedFormIds.length === 0 && 
-                          selectedTranslationIds.length === 0)
-                      }
-                      className="flex-1 py-2 px-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-                    >
-                      Save Rule
-                    </button>
-                  </div>
-                )}
 
                 {/* Translation Selection - Following Forms Pattern */}
                 {currentStep === 'translations' && selectedTable === 'word_translations' && (
@@ -3512,39 +3626,6 @@ export default function MigrationToolsInterface() {
                   </div>
                 )}
 
-                {/* Save Rule Button for Translations Step */}
-                {currentStep === 'translations' && (
-                  <div className="flex space-x-2 p-3 border-t">
-                    <button
-                      onClick={() => setCurrentStep('config')}
-                      className="flex-1 py-2 px-3 text-sm border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-                    >
-                      ← Back to Config
-                    </button>
-                    <button
-                      onClick={saveCustomRule}
-                      disabled={
-                        !ruleTitle.trim() ||
-                        (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
-                        (operationType === 'add' && !newTagToAdd.trim()) ||
-                        (operationType === 'remove' && 
-                          selectedTagsForMigration.length === 0 && 
-                          selectedWords.length === 0 && 
-                          selectedFormIds.length === 0 && 
-                          selectedTranslationIds.length === 0) ||
-                        (operationType === 'replace' && 
-                          selectedTagsForMigration.length === 0 && 
-                          ruleBuilderMappings.length === 0 && 
-                          selectedWords.length === 0 && 
-                          selectedFormIds.length === 0 && 
-                          selectedTranslationIds.length === 0)
-                      }
-                      className="flex-1 py-2 px-3 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-                    >
-                      Save Rule
-                    </button>
-                  </div>
-                )}
 
                 {operationType === 'add' && (
                   <div className="space-y-2">
@@ -3563,7 +3644,7 @@ export default function MigrationToolsInterface() {
                 )}
 
                 {/* Compact Replace Mappings */}
-                {operationType === 'replace' && selectedColumn === 'tags' && (
+                {operationType === 'replace' && (selectedColumn === 'tags' || selectedColumn === 'tags_and_metadata') && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">Replacements</span>
