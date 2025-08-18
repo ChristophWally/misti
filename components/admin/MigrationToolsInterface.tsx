@@ -1262,22 +1262,64 @@ export default function MigrationToolsInterface() {
   };
 
   const getActionDescription = () => {
-    const targetScope = selectedWords.length > 0
-      ? `${selectedWords.length} selected word(s): ${selectedWords.map(w => w.italian).join(', ')}`
-      : 'ALL records in database';
-
-    const operationTarget = selectedTable === 'all_tables'
-      ? 'across all tables (dictionary, word_forms, word_translations)'
-      : selectedTable === 'dictionary'
-      ? 'in dictionary entries'
-      : selectedTable === 'word_forms'
-      ? `in ${selectedFormIds.length || 'all'} word forms`
-      : `in ${selectedTranslationIds.length || 'all'} translations`;
-
+    // Determine operation type details
+    const operation = operationType.toUpperCase();
     const selectedCount = selectedTagsForMigration.length;
     const tagType = selectedColumn === 'context_metadata' ? 'metadata keys' : 'tags';
-
-    return `${operationType.toUpperCase()} ${selectedCount} ${tagType} ${operationTarget} for ${targetScope}`;
+    
+    // Build detailed target scope
+    let targetScope = '';
+    let operationDetail = '';
+    
+    if (selectedWords.length > 0) {
+      const wordList = selectedWords.map(w => w.italian).join(', ');
+      targetScope = `${selectedWords.length} selected word(s): ${wordList}`;
+      
+      // Add specific form/translation details
+      if (selectedTable === 'word_forms' && selectedFormIds.length > 0) {
+        operationDetail = ` → ${selectedFormIds.length} specific forms selected`;
+      } else if (selectedTable === 'word_translations' && selectedTranslationIds.length > 0) {
+        operationDetail = ` → ${selectedTranslationIds.length} specific translations selected`;
+      }
+    } else {
+      targetScope = 'ALL records in database';
+    }
+    
+    // Build operation target with specificity
+    let operationTarget = '';
+    if (selectedTable === 'all_tables') {
+      operationTarget = 'across all tables (dictionary, word_forms, word_translations)';
+    } else if (selectedTable === 'dictionary') {
+      operationTarget = 'in dictionary entries';
+    } else if (selectedTable === 'word_forms') {
+      if (selectedFormIds.length > 0) {
+        operationTarget = `in ${selectedFormIds.length} specific word forms`;
+      } else if (selectedWords.length > 0) {
+        operationTarget = `in ALL forms for selected words`;
+      } else {
+        operationTarget = `in all word forms`;
+      }
+    } else if (selectedTable === 'word_translations') {
+      if (selectedTranslationIds.length > 0) {
+        operationTarget = `in ${selectedTranslationIds.length} specific translations`;
+      } else if (selectedWords.length > 0) {
+        operationTarget = `in ALL translations for selected words`;
+      } else {
+        operationTarget = `in all translations`;
+      }
+    }
+    
+    // Add mapping details for replace operations
+    let mappingDetail = '';
+    if (operation === 'REPLACE' && ruleBuilderMappings.length > 0) {
+      const mappingPreview = ruleBuilderMappings.slice(0, 2).map(m => `"${m.from}" → "${m.to}"`).join(', ');
+      const moreCount = ruleBuilderMappings.length > 2 ? ` (+${ruleBuilderMappings.length - 2} more)` : '';
+      mappingDetail = ` | Mappings: ${mappingPreview}${moreCount}`;
+    } else if (operation === 'ADD' && newTagToAdd) {
+      mappingDetail = ` | Adding: "${newTagToAdd}"`;
+    }
+    
+    return `${operation} ${selectedCount} ${tagType} ${operationTarget} for ${targetScope}${operationDetail}${mappingDetail}`;
   };
 
   const loadTextContent = async () => {
@@ -2796,17 +2838,11 @@ export default function MigrationToolsInterface() {
               </div>
 
               <div className="p-3 space-y-3 max-h-[80vh] overflow-y-auto">
-                {currentStep === 'config' && (
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-600">Step 4: Configure migration operation</div>
-
-                    {/* Action Description */}
-                    <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs">
-                      <div className="font-medium text-blue-900">Action Summary:</div>
-                      <div className="text-blue-800 mt-1">{getActionDescription()}</div>
-                    </div>
-                  </div>
-                )}
+                {/* Action Description - Always Visible */}
+                <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs mb-3">
+                  <div className="font-medium text-blue-900">Action Summary:</div>
+                  <div className="text-blue-800 mt-1">{getActionDescription()}</div>
+                </div>
 
                 {/* Compact Title/Description */}
                 <div className="space-y-2">
