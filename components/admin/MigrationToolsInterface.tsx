@@ -1488,6 +1488,7 @@ export default function MigrationToolsInterface() {
     const operation = operationType.toUpperCase();
     const selectedCount = selectedTagsForMigration.length;
     const tagType = selectedColumn === 'context_metadata' ? 'metadata keys' : 'tags';
+    const estimatedAffected = calculateAffectedCount();
     
     // Build detailed target scope
     let targetScope = '';
@@ -1537,11 +1538,14 @@ export default function MigrationToolsInterface() {
       const mappingPreview = ruleBuilderMappings.slice(0, 2).map(m => `"${m.from}" → "${m.to}"`).join(', ');
       const moreCount = ruleBuilderMappings.length > 2 ? ` (+${ruleBuilderMappings.length - 2} more)` : '';
       mappingDetail = ` | Mappings: ${mappingPreview}${moreCount}`;
-    } else if (operation === 'ADD' && newTagToAdd) {
-      mappingDetail = ` | Adding: "${newTagToAdd}"`;
+    } else if (operation === 'ADD') {
+      const tagsToAddText = tagsToAdd.length > 0 ? tagsToAdd.join(', ') : newTagToAdd;
+      if (tagsToAddText) {
+        mappingDetail = ` | Adding: "${tagsToAddText}"`;
+      }
     }
     
-    return `${operation} ${selectedCount} ${tagType} ${operationTarget} for ${targetScope}${operationDetail}${mappingDetail}`;
+    return `${operation} ${selectedCount} ${tagType} ${operationTarget} for ${targetScope}${operationDetail}${mappingDetail} (≈${estimatedAffected} records affected)`;
   };
 
   const loadTextContent = async () => {
@@ -1828,6 +1832,56 @@ export default function MigrationToolsInterface() {
     }
   };
 
+  const calculateAffectedCount = () => {
+    // Calculate a more accurate affected count based on rule configuration
+    let count = 0;
+    
+    // If specific words are selected, estimate based on word count
+    if (selectedWords.length > 0) {
+      if (selectedTable === 'dictionary') {
+        count = selectedWords.length;
+      } else if (selectedTable === 'word_forms') {
+        // Estimate forms per word (could be refined with actual data)
+        count = selectedWords.reduce((sum, word) => sum + (word.formsCount || 10), 0);
+      } else if (selectedTable === 'word_translations') {
+        // Estimate translations per word
+        count = selectedWords.reduce((sum, word) => sum + (word.translationsCount || 5), 0);
+      } else if (selectedTable === 'all_tables') {
+        // Combined estimate for all tables
+        count = selectedWords.length + 
+                selectedWords.reduce((sum, word) => sum + (word.formsCount || 10), 0) +
+                selectedWords.reduce((sum, word) => sum + (word.translationsCount || 5), 0);
+      }
+    }
+    
+    // If specific forms/translations are selected
+    if (selectedFormIds.length > 0) {
+      count = selectedFormIds.length;
+    } else if (selectedTranslationIds.length > 0) {
+      count = selectedTranslationIds.length;
+    }
+    
+    // If no specific targeting, estimate based on operation type
+    if (count === 0) {
+      if (operationType === 'replace' && ruleBuilderMappings.length > 0) {
+        // Estimate based on mapping count - rough estimate
+        count = ruleBuilderMappings.length * 10; // Assume 10 records per mapping
+      } else if (operationType === 'add' && (tagsToAdd.length > 0 || newTagToAdd)) {
+        // For add operations, could affect many records
+        count = (tagsToAdd.length || 1) * 50; // Rough estimate
+      } else if (operationType === 'remove' && selectedTagsForMigration.length > 0) {
+        // Remove operations depend on how many records have those tags
+        count = selectedTagsForMigration.length * 25; // Rough estimate
+      } else if (selectedTagsForMigration.length > 0) {
+        // General tag-based operations
+        count = selectedTagsForMigration.length * 15; // Rough estimate
+      }
+    }
+    
+    // Minimum count of 1, maximum reasonable count
+    return Math.max(1, Math.min(count, 10000));
+  };
+
   const saveCustomRule = () => {
     if (selectedRule) {
       // Editing existing rule
@@ -1842,7 +1896,7 @@ export default function MigrationToolsInterface() {
               operationType,
               preventDuplicates,
               targetedWords: selectedWords.map(w => w.italian),
-              affectedCount: selectedTagsForMigration.length || ruleBuilderMappings.length || 1,
+              affectedCount: calculateAffectedCount(),
               // Update rule configuration
               ruleConfig: {
                 selectedTable,
@@ -1870,7 +1924,7 @@ export default function MigrationToolsInterface() {
         description: ruleDescription,
         impact: selectedTagsForMigration.length > 50 ? 'high' : selectedTagsForMigration.length > 10 ? 'medium' : 'low',
         status: 'ready',
-        affectedCount: selectedTagsForMigration.length || ruleBuilderMappings.length || 1,
+        affectedCount: calculateAffectedCount(),
         autoExecutable: true,
         requiresInput: operationType === 'add' || operationType === 'replace',
         category: 'custom',
