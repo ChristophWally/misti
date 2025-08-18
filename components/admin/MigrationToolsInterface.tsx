@@ -218,6 +218,7 @@ export default function MigrationToolsInterface() {
     setRuleBuilderMappings([]);
     setTagsToRemove([]);
     setNewTagToAdd('');
+    setTagsToAdd([]); // NEW: Reset multi-tag state
     setOperationType('replace');
     setPreventDuplicates(true);
     setSelectedTable('dictionary');
@@ -933,9 +934,17 @@ export default function MigrationToolsInterface() {
                     newTags[fromIndex] = mapping.to;
                   }
                 });
-              } else if (rule.operationType === 'add' && config?.newTagToAdd) {
-                if (!newTags.includes(config.newTagToAdd)) {
+              } else if (rule.operationType === 'add') {
+                // Handle both single and multiple tag additions
+                if (config?.newTagToAdd && !newTags.includes(config.newTagToAdd)) {
                   newTags.push(config.newTagToAdd);
+                }
+                if (config?.tagsToAdd?.length > 0) {
+                  config.tagsToAdd.forEach(tag => {
+                    if (!newTags.includes(tag)) {
+                      newTags.push(tag);
+                    }
+                  });
                 }
               } else if (rule.operationType === 'remove') {
                 // Remove tags from selectedTagsForMigration or tagsToRemove
@@ -1121,6 +1130,7 @@ export default function MigrationToolsInterface() {
         setRuleBuilderMappings(config.ruleBuilderMappings);
         setTagsToRemove(config.tagsToRemove);
         setNewTagToAdd(config.newTagToAdd);
+        setTagsToAdd(config.tagsToAdd || []); // NEW: Restore multi-tag state
         setSelectedWords(config.selectedWords);
         setSelectedFormIds(config.selectedFormIds);
         setSelectedTranslationIds(config.selectedTranslationIds);
@@ -1841,6 +1851,7 @@ export default function MigrationToolsInterface() {
                 ruleBuilderMappings: [...ruleBuilderMappings],
                 tagsToRemove: [...tagsToRemove],
                 newTagToAdd,
+                tagsToAdd: [...tagsToAdd], // NEW: Multiple tags support
                 selectedWords: [...selectedWords],
                 selectedFormIds: [...selectedFormIds],
                 selectedTranslationIds: [...selectedTranslationIds]
@@ -1877,6 +1888,7 @@ export default function MigrationToolsInterface() {
           ruleBuilderMappings: [...ruleBuilderMappings],
           tagsToRemove: [...tagsToRemove],
           newTagToAdd,
+          tagsToAdd: [...tagsToAdd], // NEW: Multiple tags support
           selectedWords: [...selectedWords],
           selectedFormIds: [...selectedFormIds],
           selectedTranslationIds: [...selectedTranslationIds]
@@ -2871,6 +2883,11 @@ export default function MigrationToolsInterface() {
                                 <span className="font-medium">Adding:</span> "{rule.ruleConfig.newTagToAdd}"
                               </div>
                             )}
+                            {rule.ruleConfig.tagsToAdd?.length > 0 && (
+                              <div>
+                                <span className="font-medium">Adding Multiple:</span> {rule.ruleConfig.tagsToAdd.join(', ')}
+                              </div>
+                            )}
                             {rule.ruleConfig.selectedWords?.length > 0 && (
                               <div>
                                 <span className="font-medium">Target Words:</span> {rule.ruleConfig.selectedWords.slice(0, 2).map(w => w.italian).join(', ')}
@@ -3023,6 +3040,9 @@ export default function MigrationToolsInterface() {
                         )}
                         {selectedRule.ruleConfig.newTagToAdd && (
                           <div><span className="font-medium">Adding:</span> "{selectedRule.ruleConfig.newTagToAdd}"</div>
+                        )}
+                        {selectedRule.ruleConfig.tagsToAdd?.length > 0 && (
+                          <div><span className="font-medium">Adding Multiple:</span> {selectedRule.ruleConfig.tagsToAdd.join(', ')}</div>
                         )}
                         {selectedRule.ruleConfig.selectedWords?.length > 0 && (
                           <div><span className="font-medium">Target Words:</span> {selectedRule.ruleConfig.selectedWords.map(w => w.italian).join(', ')}</div>
@@ -3811,16 +3831,65 @@ export default function MigrationToolsInterface() {
 
                 {operationType === 'add' && (
                   <div className="space-y-2">
-                    <div className="text-xs font-medium">Tag to add:</div>
-                    <input
-                      type="text"
-                      value={newTagToAdd}
-                      onChange={(e) => setNewTagToAdd(e.target.value)}
-                      placeholder="Enter tag to add..."
-                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium">Tags to add:</span>
+                      <button
+                        onClick={() => {
+                          if (newTagToAdd.trim()) {
+                            setTagsToAdd(prev => [...prev, newTagToAdd.trim()]);
+                            setNewTagToAdd('');
+                          }
+                        }}
+                        disabled={!newTagToAdd.trim()}
+                        className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 disabled:opacity-50"
+                      >
+                        + Add Tag
+                      </button>
+                    </div>
+                    
+                    <div className="flex space-x-1">
+                      <input
+                        type="text"
+                        value={newTagToAdd}
+                        onChange={(e) => setNewTagToAdd(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && newTagToAdd.trim()) {
+                            setTagsToAdd(prev => [...prev, newTagToAdd.trim()]);
+                            setNewTagToAdd('');
+                          }
+                        }}
+                        placeholder="Enter tag to add..."
+                        className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    
+                    {tagsToAdd.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-xs text-gray-600">Tags to add:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {tagsToAdd.map((tag, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center px-2 py-1 text-xs bg-green-100 text-green-800 rounded"
+                            >
+                              {tag}
+                              <button
+                                onClick={() => setTagsToAdd(prev => prev.filter((_, i) => i !== index))}
+                                className="ml-1 text-green-600 hover:text-green-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="text-xs text-gray-600">
-                      This tag will be added to {selectedFormIds.length || selectedTranslationIds.length} selected items.
+                      {tagsToAdd.length > 0 
+                        ? `${tagsToAdd.length} tag(s) will be added to ${selectedFormIds.length || selectedTranslationIds.length || 'all'} selected items.`
+                        : `Enter tags above to add to ${selectedFormIds.length || selectedTranslationIds.length || 'all'} selected items.`
+                      }
                     </div>
                   </div>
                 )}
@@ -3915,7 +3984,7 @@ export default function MigrationToolsInterface() {
                     disabled={
                       !ruleTitle.trim() ||
                       (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
-                      (operationType === 'add' && !newTagToAdd.trim()) ||
+                      (operationType === 'add' && tagsToAdd.length === 0 && !newTagToAdd.trim()) ||
                       (operationType === 'remove' && 
                         selectedTagsForMigration.length === 0 && 
                         selectedWords.length === 0 && 
@@ -3965,7 +4034,7 @@ export default function MigrationToolsInterface() {
                     disabled={
                       !ruleTitle.trim() ||
                       (operationType === 'replace' && ruleBuilderMappings.some(m => !m.to.trim())) ||
-                      (operationType === 'add' && !newTagToAdd.trim()) ||
+                      (operationType === 'add' && tagsToAdd.length === 0 && !newTagToAdd.trim()) ||
                       (operationType === 'remove' && 
                         selectedTagsForMigration.length === 0 && 
                         selectedWords.length === 0 && 
