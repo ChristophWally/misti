@@ -2156,6 +2156,7 @@ export default function MigrationToolsInterface() {
           })),
           tagsToRemove: transformation.tagsToRemove || [],
           newTagToAdd: transformation.newTagToAdd || '',
+          tagsToAdd: transformation.tagsToAdd || [],
           selectedWords: [], // Cannot reconstruct full WordSearchResult objects
           selectedFormIds: pattern.targetFormIds || [],
           selectedTranslationIds: pattern.targetTranslationIds || []
