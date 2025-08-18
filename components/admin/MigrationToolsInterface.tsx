@@ -878,6 +878,19 @@ export default function MigrationToolsInterface() {
             selectedFormIds: [],
             selectedTranslationIds: []
           };
+        } else if (rule.id === 'add-missing-auxiliaries') {
+          effectiveConfig = {
+            selectedTable: 'word_translations',
+            selectedColumn: 'context_metadata',
+            selectedTagsForMigration: [], // This rule adds new metadata, doesn't filter by existing
+            ruleBuilderMappings: [],
+            tagsToRemove: [],
+            newTagToAdd: 'auxiliary-verb',
+            tagsToAdd: ['auxiliary-verb'],
+            selectedWords: [],
+            selectedFormIds: [],
+            selectedTranslationIds: []
+          };
         } else {
           // Generic fallback for other default rules
           effectiveConfig = {
@@ -982,6 +995,13 @@ export default function MigrationToolsInterface() {
           // If no specific filtering, show sample records anyway
           if (!effectiveConfig?.selectedTagsForMigration?.length && !effectiveConfig?.tagsToRemove?.length) {
             addToDebugLog(`📋 No tag filtering specified, showing ${Math.min(data.length, 5)} sample records`);
+            filteredRecords = data.slice(0, 5);
+          }
+          
+          // Special case for ADD operations - if no records found with filtering, 
+          // show sample records that COULD be affected (don't have the target tag yet)
+          if (rule.operationType === 'add' && filteredRecords.length === 0 && data.length > 0) {
+            addToDebugLog(`🔧 ADD operation with no filtered results - showing potential target records`);
             filteredRecords = data.slice(0, 5);
           }
           
@@ -1104,7 +1124,7 @@ export default function MigrationToolsInterface() {
         affectedTables,
         backupRequired: true,
         rollbackAvailable: true,
-        targetedWords: config?.selectedWords?.map(w => w.italian) || [],
+        targetedWords: effectiveConfig?.selectedWords?.map(w => w.italian) || [],
         duplicatesPrevented: rule.preventDuplicates ? Math.floor(totalAffectedCount * 0.1) : 0,
         operationType: rule.operationType,
         totalAffectedCount,
@@ -1185,7 +1205,6 @@ export default function MigrationToolsInterface() {
   };
 
   const handleCustomizeRule = (rule: VisualRule) => {
-    resetAllRuleBuilderState();
     setSelectedRule(rule);
     setShowRuleBuilder(true);
     setRuleTitle(rule.title);
@@ -1197,23 +1216,30 @@ export default function MigrationToolsInterface() {
     if (rule.ruleConfig) {
       const config = rule.ruleConfig;
       
-      // Use setTimeout to ensure state updates happen after render cycle
-      setTimeout(() => {
-        setSelectedTable(config.selectedTable);
-        setSelectedColumn(config.selectedColumn);
-        setSelectedTagsForMigration(config.selectedTagsForMigration);
-        setRuleBuilderMappings(config.ruleBuilderMappings);
-        setTagsToRemove(config.tagsToRemove);
-        setNewTagToAdd(config.newTagToAdd);
-        setTagsToAdd(config.tagsToAdd || []); // NEW: Restore multi-tag state
-        setSelectedWords(config.selectedWords);
-        setSelectedFormIds(config.selectedFormIds);
-        setSelectedTranslationIds(config.selectedTranslationIds);
-        
-        addToDebugLog(`🔧 Restored rule configuration for: ${rule.title}`);
-        addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
-        addToDebugLog(`🏷️ Tags for migration: ${JSON.stringify(config.selectedTagsForMigration)}`);
-      }, 100);
+      // Restore configuration immediately - no setTimeout needed
+      setSelectedTable(config.selectedTable);
+      setSelectedColumn(config.selectedColumn);
+      setSelectedTagsForMigration(config.selectedTagsForMigration);
+      setRuleBuilderMappings(config.ruleBuilderMappings);
+      setTagsToRemove(config.tagsToRemove);
+      setNewTagToAdd(config.newTagToAdd);
+      setTagsToAdd(config.tagsToAdd || []); // NEW: Restore multi-tag state
+      setSelectedWords(config.selectedWords);
+      setSelectedFormIds(config.selectedFormIds);
+      setSelectedTranslationIds(config.selectedTranslationIds);
+      
+      // Reset only cache/loading states, not configuration
+      setCurrentLocationTags(null);
+      setGlobalTags(null);
+      setWordSpecificTags(null);
+      setWordFormsData(null);
+      setWordTranslationsData(null);
+      setSelectedFormTags(null);
+      setSelectedTranslationMetadata(null);
+      
+      addToDebugLog(`🔧 Restored rule configuration for: ${rule.title}`);
+      addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
+      addToDebugLog(`🏷️ Tags for migration: ${JSON.stringify(config.selectedTagsForMigration)}`);
       return;
     }
 
@@ -3209,8 +3235,8 @@ export default function MigrationToolsInterface() {
                 {previewData && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-3">
-                      Sample Changes 
-                      {previewData.totalAffectedCount && (
+                      Sample Changes
+                      {previewData.totalAffectedCount > 0 && (
                         <span className="text-xs text-gray-500 ml-2">
                           (showing {previewData.beforeSamples.length} of {previewData.totalAffectedCount} affected records)
                         </span>
