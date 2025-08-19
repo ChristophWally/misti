@@ -2781,6 +2781,7 @@ export default function MigrationToolsInterface() {
                   'Run Analysis'
                 )}
               </button>
+              </div>
             </div>
 
             {databaseStats && (
