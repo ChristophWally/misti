@@ -1273,15 +1273,26 @@ export default function MigrationToolsInterface() {
               if (JSON.stringify(beforeTags) !== JSON.stringify(afterTags)) {
                 const changeTimestamp = new Date().toISOString();
                 
-                // Perform the database update
-                const { error: updateError } = await supabase
+                // Perform the database update with detailed logging
+                addToDebugLog(`🔧 Updating record ${record.id}: ${JSON.stringify(beforeTags)} → ${JSON.stringify(afterTags)}`);
+                
+                const { data: updateData, error: updateError } = await supabase
                   .from(config.selectedTable)
                   .update({ tags: afterTags })
-                  .eq('id', record.id);
+                  .eq('id', record.id)
+                  .select('id, tags'); // Return the updated data to verify
                   
                 if (updateError) {
+                  addToDebugLog(`❌ Supabase update error for ${record.id}: ${JSON.stringify(updateError)}`);
                   throw new Error(`Failed to update record ${record.id}: ${updateError.message}`);
                 }
+                
+                if (!updateData || updateData.length === 0) {
+                  addToDebugLog(`⚠️ Update returned no data for ${record.id} - possible RLS or permission issue`);
+                  throw new Error(`Update operation returned no data for record ${record.id}`);
+                }
+                
+                addToDebugLog(`✅ Successfully updated ${record.id}: ${JSON.stringify(updateData[0].tags)}`);
                 
                 // Record comprehensive change details for audit trail
                 const changeId = crypto.randomUUID();
