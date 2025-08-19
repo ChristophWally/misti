@@ -3,8 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { MigrationRecommendationEngine, MigrationAnalysis, MigrationRecommendation, DataStateAnalysis } from '../../lib/migration/migrationRecommendationEngine';
-import { DEFAULT_MIGRATION_RULES } from '../../lib/migration/defaultRules';
-import { MigrationRule } from '../../lib/migration/migrationRuleEngine';
 
 interface MigrationIssue {
   type: 'critical' | 'high' | 'medium' | 'low';
@@ -109,54 +107,6 @@ interface ColumnInfo {
   isJson: boolean;
 }
 
-// Convert MigrationRule from defaultRules.ts to VisualRule with proper ruleConfig
-function convertMigrationRuleToVisualRule(migrationRule: MigrationRule): VisualRule {
-  let ruleConfig: any = {};
-  
-  // Convert the MigrationRule configuration to VisualRule ruleConfig format
-  if (migrationRule.pattern && migrationRule.transformation) {
-    ruleConfig = {
-      selectedTable: migrationRule.pattern.table,
-      selectedColumn: migrationRule.pattern.column,
-      selectedTagsForMigration: [],
-      ruleBuilderMappings: [],
-      tagsToRemove: [],
-      newTagToAdd: '',
-      tagsToAdd: [],
-      selectedWords: [],
-      selectedFormIds: [],
-      selectedTranslationIds: []
-    };
-
-    // Convert transformation mappings
-    if (migrationRule.transformation.type === 'array_replace' && migrationRule.transformation.mappings) {
-      ruleConfig.ruleBuilderMappings = Object.entries(migrationRule.transformation.mappings).map(([from, to], index) => ({
-        id: (index + 1).toString(),
-        from,
-        to
-      }));
-    }
-  }
-
-  return {
-    id: migrationRule.id,
-    title: migrationRule.name,
-    description: migrationRule.description,
-    impact: migrationRule.priority === 'critical' ? 'high' : migrationRule.priority as 'high' | 'medium' | 'low',
-    status: migrationRule.autoExecutable ? 'ready' : 'needs-input',
-    affectedCount: migrationRule.estimatedAffectedRows,
-    autoExecutable: migrationRule.autoExecutable,
-    requiresInput: migrationRule.requiresManualInput,
-    category: migrationRule.category as 'terminology' | 'metadata' | 'cleanup' | 'custom',
-    estimatedTime: migrationRule.estimatedExecutionTime,
-    canRollback: migrationRule.rollbackStrategy !== undefined,
-    preventDuplicates: true,
-    operationType: migrationRule.transformation?.type === 'array_replace' ? 'replace' : 
-                   migrationRule.transformation?.type === 'json_add' ? 'add' : 'replace',
-    ruleSource: 'default',
-    ruleConfig: ruleConfig
-  };
-}
 
 export default function MigrationToolsInterface() {
   const [currentTab, setCurrentTab] = useState<'audit' | 'recommendations' | 'migration' | 'progress'>('audit');
@@ -345,7 +295,7 @@ export default function MigrationToolsInterface() {
 
   // Initialize default migration rules
   useEffect(() => {
-    initializeDefaultRules();
+    loadMigrationRules();
     loadTableSchemas();
   }, []);
   
@@ -649,17 +599,65 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const initializeDefaultRules = () => {
-    addToDebugLog('🔧 Initializing default migration rules from defaultRules.ts...');
+  const loadMigrationRules = async () => {
+    addToDebugLog('🔧 Loading migration rules from database...');
     
-    // Convert MigrationRule[] to VisualRule[] with proper ruleConfig
-    const defaultRules: VisualRule[] = DEFAULT_MIGRATION_RULES.map(migrationRule => 
-      convertMigrationRuleToVisualRule(migrationRule)
-    );
-    
-    setMigrationRules(defaultRules);
-    addToDebugLog(`✅ Initialized ${defaultRules.length} default migration rules with proper configurations`);
-    addToDebugLog(`📋 Available rules: ${defaultRules.map(r => r.id).join(', ')}`);
+    try {
+      const { data: rules, error } = await supabase
+        .from('custom_migration_rules')
+        .select('*')
+        .eq('status', 'active')
+        .order('priority', { ascending: false });
+
+      if (error) throw new Error(`Failed to load rules: ${error.message}`);
+      if (!rules?.length) {
+        addToDebugLog('⚠️ No active rules found');
+        setMigrationRules([]);
+        return;
+      }
+
+      const visualRules: VisualRule[] = rules.map(rule => ({
+        id: rule.rule_id,
+        title: rule.name,
+        description: rule.description,
+        impact: rule.priority === 'critical' ? 'high' : rule.priority as 'high' | 'medium' | 'low',
+        status: rule.auto_executable ? 'ready' : 'needs-input',
+        affectedCount: rule.estimated_affected_rows || 0,
+        autoExecutable: rule.auto_executable,
+        requiresInput: rule.requires_manual_input,
+        category: rule.category as 'terminology' | 'metadata' | 'cleanup' | 'custom',
+        estimatedTime: rule.estimated_execution_time,
+        canRollback: true,
+        preventDuplicates: rule.transformation?.preventDuplicates ?? true,
+        operationType: rule.transformation?.type === 'array_replace' ? 'replace' : 
+                       rule.transformation?.type === 'array_add' ? 'add' : 'replace',
+        ruleSource: rule.tags?.includes('default-rule') ? 'default' : 'custom',
+        ruleConfig: {
+          selectedTable: rule.pattern?.table,
+          selectedColumn: rule.pattern?.column,
+          selectedTagsForMigration: rule.pattern?.targetTags || [],
+          ruleBuilderMappings: rule.transformation?.mappings ? 
+            Object.entries(rule.transformation.mappings).map(([from, to], index) => ({
+              id: (index + 1).toString(),
+              from,
+              to
+            })) : [],
+          tagsToRemove: rule.transformation?.tagsToRemove || [],
+          newTagToAdd: rule.transformation?.newTagToAdd || '',
+          tagsToAdd: rule.transformation?.tagsToAdd || [],
+          selectedWords: [],
+          selectedFormIds: rule.pattern?.targetFormIds || [],
+          selectedTranslationIds: rule.pattern?.targetTranslationIds || []
+        }
+      }));
+      
+      setMigrationRules(visualRules);
+      addToDebugLog(`✅ Loaded ${visualRules.length} rules`);
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load rules: ${error.message}`);
+      setMigrationRules([]);
+    }
   };
 
   const runTagAnalysis = async () => {
