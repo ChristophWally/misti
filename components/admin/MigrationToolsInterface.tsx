@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { MigrationRecommendationEngine, MigrationAnalysis, MigrationRecommendation, DataStateAnalysis } from '../../lib/migration/migrationRecommendationEngine';
 
@@ -124,7 +124,7 @@ export default function MigrationToolsInterface() {
   const [previewData, setPreviewData] = useState<any>(null);
   const [executionProgress, setExecutionProgress] = useState<number>(0);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [isRestoringRule, setIsRestoringRule] = useState(false);
+  const isRestoringRule = useRef(false);
   
   // NEW: Enhanced Rule Builder State
   const [ruleBuilderMappings, setRuleBuilderMappings] = useState<MappingPair[]>([]);
@@ -319,7 +319,7 @@ export default function MigrationToolsInterface() {
 
   useEffect(() => {
     // Skip sync during rule restoration to prevent clearing restored configurations
-    if (isRestoringRule) {
+    if (isRestoringRule.current) {
       addToDebugLog('⏭️ Skipping mapping sync during rule restoration');
       return;
     }
@@ -361,7 +361,7 @@ export default function MigrationToolsInterface() {
         }
       }
     }
-  }, [selectedTagsForMigration, operationType, isRestoringRule, tagsToRemove]);
+  }, [selectedTagsForMigration, operationType, tagsToRemove]);
 
   useEffect(() => {
     setSelectedFormTags(null);
@@ -1280,7 +1280,7 @@ export default function MigrationToolsInterface() {
       const config = rule.ruleConfig;
       
       // Set restoration flag to prevent useEffect from clearing configurations
-      setIsRestoringRule(true);
+      isRestoringRule.current = true;
       
       // Restore configuration immediately - no setTimeout needed
       setSelectedTable(config.selectedTable);
@@ -1303,11 +1303,12 @@ export default function MigrationToolsInterface() {
       setSelectedFormTags(null);
       setSelectedTranslationMetadata(null);
       
-      // Clear restoration flag after a brief delay
+      // Clear restoration flag immediately after state updates are queued
+      // Using setTimeout to ensure state updates are processed first
       setTimeout(() => {
-        setIsRestoringRule(false);
+        isRestoringRule.current = false;
         addToDebugLog('✅ Rule restoration complete - mapping sync re-enabled');
-      }, 100);
+      }, 0);
       
       addToDebugLog(`🔧 Restored rule configuration for: ${rule.title}`);
       addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
@@ -3218,10 +3219,10 @@ export default function MigrationToolsInterface() {
       {/* Preview Modal */}
       {showPreview && selectedRule && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white">
+          <div className="relative top-4 sm:top-20 mx-auto p-3 sm:p-5 border w-full sm:w-11/12 max-w-4xl shadow-lg rounded-md bg-white min-h-screen sm:min-h-0">
             <div className="mt-3">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-sm sm:text-lg font-medium text-gray-900 pr-2">
                   Preview: {selectedRule.title}
                 </h3>
                 <button
@@ -3318,31 +3319,32 @@ export default function MigrationToolsInterface() {
                       {previewData.beforeSamples.map((sample: any) => (
                         <div key={sample.id} className="border rounded-lg p-3 bg-gray-50">
                           {/* Record context */}
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-xs text-gray-600">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 space-y-1 sm:space-y-0">
+                            <div className="text-xs text-gray-600 truncate">
                               <span className="font-medium">{sample.table || 'word_forms'}</span>
-                              {sample.word_context && <span className="ml-2">• {sample.word_context}</span>}
-                              {sample.record_id && <span className="ml-2">• ID: {sample.record_id}</span>}
+                              {sample.word_context && <span className="ml-1 sm:ml-2">• {sample.word_context}</span>}
+                              {sample.record_id && <span className="ml-1 sm:ml-2 hidden sm:inline">• ID: {sample.record_id}</span>}
                             </div>
                             {sample.changes && (
-                              <span className="text-xs text-green-600 font-medium">✓ Changes</span>
+                              <span className="text-xs text-green-600 font-medium self-start sm:self-auto">✓ Changes</span>
                             )}
                           </div>
                           
                           {/* Before/After comparison */}
-                          <div className="flex items-start space-x-4">
+                          <div className="flex flex-col sm:flex-row sm:items-start space-y-3 sm:space-y-0 sm:space-x-4">
                             <div className="flex-1">
                               <div className="text-xs text-gray-500 mb-1">Before:</div>
-                              <code className="text-sm bg-white px-2 py-1 rounded border block">
+                              <code className="text-xs sm:text-sm bg-white px-2 py-1 rounded border block break-all">
                                 {sample.before}
                               </code>
                             </div>
-                            <div className="flex-shrink-0 mt-6">
-                              <span className="text-gray-400">→</span>
+                            <div className="flex-shrink-0 self-center sm:mt-6">
+                              <span className="text-gray-400 text-sm sm:hidden">↓</span>
+                              <span className="text-gray-400 text-sm hidden sm:inline">→</span>
                             </div>
                             <div className="flex-1">
                               <div className="text-xs text-gray-500 mb-1">After:</div>
-                              <code className="text-sm bg-white px-2 py-1 rounded border block">
+                              <code className="text-xs sm:text-sm bg-white px-2 py-1 rounded border block break-all">
                                 {sample.after}
                               </code>
                             </div>
@@ -3368,7 +3370,7 @@ export default function MigrationToolsInterface() {
                   </span>
                 </div>
 
-                <div className="flex justify-end space-x-3">
+                <div className="flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-3">
                   <button
                     onClick={() => setShowPreview(false)}
                     className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
