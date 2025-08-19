@@ -3,7 +3,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { MigrationRecommendationEngine, MigrationAnalysis, MigrationRecommendation, DataStateAnalysis } from '../../lib/migration/migrationRecommendationEngine';
-import { DEFAULT_MIGRATION_RULES, MigrationRule } from '../../lib/migration/defaultRules';
+import { DEFAULT_MIGRATION_RULES } from '../../lib/migration/defaultRules';
+import { MigrationRule } from '../../lib/migration/migrationRuleEngine';
 
 interface MigrationIssue {
   type: 'critical' | 'high' | 'medium' | 'low';
