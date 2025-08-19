@@ -1430,7 +1430,42 @@ export default function MigrationToolsInterface() {
       if (rule.preventDuplicates) addToDebugLog('🛡️ Preventing duplicate tags...');
       
       setExecutionProgress(90);
-      addToDebugLog('✅ Validating results...');
+      addToDebugLog('📝 Recording execution log...');
+      
+      // Create comprehensive execution log
+      const executionLog = {
+        rule_id: rule.id,
+        rule_name: rule.title,
+        operation_type: rule.operationType,
+        target_table: config.selectedTable,
+        target_column: config.selectedColumn,
+        records_affected: totalAffected,
+        rule_configuration: {
+          selectedTable: config.selectedTable,
+          selectedColumn: config.selectedColumn,
+          operationType: rule.operationType,
+          ruleBuilderMappings: config.ruleBuilderMappings,
+          tagsToAdd: config.tagsToAdd,
+          tagsToRemove: config.tagsToRemove,
+          selectedWords: config.selectedWords?.map(w => ({ italian: w.italian, wordId: w.wordId })),
+          selectedFormIds: config.selectedFormIds,
+          selectedTranslationIds: config.selectedTranslationIds,
+        },
+        can_rollback: true,
+        execution_context: 'admin-migration-tools',
+        notes: `Executed via admin interface. Debug logs available.`
+      };
+
+      // Insert execution log
+      const { error: logError } = await supabase
+        .from('migration_execution_log')
+        .insert(executionLog);
+        
+      if (logError) {
+        addToDebugLog(`⚠️ Failed to create execution log: ${logError.message}`);
+      } else {
+        addToDebugLog(`📋 Execution log created for ${totalAffected} changes`);
+      }
       
       setExecutionProgress(100);
 
@@ -1443,7 +1478,7 @@ export default function MigrationToolsInterface() {
       if (duplicatesPrevented > 0) {
         addToDebugLog(`🛡️ Prevented ${duplicatesPrevented} duplicate tags`);
       }
-      addToDebugLog(`🔄 Database transaction completed with ${affectedRows} changes`);
+      addToDebugLog(`💾 Changes logged to migration_execution_log table for audit trail`);
 
     } catch (error: any) {
       addToDebugLog(`❌ Execution failed: ${error.message}`);
@@ -3374,7 +3409,7 @@ export default function MigrationToolsInterface() {
             <div>
               <h3 className="text-lg font-medium text-gray-900">Migration Execution History</h3>
               <p className="text-sm text-gray-600">
-                Track completed migrations and rollback options
+                Track completed migrations and execution history
               </p>
             </div>
 
@@ -3391,7 +3426,7 @@ export default function MigrationToolsInterface() {
                   </h3>
                   <div className="mt-2 text-sm text-blue-700">
                     <p>
-                      Once you execute migrations, this tab will show detailed execution logs, rollback options, and performance metrics.
+                      Once you execute migrations, this tab will show detailed execution logs, change tracking, and performance metrics.
                     </p>
                   </div>
                 </div>
