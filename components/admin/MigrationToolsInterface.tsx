@@ -1025,8 +1025,8 @@ export default function MigrationToolsInterface() {
             });
             
             // Merge with existing filtered records (deduplicate by id)
-            const existingIds = new Set(filteredRecords.map(r => r.id));
-            const newRecords = removeRecords.filter(r => !existingIds.has(r.id));
+            const existingIds = new Set(filteredRecords.map((r: any) => r.id));
+            const newRecords = removeRecords.filter((r: any) => !existingIds.has(r.id));
             filteredRecords = [...filteredRecords, ...newRecords];
           }
           
