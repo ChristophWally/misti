@@ -1224,7 +1224,7 @@ export default function MigrationToolsInterface() {
       if (rule.operationType === 'replace' && config.ruleBuilderMappings?.length > 0) {
         // Execute replacement mappings with detailed change tracking
         for (const mapping of config.ruleBuilderMappings) {
-          addToDebugLog(`🔄 Replacing "${mapping.from}" → "${mapping.to}"`);
+          addToDebugLog(`🔄 Replacing "${mapping.from}" → "${mapping.to}" (with duplicate prevention)`);
           
           if (config.selectedColumn === 'tags') {
             // First, get records that contain the tag to replace
@@ -1255,7 +1255,19 @@ export default function MigrationToolsInterface() {
             // Process each record with detailed before/after tracking
             for (const record of records) {
               const beforeTags = [...record.tags];
-              const afterTags = record.tags.map((tag: string) => tag === mapping.from ? mapping.to : tag);
+              
+              // Smart replacement: replace old tag with new tag, but remove duplicates
+              let afterTags = record.tags.map((tag: string) => tag === mapping.from ? mapping.to : tag);
+              
+              // Remove duplicate instances of the new tag (keep only the first occurrence)
+              const seen = new Set();
+              afterTags = afterTags.filter(tag => {
+                if (seen.has(tag)) {
+                  return false; // Remove duplicate
+                }
+                seen.add(tag);
+                return true; // Keep first occurrence
+              });
               
               // Only update if there's actually a change
               if (JSON.stringify(beforeTags) !== JSON.stringify(afterTags)) {
