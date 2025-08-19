@@ -319,9 +319,9 @@ export default function MigrationToolsInterface() {
   }, [selectedTable, selectedColumn]);
 
   useEffect(() => {
-    // CRITICAL: Skip sync entirely for loaded/custom rules - they have their mappings already set
-    if (selectedRule && (selectedRule.ruleSource === 'loaded' || selectedRule.ruleSource === 'custom')) {
-      addToDebugLog('⏭️ Skipping mapping sync for loaded/custom rule - mappings already configured');
+    // CRITICAL: Skip sync entirely for loaded/custom/default rules - they have their mappings already set
+    if (selectedRule && (selectedRule.ruleSource === 'loaded' || selectedRule.ruleSource === 'custom' || selectedRule.ruleSource === 'default')) {
+      addToDebugLog('⏭️ Skipping mapping sync for loaded/custom/default rule - mappings already configured');
       return;
     }
     
@@ -3203,271 +3203,190 @@ export default function MigrationToolsInterface() {
               </div>
             </div>
 
-            {/* Much More Compact Mobile Rule Cards - Grouped by Source */}
+            {/* Unified Migration Rules Section */}
             <div className="space-y-4">
-              {/* Default Rules Section */}
-              {migrationRules.filter(rule => rule.ruleSource === 'default').length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h4 className="text-sm font-medium text-gray-700">🔧 System Default Rules</h4>
-                    <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                      {migrationRules.filter(rule => rule.ruleSource === 'default').length}
-                    </span>
-                  </div>
-                  {migrationRules.filter(rule => rule.ruleSource === 'default').map((rule) => (
-                    <div key={rule.id} className={`border rounded-lg p-3 ${getImpactColor(rule.impact)}`}>
-                      {/* Compact Header */}
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center min-w-0 flex-1">
-                          <span className="text-lg mr-2 flex-shrink-0">{getCategoryIcon(rule.category)}</span>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="text-sm font-medium text-gray-900 flex items-center truncate">
-                              {rule.title}
-                              <span className="ml-1 text-sm flex-shrink-0">{getStatusIcon(rule.status)}</span>
-                            </h4>
-                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{rule.description}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Compact Stats */}
-                      <div className="grid grid-cols-3 gap-2 text-xs mb-2">
-                        <div className="text-center p-1 bg-white bg-opacity-50 rounded">
-                          <div className="font-medium capitalize">{rule.impact}</div>
-                          <div className="text-gray-500">Impact</div>
-                        </div>
-                        <div className="text-center p-1 bg-white bg-opacity-50 rounded">
-                          <div className="font-medium">{rule.affectedCount}</div>
-                          <div className="text-gray-500">Rows</div>
-                        </div>
-                        <div className="text-center p-1 bg-white bg-opacity-50 rounded">
-                          <div className="font-medium">{rule.estimatedTime}</div>
-                          <div className="text-gray-500">Time</div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="grid grid-cols-5 gap-1">
-                        <button
-                          onClick={() => handlePreviewRule(rule)}
-                          className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
-                          title="Preview"
-                        >
-                          📊
-                        </button>
-                        <button
-                          onClick={() => handleCustomizeRule(rule)}
-                          className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
-                          title="Edit"
-                        >
-                          ⚙️
-                        </button>
-                        <button
-                          onClick={() => {
-                            setRuleToSave(rule);
-                            setSaveRuleName(rule.title);
-                            setSaveRuleDescription(rule.description);
-                            setShowSaveRuleModal(true);
-                          }}
-                          className="text-xs py-2 px-1 border border-green-300 rounded text-green-700 bg-green-50 hover:bg-green-100"
-                          title="Save Rule"
-                        >
-                          💾
-                        </button>
-                        {rule.ruleSource === 'default' ? (
-                          <button
-                            onClick={() => convertToCustomRule(rule.id)}
-                            className="text-xs py-2 px-1 border border-orange-300 rounded text-orange-700 bg-orange-50 hover:bg-orange-100"
-                            title="Convert to Custom Rule"
-                          >
-                            ⚡ Custom
-                          </button>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => convertToDefaultRule(rule.id)}
-                              className="text-xs py-2 px-1 border border-blue-300 rounded text-blue-700 bg-blue-50 hover:bg-blue-100"
-                              title="Convert to Default Rule"
-                            >
-                              🔧 Default
-                            </button>
-                            <button
-                              onClick={() => deleteRuleFromSession(rule.id)}
-                              className="text-xs py-2 px-1 border border-red-300 rounded text-red-700 bg-red-50 hover:bg-red-100"
-                              title="Delete Rule"
-                            >
-                              🗑️
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => handleExecuteRule(rule)}
-                          disabled={rule.status === 'executing' || rule.status === 'completed'}
-                          className={`text-xs py-2 px-1 rounded font-medium ${
-                            rule.status === 'completed'
-                              ? 'bg-green-100 text-green-800 cursor-not-allowed'
-                              : rule.status === 'executing'
-                              ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
-                              : 'bg-blue-600 text-white hover:bg-blue-700'
-                          }`}
-                        >
-                          {rule.status === 'completed' ? '✅' :
-                           rule.status === 'executing' ? '⏳' :
-                           '▶️'}
-                        </button>
-                      </div>
+              {/* Group rules by source for section headers */}
+              {['default', 'custom', 'loaded'].map(source => {
+                const rulesForSource = migrationRules.filter(rule => 
+                  source === 'default' ? rule.ruleSource === 'default' : 
+                  source === 'custom' ? (rule.ruleSource === 'custom' || rule.ruleSource === 'loaded') : 
+                  false
+                );
+                
+                if (rulesForSource.length === 0) return null;
+                
+                const sectionConfig = {
+                  'default': {
+                    title: '🔧 System Default Rules',
+                    bgColor: 'bg-blue-100',
+                    textColor: 'text-blue-800'
+                  },
+                  'custom': {
+                    title: '⚡ Custom & Loaded Rules', 
+                    bgColor: 'bg-purple-100',
+                    textColor: 'text-purple-800'
+                  }
+                }[source === 'loaded' ? 'custom' : source];
+                
+                return (
+                  <div key={source} className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <h4 className="text-sm font-medium text-gray-700">{sectionConfig.title}</h4>
+                      <span className={`px-2 py-1 text-xs ${sectionConfig.bgColor} ${sectionConfig.textColor} rounded-full`}>
+                        {rulesForSource.length}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Custom & Loaded Rules Section */}
-              {migrationRules.filter(rule => rule.ruleSource === 'custom' || rule.ruleSource === 'loaded').length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <h4 className="text-sm font-medium text-gray-700">⚡ Custom & Loaded Rules</h4>
-                    <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded-full">
-                      {migrationRules.filter(rule => rule.ruleSource === 'custom' || rule.ruleSource === 'loaded').length}
-                    </span>
-                  </div>
-                  {migrationRules.filter(rule => rule.ruleSource === 'custom' || rule.ruleSource === 'loaded').map((rule) => (
-                    <div key={rule.id} className={`border rounded-lg p-3 ${getImpactColor(rule.impact)}`}>
-                      {/* Compact Header */}
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center min-w-0 flex-1">
-                          <span className="text-lg mr-2 flex-shrink-0">{getCategoryIcon(rule.category)}</span>
-                          <div className="min-w-0 flex-1">
-                            <h4 className="text-sm font-medium text-gray-900 flex items-center truncate">
-                              {rule.title}
-                              <span className="ml-1 text-sm flex-shrink-0">{getStatusIcon(rule.status)}</span>
-                              {rule.ruleSource === 'loaded' && (
-                                <span className="ml-1 text-xs bg-blue-100 text-blue-700 px-1 rounded">📚</span>
-                              )}
-                            </h4>
-                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{rule.description}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Compact Stats */}
-                      <div className="grid grid-cols-3 gap-2 text-xs mb-2">
-                        <div className="text-center p-1 bg-white bg-opacity-50 rounded">
-                          <div className="font-medium capitalize">{rule.impact}</div>
-                          <div className="text-gray-500">Impact</div>
-                        </div>
-                        <div className="text-center p-1 bg-white bg-opacity-50 rounded">
-                          <div className="font-medium">{rule.affectedCount}</div>
-                          <div className="text-gray-500">Rows</div>
-                        </div>
-                        <div className="text-center p-1 bg-white bg-opacity-50 rounded">
-                          <div className="font-medium">{rule.estimatedTime}</div>
-                          <div className="text-gray-500">Time</div>
-                        </div>
-                      </div>
-
-                      {/* Rule Configuration Details */}
-                      {rule.ruleConfig && (
-                        <div className="bg-gray-50 border border-gray-200 rounded p-2 mb-2 text-xs">
-                          <div className="font-medium text-gray-700 mb-1">Configuration:</div>
-                          <div className="space-y-1">
-                            <div>
-                              <span className="font-medium">Operation:</span> {rule.operationType?.toUpperCase()} on {rule.ruleConfig.selectedTable}:{rule.ruleConfig.selectedColumn}
+                    {rulesForSource.map((rule) => (
+                      <div key={rule.id} className={`border rounded-lg p-3 ${getImpactColor(rule.impact)}`}>
+                        {/* Compact Header */}
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center min-w-0 flex-1">
+                            <span className="text-lg mr-2 flex-shrink-0">{getCategoryIcon(rule.category)}</span>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-sm font-medium text-gray-900 flex items-center truncate">
+                                {rule.title}
+                                <span className="ml-1 text-sm flex-shrink-0">{getStatusIcon(rule.status)}</span>
+                                {rule.ruleSource === 'loaded' && (
+                                  <span className="ml-1 text-xs bg-blue-100 text-blue-700 px-1 rounded">📚</span>
+                                )}
+                              </h4>
+                              <p className="text-xs text-gray-600 mt-1 line-clamp-2">{rule.description}</p>
                             </div>
-                            {rule.ruleConfig.selectedTagsForMigration?.length > 0 && (
-                              <div>
-                                <span className="font-medium">Target Tags:</span> {rule.ruleConfig.selectedTagsForMigration.slice(0, 3).join(', ')}
-                                {rule.ruleConfig.selectedTagsForMigration.length > 3 && ` (+${rule.ruleConfig.selectedTagsForMigration.length - 3} more)`}
-                              </div>
-                            )}
-                            {rule.ruleConfig.ruleBuilderMappings?.length > 0 && (
-                              <div>
-                                <span className="font-medium">Mappings:</span> 
-                                {rule.ruleConfig.ruleBuilderMappings.slice(0, 2).map(m => `"${m.from}" → "${m.to}"`).join(', ')}
-                                {rule.ruleConfig.ruleBuilderMappings.length > 2 && ` (+${rule.ruleConfig.ruleBuilderMappings.length - 2} more)`}
-                              </div>
-                            )}
-                            {rule.ruleConfig.newTagToAdd && (
-                              <div>
-                                <span className="font-medium">Adding:</span> "{rule.ruleConfig.newTagToAdd}"
-                              </div>
-                            )}
-                            {rule.ruleConfig.tagsToAdd?.length > 0 && (
-                              <div>
-                                <span className="font-medium">Adding Multiple:</span> {rule.ruleConfig.tagsToAdd.join(', ')}
-                              </div>
-                            )}
-                            {rule.ruleConfig.selectedWords?.length > 0 && (
-                              <div>
-                                <span className="font-medium">Target Words:</span> {rule.ruleConfig.selectedWords.slice(0, 2).map(w => w.italian).join(', ')}
-                                {rule.ruleConfig.selectedWords.length > 2 && ` (+${rule.ruleConfig.selectedWords.length - 2} more)`}
-                              </div>
-                            )}
                           </div>
                         </div>
-                      )}
 
-                      {/* Action Buttons */}
-                      <div className="grid grid-cols-5 gap-1">
-                        <button
-                          onClick={() => handlePreviewRule(rule)}
-                          className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
-                          title="Preview"
-                        >
-                          📊
-                        </button>
-                        <button
-                          onClick={() => handleCustomizeRule(rule)}
-                          className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
-                          title="Edit"
-                        >
-                          ⚙️
-                        </button>
-                        <button
-                          onClick={() => {
-                            setRuleToSave(rule);
-                            setSaveRuleName(rule.title);
-                            setSaveRuleDescription(rule.description);
-                            setShowSaveRuleModal(true);
-                          }}
-                          className="text-xs py-2 px-1 border border-green-300 rounded text-green-700 bg-green-50 hover:bg-green-100"
-                          title="Save Rule"
-                        >
-                          💾
-                        </button>
-                        <button
-                          onClick={() => convertToDefaultRule(rule.id)}
-                          className="text-xs py-2 px-1 border border-blue-300 rounded text-blue-700 bg-blue-50 hover:bg-blue-100"
-                          title="Convert to Default Rule"
-                        >
-                          🔧 Default
-                        </button>
-                        <button
-                          onClick={() => deleteRuleFromSession(rule.id)}
-                          className="text-xs py-2 px-1 border border-red-300 rounded text-red-700 bg-red-50 hover:bg-red-100"
-                          title="Delete Rule"
-                        >
-                          🗑️
-                        </button>
-                        <button
-                          onClick={() => handleExecuteRule(rule)}
-                          disabled={rule.status === 'executing' || rule.status === 'completed'}
-                          className={`text-xs py-2 px-1 rounded font-medium ${
-                            rule.status === 'completed'
-                              ? 'bg-green-100 text-green-800 cursor-not-allowed'
-                              : rule.status === 'executing'
-                              ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
-                              : 'bg-blue-600 text-white hover:bg-blue-700'
-                          }`}
-                        >
-                          {rule.status === 'completed' ? '✅' :
-                           rule.status === 'executing' ? '⏳' :
-                           '▶️'}
-                        </button>
+                        {/* Compact Stats */}
+                        <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+                          <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                            <div className="font-medium capitalize">{rule.impact}</div>
+                            <div className="text-gray-500">Impact</div>
+                          </div>
+                          <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                            <div className="font-medium">{rule.affectedCount}</div>
+                            <div className="text-gray-500">Rows</div>
+                          </div>
+                          <div className="text-center p-1 bg-white bg-opacity-50 rounded">
+                            <div className="font-medium">{rule.estimatedTime}</div>
+                            <div className="text-gray-500">Time</div>
+                          </div>
+                        </div>
+
+                        {/* Rule Configuration Details - Only for custom/loaded rules */}
+                        {rule.ruleConfig && (rule.ruleSource === 'custom' || rule.ruleSource === 'loaded') && (
+                          <div className="bg-gray-50 border border-gray-200 rounded p-2 mb-2 text-xs">
+                            <div className="font-medium text-gray-700 mb-1">Configuration:</div>
+                            <div className="space-y-1">
+                              <div>
+                                <span className="font-medium">Operation:</span> {rule.operationType?.toUpperCase()} on {rule.ruleConfig.selectedTable}:{rule.ruleConfig.selectedColumn}
+                              </div>
+                              {rule.ruleConfig.selectedTagsForMigration?.length > 0 && (
+                                <div>
+                                  <span className="font-medium">Target Tags:</span> {rule.ruleConfig.selectedTagsForMigration.slice(0, 3).join(', ')}
+                                  {rule.ruleConfig.selectedTagsForMigration.length > 3 && ` (+${rule.ruleConfig.selectedTagsForMigration.length - 3} more)`}
+                                </div>
+                              )}
+                              {rule.ruleConfig.ruleBuilderMappings?.length > 0 && (
+                                <div>
+                                  <span className="font-medium">Mappings:</span> 
+                                  {rule.ruleConfig.ruleBuilderMappings.slice(0, 2).map(m => `"${m.from}" → "${m.to}"`).join(', ')}
+                                  {rule.ruleConfig.ruleBuilderMappings.length > 2 && ` (+${rule.ruleConfig.ruleBuilderMappings.length - 2} more)`}
+                                </div>
+                              )}
+                              {rule.ruleConfig.newTagToAdd && (
+                                <div>
+                                  <span className="font-medium">Adding:</span> "{rule.ruleConfig.newTagToAdd}"
+                                </div>
+                              )}
+                              {rule.ruleConfig.tagsToAdd?.length > 0 && (
+                                <div>
+                                  <span className="font-medium">Adding Multiple:</span> {rule.ruleConfig.tagsToAdd.join(', ')}
+                                </div>
+                              )}
+                              {rule.ruleConfig.selectedWords?.length > 0 && (
+                                <div>
+                                  <span className="font-medium">Target Words:</span> {rule.ruleConfig.selectedWords.slice(0, 2).map(w => w.italian).join(', ')}
+                                  {rule.ruleConfig.selectedWords.length > 2 && ` (+${rule.ruleConfig.selectedWords.length - 2} more)`}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action Buttons - Conditional based on rule source */}
+                        <div className={`grid gap-1 ${rule.ruleSource === 'default' ? 'grid-cols-5' : 'grid-cols-6'}`}>
+                          <button
+                            onClick={() => handlePreviewRule(rule)}
+                            className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                            title="Preview"
+                          >
+                            📊
+                          </button>
+                          <button
+                            onClick={() => handleCustomizeRule(rule)}
+                            className="text-xs py-2 px-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+                            title="Edit"
+                          >
+                            ⚙️
+                          </button>
+                          <button
+                            onClick={() => {
+                              setRuleToSave(rule);
+                              setSaveRuleName(rule.title);
+                              setSaveRuleDescription(rule.description);
+                              setShowSaveRuleModal(true);
+                            }}
+                            className="text-xs py-2 px-1 border border-green-300 rounded text-green-700 bg-green-50 hover:bg-green-100"
+                            title="Save Rule"
+                          >
+                            💾
+                          </button>
+                          {rule.ruleSource === 'default' ? (
+                            <button
+                              onClick={() => convertToCustomRule(rule.id)}
+                              className="text-xs py-2 px-1 border border-orange-300 rounded text-orange-700 bg-orange-50 hover:bg-orange-100"
+                              title="Convert to Custom Rule"
+                            >
+                              ⚡ Custom
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => convertToDefaultRule(rule.id)}
+                                className="text-xs py-2 px-1 border border-blue-300 rounded text-blue-700 bg-blue-50 hover:bg-blue-100"
+                                title="Convert to Default Rule"
+                              >
+                                🔧 Default
+                              </button>
+                              <button
+                                onClick={() => deleteRuleFromSession(rule.id)}
+                                className="text-xs py-2 px-1 border border-red-300 rounded text-red-700 bg-red-50 hover:bg-red-100"
+                                title="Delete Rule"
+                              >
+                                🗑️
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => handleExecuteRule(rule)}
+                            disabled={rule.status === 'executing' || rule.status === 'completed'}
+                            className={`text-xs py-2 px-1 rounded font-medium ${
+                              rule.status === 'completed'
+                                ? 'bg-green-100 text-green-800 cursor-not-allowed'
+                                : rule.status === 'executing'
+                                ? 'bg-yellow-100 text-yellow-800 cursor-not-allowed'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            }`}
+                          >
+                            {rule.status === 'completed' ? '✅' :
+                             rule.status === 'executing' ? '⏳' :
+                             '▶️'}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
