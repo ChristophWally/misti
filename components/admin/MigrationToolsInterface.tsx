@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { MigrationRecommendationEngine, MigrationAnalysis, MigrationRecommendation, DataStateAnalysis } from '../../lib/migration/migrationRecommendationEngine';
+import { DEFAULT_MIGRATION_RULES, MigrationRule } from '../../lib/migration/defaultRules';
 
 interface MigrationIssue {
   type: 'critical' | 'high' | 'medium' | 'low';
@@ -105,6 +106,55 @@ interface ColumnInfo {
   dataType: string;
   isArray: boolean;
   isJson: boolean;
+}
+
+// Convert MigrationRule from defaultRules.ts to VisualRule with proper ruleConfig
+function convertMigrationRuleToVisualRule(migrationRule: MigrationRule): VisualRule {
+  let ruleConfig: any = {};
+  
+  // Convert the MigrationRule configuration to VisualRule ruleConfig format
+  if (migrationRule.pattern && migrationRule.transformation) {
+    ruleConfig = {
+      selectedTable: migrationRule.pattern.table,
+      selectedColumn: migrationRule.pattern.column,
+      selectedTagsForMigration: [],
+      ruleBuilderMappings: [],
+      tagsToRemove: [],
+      newTagToAdd: '',
+      tagsToAdd: [],
+      selectedWords: [],
+      selectedFormIds: [],
+      selectedTranslationIds: []
+    };
+
+    // Convert transformation mappings
+    if (migrationRule.transformation.type === 'array_replace' && migrationRule.transformation.mappings) {
+      ruleConfig.ruleBuilderMappings = Object.entries(migrationRule.transformation.mappings).map(([from, to], index) => ({
+        id: (index + 1).toString(),
+        from,
+        to
+      }));
+    }
+  }
+
+  return {
+    id: migrationRule.id,
+    title: migrationRule.name,
+    description: migrationRule.description,
+    impact: migrationRule.priority === 'critical' ? 'high' : migrationRule.priority as 'high' | 'medium' | 'low',
+    status: migrationRule.autoExecutable ? 'ready' : 'needs-input',
+    affectedCount: migrationRule.estimatedAffectedRows,
+    autoExecutable: migrationRule.autoExecutable,
+    requiresInput: migrationRule.requiresManualInput,
+    category: migrationRule.category as 'terminology' | 'metadata' | 'cleanup' | 'custom',
+    estimatedTime: migrationRule.estimatedExecutionTime,
+    canRollback: migrationRule.rollbackStrategy !== undefined,
+    preventDuplicates: true,
+    operationType: migrationRule.transformation?.type === 'array_replace' ? 'replace' : 
+                   migrationRule.transformation?.type === 'json_add' ? 'add' : 'replace',
+    ruleSource: 'default',
+    ruleConfig: ruleConfig
+  };
 }
 
 export default function MigrationToolsInterface() {
@@ -599,74 +649,16 @@ export default function MigrationToolsInterface() {
   };
 
   const initializeDefaultRules = () => {
-    addToDebugLog('🔧 Initializing default migration rules...');
-    const defaultRules: VisualRule[] = [
-      {
-        id: 'italian-to-universal-terminology',
-        title: 'Convert Italian Person Terms',
-        description: 'Updates old Italian terms (io, tu, lui) to universal format (prima-persona, seconda-persona, terza-persona) for multi-language support.',
-        impact: 'high',
-        status: 'ready',
-        affectedCount: 666,
-        autoExecutable: true,
-        requiresInput: false,
-        category: 'terminology',
-        estimatedTime: '2-3 seconds',
-        canRollback: true,
-        preventDuplicates: true,
-        operationType: 'replace',
-        ruleSource: 'default'
-      },
-      {
-        id: 'add-missing-auxiliaries',
-        title: 'Add Missing Auxiliary Information',
-        description: 'Adds required auxiliary verbs (avere/essere) to translations that need this information for proper grammar.',
-        impact: 'high',
-        status: 'needs-input',
-        affectedCount: 25,
-        autoExecutable: false,
-        requiresInput: true,
-        category: 'metadata',
-        estimatedTime: '1-2 seconds',
-        canRollback: true,
-        operationType: 'add',
-        ruleSource: 'default'
-      },
-      {
-        id: 'cleanup-deprecated-tags',
-        title: 'Clean Up Old English Tags',
-        description: 'Replaces old English grammatical terms with proper Italian ones (past-participle → participio-passato).',
-        impact: 'low',
-        status: 'ready',
-        affectedCount: 4,
-        autoExecutable: true,
-        requiresInput: false,
-        category: 'cleanup',
-        estimatedTime: 'Under 1 second',
-        canRollback: true,
-        preventDuplicates: true,
-        operationType: 'replace',
-        ruleSource: 'default'
-      },
-      {
-        id: 'remove-obsolete-tags',
-        title: 'Remove Obsolete Tags',
-        description: 'Completely removes specified tags from all records where they appear.',
-        impact: 'medium',
-        status: 'needs-input',
-        affectedCount: 0,
-        autoExecutable: false,
-        requiresInput: true,
-        category: 'cleanup',
-        estimatedTime: 'Variable',
-        canRollback: true,
-        operationType: 'remove',
-        ruleSource: 'default'
-      }
-    ];
+    addToDebugLog('🔧 Initializing default migration rules from defaultRules.ts...');
+    
+    // Convert MigrationRule[] to VisualRule[] with proper ruleConfig
+    const defaultRules: VisualRule[] = DEFAULT_MIGRATION_RULES.map(migrationRule => 
+      convertMigrationRuleToVisualRule(migrationRule)
+    );
     
     setMigrationRules(defaultRules);
-    addToDebugLog(`✅ Initialized ${defaultRules.length} default migration rules`);
+    addToDebugLog(`✅ Initialized ${defaultRules.length} default migration rules with proper configurations`);
+    addToDebugLog(`📋 Available rules: ${defaultRules.map(r => r.id).join(', ')}`);
   };
 
   const runTagAnalysis = async () => {
@@ -1244,11 +1236,11 @@ export default function MigrationToolsInterface() {
       
       let affectedRows = 0;
       
-      // Generic rule execution using frontend configuration
+      // All rules (default and custom) now have proper ruleConfig
       if (!rule.ruleConfig) {
         throw new Error('Rule configuration is required for execution');
       }
-
+      
       const config = rule.ruleConfig;
       addToDebugLog(`🔧 Executing rule on ${config.selectedTable}.${config.selectedColumn}`);
       addToDebugLog(`📊 Operation: ${rule.operationType}, Targeting: ${config.selectedWords?.length || 0} words, ${config.selectedFormIds?.length || 0} forms, ${config.selectedTranslationIds?.length || 0} translations`);
