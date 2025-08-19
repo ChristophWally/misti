@@ -295,9 +295,7 @@ export default function MigrationToolsInterface() {
 
   // Initialize migration rules from database
   useEffect(() => {
-    console.log('🚀 CONSOLE: useEffect triggered - component mounted');
     addToDebugLog('🚀 Component mounted - loading migration rules...');
-    console.log('🚀 CONSOLE: About to call loadMigrationRules()');
     loadMigrationRules();
     loadTableSchemas();
   }, []);
@@ -603,21 +601,17 @@ export default function MigrationToolsInterface() {
   };
 
   const loadMigrationRules = async () => {
-    console.log('🔧 CONSOLE: loadMigrationRules() called');
     addToDebugLog('🔧 Loading migration rules from database...');
     
     try {
-      console.log('🔧 CONSOLE: About to query custom_migration_rules table');
       const { data: rules, error } = await supabase
         .from('custom_migration_rules')
         .select('*')
         .eq('status', 'active')
         .order('priority', { ascending: false });
 
-      console.log('📡 CONSOLE: Database query result:', rules?.length || 0, 'rules found');
       addToDebugLog(`📡 Database query result: ${rules?.length || 0} rules found`);
       if (error) {
-        console.error('❌ CONSOLE: Database error:', error);
         addToDebugLog(`❌ Database error: ${error.message}`);
         throw new Error(`Failed to load rules: ${error.message}`);
       }
@@ -663,18 +657,15 @@ export default function MigrationToolsInterface() {
         }
       }));
       
-      console.log('📦 CONSOLE: About to set visualRules:', visualRules.map(r => ({ id: r.id, title: r.title, ruleSource: r.ruleSource })));
       setMigrationRules(visualRules);
       
       const defaultCount = visualRules.filter(r => r.ruleSource === 'default').length;
       const customCount = visualRules.filter(r => r.ruleSource === 'custom').length;
       
-      console.log(`✅ CONSOLE: Successfully loaded ${visualRules.length} rules: ${defaultCount} default, ${customCount} custom`);
       addToDebugLog(`✅ Loaded ${visualRules.length} rules: ${defaultCount} default, ${customCount} custom`);
       addToDebugLog(`📋 Rule IDs: ${visualRules.map(r => `${r.id}(${r.ruleSource})`).join(', ')}`);
       
     } catch (error: any) {
-      console.error('❌ CONSOLE: Failed to load rules:', error);
       addToDebugLog(`❌ Failed to load rules: ${error.message}`);
       setMigrationRules([]);
     }
