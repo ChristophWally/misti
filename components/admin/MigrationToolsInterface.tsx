@@ -2401,6 +2401,7 @@ export default function MigrationToolsInterface() {
         .from('custom_migration_rules')
         .select('*')
         .eq('status', 'active')
+        .not('tags', 'cs', '{default-rule}')  // Exclude default rules
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -2408,7 +2409,7 @@ export default function MigrationToolsInterface() {
       }
       
       setSavedCustomRules(data || []);
-      addToDebugLog(`✅ Loaded ${data?.length || 0} saved custom rules`);
+      addToDebugLog(`✅ Loaded ${data?.length || 0} saved custom rules (excluding defaults)`);
       
     } catch (error: any) {
       addToDebugLog(`❌ Failed to load saved rules: ${error.message}`);
@@ -2580,6 +2581,93 @@ export default function MigrationToolsInterface() {
     if (rule) {
       setMigrationRules(prev => prev.filter(r => r.id !== ruleId));
       addToDebugLog(`🗑️ Deleted rule from session: ${rule.title}`);
+    }
+  };
+
+  // Convert custom rule to default rule
+  const convertToDefaultRule = async (ruleId: string) => {
+    try {
+      // First get the current rule
+      const { data: rule, error: fetchError } = await supabase
+        .from('custom_migration_rules')
+        .select('tags')
+        .eq('rule_id', ruleId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Add 'default-rule' tag if not already present
+      const currentTags = rule.tags || [];
+      if (!currentTags.includes('default-rule')) {
+        const newTags = [...currentTags, 'default-rule'];
+        
+        const { error } = await supabase
+          .from('custom_migration_rules')
+          .update({ 
+            tags: newTags,
+            updated_at: new Date().toISOString()
+          })
+          .eq('rule_id', ruleId);
+
+        if (error) throw error;
+      }
+
+      addToDebugLog(`✅ Converted rule ${ruleId} to default rule`);
+      await Promise.all([loadMigrationRules(), loadSavedCustomRules()]);
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to convert to default rule: ${error.message}`);
+    }
+  };
+
+  // Convert default rule to custom rule
+  const convertToCustomRule = async (ruleId: string) => {
+    try {
+      // First get the current rule
+      const { data: rule, error: fetchError } = await supabase
+        .from('custom_migration_rules')
+        .select('tags')
+        .eq('rule_id', ruleId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Remove 'default-rule' tag
+      const currentTags = rule.tags || [];
+      const newTags = currentTags.filter(tag => tag !== 'default-rule');
+      
+      const { error } = await supabase
+        .from('custom_migration_rules')
+        .update({ 
+          tags: newTags,
+          updated_at: new Date().toISOString()
+        })
+        .eq('rule_id', ruleId);
+
+      if (error) throw error;
+
+      addToDebugLog(`✅ Converted rule ${ruleId} to custom rule`);
+      await Promise.all([loadMigrationRules(), loadSavedCustomRules()]);
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to convert to custom rule: ${error.message}`);
+    }
+  };
+
+  // Load all saved custom rules into active rules
+  const loadAllSavedRules = async () => {
+    try {
+      addToDebugLog('📤 Loading all saved custom rules...');
+      const customRules = savedCustomRules.filter(rule => !rule.tags?.includes('default-rule'));
+      
+      for (const rule of customRules) {
+        await loadCustomRule(rule);
+      }
+      
+      addToDebugLog(`✅ Loaded ${customRules.length} custom rules`);
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load all saved rules: ${error.message}`);
     }
   };
 
@@ -3209,26 +3297,32 @@ export default function MigrationToolsInterface() {
                         >
                           💾
                         </button>
-                        <button
-                          onClick={() => {
-                            if (rule.ruleSource === 'default') {
-                              addToDebugLog(`⚠️ Cannot permanently delete default rule: ${rule.title}`);
-                            } else {
-                              deleteRuleFromSession(rule.id);
-                            }
-                          }}
-                          className={`text-xs py-2 px-1 border rounded ${
-                            rule.ruleSource === 'default' 
-                              ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
-                              : 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100'
-                          }`}
-                          title={rule.ruleSource === 'default' 
-                            ? 'Default rules cannot be permanently deleted' 
-                            : 'Delete Rule'
-                          }
-                        >
-                          🗑️
-                        </button>
+                        {rule.ruleSource === 'default' ? (
+                          <button
+                            onClick={() => convertToCustomRule(rule.id)}
+                            className="text-xs py-2 px-1 border border-orange-300 rounded text-orange-700 bg-orange-50 hover:bg-orange-100"
+                            title="Convert to Custom Rule"
+                          >
+                            ⚡ Custom
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => convertToDefaultRule(rule.id)}
+                              className="text-xs py-2 px-1 border border-blue-300 rounded text-blue-700 bg-blue-50 hover:bg-blue-100"
+                              title="Convert to Default Rule"
+                            >
+                              🔧 Default
+                            </button>
+                            <button
+                              onClick={() => deleteRuleFromSession(rule.id)}
+                              className="text-xs py-2 px-1 border border-red-300 rounded text-red-700 bg-red-50 hover:bg-red-100"
+                              title="Delete Rule"
+                            >
+                              🗑️
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => handleExecuteRule(rule)}
                           disabled={rule.status === 'executing' || rule.status === 'completed'}
@@ -3362,6 +3456,13 @@ export default function MigrationToolsInterface() {
                           title="Save Rule"
                         >
                           💾
+                        </button>
+                        <button
+                          onClick={() => convertToDefaultRule(rule.id)}
+                          className="text-xs py-2 px-1 border border-blue-300 rounded text-blue-700 bg-blue-50 hover:bg-blue-100"
+                          title="Convert to Default Rule"
+                        >
+                          🔧 Default
                         </button>
                         <button
                           onClick={() => deleteRuleFromSession(rule.id)}
@@ -4651,13 +4752,22 @@ export default function MigrationToolsInterface() {
             )}
             
             <div className="flex justify-between items-center mt-6">
-              <button
-                onClick={loadSavedCustomRules}
-                disabled={isLoadingSavedRules}
-                className="px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
-              >
-                🔄 Refresh
-              </button>
+              <div className="space-x-2">
+                <button
+                  onClick={loadSavedCustomRules}
+                  disabled={isLoadingSavedRules}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                >
+                  🔄 Refresh
+                </button>
+                <button
+                  onClick={loadAllSavedRules}
+                  disabled={isLoadingSavedRules || savedCustomRules.length === 0}
+                  className="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  📤 Load All
+                </button>
+              </div>
               <button
                 onClick={() => setShowLoadRulesModal(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
