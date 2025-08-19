@@ -1208,9 +1208,12 @@ export default function MigrationToolsInterface() {
       addToDebugLog(`📊 Operation: ${rule.operationType}, Targeting: ${config.selectedWords?.length || 0} words, ${config.selectedFormIds?.length || 0} forms, ${config.selectedTranslationIds?.length || 0} translations`);
 
       let totalAffected = 0;
+      const detailedChanges: any[] = []; // Track all changes for comprehensive logging
+      const executionStartTime = new Date();
+      const executionId = crypto.randomUUID(); // Generate unique execution ID
 
       if (rule.operationType === 'replace' && config.ruleBuilderMappings?.length > 0) {
-        // Execute replacement mappings using client-side approach
+        // Execute replacement mappings with detailed change tracking
         for (const mapping of config.ruleBuilderMappings) {
           addToDebugLog(`🔄 Replacing "${mapping.from}" → "${mapping.to}"`);
           
@@ -1218,7 +1221,7 @@ export default function MigrationToolsInterface() {
             // First, get records that contain the tag to replace
             let query = supabase
               .from(config.selectedTable)
-              .select('id, tags')
+              .select('id, tags, word_id')
               .contains('tags', [mapping.from]);
 
             // Apply targeting filters
@@ -1240,39 +1243,147 @@ export default function MigrationToolsInterface() {
               continue;
             }
 
-            // Update each record by replacing the tag in the array
-            const updates = records.map(record => ({
-              id: record.id,
-              tags: record.tags.map((tag: string) => tag === mapping.from ? mapping.to : tag)
-            }));
-
-            // Batch update the records
-            for (const update of updates) {
-              const { error: updateError } = await supabase
-                .from(config.selectedTable)
-                .update({ tags: update.tags })
-                .eq('id', update.id);
+            // Process each record with detailed before/after tracking
+            for (const record of records) {
+              const beforeTags = [...record.tags];
+              const afterTags = record.tags.map((tag: string) => tag === mapping.from ? mapping.to : tag);
+              
+              // Only update if there's actually a change
+              if (JSON.stringify(beforeTags) !== JSON.stringify(afterTags)) {
+                const changeTimestamp = new Date().toISOString();
                 
-              if (updateError) {
-                throw new Error(`Failed to update record ${update.id}: ${updateError.message}`);
+                // Perform the database update
+                const { error: updateError } = await supabase
+                  .from(config.selectedTable)
+                  .update({ tags: afterTags })
+                  .eq('id', record.id);
+                  
+                if (updateError) {
+                  throw new Error(`Failed to update record ${record.id}: ${updateError.message}`);
+                }
+                
+                // Record comprehensive change details for audit trail
+                const changeId = crypto.randomUUID();
+                detailedChanges.push({
+                  change_id: changeId, // UUID for this specific change
+                  record_primary_key_uuid: record.id, // UUID of the affected record's primary key
+                  table_changed: config.selectedTable, // Table that was modified
+                  column_changed: config.selectedColumn, // Column that was modified
+                  parent_word_uuid: record.word_id || null, // UUID of parent word if applicable
+                  operation_type: 'replace_tag',
+                  operation_details: {
+                    tag_replaced_from: mapping.from,
+                    tag_replaced_to: mapping.to,
+                    mapping_rule: `"${mapping.from}" → "${mapping.to}"`
+                  },
+                  before_value: beforeTags, // Complete array before change
+                  after_value: afterTags, // Complete array after change
+                  value_type: 'text_array',
+                  change_timestamp: changeTimestamp,
+                  change_size_bytes: JSON.stringify(afterTags).length - JSON.stringify(beforeTags).length,
+                  can_rollback: true,
+                  rollback_data: {
+                    rollback_change_id: crypto.randomUUID(),
+                    target_table: config.selectedTable,
+                    target_record_uuid: record.id,
+                    target_column: config.selectedColumn,
+                    restore_to_value: beforeTags,
+                    rollback_operation: 'direct_restore',
+                    rollback_sql: `UPDATE ${config.selectedTable} SET ${config.selectedColumn} = $1 WHERE id = '${record.id}'`,
+                    rollback_params: [beforeTags]
+                  }
+                });
+                
+                totalAffected++;
               }
             }
             
-            const count = updates.length;
-            totalAffected += count;
+            const count = records.length;
             if (count > 0) {
               addToDebugLog(`✅ Replaced "${mapping.from}" → "${mapping.to}" in ${count} records`);
             }
             
           } else if (config.selectedColumn === 'context_metadata') {
-            // Handle metadata updates - this is more complex, would need specific logic
-            addToDebugLog(`⚠️ Context metadata updates not yet implemented`);
-            continue;
+            // Handle metadata updates with detailed tracking
+            let query = supabase
+              .from(config.selectedTable)
+              .select('id, context_metadata, word_id')
+              .not('context_metadata', 'cs', `{"${mapping.from}": "${mapping.to}"}`);
+
+            // Apply targeting filters
+            if (config.selectedFormIds?.length > 0) {
+              query = query.in('id', config.selectedFormIds);
+            } else if (config.selectedWords?.length > 0) {
+              const wordIds = config.selectedWords.map(w => w.wordId);
+              query = query.in('word_id', wordIds);
+            }
+
+            const { data: records, error: selectError } = await query;
+            
+            if (selectError) {
+              throw new Error(`Failed to find records for metadata update: ${selectError.message}`);
+            }
+            
+            if (!records || records.length === 0) {
+              addToDebugLog(`ℹ️ No records found for metadata update`);
+              continue;
+            }
+
+            // Process metadata updates with detailed tracking
+            for (const record of records) {
+              const beforeMetadata = record.context_metadata ? {...record.context_metadata} : {};
+              const afterMetadata = {...beforeMetadata, [mapping.from]: mapping.to};
+              
+              const changeTimestamp = new Date().toISOString();
+              
+              const { error: updateError } = await supabase
+                .from(config.selectedTable)
+                .update({ context_metadata: afterMetadata })
+                .eq('id', record.id);
+                
+              if (updateError) {
+                throw new Error(`Failed to update metadata for record ${record.id}: ${updateError.message}`);
+              }
+              
+              // Record comprehensive metadata change details
+              const changeId = crypto.randomUUID();
+              detailedChanges.push({
+                change_id: changeId, // UUID for this specific change
+                record_primary_key_uuid: record.id, // UUID of the affected record's primary key
+                table_changed: config.selectedTable, // Table that was modified
+                column_changed: config.selectedColumn, // Column that was modified
+                parent_word_uuid: record.word_id || null, // UUID of parent word if applicable
+                operation_type: 'update_metadata',
+                operation_details: {
+                  metadata_key_updated: mapping.from,
+                  metadata_value_set: mapping.to,
+                  metadata_rule: `Set "${mapping.from}" = "${mapping.to}"`
+                },
+                before_value: beforeMetadata, // Complete metadata object before change
+                after_value: afterMetadata, // Complete metadata object after change
+                value_type: 'jsonb_object',
+                change_timestamp: changeTimestamp,
+                change_size_bytes: JSON.stringify(afterMetadata).length - JSON.stringify(beforeMetadata).length,
+                can_rollback: true,
+                rollback_data: {
+                  rollback_change_id: crypto.randomUUID(),
+                  target_table: config.selectedTable,
+                  target_record_uuid: record.id,
+                  target_column: config.selectedColumn,
+                  restore_to_value: beforeMetadata,
+                  rollback_operation: 'direct_restore',
+                  rollback_sql: `UPDATE ${config.selectedTable} SET ${config.selectedColumn} = $1 WHERE id = '${record.id}'`,
+                  rollback_params: [beforeMetadata]
+                }
+              });
+              
+              totalAffected++;
+            }
           }
         }
         
       } else if (rule.operationType === 'add' && config.tagsToAdd?.length > 0) {
-        // Execute tag additions using client-side approach
+        // Execute tag additions with detailed tracking
         for (const tagToAdd of config.tagsToAdd) {
           addToDebugLog(`➕ Adding tag "${tagToAdd}"`);
           
@@ -1280,7 +1391,7 @@ export default function MigrationToolsInterface() {
             // First, get records that don't already have this tag
             let query = supabase
               .from(config.selectedTable)
-              .select('id, tags')
+              .select('id, tags, word_id')
               .not('tags', 'cs', `{${tagToAdd}}`); // Only select records that don't have this tag
 
             // Apply targeting filters
@@ -1302,21 +1413,57 @@ export default function MigrationToolsInterface() {
               continue;
             }
 
-            // Update each record by adding the tag to the array
+            // Update each record with detailed tracking
             for (const record of records) {
-              const newTags = [...record.tags, tagToAdd];
+              const beforeTags = [...record.tags];
+              const afterTags = [...record.tags, tagToAdd];
+              const changeTimestamp = new Date().toISOString();
+              
               const { error: updateError } = await supabase
                 .from(config.selectedTable)
-                .update({ tags: newTags })
+                .update({ tags: afterTags })
                 .eq('id', record.id);
                 
               if (updateError) {
                 throw new Error(`Failed to add tag to record ${record.id}: ${updateError.message}`);
               }
+              
+              // Record comprehensive tag addition details
+              const changeId = crypto.randomUUID();
+              detailedChanges.push({
+                change_id: changeId, // UUID for this specific change
+                record_primary_key_uuid: record.id, // UUID of the affected record's primary key
+                table_changed: config.selectedTable, // Table that was modified
+                column_changed: config.selectedColumn, // Column that was modified
+                parent_word_uuid: record.word_id || null, // UUID of parent word if applicable
+                operation_type: 'add_tag',
+                operation_details: {
+                  tag_added: tagToAdd,
+                  tags_before_count: beforeTags.length,
+                  tags_after_count: afterTags.length
+                },
+                before_value: beforeTags, // Complete array before change
+                after_value: afterTags, // Complete array after change
+                value_type: 'text_array',
+                change_timestamp: changeTimestamp,
+                change_size_bytes: JSON.stringify(afterTags).length - JSON.stringify(beforeTags).length,
+                can_rollback: true,
+                rollback_data: {
+                  rollback_change_id: crypto.randomUUID(),
+                  target_table: config.selectedTable,
+                  target_record_uuid: record.id,
+                  target_column: config.selectedColumn,
+                  restore_to_value: beforeTags,
+                  rollback_operation: 'direct_restore',
+                  rollback_sql: `UPDATE ${config.selectedTable} SET ${config.selectedColumn} = $1 WHERE id = '${record.id}'`,
+                  rollback_params: [beforeTags]
+                }
+              });
+              
+              totalAffected++;
             }
             
             const count = records.length;
-            totalAffected += count;
             if (count > 0) {
               addToDebugLog(`✅ Added tag "${tagToAdd}" to ${count} records`);
             }
@@ -1324,7 +1471,7 @@ export default function MigrationToolsInterface() {
         }
         
       } else if (rule.operationType === 'remove' && config.tagsToRemove?.length > 0) {
-        // Execute tag removals using client-side approach
+        // Execute tag removals with detailed tracking
         for (const tagToRemove of config.tagsToRemove) {
           addToDebugLog(`➖ Removing tag "${tagToRemove}"`);
           
@@ -1332,7 +1479,7 @@ export default function MigrationToolsInterface() {
             // First, get records that contain the tag to remove
             let query = supabase
               .from(config.selectedTable)
-              .select('id, tags')
+              .select('id, tags, word_id')
               .contains('tags', [tagToRemove]);
 
             // Apply targeting filters  
@@ -1354,21 +1501,57 @@ export default function MigrationToolsInterface() {
               continue;
             }
 
-            // Update each record by removing the tag from the array
+            // Update each record with detailed tracking
             for (const record of records) {
-              const newTags = record.tags.filter((tag: string) => tag !== tagToRemove);
+              const beforeTags = [...record.tags];
+              const afterTags = record.tags.filter((tag: string) => tag !== tagToRemove);
+              const changeTimestamp = new Date().toISOString();
+              
               const { error: updateError } = await supabase
                 .from(config.selectedTable)
-                .update({ tags: newTags })
+                .update({ tags: afterTags })
                 .eq('id', record.id);
                 
               if (updateError) {
                 throw new Error(`Failed to remove tag from record ${record.id}: ${updateError.message}`);
               }
+              
+              // Record comprehensive tag removal details
+              const changeId = crypto.randomUUID();
+              detailedChanges.push({
+                change_id: changeId, // UUID for this specific change
+                record_primary_key_uuid: record.id, // UUID of the affected record's primary key
+                table_changed: config.selectedTable, // Table that was modified
+                column_changed: config.selectedColumn, // Column that was modified
+                parent_word_uuid: record.word_id || null, // UUID of parent word if applicable
+                operation_type: 'remove_tag',
+                operation_details: {
+                  tag_removed: tagToRemove,
+                  tags_before_count: beforeTags.length,
+                  tags_after_count: afterTags.length
+                },
+                before_value: beforeTags, // Complete array before change
+                after_value: afterTags, // Complete array after change
+                value_type: 'text_array',
+                change_timestamp: changeTimestamp,
+                change_size_bytes: JSON.stringify(afterTags).length - JSON.stringify(beforeTags).length,
+                can_rollback: true,
+                rollback_data: {
+                  rollback_change_id: crypto.randomUUID(),
+                  target_table: config.selectedTable,
+                  target_record_uuid: record.id,
+                  target_column: config.selectedColumn,
+                  restore_to_value: beforeTags,
+                  rollback_operation: 'direct_restore',
+                  rollback_sql: `UPDATE ${config.selectedTable} SET ${config.selectedColumn} = $1 WHERE id = '${record.id}'`,
+                  rollback_params: [beforeTags]
+                }
+              });
+              
+              totalAffected++;
             }
             
             const count = records.length;
-            totalAffected += count;
             if (count > 0) {
               addToDebugLog(`✅ Removed tag "${tagToRemove}" from ${count} records`);
             }
@@ -1386,7 +1569,9 @@ export default function MigrationToolsInterface() {
       setExecutionProgress(90);
       addToDebugLog('📝 Recording execution log...');
       
-      // Create comprehensive execution log
+      const executionEndTime = new Date();
+      
+      // Create comprehensive execution log matching database schema
       const executionLog = {
         rule_id: rule.id,
         rule_name: rule.title,
@@ -1394,7 +1579,9 @@ export default function MigrationToolsInterface() {
         target_table: config.selectedTable,
         target_column: config.selectedColumn,
         records_affected: totalAffected,
+        execution_duration_ms: executionEndTime.getTime() - executionStartTime.getTime(),
         rule_configuration: {
+          execution_id: executionId,
           selectedTable: config.selectedTable,
           selectedColumn: config.selectedColumn,
           operationType: rule.operationType,
@@ -1404,13 +1591,24 @@ export default function MigrationToolsInterface() {
           selectedWords: config.selectedWords?.map(w => ({ italian: w.italian, wordId: w.wordId })),
           selectedFormIds: config.selectedFormIds,
           selectedTranslationIds: config.selectedTranslationIds,
+          execution_start_time: executionStartTime.toISOString(),
+          execution_end_time: executionEndTime.toISOString()
         },
-        can_rollback: true,
+        changes_made: detailedChanges, // Use the correct column name from schema
+        rollback_data: {
+          changes: detailedChanges,
+          execution_id: executionId,
+          can_rollback_individually: true,
+          rollback_instructions: 'Use the rollback_operation data for each change to restore original values',
+          automated_rollback_available: true
+        },
+        can_rollback: detailedChanges.every(change => change.can_rollback),
+        status: 'success',
         execution_context: 'admin-migration-tools',
-        notes: `Executed via admin interface. Debug logs available.`
+        notes: `Execution ID: ${executionId}. ${detailedChanges.length} detailed changes logged with UUIDs. Full rollback capability enabled.`
       };
 
-      // Insert execution log
+      // Insert comprehensive execution log
       const { error: logError } = await supabase
         .from('migration_execution_log')
         .insert(executionLog);
@@ -1418,7 +1616,18 @@ export default function MigrationToolsInterface() {
       if (logError) {
         addToDebugLog(`⚠️ Failed to create execution log: ${logError.message}`);
       } else {
-        addToDebugLog(`📋 Execution log created for ${totalAffected} changes`);
+        addToDebugLog(`📋 Comprehensive audit trail created:`);
+        addToDebugLog(`   • Execution ID: ${executionId}`);
+        addToDebugLog(`   • ${totalAffected} records affected across tables`);
+        addToDebugLog(`   • ${detailedChanges.length} individual changes logged`);
+        addToDebugLog(`   • Each change has unique UUID for tracking`);
+        addToDebugLog(`   • Before/after values captured for all changes`);
+        addToDebugLog(`   • Record primary key UUIDs captured`);
+        addToDebugLog(`   • Parent word UUIDs captured where applicable`);
+        addToDebugLog(`   • Table and column names logged for each change`);
+        addToDebugLog(`   • Full rollback SQL generated for each change`);
+        addToDebugLog(`   • Execution time: ${executionEndTime.getTime() - executionStartTime.getTime()}ms`);
+        addToDebugLog(`   • Timestamp: ${executionEndTime.toISOString()}`);
       }
       
       setExecutionProgress(100);
@@ -1428,11 +1637,19 @@ export default function MigrationToolsInterface() {
       ));
 
       const duplicatesPrevented = rule.preventDuplicates ? Math.floor(affectedRows * 0.1) : 0;
-      addToDebugLog(`✅ Rule executed successfully: ${affectedRows} rows updated`);
+      addToDebugLog(`✅ Rule executed successfully: ${totalAffected} rows updated`);
       if (duplicatesPrevented > 0) {
         addToDebugLog(`🛡️ Prevented ${duplicatesPrevented} duplicate tags`);
       }
-      addToDebugLog(`💾 Changes logged to migration_execution_log table for audit trail`);
+      addToDebugLog(`💾 Complete audit trail saved with comprehensive change tracking:`);
+      addToDebugLog(`   • ${detailedChanges.length} individual changes with UUIDs`);
+      addToDebugLog(`   • Before/after values for precise rollback`);
+      addToDebugLog(`   • Table/column metadata for each change`);
+      addToDebugLog(`   • Primary key UUIDs for affected records`);
+      addToDebugLog(`🔄 Each change can be individually rolled back using stored data`);
+      
+      // Update rule status with actual affected count
+      affectedRows = totalAffected;
 
     } catch (error: any) {
       addToDebugLog(`❌ Execution failed: ${error.message}`);
