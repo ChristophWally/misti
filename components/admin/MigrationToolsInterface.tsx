@@ -1256,17 +1256,15 @@ export default function MigrationToolsInterface() {
       let totalAffected = 0;
 
       if (rule.operationType === 'replace' && config.ruleBuilderMappings?.length > 0) {
-        // Execute replacement mappings
+        // Execute replacement mappings using client-side approach
         for (const mapping of config.ruleBuilderMappings) {
           addToDebugLog(`🔄 Replacing "${mapping.from}" → "${mapping.to}"`);
           
           if (config.selectedColumn === 'tags') {
-            // Build the query with proper chaining - update first, then filters
+            // First, get records that contain the tag to replace
             let query = supabase
               .from(config.selectedTable)
-              .update({
-                tags: supabase.sql`array_replace(tags, ${mapping.from}, ${mapping.to})`
-              })
+              .select('id, tags')
               .contains('tags', [mapping.from]);
 
             // Apply targeting filters
@@ -1277,13 +1275,36 @@ export default function MigrationToolsInterface() {
               query = query.in('word_id', wordIds);
             }
 
-            const { data: result, error } = await query.select('id');
+            const { data: records, error: selectError } = await query;
             
-            if (error) {
-              throw new Error(`Failed to replace "${mapping.from}" with "${mapping.to}": ${error.message}`);
+            if (selectError) {
+              throw new Error(`Failed to find records with tag "${mapping.from}": ${selectError.message}`);
             }
             
-            const count = result?.length || 0;
+            if (!records || records.length === 0) {
+              addToDebugLog(`ℹ️ No records found with tag "${mapping.from}"`);
+              continue;
+            }
+
+            // Update each record by replacing the tag in the array
+            const updates = records.map(record => ({
+              id: record.id,
+              tags: record.tags.map((tag: string) => tag === mapping.from ? mapping.to : tag)
+            }));
+
+            // Batch update the records
+            for (const update of updates) {
+              const { error: updateError } = await supabase
+                .from(config.selectedTable)
+                .update({ tags: update.tags })
+                .eq('id', update.id);
+                
+              if (updateError) {
+                throw new Error(`Failed to update record ${update.id}: ${updateError.message}`);
+              }
+            }
+            
+            const count = updates.length;
             totalAffected += count;
             if (count > 0) {
               addToDebugLog(`✅ Replaced "${mapping.from}" → "${mapping.to}" in ${count} records`);
@@ -1297,18 +1318,16 @@ export default function MigrationToolsInterface() {
         }
         
       } else if (rule.operationType === 'add' && config.tagsToAdd?.length > 0) {
-        // Execute tag additions
+        // Execute tag additions using client-side approach
         for (const tagToAdd of config.tagsToAdd) {
           addToDebugLog(`➕ Adding tag "${tagToAdd}"`);
           
           if (config.selectedColumn === 'tags') {
-            // Build the query with proper chaining - update first, then filters
+            // First, get records that don't already have this tag
             let query = supabase
               .from(config.selectedTable)
-              .update({
-                tags: supabase.sql`array_append(tags, ${tagToAdd})`
-              })
-              .not('tags', 'cs', `{${tagToAdd}}`); // Only add if not already present
+              .select('id, tags')
+              .not('tags', 'cs', `{${tagToAdd}}`); // Only select records that don't have this tag
 
             // Apply targeting filters
             if (config.selectedFormIds?.length > 0) {
@@ -1318,13 +1337,31 @@ export default function MigrationToolsInterface() {
               query = query.in('word_id', wordIds);
             }
 
-            const { data: result, error } = await query.select('id');
+            const { data: records, error: selectError } = await query;
             
-            if (error) {
-              throw new Error(`Failed to add tag "${tagToAdd}": ${error.message}`);
+            if (selectError) {
+              throw new Error(`Failed to find records for adding tag "${tagToAdd}": ${selectError.message}`);
             }
             
-            const count = result?.length || 0;
+            if (!records || records.length === 0) {
+              addToDebugLog(`ℹ️ No records found to add tag "${tagToAdd}"`);
+              continue;
+            }
+
+            // Update each record by adding the tag to the array
+            for (const record of records) {
+              const newTags = [...record.tags, tagToAdd];
+              const { error: updateError } = await supabase
+                .from(config.selectedTable)
+                .update({ tags: newTags })
+                .eq('id', record.id);
+                
+              if (updateError) {
+                throw new Error(`Failed to add tag to record ${record.id}: ${updateError.message}`);
+              }
+            }
+            
+            const count = records.length;
             totalAffected += count;
             if (count > 0) {
               addToDebugLog(`✅ Added tag "${tagToAdd}" to ${count} records`);
@@ -1333,17 +1370,15 @@ export default function MigrationToolsInterface() {
         }
         
       } else if (rule.operationType === 'remove' && config.tagsToRemove?.length > 0) {
-        // Execute tag removals
+        // Execute tag removals using client-side approach
         for (const tagToRemove of config.tagsToRemove) {
           addToDebugLog(`➖ Removing tag "${tagToRemove}"`);
           
           if (config.selectedColumn === 'tags') {
-            // Build the query with proper chaining - update first, then filters
+            // First, get records that contain the tag to remove
             let query = supabase
               .from(config.selectedTable)
-              .update({
-                tags: supabase.sql`array_remove(tags, ${tagToRemove})`
-              })
+              .select('id, tags')
               .contains('tags', [tagToRemove]);
 
             // Apply targeting filters  
@@ -1354,13 +1389,31 @@ export default function MigrationToolsInterface() {
               query = query.in('word_id', wordIds);
             }
 
-            const { data: result, error } = await query.select('id');
+            const { data: records, error: selectError } = await query;
             
-            if (error) {
-              throw new Error(`Failed to remove tag "${tagToRemove}": ${error.message}`);
+            if (selectError) {
+              throw new Error(`Failed to find records with tag "${tagToRemove}": ${selectError.message}`);
             }
             
-            const count = result?.length || 0;
+            if (!records || records.length === 0) {
+              addToDebugLog(`ℹ️ No records found with tag "${tagToRemove}"`);
+              continue;
+            }
+
+            // Update each record by removing the tag from the array
+            for (const record of records) {
+              const newTags = record.tags.filter((tag: string) => tag !== tagToRemove);
+              const { error: updateError } = await supabase
+                .from(config.selectedTable)
+                .update({ tags: newTags })
+                .eq('id', record.id);
+                
+              if (updateError) {
+                throw new Error(`Failed to remove tag from record ${record.id}: ${updateError.message}`);
+              }
+            }
+            
+            const count = records.length;
             totalAffected += count;
             if (count > 0) {
               addToDebugLog(`✅ Removed tag "${tagToRemove}" from ${count} records`);
