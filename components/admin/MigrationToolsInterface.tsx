@@ -1308,7 +1308,7 @@ export default function MigrationToolsInterface() {
     // Fallback for default rules without stored config
     switch (rule.id) {
       case 'italian-to-universal-terminology':
-        setRuleBuilderMappings([
+        const italianMappings = [
           { id: '1', from: 'io', to: 'prima-persona' },
           { id: '2', from: 'tu', to: 'seconda-persona' },
           { id: '3', from: 'lui', to: 'terza-persona' },
@@ -1316,25 +1316,31 @@ export default function MigrationToolsInterface() {
           { id: '5', from: 'noi', to: 'prima-persona' },
           { id: '6', from: 'voi', to: 'seconda-persona' },
           { id: '7', from: 'loro', to: 'terza-persona' }
-        ]);
+        ];
+        setRuleBuilderMappings(italianMappings);
+        setSelectedTagsForMigration(italianMappings.map(m => m.from)); // Add the "from" tags!
         setTagsToRemove([]);
         break;
 
       case 'cleanup-deprecated-tags':
-        setRuleBuilderMappings([
+        const deprecatedMappings = [
           { id: '1', from: 'past-participle', to: 'participio-passato' },
           { id: '2', from: 'gerund', to: 'gerundio' },
           { id: '3', from: 'infinitive', to: 'infinito' }
-        ]);
+        ];
+        setRuleBuilderMappings(deprecatedMappings);
+        setSelectedTagsForMigration(deprecatedMappings.map(m => m.from)); // Add the "from" tags!
         setTagsToRemove([]);
         break;
 
       case 'standardize-auxiliary-tag-format':
-        setRuleBuilderMappings([
+        const auxiliaryMappings = [
           { id: '1', from: 'auxiliary-essere', to: 'essere-auxiliary' },
           { id: '2', from: 'auxiliary-avere', to: 'avere-auxiliary' },
           { id: '3', from: 'auxiliary-stare', to: 'stare-auxiliary' }
-        ]);
+        ];
+        setRuleBuilderMappings(auxiliaryMappings);
+        setSelectedTagsForMigration(auxiliaryMappings.map(m => m.from)); // Add the "from" tags!
         setTagsToRemove([]);
         break;
 
