@@ -1260,38 +1260,39 @@ export default function MigrationToolsInterface() {
         for (const mapping of config.ruleBuilderMappings) {
           addToDebugLog(`🔄 Replacing "${mapping.from}" → "${mapping.to}"`);
           
-          let query = supabase.from(config.selectedTable);
-          
           if (config.selectedColumn === 'tags') {
-            // Handle array tag replacements
-            query = query.update({
-              tags: supabase.sql`array_replace(tags, ${mapping.from}, ${mapping.to})`
-            }).contains('tags', [mapping.from]);
+            // Build the query with proper chaining - update first, then filters
+            let query = supabase
+              .from(config.selectedTable)
+              .update({
+                tags: supabase.sql`array_replace(tags, ${mapping.from}, ${mapping.to})`
+              })
+              .contains('tags', [mapping.from]);
+
+            // Apply targeting filters
+            if (config.selectedFormIds?.length > 0) {
+              query = query.in('id', config.selectedFormIds);
+            } else if (config.selectedWords?.length > 0) {
+              const wordIds = config.selectedWords.map(w => w.wordId);
+              query = query.in('word_id', wordIds);
+            }
+
+            const { data: result, error } = await query.select('id');
+            
+            if (error) {
+              throw new Error(`Failed to replace "${mapping.from}" with "${mapping.to}": ${error.message}`);
+            }
+            
+            const count = result?.length || 0;
+            totalAffected += count;
+            if (count > 0) {
+              addToDebugLog(`✅ Replaced "${mapping.from}" → "${mapping.to}" in ${count} records`);
+            }
             
           } else if (config.selectedColumn === 'context_metadata') {
             // Handle metadata updates - this is more complex, would need specific logic
             addToDebugLog(`⚠️ Context metadata updates not yet implemented`);
             continue;
-          }
-
-          // Apply targeting filters
-          if (config.selectedFormIds?.length > 0) {
-            query = query.in('id', config.selectedFormIds);
-          } else if (config.selectedWords?.length > 0) {
-            const wordIds = config.selectedWords.map(w => w.wordId);
-            query = query.in('word_id', wordIds);
-          }
-
-          const { data: result, error } = await query.select('id');
-          
-          if (error) {
-            throw new Error(`Failed to replace "${mapping.from}" with "${mapping.to}": ${error.message}`);
-          }
-          
-          const count = result?.length || 0;
-          totalAffected += count;
-          if (count > 0) {
-            addToDebugLog(`✅ Replaced "${mapping.from}" → "${mapping.to}" in ${count} records`);
           }
         }
         
@@ -1300,32 +1301,34 @@ export default function MigrationToolsInterface() {
         for (const tagToAdd of config.tagsToAdd) {
           addToDebugLog(`➕ Adding tag "${tagToAdd}"`);
           
-          let query = supabase.from(config.selectedTable);
-          
           if (config.selectedColumn === 'tags') {
-            query = query.update({
-              tags: supabase.sql`array_append(tags, ${tagToAdd})`
-            }).not('tags', 'cs', `{${tagToAdd}}`); // Only add if not already present
-          }
+            // Build the query with proper chaining - update first, then filters
+            let query = supabase
+              .from(config.selectedTable)
+              .update({
+                tags: supabase.sql`array_append(tags, ${tagToAdd})`
+              })
+              .not('tags', 'cs', `{${tagToAdd}}`); // Only add if not already present
 
-          // Apply targeting filters
-          if (config.selectedFormIds?.length > 0) {
-            query = query.in('id', config.selectedFormIds);
-          } else if (config.selectedWords?.length > 0) {
-            const wordIds = config.selectedWords.map(w => w.wordId);
-            query = query.in('word_id', wordIds);
-          }
+            // Apply targeting filters
+            if (config.selectedFormIds?.length > 0) {
+              query = query.in('id', config.selectedFormIds);
+            } else if (config.selectedWords?.length > 0) {
+              const wordIds = config.selectedWords.map(w => w.wordId);
+              query = query.in('word_id', wordIds);
+            }
 
-          const { data: result, error } = await query.select('id');
-          
-          if (error) {
-            throw new Error(`Failed to add tag "${tagToAdd}": ${error.message}`);
-          }
-          
-          const count = result?.length || 0;
-          totalAffected += count;
-          if (count > 0) {
-            addToDebugLog(`✅ Added tag "${tagToAdd}" to ${count} records`);
+            const { data: result, error } = await query.select('id');
+            
+            if (error) {
+              throw new Error(`Failed to add tag "${tagToAdd}": ${error.message}`);
+            }
+            
+            const count = result?.length || 0;
+            totalAffected += count;
+            if (count > 0) {
+              addToDebugLog(`✅ Added tag "${tagToAdd}" to ${count} records`);
+            }
           }
         }
         
@@ -1334,32 +1337,34 @@ export default function MigrationToolsInterface() {
         for (const tagToRemove of config.tagsToRemove) {
           addToDebugLog(`➖ Removing tag "${tagToRemove}"`);
           
-          let query = supabase.from(config.selectedTable);
-          
           if (config.selectedColumn === 'tags') {
-            query = query.update({
-              tags: supabase.sql`array_remove(tags, ${tagToRemove})`
-            }).contains('tags', [tagToRemove]);
-          }
+            // Build the query with proper chaining - update first, then filters
+            let query = supabase
+              .from(config.selectedTable)
+              .update({
+                tags: supabase.sql`array_remove(tags, ${tagToRemove})`
+              })
+              .contains('tags', [tagToRemove]);
 
-          // Apply targeting filters  
-          if (config.selectedFormIds?.length > 0) {
-            query = query.in('id', config.selectedFormIds);
-          } else if (config.selectedWords?.length > 0) {
-            const wordIds = config.selectedWords.map(w => w.wordId);
-            query = query.in('word_id', wordIds);
-          }
+            // Apply targeting filters  
+            if (config.selectedFormIds?.length > 0) {
+              query = query.in('id', config.selectedFormIds);
+            } else if (config.selectedWords?.length > 0) {
+              const wordIds = config.selectedWords.map(w => w.wordId);
+              query = query.in('word_id', wordIds);
+            }
 
-          const { data: result, error } = await query.select('id');
-          
-          if (error) {
-            throw new Error(`Failed to remove tag "${tagToRemove}": ${error.message}`);
-          }
-          
-          const count = result?.length || 0;
-          totalAffected += count;
-          if (count > 0) {
-            addToDebugLog(`✅ Removed tag "${tagToRemove}" from ${count} records`);
+            const { data: result, error } = await query.select('id');
+            
+            if (error) {
+              throw new Error(`Failed to remove tag "${tagToRemove}": ${error.message}`);
+            }
+            
+            const count = result?.length || 0;
+            totalAffected += count;
+            if (count > 0) {
+              addToDebugLog(`✅ Removed tag "${tagToRemove}" from ${count} records`);
+            }
           }
         }
       } else {
