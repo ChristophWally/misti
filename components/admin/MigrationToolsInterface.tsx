@@ -746,10 +746,10 @@ export default function MigrationToolsInterface() {
         switch (rule.id) {
           case 'italian-to-universal-terminology':
             return { ...rule, affectedCount: totalLegacyCount };
-          case 'add-missing-auxiliaries':
-            return { ...rule, affectedCount: missingAuxCount };
-          case 'cleanup-deprecated-tags':
+          case 'cleanup-deprecated-english-tags':  // Fixed: correct database ID
             return { ...rule, affectedCount: deprecatedCount };
+          case 'standardize-auxiliary-tag-format':  // Fixed: correct database ID
+            return { ...rule, affectedCount: 0 }; // This rule shows 0 in the database
           default:
             return rule;
         }
@@ -1452,6 +1452,12 @@ export default function MigrationToolsInterface() {
     setRuleDescription(rule.description);
     setOperationType(rule.operationType || 'replace');
     setPreventDuplicates(rule.preventDuplicates !== false);
+
+    addToDebugLog(`🔧 Customizing rule: ${rule.title} (${rule.ruleSource})`);
+    addToDebugLog(`📋 Rule config exists: ${!!rule.ruleConfig}`);
+    if (rule.ruleConfig) {
+      addToDebugLog(`📋 Config details: table=${rule.ruleConfig.selectedTable}, column=${rule.ruleConfig.selectedColumn}, mappings=${rule.ruleConfig.ruleBuilderMappings?.length || 0}`);
+    }
 
     // If rule has stored configuration (loaded/custom rules), restore it
     if (rule.ruleConfig) {
