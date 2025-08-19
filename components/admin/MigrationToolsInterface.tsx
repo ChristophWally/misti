@@ -4004,12 +4004,12 @@ export default function MigrationToolsInterface() {
                               <h4 className="text-sm font-medium text-gray-900 mb-2">
                                 Individual Changes ({execution.changes_made.length})
                               </h4>
-                              <div className="max-h-64 overflow-y-auto space-y-2">
-                                {execution.changes_made.slice(0, 10).map((change: any, index: number) => (
+                              <div className="max-h-96 overflow-y-auto space-y-2">
+                                {execution.changes_made.map((change: any, index: number) => (
                                   <div key={change.change_id || index} className="bg-white border border-blue-200 rounded p-2">
                                     <div className="flex items-center justify-between mb-1">
                                       <span className="text-xs font-medium text-blue-900">
-                                        {change.operation_type} on {change.table_changed}.{change.column_changed}
+                                        #{index + 1}: {change.operation_type} on {change.table_changed}.{change.column_changed}
                                       </span>
                                       <span className="text-xs text-blue-600">
                                         {change.change_timestamp ? formatDate(change.change_timestamp) : ''}
@@ -4022,30 +4022,25 @@ export default function MigrationToolsInterface() {
                                     {change.operation_details && (
                                       <div className="text-xs text-gray-600 mt-1">
                                         <div className="font-medium">Operation:</div>
-                                        <div>{JSON.stringify(change.operation_details, null, 2)}</div>
+                                        <div className="text-xs">{JSON.stringify(change.operation_details, null, 2)}</div>
                                       </div>
                                     )}
                                     <div className="grid grid-cols-2 gap-2 mt-2">
                                       <div>
                                         <div className="font-medium text-xs text-red-700">Before:</div>
-                                        <div className="text-xs font-mono bg-red-50 p-1 rounded">
+                                        <div className="text-xs font-mono bg-red-50 p-1 rounded max-h-20 overflow-y-auto">
                                           {JSON.stringify(change.before_value)}
                                         </div>
                                       </div>
                                       <div>
                                         <div className="font-medium text-xs text-green-700">After:</div>
-                                        <div className="text-xs font-mono bg-green-50 p-1 rounded">
+                                        <div className="text-xs font-mono bg-green-50 p-1 rounded max-h-20 overflow-y-auto">
                                           {JSON.stringify(change.after_value)}
                                         </div>
                                       </div>
                                     </div>
                                   </div>
                                 ))}
-                                {execution.changes_made.length > 10 && (
-                                  <div className="text-xs text-gray-500 text-center py-2">
-                                    ... and {execution.changes_made.length - 10} more changes
-                                  </div>
-                                )}
                               </div>
                             </div>
                           )}
