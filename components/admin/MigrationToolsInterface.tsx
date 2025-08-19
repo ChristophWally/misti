@@ -293,8 +293,9 @@ export default function MigrationToolsInterface() {
     setDebugLog(prev => [...prev, `[${timestamp}] ${message}`]);
   }, []);
 
-  // Initialize default migration rules
+  // Initialize migration rules from database
   useEffect(() => {
+    addToDebugLog('🚀 Component mounted - loading migration rules...');
     loadMigrationRules();
     loadTableSchemas();
   }, []);
@@ -609,9 +610,14 @@ export default function MigrationToolsInterface() {
         .eq('status', 'active')
         .order('priority', { ascending: false });
 
-      if (error) throw new Error(`Failed to load rules: ${error.message}`);
+      addToDebugLog(`📡 Database query result: ${rules?.length || 0} rules found`);
+      if (error) {
+        addToDebugLog(`❌ Database error: ${error.message}`);
+        throw new Error(`Failed to load rules: ${error.message}`);
+      }
+      
       if (!rules?.length) {
-        addToDebugLog('⚠️ No active rules found');
+        addToDebugLog('⚠️ No active rules found in database');
         setMigrationRules([]);
         return;
       }
@@ -652,7 +658,12 @@ export default function MigrationToolsInterface() {
       }));
       
       setMigrationRules(visualRules);
-      addToDebugLog(`✅ Loaded ${visualRules.length} rules`);
+      
+      const defaultCount = visualRules.filter(r => r.ruleSource === 'default').length;
+      const customCount = visualRules.filter(r => r.ruleSource === 'custom').length;
+      
+      addToDebugLog(`✅ Loaded ${visualRules.length} rules: ${defaultCount} default, ${customCount} custom`);
+      addToDebugLog(`📋 Rule IDs: ${visualRules.map(r => `${r.id}(${r.ruleSource})`).join(', ')}`);
       
     } catch (error: any) {
       addToDebugLog(`❌ Failed to load rules: ${error.message}`);
