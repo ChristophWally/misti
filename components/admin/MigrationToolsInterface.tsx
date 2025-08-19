@@ -295,7 +295,9 @@ export default function MigrationToolsInterface() {
 
   // Initialize migration rules from database
   useEffect(() => {
+    console.log('🚀 CONSOLE: useEffect triggered - component mounted');
     addToDebugLog('🚀 Component mounted - loading migration rules...');
+    console.log('🚀 CONSOLE: About to call loadMigrationRules()');
     loadMigrationRules();
     loadTableSchemas();
   }, []);
@@ -601,17 +603,21 @@ export default function MigrationToolsInterface() {
   };
 
   const loadMigrationRules = async () => {
+    console.log('🔧 CONSOLE: loadMigrationRules() called');
     addToDebugLog('🔧 Loading migration rules from database...');
     
     try {
+      console.log('🔧 CONSOLE: About to query custom_migration_rules table');
       const { data: rules, error } = await supabase
         .from('custom_migration_rules')
         .select('*')
         .eq('status', 'active')
         .order('priority', { ascending: false });
 
+      console.log('📡 CONSOLE: Database query result:', rules?.length || 0, 'rules found');
       addToDebugLog(`📡 Database query result: ${rules?.length || 0} rules found`);
       if (error) {
+        console.error('❌ CONSOLE: Database error:', error);
         addToDebugLog(`❌ Database error: ${error.message}`);
         throw new Error(`Failed to load rules: ${error.message}`);
       }
@@ -657,15 +663,18 @@ export default function MigrationToolsInterface() {
         }
       }));
       
+      console.log('📦 CONSOLE: About to set visualRules:', visualRules.map(r => ({ id: r.id, title: r.title, ruleSource: r.ruleSource })));
       setMigrationRules(visualRules);
       
       const defaultCount = visualRules.filter(r => r.ruleSource === 'default').length;
       const customCount = visualRules.filter(r => r.ruleSource === 'custom').length;
       
+      console.log(`✅ CONSOLE: Successfully loaded ${visualRules.length} rules: ${defaultCount} default, ${customCount} custom`);
       addToDebugLog(`✅ Loaded ${visualRules.length} rules: ${defaultCount} default, ${customCount} custom`);
       addToDebugLog(`📋 Rule IDs: ${visualRules.map(r => `${r.id}(${r.ruleSource})`).join(', ')}`);
       
     } catch (error: any) {
+      console.error('❌ CONSOLE: Failed to load rules:', error);
       addToDebugLog(`❌ Failed to load rules: ${error.message}`);
       setMigrationRules([]);
     }
@@ -2748,11 +2757,18 @@ export default function MigrationToolsInterface() {
                   Systematic analysis of tag consistency across all tables
                 </p>
               </div>
-              <button
-                onClick={runTagAnalysis}
-                disabled={isAnalyzing}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-              >
+              <div className="space-x-3">
+                <button
+                  onClick={loadMigrationRules}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  🔄 Reload Rules
+                </button>
+                <button
+                  onClick={runTagAnalysis}
+                  disabled={isAnalyzing}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                >
                 {isAnalyzing ? (
                   <>
                     <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
