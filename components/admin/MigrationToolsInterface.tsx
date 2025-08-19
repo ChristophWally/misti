@@ -640,7 +640,7 @@ export default function MigrationToolsInterface() {
             Object.entries(rule.transformation.mappings).map(([from, to], index) => ({
               id: (index + 1).toString(),
               from,
-              to
+              to: to as string
             })) : [],
           tagsToRemove: rule.transformation?.tagsToRemove || [],
           newTagToAdd: rule.transformation?.newTagToAdd || '',
