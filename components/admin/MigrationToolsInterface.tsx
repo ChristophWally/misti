@@ -297,6 +297,14 @@ export default function MigrationToolsInterface() {
     initializeDefaultRules();
     loadTableSchemas();
   }, []);
+  
+  // Debug: Track migration rules changes
+  useEffect(() => {
+    const defaultCount = migrationRules.filter(r => r.ruleSource === 'default').length;
+    const customCount = migrationRules.filter(r => r.ruleSource === 'custom').length;
+    const loadedCount = migrationRules.filter(r => r.ruleSource === 'loaded').length;
+    addToDebugLog(`📊 Rules count - Default: ${defaultCount}, Custom: ${customCount}, Loaded: ${loadedCount}, Total: ${migrationRules.length}`);
+  }, [migrationRules]);
 
   useEffect(() => {
     resetTagLoadingStates();
@@ -579,6 +587,7 @@ export default function MigrationToolsInterface() {
   };
 
   const initializeDefaultRules = () => {
+    addToDebugLog('🔧 Initializing default migration rules...');
     const defaultRules: VisualRule[] = [
       {
         id: 'italian-to-universal-terminology',
@@ -645,6 +654,7 @@ export default function MigrationToolsInterface() {
     ];
     
     setMigrationRules(defaultRules);
+    addToDebugLog(`✅ Initialized ${defaultRules.length} default migration rules`);
   };
 
   const runTagAnalysis = async () => {
