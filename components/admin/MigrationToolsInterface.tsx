@@ -116,6 +116,15 @@ export default function MigrationToolsInterface() {
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [isDebugExpanded, setIsDebugExpanded] = useState(true);
   
+  // Execution History State
+  const [executionHistory, setExecutionHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyDateFilter, setHistoryDateFilter] = useState('');
+  const [historyStatusFilter, setHistoryStatusFilter] = useState('');
+  const [historyTableFilter, setHistoryTableFilter] = useState('');
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+  
   // WYSIWYG Migration State
   const [migrationRules, setMigrationRules] = useState<VisualRule[]>([]);
   const [selectedRule, setSelectedRule] = useState<VisualRule | null>(null);
@@ -2862,6 +2871,182 @@ export default function MigrationToolsInterface() {
     loadSavedCustomRules();
   }, []);
 
+  // Execution History Functions
+  const loadExecutionHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      addToDebugLog('📋 Loading execution history from database...');
+      
+      const { data: history, error } = await supabase
+        .from('migration_execution_log')
+        .select('*')
+        .order('executed_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        throw new Error(`Failed to load execution history: ${error.message}`);
+      }
+
+      setExecutionHistory(history || []);
+      addToDebugLog(`✅ Loaded ${history?.length || 0} execution history entries`);
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load execution history: ${error.message}`);
+      setExecutionHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  // Load execution history when progress tab is first opened
+  useEffect(() => {
+    if (currentTab === 'progress' && executionHistory.length === 0) {
+      loadExecutionHistory();
+    }
+  }, [currentTab]);
+
+  // Filter execution history based on search and filters
+  const filteredExecutionHistory = executionHistory.filter(execution => {
+    // Search filter
+    if (historySearch) {
+      const searchLower = historySearch.toLowerCase();
+      const matchesSearch = 
+        execution.rule_name?.toLowerCase().includes(searchLower) ||
+        execution.rule_id?.toLowerCase().includes(searchLower) ||
+        execution.target_table?.toLowerCase().includes(searchLower) ||
+        execution.target_column?.toLowerCase().includes(searchLower) ||
+        execution.operation_type?.toLowerCase().includes(searchLower);
+      
+      if (!matchesSearch) return false;
+    }
+
+    // Status filter
+    if (historyStatusFilter && execution.status !== historyStatusFilter) {
+      return false;
+    }
+
+    // Table filter
+    if (historyTableFilter && execution.target_table !== historyTableFilter) {
+      return false;
+    }
+
+    // Date filter
+    if (historyDateFilter) {
+      const executionDate = new Date(execution.executed_at);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      switch (historyDateFilter) {
+        case 'today':
+          if (executionDate < today) return false;
+          break;
+        case 'yesterday':
+          if (executionDate < yesterday || executionDate >= today) return false;
+          break;
+        case 'week':
+          if (executionDate < weekAgo) return false;
+          break;
+        case 'month':
+          if (executionDate < monthAgo) return false;
+          break;
+      }
+    }
+
+    return true;
+  });
+
+  // Handle revert execution
+  const handleRevertExecution = async (executionId: string) => {
+    if (!confirm('Are you sure you want to revert this migration? This will undo all changes made by this execution.')) {
+      return;
+    }
+
+    try {
+      addToDebugLog(`🔄 Starting revert for execution: ${executionId}`);
+      
+      // Find the execution
+      const execution = executionHistory.find(e => e.id === executionId);
+      if (!execution) {
+        throw new Error('Execution not found');
+      }
+
+      if (!execution.can_rollback) {
+        throw new Error('This execution cannot be rolled back');
+      }
+
+      // Extract rollback data
+      const rollbackData = execution.rollback_data;
+      if (!rollbackData?.changes || !Array.isArray(rollbackData.changes)) {
+        throw new Error('No rollback data available');
+      }
+
+      addToDebugLog(`📊 Reverting ${rollbackData.changes.length} individual changes...`);
+
+      // Execute rollback for each change in reverse order
+      let revertedCount = 0;
+      const changes = [...rollbackData.changes].reverse(); // Reverse order for rollback
+
+      for (const change of changes) {
+        if (change.rollback_data?.rollback_operation === 'direct_restore') {
+          const { error: revertError } = await supabase
+            .from(change.rollback_data.target_table)
+            .update({ [change.rollback_data.target_column]: change.rollback_data.restore_to_value })
+            .eq('id', change.rollback_data.target_record_uuid);
+
+          if (revertError) {
+            addToDebugLog(`⚠️ Failed to revert change ${change.change_id}: ${revertError.message}`);
+            continue;
+          }
+
+          revertedCount++;
+        }
+      }
+
+      // Mark execution as rolled back
+      const { error: updateError } = await supabase
+        .from('migration_execution_log')
+        .update({ 
+          status: 'rolled_back',
+          rolled_back_at: new Date().toISOString(),
+          notes: `${execution.notes || ''} | REVERTED: ${revertedCount}/${rollbackData.changes.length} changes reverted successfully`
+        })
+        .eq('id', executionId);
+
+      if (updateError) {
+        addToDebugLog(`⚠️ Failed to update execution status: ${updateError.message}`);
+      }
+
+      addToDebugLog(`✅ Revert completed: ${revertedCount}/${rollbackData.changes.length} changes reverted`);
+      
+      // Reload execution history
+      await loadExecutionHistory();
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Revert failed: ${error.message}`);
+      alert(`Failed to revert execution: ${error.message}`);
+    }
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <div className="bg-white shadow rounded-lg">
       {/* Tab Navigation */}
@@ -3608,34 +3793,245 @@ export default function MigrationToolsInterface() {
           </div>
         )}
 
-        {/* Progress Tracking Tab */}
+        {/* Execution History Tab */}
         {currentTab === 'progress' && (
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">Migration Execution History</h3>
-              <p className="text-sm text-gray-600">
-                Track completed migrations and execution history
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Migration Execution History</h3>
+                <p className="text-sm text-gray-600">
+                  Detailed audit trail with searchable logs and revert functionality
+                </p>
+              </div>
+              <button
+                onClick={loadExecutionHistory}
+                disabled={historyLoading}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+              >
+                {historyLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    🔄 Refresh History
+                  </>
+                )}
+              </button>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
+            {/* Search and Filters */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                  <input
+                    type="text"
+                    placeholder="Search rules, tables, operations..."
+                    value={historySearch}
+                    onChange={(e) => setHistorySearch(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  />
                 </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-blue-800">
-                    Migration History Available After Execution
-                  </h3>
-                  <div className="mt-2 text-sm text-blue-700">
-                    <p>
-                      Once you execute migrations, this tab will show detailed execution logs, change tracking, and performance metrics.
-                    </p>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
+                  <select
+                    value={historyDateFilter}
+                    onChange={(e) => setHistoryDateFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  >
+                    <option value="">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last 30 Days</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={historyStatusFilter}
+                    onChange={(e) => setHistoryStatusFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  >
+                    <option value="">All Status</option>
+                    <option value="success">Success</option>
+                    <option value="failed">Failed</option>
+                    <option value="rolled_back">Rolled Back</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Table</label>
+                  <select
+                    value={historyTableFilter}
+                    onChange={(e) => setHistoryTableFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  >
+                    <option value="">All Tables</option>
+                    <option value="word_forms">word_forms</option>
+                    <option value="word_translations">word_translations</option>
+                    <option value="dictionary">dictionary</option>
+                  </select>
                 </div>
               </div>
+            </div>
+
+            {/* Execution History Table */}
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              {filteredExecutionHistory.length === 0 ? (
+                <div className="p-8 text-center">
+                  <div className="text-gray-400 mb-2">
+                    <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 text-sm">
+                    {historyLoading ? 'Loading execution history...' : 
+                     executionHistory.length === 0 ? 'No executions found. Execute a migration rule to see history here.' :
+                     'No executions match your current filters.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {filteredExecutionHistory.map((execution) => (
+                    <div key={execution.id} className="p-4 hover:bg-gray-50">
+                      {/* Execution Summary Row */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-3">
+                            <div className={`flex-shrink-0 w-3 h-3 rounded-full ${
+                              execution.status === 'success' ? 'bg-green-400' :
+                              execution.status === 'failed' ? 'bg-red-400' :
+                              execution.status === 'rolled_back' ? 'bg-yellow-400' : 'bg-gray-400'
+                            }`}></div>
+                            <div className="truncate">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {execution.rule_name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {execution.operation_type?.toUpperCase()} on {execution.target_table}.{execution.target_column} •
+                                {execution.records_affected} records •
+                                {formatDate(execution.executed_at)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            execution.status === 'success' ? 'bg-green-100 text-green-800' :
+                            execution.status === 'failed' ? 'bg-red-100 text-red-800' :
+                            execution.status === 'rolled_back' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {execution.status === 'success' ? '✅ Success' :
+                             execution.status === 'failed' ? '❌ Failed' :
+                             execution.status === 'rolled_back' ? '🔄 Rolled Back' : execution.status}
+                          </span>
+                          {execution.can_rollback && execution.status === 'success' && (
+                            <button
+                              onClick={() => handleRevertExecution(execution.id)}
+                              className="inline-flex items-center px-3 py-1 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100"
+                            >
+                              🔄 Revert
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setExpandedHistoryId(expandedHistoryId === execution.id ? null : execution.id)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            {expandedHistoryId === execution.id ? '▼' : '▶'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Expanded Details */}
+                      {expandedHistoryId === execution.id && (
+                        <div className="mt-4 space-y-4">
+                          {/* Execution Details */}
+                          <div className="bg-gray-50 rounded-lg p-3">
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Execution Details</h4>
+                            <div className="grid grid-cols-2 gap-4 text-xs">
+                              <div>
+                                <span className="font-medium">Rule ID:</span> {execution.rule_id}
+                              </div>
+                              <div>
+                                <span className="font-medium">Duration:</span> {execution.execution_duration_ms}ms
+                              </div>
+                              <div>
+                                <span className="font-medium">Records Affected:</span> {execution.records_affected}
+                              </div>
+                              <div>
+                                <span className="font-medium">Context:</span> {execution.execution_context}
+                              </div>
+                            </div>
+                            {execution.notes && (
+                              <div className="mt-2">
+                                <span className="font-medium text-xs">Notes:</span>
+                                <p className="text-xs text-gray-600 mt-1">{execution.notes}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Individual Changes */}
+                          {execution.changes_made && execution.changes_made.length > 0 && (
+                            <div className="bg-blue-50 rounded-lg p-3">
+                              <h4 className="text-sm font-medium text-gray-900 mb-2">
+                                Individual Changes ({execution.changes_made.length})
+                              </h4>
+                              <div className="max-h-64 overflow-y-auto space-y-2">
+                                {execution.changes_made.slice(0, 10).map((change: any, index: number) => (
+                                  <div key={change.change_id || index} className="bg-white border border-blue-200 rounded p-2">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs font-medium text-blue-900">
+                                        {change.operation_type} on {change.table_changed}.{change.column_changed}
+                                      </span>
+                                      <span className="text-xs text-blue-600">
+                                        {change.change_timestamp ? formatDate(change.change_timestamp) : ''}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      <div className="font-medium">Record UUID:</div>
+                                      <div className="font-mono text-xs break-all">{change.record_primary_key_uuid}</div>
+                                    </div>
+                                    {change.operation_details && (
+                                      <div className="text-xs text-gray-600 mt-1">
+                                        <div className="font-medium">Operation:</div>
+                                        <div>{JSON.stringify(change.operation_details, null, 2)}</div>
+                                      </div>
+                                    )}
+                                    <div className="grid grid-cols-2 gap-2 mt-2">
+                                      <div>
+                                        <div className="font-medium text-xs text-red-700">Before:</div>
+                                        <div className="text-xs font-mono bg-red-50 p-1 rounded">
+                                          {JSON.stringify(change.before_value)}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="font-medium text-xs text-green-700">After:</div>
+                                        <div className="text-xs font-mono bg-green-50 p-1 rounded">
+                                          {JSON.stringify(change.after_value)}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                                {execution.changes_made.length > 10 && (
+                                  <div className="text-xs text-gray-500 text-center py-2">
+                                    ... and {execution.changes_made.length - 10} more changes
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
