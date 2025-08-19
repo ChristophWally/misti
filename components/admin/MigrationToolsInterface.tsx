@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { MigrationRecommendationEngine, MigrationAnalysis, MigrationRecommendation, DataStateAnalysis } from '../../lib/migration/migrationRecommendationEngine';
 
@@ -124,7 +124,6 @@ export default function MigrationToolsInterface() {
   const [previewData, setPreviewData] = useState<any>(null);
   const [executionProgress, setExecutionProgress] = useState<number>(0);
   const [isExecuting, setIsExecuting] = useState(false);
-  const isRestoringRule = useRef(false);
   
   // NEW: Enhanced Rule Builder State
   const [ruleBuilderMappings, setRuleBuilderMappings] = useState<MappingPair[]>([]);
@@ -318,9 +317,9 @@ export default function MigrationToolsInterface() {
   }, [selectedTable, selectedColumn]);
 
   useEffect(() => {
-    // Skip sync during rule restoration to prevent clearing restored configurations
-    if (isRestoringRule.current) {
-      addToDebugLog('⏭️ Skipping mapping sync during rule restoration');
+    // CRITICAL: Skip sync entirely for loaded/custom rules - they have their mappings already set
+    if (selectedRule && (selectedRule.ruleSource === 'loaded' || selectedRule.ruleSource === 'custom')) {
+      addToDebugLog('⏭️ Skipping mapping sync for loaded/custom rule - mappings already configured');
       return;
     }
     
@@ -361,7 +360,7 @@ export default function MigrationToolsInterface() {
         }
       }
     }
-  }, [selectedTagsForMigration, operationType, tagsToRemove]);
+  }, [selectedTagsForMigration, operationType, tagsToRemove, selectedRule]);
 
   useEffect(() => {
     setSelectedFormTags(null);
@@ -1279,10 +1278,7 @@ export default function MigrationToolsInterface() {
     if (rule.ruleConfig) {
       const config = rule.ruleConfig;
       
-      // Set restoration flag to prevent useEffect from clearing configurations
-      isRestoringRule.current = true;
-      
-      // Restore configuration immediately - no setTimeout needed
+      // Restore configuration immediately - useEffect will skip sync for loaded/custom rules
       setSelectedTable(config.selectedTable);
       setSelectedColumn(config.selectedColumn);
       setSelectedTagsForMigration(config.selectedTagsForMigration);
@@ -1302,13 +1298,6 @@ export default function MigrationToolsInterface() {
       setWordTranslationsData(null);
       setSelectedFormTags(null);
       setSelectedTranslationMetadata(null);
-      
-      // Clear restoration flag immediately after state updates are queued
-      // Using setTimeout to ensure state updates are processed first
-      setTimeout(() => {
-        isRestoringRule.current = false;
-        addToDebugLog('✅ Rule restoration complete - mapping sync re-enabled');
-      }, 0);
       
       addToDebugLog(`🔧 Restored rule configuration for: ${rule.title}`);
       addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
