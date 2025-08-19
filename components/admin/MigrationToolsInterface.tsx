@@ -3028,12 +3028,13 @@ export default function MigrationToolsInterface() {
         }
       }
 
-      // Mark execution as rolled back
+      // Mark execution as reverted
       const { error: updateError } = await supabase
         .from('migration_execution_log')
         .update({ 
-          status: 'rolled_back',
-          rolled_back_at: new Date().toISOString(),
+          reverted_at: new Date().toISOString(),
+          reverted_by: 'admin-user', // TODO: Get actual user from session
+          revert_notes: `${revertedCount}/${rollbackData.changes.length} changes reverted successfully`,
           notes: `${execution.notes || ''} | REVERTED: ${revertedCount}/${rollbackData.changes.length} changes reverted successfully`
         })
         .eq('id', executionId);
@@ -3945,15 +3946,17 @@ export default function MigrationToolsInterface() {
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            execution.reverted_at ? 'bg-purple-100 text-purple-800' :
                             execution.status === 'success' ? 'bg-green-100 text-green-800' :
                             execution.status === 'failed' ? 'bg-red-100 text-red-800' :
                             execution.status === 'rolled_back' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {execution.status === 'success' ? '✅ Success' :
+                            {execution.reverted_at ? '↶ Reverted' :
+                             execution.status === 'success' ? '✅ Success' :
                              execution.status === 'failed' ? '❌ Failed' :
                              execution.status === 'rolled_back' ? '🔄 Rolled Back' : execution.status}
                           </span>
-                          {execution.can_rollback && execution.status === 'success' && (
+                          {execution.can_rollback && execution.status === 'success' && !execution.reverted_at && (
                             <button
                               onClick={() => handleRevertExecution(execution.id)}
                               className="inline-flex items-center px-3 py-1 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100"
@@ -3997,6 +4000,27 @@ export default function MigrationToolsInterface() {
                               </div>
                             )}
                           </div>
+
+                          {/* Revert Information */}
+                          {execution.reverted_at && (
+                            <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
+                              <h4 className="text-sm font-medium text-purple-900 mb-2">Revert Information</h4>
+                              <div className="grid grid-cols-2 gap-4 text-xs">
+                                <div>
+                                  <span className="font-medium">Reverted At:</span> {formatDate(execution.reverted_at)}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Reverted By:</span> {execution.reverted_by || 'System'}
+                                </div>
+                              </div>
+                              {execution.revert_notes && (
+                                <div className="mt-2">
+                                  <span className="font-medium text-xs">Revert Notes:</span>
+                                  <p className="text-xs text-purple-700 mt-1">{execution.revert_notes}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           {/* Individual Changes */}
                           {execution.changes_made && execution.changes_made.length > 0 && (
