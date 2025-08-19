@@ -124,6 +124,7 @@ export default function MigrationToolsInterface() {
   const [previewData, setPreviewData] = useState<any>(null);
   const [executionProgress, setExecutionProgress] = useState<number>(0);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [isRestoringRule, setIsRestoringRule] = useState(false);
   
   // NEW: Enhanced Rule Builder State
   const [ruleBuilderMappings, setRuleBuilderMappings] = useState<MappingPair[]>([]);
@@ -317,8 +318,20 @@ export default function MigrationToolsInterface() {
   }, [selectedTable, selectedColumn]);
 
   useEffect(() => {
-    if (selectedTagsForMigration.length > 0 && operationType === 'remove') {
-      setTagsToRemove(selectedTagsForMigration);
+    // Skip sync during rule restoration to prevent clearing restored configurations
+    if (isRestoringRule) {
+      addToDebugLog('⏭️ Skipping mapping sync during rule restoration');
+      return;
+    }
+    
+    if (operationType === 'remove') {
+      // For remove operations, sync selectedTagsForMigration with tagsToRemove
+      if (tagsToRemove.length > 0 && selectedTagsForMigration.length === 0) {
+        setSelectedTagsForMigration(tagsToRemove);
+        addToDebugLog(`🔄 Synced selectedTagsForMigration from tagsToRemove: ${tagsToRemove.join(', ')}`);
+      } else if (selectedTagsForMigration.length > 0) {
+        setTagsToRemove(selectedTagsForMigration);
+      }
     } else if (operationType === 'replace') {
       // For replace operations, sync mappings with selected tags
       if (selectedTagsForMigration.length > 0) {
@@ -348,7 +361,7 @@ export default function MigrationToolsInterface() {
         }
       }
     }
-  }, [selectedTagsForMigration, operationType]);
+  }, [selectedTagsForMigration, operationType, isRestoringRule, tagsToRemove]);
 
   useEffect(() => {
     setSelectedFormTags(null);
@@ -923,9 +936,24 @@ export default function MigrationToolsInterface() {
         : [effectiveConfig?.selectedTable || 'word_forms'];
       
       for (const tableName of tablesToQuery) {
-        // Select appropriate columns first
+        // Select appropriate columns based on table and target column
         const columnToQuery = effectiveConfig?.selectedColumn === 'context_metadata' ? 'context_metadata' : 'tags';
-        let query = supabase.from(tableName).select(`id, word_id, ${columnToQuery}, italian`);
+        
+        // Build column list based on table - only select columns that exist
+        let selectColumns = ['id'];
+        if (tableName === 'dictionary') {
+          selectColumns.push('italian', 'word_type', columnToQuery);
+        } else {
+          // word_forms and word_translations have word_id, not italian directly
+          selectColumns.push('word_id', columnToQuery);
+          if (tableName === 'word_forms') {
+            selectColumns.push('form_text', 'form_type');
+          } else if (tableName === 'word_translations') {
+            selectColumns.push('translation', 'display_priority');
+          }
+        }
+        
+        let query = supabase.from(tableName).select(selectColumns.join(', '));
         
         // Apply word-specific filtering if configured
         if (effectiveConfig?.selectedWords && effectiveConfig.selectedWords.length > 0) {
@@ -1066,7 +1094,13 @@ export default function MigrationToolsInterface() {
                   id: `${tableName}-${record.id}`,
                   table: tableName,
                   record_id: record.id,
-                  word_context: record.italian || `Word ID: ${record.word_id}`,
+                  word_context: tableName === 'dictionary' 
+                    ? record.italian 
+                    : tableName === 'word_forms' 
+                      ? record.form_text || `Form ID: ${record.id}` 
+                      : tableName === 'word_translations'
+                        ? record.translation || `Translation ID: ${record.id}`
+                        : `Record ID: ${record.id}`,
                   before: JSON.stringify(currentTags),
                   after: JSON.stringify(newTags),
                   changes: true
@@ -1078,7 +1112,20 @@ export default function MigrationToolsInterface() {
           // Fallback: try a less restrictive query to get sample records
           addToDebugLog(`🔄 Trying fallback query for ${tableName} without tag filtering`);
           
-          let fallbackQuery = supabase.from(tableName).select(`id, word_id, ${columnToQuery}, italian`);
+          // Use same column selection logic as main query
+          let fallbackSelectColumns = ['id'];
+          if (tableName === 'dictionary') {
+            fallbackSelectColumns.push('italian', 'word_type', columnToQuery);
+          } else {
+            fallbackSelectColumns.push('word_id', columnToQuery);
+            if (tableName === 'word_forms') {
+              fallbackSelectColumns.push('form_text', 'form_type');
+            } else if (tableName === 'word_translations') {
+              fallbackSelectColumns.push('translation', 'display_priority');
+            }
+          }
+          
+          let fallbackQuery = supabase.from(tableName).select(fallbackSelectColumns.join(', '));
           
           // Apply only word filtering for fallback
           if (effectiveConfig?.selectedWords && effectiveConfig.selectedWords.length > 0) {
@@ -1117,7 +1164,13 @@ export default function MigrationToolsInterface() {
                 id: `${tableName}-${record.id}-fallback`,
                 table: tableName,
                 record_id: record.id,
-                word_context: record.italian || `Word ID: ${record.word_id}`,
+                word_context: tableName === 'dictionary' 
+                  ? record.italian 
+                  : tableName === 'word_forms' 
+                    ? record.form_text || `Form ID: ${record.id}` 
+                    : tableName === 'word_translations'
+                      ? record.translation || `Translation ID: ${record.id}`
+                      : `Record ID: ${record.id}`,
                 before: JSON.stringify(currentTags),
                 after: JSON.stringify(newTags),
                 changes: true
@@ -1226,6 +1279,9 @@ export default function MigrationToolsInterface() {
     if (rule.ruleConfig) {
       const config = rule.ruleConfig;
       
+      // Set restoration flag to prevent useEffect from clearing configurations
+      setIsRestoringRule(true);
+      
       // Restore configuration immediately - no setTimeout needed
       setSelectedTable(config.selectedTable);
       setSelectedColumn(config.selectedColumn);
@@ -1246,6 +1302,12 @@ export default function MigrationToolsInterface() {
       setWordTranslationsData(null);
       setSelectedFormTags(null);
       setSelectedTranslationMetadata(null);
+      
+      // Clear restoration flag after a brief delay
+      setTimeout(() => {
+        setIsRestoringRule(false);
+        addToDebugLog('✅ Rule restoration complete - mapping sync re-enabled');
+      }, 100);
       
       addToDebugLog(`🔧 Restored rule configuration for: ${rule.title}`);
       addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
