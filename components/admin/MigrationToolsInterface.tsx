@@ -1696,98 +1696,8 @@ export default function MigrationToolsInterface() {
     if (rule.ruleConfig) {
       let config = rule.ruleConfig;
       
-      // Apply UUID reconstruction if needed (for backward compatibility)
-      if (config.selectedWords && config.selectedWords.length > 0) {
-        const hasRealUUIDs = config.selectedWords.every(word => 
-          word.wordId && word.wordId.length === 36 && word.wordId.includes('-') && !word.wordId.startsWith('word-')
-        );
-        
-        if (!hasRealUUIDs) {
-          addToDebugLog(`🔍 Word card needs UUID reconstruction for ${config.selectedWords.length} words`);
-          
-          try {
-            const wordNames = config.selectedWords.map(w => w.italian).filter(Boolean);
-            if (wordNames.length > 0) {
-              const { data: realWords, error } = await supabase
-                .from('dictionary')
-                .select('id, italian, word_type')
-                .in('italian', wordNames);
-              
-              if (!error && realWords && realWords.length > 0) {
-                const reconstructedWords = realWords.map((word: any) => ({
-                  wordId: word.id,
-                  italian: word.italian,
-                  wordType: word.word_type || 'unknown',
-                  tags: [],
-                  formsCount: 0,
-                  translationsCount: 0
-                }));
-                
-                // Update config with real UUIDs
-                config = {
-                  ...config,
-                  selectedWords: reconstructedWords
-                };
-                
-                addToDebugLog(`✅ Word card UUID reconstruction successful: ${reconstructedWords.length} words`);
-              } else {
-                addToDebugLog(`⚠️ Word card UUID reconstruction failed: ${error?.message || 'no words found'}`);
-              }
-            }
-          } catch (error: any) {
-            addToDebugLog(`❌ Word card UUID reconstruction error: ${error.message}`);
-          }
-        } else {
-          addToDebugLog(`✅ Word card already has real UUIDs`);
-        }
-      } else if ((!config.selectedWords || config.selectedWords.length === 0) && 
-                 config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
-        // Handle case where words are missing but translation IDs exist - reconstruct from translations
-        addToDebugLog(`🔍 Word card missing words but has ${config.selectedTranslationIds.length} translation IDs - reconstructing words from translations`);
-        
-        try {
-          const { data: translations, error } = await supabase
-            .from('word_translations')
-            .select('word_id, translation')
-            .in('id', config.selectedTranslationIds);
-          
-          if (!error && translations && translations.length > 0) {
-            // Get unique word IDs from translations
-            const wordIds = Array.from(new Set(translations.map(t => t.word_id)));
-            
-            // Look up the words
-            const { data: realWords, error: wordError } = await supabase
-              .from('dictionary')
-              .select('id, italian, word_type')
-              .in('id', wordIds);
-            
-            if (!wordError && realWords && realWords.length > 0) {
-              const reconstructedWords = realWords.map((word: any) => ({
-                wordId: word.id,
-                italian: word.italian,
-                wordType: word.word_type || 'unknown',
-                tags: [],
-                formsCount: 0,
-                translationsCount: 0
-              }));
-              
-              // Update config with reconstructed words
-              config = {
-                ...config,
-                selectedWords: reconstructedWords
-              };
-              
-              addToDebugLog(`✅ Word card reconstructed ${reconstructedWords.length} words from translation IDs`);
-            } else {
-              addToDebugLog(`⚠️ Failed to lookup words from translation IDs: ${wordError?.message || 'no words found'}`);
-            }
-          } else {
-            addToDebugLog(`⚠️ Failed to lookup translations: ${error?.message || 'no translations found'}`);
-          }
-        } catch (error: any) {
-          addToDebugLog(`❌ Word reconstruction from translations error: ${error.message}`);
-        }
-      }
+      // SIMPLIFIED: For now, just log what we have and proceed
+      addToDebugLog(`🔍 Config has ${config.selectedWords?.length || 0} words, ${config.selectedTranslationIds?.length || 0} translation IDs`);
       
       // Debug: Log the entire config to see what we're working with
       addToDebugLog(`🔍 FULL CONFIG DEBUG: ${JSON.stringify(config, null, 2)}`);
@@ -1848,62 +1758,8 @@ export default function MigrationToolsInterface() {
       addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
       addToDebugLog(`🏷️ Tags for migration: ${JSON.stringify(config.selectedTagsForMigration)}`);
       
-      // For loaded rules with specific selections, trigger data loading chain
-      if (config.selectedWords && config.selectedWords.length > 0) {
-        addToDebugLog(`🔄 Triggering data loading chain for ${config.selectedWords.length} words...`);
-        
-        // Trigger data loading based on table type
-        setTimeout(async () => {
-          try {
-            addToDebugLog(`🔍 Data loading chain - Table: ${config.selectedTable}, FormIds: ${config.selectedFormIds?.length || 0}, TranslationIds: ${config.selectedTranslationIds?.length || 0}`);
-            
-            if (config.selectedTable === 'word_forms') {
-              addToDebugLog(`📝 Loading word forms data for ${config.selectedWords.length} words...`);
-              await loadWordFormsData(config.selectedWords);
-              
-              // After forms data is loaded, check if specific forms were selected
-              setTimeout(() => {
-                if (config.selectedFormIds && config.selectedFormIds.length > 0) {
-                  addToDebugLog(`📋 Found ${config.selectedFormIds.length} specific form IDs to restore`);
-                  if (config.selectedColumn === 'tags') {
-                    addToDebugLog(`🏷️ Loading selected form tags using CONFIG data...`);
-                    loadSelectedFormTags(config.selectedFormIds);
-                  }
-                } else {
-                  addToDebugLog(`ℹ️ No specific forms selected - forms data loaded for selection`);
-                }
-              }, 100);
-              
-            } else if (config.selectedTable === 'word_translations') {
-              addToDebugLog(`🔄 Loading word translations data for ${config.selectedWords.length} words...`);
-              await loadWordTranslationsData(config.selectedWords);
-              
-              // After translations data is loaded, check if specific translations were selected
-              setTimeout(() => {
-                // Debug: Check both config and current state
-                addToDebugLog(`🔍 Translation check - Config IDs: ${config.selectedTranslationIds?.length || 0}, Current state: ${selectedTranslationIds.length}`);
-                addToDebugLog(`🔍 Config TranslationIds: ${JSON.stringify(config.selectedTranslationIds)}`);
-                addToDebugLog(`🔍 State TranslationIds: ${JSON.stringify(selectedTranslationIds)}`);
-                
-                if (config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
-                  addToDebugLog(`📋 Found ${config.selectedTranslationIds.length} specific translation IDs to restore`);
-                  if (config.selectedColumn === 'context_metadata') {
-                    addToDebugLog(`📊 Loading selected translation metadata using CONFIG data...`);
-                    // Use config data directly instead of potentially stale state
-                    loadSelectedTranslationMetadata(config.selectedTranslationIds);
-                  }
-                } else {
-                  addToDebugLog(`ℹ️ No specific translations selected - translations data loaded for selection`);
-                }
-              }, 100);
-            }
-          } catch (error: any) {
-            addToDebugLog(`❌ Error in data loading chain: ${error.message}`);
-          }
-        }, 200); // Small delay to ensure state updates have processed
-      }
-      
-      return;
+      // SIMPLIFIED: Skip automatic data loading for now - let's see if state setting works
+      addToDebugLog(`🔄 Skipping automatic data loading chain to test state setting only`);
     }
 
     // Fallback for default rules without stored config
