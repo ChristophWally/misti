@@ -2441,8 +2441,9 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const loadSelectedFormTags = (formIds?: string[]) => {
-    const idsToUse = formIds || selectedFormIds;
+  const loadSelectedFormTags = (formIds?: string[] | React.MouseEvent) => {
+    // Handle both function call with IDs and onClick event
+    const idsToUse = Array.isArray(formIds) ? formIds : selectedFormIds;
     
     if (idsToUse.length === 0) {
       addToDebugLog('⚠️ No forms selected for tag loading');
@@ -2470,8 +2471,9 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const loadSelectedTranslationMetadata = (translationIds?: string[]) => {
-    const idsToUse = translationIds || selectedTranslationIds;
+  const loadSelectedTranslationMetadata = (translationIds?: string[] | React.MouseEvent) => {
+    // Handle both function call with IDs and onClick event
+    const idsToUse = Array.isArray(translationIds) ? translationIds : selectedTranslationIds;
     
     if (idsToUse.length === 0) {
       addToDebugLog('⚠️ No translations selected for metadata loading');
