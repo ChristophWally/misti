@@ -27,11 +27,13 @@ interface VisualRule {
   impact: 'high' | 'medium' | 'low';
   status: 'ready' | 'needs-input' | 'executing' | 'completed' | 'failed';
   affectedCount: number;
+  estimatedCount?: number; // Original estimate from database
   autoExecutable: boolean;
   requiresInput: boolean;
   category: 'terminology' | 'metadata' | 'cleanup' | 'custom';
   estimatedTime: string;
   canRollback: boolean;
+  lastRun?: string | null; // Last execution timestamp
   // Enhanced properties
   targetedWords?: string[];
   preventDuplicates?: boolean;
@@ -176,6 +178,8 @@ export default function MigrationToolsInterface() {
   
   // NEW: Custom Rules Persistence State
   const [savedCustomRules, setSavedCustomRules] = useState<any[]>([]);
+  const [archivedRules, setArchivedRules] = useState<any[]>([]);
+  const [showArchivedModal, setShowArchivedModal] = useState(false);
   const [isLoadingSavedRules, setIsLoadingSavedRules] = useState(false);
   const [isSavingRule, setIsSavingRule] = useState(false);
   const [showSaveRuleModal, setShowSaveRuleModal] = useState(false);
@@ -609,6 +613,30 @@ export default function MigrationToolsInterface() {
     }
   };
 
+  // Calculate real-time affected rows for a rule
+  const calculateRealAffectedRows = async (rule: any): Promise<number> => {
+    try {
+      const pattern = rule.pattern;
+      let query = supabase.from(pattern.table).select('id', { count: 'exact' });
+      
+      if (pattern.condition === 'array_contains' && pattern.targetTags?.length > 0) {
+        const searchTerms = pattern.targetTags.map((tag: string) => `${pattern.column}.cs.{"${tag}"}`).join(',');
+        query = query.or(searchTerms);
+      }
+      
+      const { count, error } = await query;
+      if (error) {
+        console.warn(`Failed to calculate affected rows for ${rule.rule_id}:`, error);
+        return rule.estimated_affected_rows || 0;
+      }
+      
+      return count || 0;
+    } catch (error) {
+      console.warn(`Error calculating affected rows for ${rule.rule_id}:`, error);
+      return rule.estimated_affected_rows || 0;
+    }
+  };
+
   const loadMigrationRules = async () => {
     addToDebugLog('🔧 Loading migration rules from database...');
     
@@ -631,17 +659,34 @@ export default function MigrationToolsInterface() {
         return;
       }
 
-      const visualRules: VisualRule[] = rules.map(rule => ({
-        id: rule.rule_id,
-        title: rule.name,
-        description: rule.description,
-        impact: rule.priority === 'critical' ? 'high' : rule.priority as 'high' | 'medium' | 'low',
-        status: rule.auto_executable ? 'ready' : 'needs-input',
-        affectedCount: rule.estimated_affected_rows || 0,
-        autoExecutable: rule.auto_executable,
-        requiresInput: rule.requires_manual_input,
-        category: rule.category as 'terminology' | 'metadata' | 'cleanup' | 'custom',
-        estimatedTime: rule.estimated_execution_time,
+      // Get last execution info for each rule
+      const { data: lastExecutions } = await supabase
+        .from('migration_execution_log')
+        .select('rule_id, executed_at')
+        .order('executed_at', { ascending: false });
+
+      const lastRunMap = new Map();
+      lastExecutions?.forEach(exec => {
+        if (!lastRunMap.has(exec.rule_id)) {
+          lastRunMap.set(exec.rule_id, exec.executed_at);
+        }
+      });
+
+      const visualRules: VisualRule[] = await Promise.all(rules.map(async rule => {
+        const realAffectedCount = await calculateRealAffectedRows(rule);
+        return {
+          id: rule.rule_id,
+          title: rule.name,
+          description: rule.description,
+          impact: rule.priority === 'critical' ? 'high' : rule.priority as 'high' | 'medium' | 'low',
+          status: rule.auto_executable ? 'ready' : 'needs-input',
+          affectedCount: realAffectedCount,
+          estimatedCount: rule.estimated_affected_rows || 0,
+          autoExecutable: rule.auto_executable,
+          requiresInput: rule.requires_manual_input,
+          category: rule.category as 'terminology' | 'metadata' | 'cleanup' | 'custom',
+          estimatedTime: rule.estimated_execution_time,
+          lastRun: lastRunMap.get(rule.rule_id) || null,
         canRollback: true,
         preventDuplicates: rule.transformation?.preventDuplicates ?? true,
         operationType: rule.transformation?.type === 'array_replace' ? 'replace' : 
@@ -2772,8 +2817,8 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const deleteCustomRule = async (ruleId: string, ruleName: string) => {
-    addToDebugLog(`🗑️ Deleting custom rule: ${ruleName}`);
+  const archiveCustomRule = async (ruleId: string, ruleName: string) => {
+    addToDebugLog(`📦 Archiving custom rule: ${ruleName}`);
     
     try {
       const { error } = await supabase
@@ -2785,20 +2830,64 @@ export default function MigrationToolsInterface() {
         throw error;
       }
       
-      addToDebugLog(`✅ Custom rule deleted: ${ruleName}`);
+      addToDebugLog(`✅ Custom rule archived: ${ruleName}`);
       await loadSavedCustomRules();
+      await loadMigrationRules(); // Refresh active rules list
       
     } catch (error: any) {
-      addToDebugLog(`❌ Failed to delete custom rule: ${error.message}`);
+      addToDebugLog(`❌ Failed to archive custom rule: ${error.message}`);
     }
   };
 
-  // NEW: Delete rule from current session
-  const deleteRuleFromSession = (ruleId: string) => {
+  // Remove rule from current session (for temporary loaded rules)
+  const removeRuleFromSession = (ruleId: string) => {
     const rule = migrationRules.find(r => r.id === ruleId);
     if (rule) {
       setMigrationRules(prev => prev.filter(r => r.id !== ruleId));
-      addToDebugLog(`🗑️ Deleted rule from session: ${rule.title}`);
+      addToDebugLog(`🗑️ Removed rule from session: ${rule.title}`);
+    }
+  };
+
+  // Load archived rules
+  const loadArchivedRules = async () => {
+    try {
+      const { data: archived, error } = await supabase
+        .from('custom_migration_rules')
+        .select('*')
+        .eq('status', 'archived')
+        .order('updated_at', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      setArchivedRules(archived || []);
+      addToDebugLog(`📦 Loaded ${archived?.length || 0} archived rules`);
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to load archived rules: ${error.message}`);
+    }
+  };
+
+  // Restore archived rule
+  const restoreArchivedRule = async (ruleId: string, ruleName: string) => {
+    try {
+      const { error } = await supabase
+        .from('custom_migration_rules')
+        .update({ status: 'active' })
+        .eq('rule_id', ruleId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      addToDebugLog(`✅ Restored rule: ${ruleName}`);
+      await loadArchivedRules();
+      await loadSavedCustomRules();
+      await loadMigrationRules();
+      
+    } catch (error: any) {
+      addToDebugLog(`❌ Failed to restore rule: ${error.message}`);
     }
   };
 
@@ -3594,6 +3683,15 @@ export default function MigrationToolsInterface() {
                   📚 Load Saved ({savedCustomRules.length})
                 </button>
                 <button
+                  onClick={() => {
+                    setShowArchivedModal(true);
+                    loadArchivedRules();
+                  }}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  📦 Archive ({archivedRules.length})
+                </button>
+                <button
                   onClick={handleCreateNewRule}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                 >
@@ -3701,6 +3799,17 @@ export default function MigrationToolsInterface() {
                                 )}
                               </h4>
                               <p className="text-xs text-gray-600 mt-1 line-clamp-2">{rule.description}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-xs text-gray-500 font-mono">ID: {rule.id}</span>
+                                {rule.lastRun && (
+                                  <span className="text-xs text-green-600">
+                                    ✓ Last run: {new Date(rule.lastRun).toLocaleDateString()}
+                                  </span>
+                                )}
+                                {!rule.lastRun && (
+                                  <span className="text-xs text-gray-400">Never run</span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -3713,7 +3822,12 @@ export default function MigrationToolsInterface() {
                           </div>
                           <div className="text-center p-1 bg-white bg-opacity-50 rounded">
                             <div className="font-medium">{rule.affectedCount}</div>
-                            <div className="text-gray-500">Rows</div>
+                            <div className="text-gray-500">
+                              Rows
+                              {rule.estimatedCount !== undefined && rule.estimatedCount !== rule.affectedCount && (
+                                <span className="text-xs block text-red-500">Est: {rule.estimatedCount}</span>
+                              )}
+                            </div>
                           </div>
                           <div className="text-center p-1 bg-white bg-opacity-50 rounded">
                             <div className="font-medium">{rule.estimatedTime}</div>
@@ -3808,7 +3922,7 @@ export default function MigrationToolsInterface() {
                                 🔧 Default
                               </button>
                               <button
-                                onClick={() => deleteRuleFromSession(rule.id)}
+                                onClick={() => removeRuleFromSession(rule.id)}
                                 className="text-xs py-2 px-1 border border-red-300 rounded text-red-700 bg-red-50 hover:bg-red-100"
                                 title="Delete Rule"
                               >
@@ -5317,10 +5431,10 @@ export default function MigrationToolsInterface() {
                           Load
                         </button>
                         <button
-                          onClick={() => deleteCustomRule(savedRule.rule_id, savedRule.name)}
+                          onClick={() => archiveCustomRule(savedRule.rule_id, savedRule.name)}
                           className="px-3 py-1 text-xs font-medium text-red-600 border border-red-300 rounded hover:bg-red-50"
                         >
-                          Delete
+                          📦 Archive
                         </button>
                       </div>
                     </div>
@@ -5348,6 +5462,78 @@ export default function MigrationToolsInterface() {
               </div>
               <button
                 onClick={() => setShowLoadRulesModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Archive Rules Modal */}
+      {showArchivedModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">📦 Archived Rules</h3>
+              <button
+                onClick={() => setShowArchivedModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {archivedRules.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-gray-500 mb-4">No archived rules found</div>
+                <p className="text-sm text-gray-400">
+                  Rules that are archived will appear here and can be restored
+                </p>
+              </div>
+            ) : (
+              <div className="max-h-96 overflow-y-auto space-y-3">
+                {archivedRules.map((rule) => (
+                  <div key={rule.rule_id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                          {rule.name}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                          {rule.description || 'No description'}
+                        </p>
+                        <div className="flex items-center mt-2 text-xs text-gray-400">
+                          <span className="font-mono">ID: {rule.rule_id}</span>
+                          <span className="ml-4">
+                            Archived: {new Date(rule.updated_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col space-y-1 ml-4">
+                        <button
+                          onClick={() => restoreArchivedRule(rule.rule_id, rule.name)}
+                          className="px-3 py-1 text-xs font-medium text-green-600 border border-green-300 rounded hover:bg-green-50"
+                        >
+                          ↶ Restore
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center mt-6">
+              <button
+                onClick={loadArchivedRules}
+                className="px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                🔄 Refresh
+              </button>
+              <button
+                onClick={() => setShowArchivedModal(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
               >
                 Close
