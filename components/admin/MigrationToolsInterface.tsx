@@ -1752,7 +1752,7 @@ export default function MigrationToolsInterface() {
           
           if (!error && translations && translations.length > 0) {
             // Get unique word IDs from translations
-            const wordIds = [...new Set(translations.map(t => t.word_id))];
+            const wordIds = Array.from(new Set(translations.map(t => t.word_id)));
             
             // Look up the words
             const { data: realWords, error: wordError } = await supabase
