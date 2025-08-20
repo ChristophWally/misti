@@ -709,6 +709,7 @@ export default function MigrationToolsInterface() {
           selectedFormIds: rule.pattern?.targetFormIds || [],
           selectedTranslationIds: rule.pattern?.targetTranslationIds || []
         }
+      };
       }));
       
       setMigrationRules(visualRules);
