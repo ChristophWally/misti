@@ -1698,7 +1698,7 @@ export default function MigrationToolsInterface() {
       // Apply UUID reconstruction if needed (for backward compatibility)
       if (config.selectedWords && config.selectedWords.length > 0) {
         const hasRealUUIDs = config.selectedWords.every(word => 
-          word.id && word.id.length === 36 && word.id.includes('-') && !word.id.startsWith('word-')
+          word.wordId && word.wordId.length === 36 && word.wordId.includes('-') && !word.wordId.startsWith('word-')
         );
         
         if (!hasRealUUIDs) {
@@ -1714,12 +1714,12 @@ export default function MigrationToolsInterface() {
               
               if (!error && realWords && realWords.length > 0) {
                 const reconstructedWords = realWords.map((word: any) => ({
-                  id: word.id,
+                  wordId: word.id,
                   italian: word.italian,
-                  english: '', 
-                  pos: word.word_type || 'unknown',
-                  source: 'database-lookup',
-                  wordId: word.id
+                  wordType: word.word_type || 'unknown',
+                  tags: [],
+                  formsCount: 0,
+                  translationsCount: 0
                 }));
                 
                 // Update config with real UUIDs
@@ -1762,12 +1762,12 @@ export default function MigrationToolsInterface() {
             
             if (!wordError && realWords && realWords.length > 0) {
               const reconstructedWords = realWords.map((word: any) => ({
-                id: word.id,
+                wordId: word.id,
                 italian: word.italian,
-                english: '', 
-                pos: word.word_type || 'unknown',
-                source: 'translation-lookup',
-                wordId: word.id
+                wordType: word.word_type || 'unknown',
+                tags: [],
+                formsCount: 0,
+                translationsCount: 0
               }));
               
               // Update config with reconstructed words
@@ -2920,33 +2920,33 @@ export default function MigrationToolsInterface() {
           if (error) {
             addToDebugLog(`❌ Failed to lookup real words: ${error.message}`);
             reconstructedWords = pattern.targetWords.map((word: string, index: number) => ({
-              id: `word-${index}`, // Fallback to fake ID
+              wordId: `word-${index}`, // Fallback to fake ID
               italian: word,
-              english: '', 
-              pos: 'unknown',
-              source: 'loaded-rule',
-              wordId: null // No real UUID available
+              wordType: 'unknown',
+              tags: [],
+              formsCount: 0,
+              translationsCount: 0
             }));
           } else {
             reconstructedWords = realWords.map((word: any) => ({
-              id: word.id,
+              wordId: word.id,
               italian: word.italian,
-              english: '', 
-              pos: word.word_type || 'unknown',
-              source: 'database-lookup',
-              wordId: word.id
+              wordType: word.word_type || 'unknown',
+              tags: [],
+              formsCount: 0,
+              translationsCount: 0
             }));
             addToDebugLog(`✅ Successfully looked up ${realWords.length} real words with UUIDs`);
           }
         } catch (lookupError: any) {
           addToDebugLog(`❌ Database lookup error: ${lookupError.message}`);
           reconstructedWords = pattern.targetWords.map((word: string, index: number) => ({
-            id: `word-${index}`, // Fallback to fake ID
+            wordId: `word-${index}`, // Fallback to fake ID
             italian: word,
-            english: '', 
-            pos: 'unknown',
-            source: 'loaded-rule',
-            wordId: null // No real UUID available
+            wordType: 'unknown',
+            tags: [],
+            formsCount: 0,
+            translationsCount: 0
           }));
         }
       } else {
