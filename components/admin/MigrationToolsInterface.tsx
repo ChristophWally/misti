@@ -125,6 +125,8 @@ export default function MigrationToolsInterface() {
   const [historyStatusFilter, setHistoryStatusFilter] = useState('');
   const [historyTableFilter, setHistoryTableFilter] = useState('');
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+  const [revertingExecutionId, setRevertingExecutionId] = useState<string | null>(null);
+  const [revertProgress, setRevertProgress] = useState<{executionId: string, current: number, total: number} | null>(null);
   
   // WYSIWYG Migration State
   const [migrationRules, setMigrationRules] = useState<VisualRule[]>([]);
@@ -3001,6 +3003,8 @@ export default function MigrationToolsInterface() {
     }
 
     try {
+      // Set revert in progress
+      setRevertingExecutionId(executionId);
       addToDebugLog(`🔄 Starting revert for execution: ${executionId}`);
       
       // Find the execution
@@ -3031,6 +3035,10 @@ export default function MigrationToolsInterface() {
       addToDebugLog(`📊 Reverting ${rollbackData.changes.length} individual changes...`);
       addToDebugLog(`🔍 Sample change structure: ${JSON.stringify(rollbackData.changes[0], null, 2)}`);
 
+      // Initialize progress tracking
+      const totalChanges = rollbackData.changes.length;
+      setRevertProgress({ executionId, current: 0, total: totalChanges });
+
       // Execute rollback for each change in reverse order
       let revertedCount = 0;
       const changes = [...rollbackData.changes].reverse(); // Reverse order for rollback
@@ -3038,6 +3046,9 @@ export default function MigrationToolsInterface() {
       for (let i = 0; i < changes.length; i++) {
         const change = changes[i];
         addToDebugLog(`🔄 Processing change ${i + 1}/${changes.length}: ${change.change_id}`);
+        
+        // Update progress
+        setRevertProgress({ executionId, current: i + 1, total: totalChanges });
         
         if (change.rollback_data?.rollback_operation === 'direct_restore') {
           addToDebugLog(`📊 Reverting ${change.rollback_data.target_table}.${change.rollback_data.target_column} for record ${change.rollback_data.target_record_uuid}`);
@@ -3088,6 +3099,10 @@ export default function MigrationToolsInterface() {
     } catch (error: any) {
       addToDebugLog(`❌ Revert failed: ${error.message}`);
       alert(`Failed to revert execution: ${error.message}`);
+    } finally {
+      // Clear revert state
+      setRevertingExecutionId(null);
+      setRevertProgress(null);
     }
   };
 
@@ -3733,9 +3748,24 @@ export default function MigrationToolsInterface() {
                           {execution.can_rollback && execution.status === 'success' && !execution.reverted_at && (
                             <button
                               onClick={() => handleRevertExecution(execution.id)}
-                              className="inline-flex items-center px-3 py-1 border border-red-300 text-xs font-medium rounded text-red-700 bg-red-50 hover:bg-red-100"
+                              disabled={revertingExecutionId === execution.id}
+                              className={`inline-flex items-center px-3 py-1 border text-xs font-medium rounded ${
+                                revertingExecutionId === execution.id 
+                                  ? 'border-yellow-300 text-yellow-700 bg-yellow-50 cursor-not-allowed'
+                                  : 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100'
+                              }`}
                             >
-                              🔄 Revert
+                              {revertingExecutionId === execution.id ? (
+                                <>
+                                  <svg className="animate-spin -ml-1 mr-2 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Reverting...
+                                </>
+                              ) : (
+                                <>🔄 Revert</>
+                              )}
                             </button>
                           )}
                           <button
@@ -3750,6 +3780,31 @@ export default function MigrationToolsInterface() {
                       {/* Expanded Details */}
                       {expandedHistoryId === execution.id && (
                         <div className="mt-4 space-y-4">
+                          {/* Revert Progress Bar */}
+                          {revertProgress && revertProgress.executionId === execution.id && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-sm font-medium text-yellow-900">Revert in Progress</h4>
+                                <span className="text-xs text-yellow-700">
+                                  {revertProgress.current} / {revertProgress.total} changes reverted
+                                </span>
+                              </div>
+                              <div className="w-full bg-yellow-200 rounded-full h-2">
+                                <div 
+                                  className="bg-yellow-600 h-2 rounded-full transition-all duration-300" 
+                                  style={{ width: `${(revertProgress.current / revertProgress.total) * 100}%` }}
+                                ></div>
+                              </div>
+                              <div className="flex items-center mt-2 text-xs text-yellow-700">
+                                <svg className="animate-spin -ml-1 mr-2 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Reverting individual changes...
+                              </div>
+                            </div>
+                          )}
+                          
                           {/* Execution Details */}
                           <div className="bg-gray-50 rounded-lg p-3">
                             <h4 className="text-sm font-medium text-gray-900 mb-2">Execution Details</h4>
