@@ -1696,6 +1696,10 @@ export default function MigrationToolsInterface() {
     if (rule.ruleConfig) {
       const config = rule.ruleConfig;
       
+      // Debug: Log the entire config to see what we're working with
+      addToDebugLog(`🔍 FULL CONFIG DEBUG: ${JSON.stringify(config, null, 2)}`);
+      addToDebugLog(`🔍 selectedWords in config: ${config.selectedWords?.length || 0} items`);
+      
       // Restore configuration immediately - useEffect will skip sync for loaded/custom rules
       setSelectedTable(config.selectedTable);
       setSelectedColumn(config.selectedColumn);
@@ -1710,6 +1714,9 @@ export default function MigrationToolsInterface() {
       setSelectedWords(config.selectedWords);
       setSelectedFormIds(config.selectedFormIds);
       setSelectedTranslationIds(config.selectedTranslationIds);
+      
+      // Debug: Immediate check (before React processes state updates)
+      addToDebugLog(`🔍 IMMEDIATE: Just called setSelectedTranslationIds with ${config.selectedTranslationIds?.length || 0} items`);
       
       // Debug: Check if config values are valid
       addToDebugLog(`🔍 Config validation - selectedFormIds is array: ${Array.isArray(config.selectedFormIds)}, selectedTranslationIds is array: ${Array.isArray(config.selectedTranslationIds)}`);
