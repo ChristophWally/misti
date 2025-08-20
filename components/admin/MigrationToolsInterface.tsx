@@ -1704,17 +1704,28 @@ export default function MigrationToolsInterface() {
       setTagsToRemove(config.tagsToRemove);
       setNewTagToAdd(config.newTagToAdd);
       setTagsToAdd(config.tagsToAdd || []); // NEW: Restore multi-tag state
+      // Debug: Log what we're restoring BEFORE setting state
+      addToDebugLog(`🔧 Restoring selections - FormIds: ${JSON.stringify(config.selectedFormIds)}, TranslationIds: ${JSON.stringify(config.selectedTranslationIds)}`);
+      
       setSelectedWords(config.selectedWords);
       setSelectedFormIds(config.selectedFormIds);
       setSelectedTranslationIds(config.selectedTranslationIds);
       
-      // Debug: Log what we're restoring
-      addToDebugLog(`🔧 Restoring selections - FormIds: ${JSON.stringify(config.selectedFormIds)}, TranslationIds: ${JSON.stringify(config.selectedTranslationIds)}`);
+      // Debug: Check if config values are valid
+      addToDebugLog(`🔍 Config validation - selectedFormIds is array: ${Array.isArray(config.selectedFormIds)}, selectedTranslationIds is array: ${Array.isArray(config.selectedTranslationIds)}`);
+      addToDebugLog(`🔍 Setting selectedTranslationIds to: ${JSON.stringify(config.selectedTranslationIds)} (type: ${typeof config.selectedTranslationIds})`);
       
       // Debug: Verify state was set correctly after React update cycle
       setTimeout(() => {
-        addToDebugLog(`🔍 State verification - selectedFormIds length: ${selectedFormIds.length}, selectedTranslationIds length: ${selectedTranslationIds.length}`);
+        addToDebugLog(`🔍 State verification (50ms) - selectedFormIds: ${selectedFormIds.length}, selectedTranslationIds: ${selectedTranslationIds.length}`);
+        addToDebugLog(`🔍 Actual selectedFormIds: ${JSON.stringify(selectedFormIds)}`);
+        addToDebugLog(`🔍 Actual selectedTranslationIds: ${JSON.stringify(selectedTranslationIds)}`);
       }, 50);
+      
+      // Additional verification with longer delay
+      setTimeout(() => {
+        addToDebugLog(`🔍 State verification (200ms) - selectedFormIds: ${selectedFormIds.length}, selectedTranslationIds: ${selectedTranslationIds.length}`);
+      }, 200);
       
       // Reset only general cache/loading states, not configuration or word-specific data
       setCurrentLocationTags(null);
@@ -1757,6 +1768,11 @@ export default function MigrationToolsInterface() {
               
               // After translations data is loaded, check if specific translations were selected
               setTimeout(() => {
+                // Debug: Check both config and current state
+                addToDebugLog(`🔍 Translation check - Config IDs: ${config.selectedTranslationIds?.length || 0}, Current state: ${selectedTranslationIds.length}`);
+                addToDebugLog(`🔍 Config TranslationIds: ${JSON.stringify(config.selectedTranslationIds)}`);
+                addToDebugLog(`🔍 State TranslationIds: ${JSON.stringify(selectedTranslationIds)}`);
+                
                 if (config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
                   addToDebugLog(`📋 Found ${config.selectedTranslationIds.length} specific translation IDs to restore`);
                   if (config.selectedColumn === 'context_metadata') {
@@ -2695,7 +2711,8 @@ export default function MigrationToolsInterface() {
           column: config?.selectedColumn || 'tags',
           condition: 'array_contains',
           targetTags: config?.selectedTagsForMigration || [],
-          targetWords: rule.targetedWords || [],
+          targetWords: rule.targetedWords || [], // Keep for backward compatibility
+          targetWordObjects: config?.selectedWords || [], // NEW: Save full word objects with UUIDs
           targetFormIds: config?.selectedFormIds || [],
           targetTranslationIds: config?.selectedTranslationIds || []
         },
@@ -2763,14 +2780,18 @@ export default function MigrationToolsInterface() {
       const pattern = savedRule.pattern || {};
       const transformation = savedRule.transformation || {};
       
-      // Reconstruct selectedWords from targetWords if available
-      const reconstructedWords = (pattern.targetWords || []).map((word: string, index: number) => ({
-        id: `word-${index}`,
-        italian: word,
-        english: '', // We don't have the English translation stored
-        pos: 'unknown', // We don't have the part of speech stored
-        source: 'loaded-rule'
-      }));
+      // Use saved word objects if available, otherwise reconstruct from strings (backward compatibility)
+      const reconstructedWords = pattern.targetWordObjects && pattern.targetWordObjects.length > 0 
+        ? pattern.targetWordObjects 
+        : (pattern.targetWords || []).map((word: string, index: number) => ({
+            id: `word-${index}`,
+            italian: word,
+            english: '', 
+            pos: 'unknown',
+            source: 'loaded-rule'
+          }));
+      
+      addToDebugLog(`🔍 Word reconstruction - Using ${pattern.targetWordObjects ? 'saved objects' : 'string fallback'}: ${reconstructedWords.length} words`);
       
       const visualRule: VisualRule = {
         id: savedRule.rule_id,
