@@ -1680,6 +1680,7 @@ export default function MigrationToolsInterface() {
 
   const handleCustomizeRule = async (rule: VisualRule) => {
     setSelectedRule(rule);
+    setShowRuleBuilder(true); // Show immediately to prevent broken button
     setRuleTitle(rule.title);
     setRuleDescription(rule.description);
     setOperationType(rule.operationType || 'replace');
@@ -1960,9 +1961,6 @@ export default function MigrationToolsInterface() {
         setTagsToRemove([]);
         break;
     }
-    
-    // Show rule builder after all configuration is loaded
-    setShowRuleBuilder(true);
   };
 
   const handleCloseRuleBuilder = () => {
