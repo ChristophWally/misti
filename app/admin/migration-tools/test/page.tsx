@@ -87,7 +87,7 @@ export default function MigrationTestPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Migration Recommendation Engine Tests</h1>
             <p className="text-gray-600 mt-2">
-              Integration tests for Story 002.003 - Verify recommendation engine works with real data
+              Integration tests - Verify recommendation engine works with real data
             </p>
           </div>
           <div className="flex items-center space-x-4">

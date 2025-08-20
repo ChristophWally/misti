@@ -14,7 +14,7 @@ export default function MigrationToolsPage() {
                 Migration Tools
               </h1>
               <p className="mt-2 text-sm text-gray-600">
-                Story 002.003: Core Validation Systems and Tag Consistency Migration
+                Core Validation Systems and Tag Consistency Migration
               </p>
             </div>
             <div className="mt-4 flex md:mt-0 md:ml-4 space-x-3">
@@ -25,7 +25,7 @@ export default function MigrationToolsPage() {
                 🧪 Integration Tests
               </a>
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Phase A: Infrastructure Development
+                Infrastructure Development
               </span>
             </div>
           </div>
