@@ -3940,6 +3940,9 @@ export default function MigrationToolsInterface() {
                                 {execution.operation_type?.toUpperCase()} on {execution.target_table}.{execution.target_column} •
                                 {execution.records_affected} records •
                                 {formatDate(execution.executed_at)}
+                                {execution.reverted_at && (
+                                  <span className="text-purple-600 font-medium"> • REVERTED {formatDate(execution.reverted_at)}</span>
+                                )}
                               </p>
                             </div>
                           </div>
