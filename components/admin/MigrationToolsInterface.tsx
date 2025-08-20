@@ -111,7 +111,7 @@ interface ColumnInfo {
 
 
 export default function MigrationToolsInterface() {
-  const [currentTab, setCurrentTab] = useState<'audit' | 'recommendations' | 'migration' | 'progress'>('audit');
+  const [currentTab, setCurrentTab] = useState<'audit' | 'migration' | 'progress'>('audit');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<MigrationIssue[]>([]);
   const [databaseStats, setDatabaseStats] = useState<DatabaseStats | null>(null);
@@ -169,12 +169,7 @@ export default function MigrationToolsInterface() {
   const [isLoadingTextContent, setIsLoadingTextContent] = useState(false);
   const [selectedTextValues, setSelectedTextValues] = useState<string[]>([]);
 
-  // NEW: Recommendation Engine State
-  const [recommendationEngine, setRecommendationEngine] = useState<MigrationRecommendationEngine | null>(null);
-  const [migrationAnalysis, setMigrationAnalysis] = useState<MigrationAnalysis | null>(null);
-  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
-  const [selectedRecommendation, setSelectedRecommendation] = useState<MigrationRecommendation | null>(null);
-  const [dataStateAnalysis, setDataStateAnalysis] = useState<DataStateAnalysis | null>(null);
+  // NEW: Recommendation Engine State - REMOVED
   
   // NEW: Custom Rules Persistence State
   const [savedCustomRules, setSavedCustomRules] = useState<any[]>([]);
@@ -853,72 +848,7 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  // NEW: Recommendation Engine Functions
-  const loadRecommendations = async () => {
-    if (!recommendationEngine) {
-      addToDebugLog('❌ Recommendation engine not initialized');
-      return;
-    }
-
-    setIsLoadingRecommendations(true);
-    addToDebugLog('🧠 Loading migration recommendations...');
-
-    try {
-      // Load data state analysis first
-      addToDebugLog('📊 Analyzing current data state...');
-      const dataState = await recommendationEngine.analyzeDataState();
-      setDataStateAnalysis(dataState);
-      addToDebugLog(`✅ Data state analyzed: ${dataState.terminology.legacyTerms} legacy terms, ${dataState.metadata.missingAuxiliaries} missing auxiliaries`);
-
-      // Generate comprehensive recommendations
-      addToDebugLog('🎯 Generating migration recommendations...');
-      const analysis = await recommendationEngine.generateRecommendations();
-      setMigrationAnalysis(analysis);
-      addToDebugLog(`✅ Generated ${analysis.recommendations.length} recommendations (${analysis.criticalIssues} critical)`);
-
-    } catch (error: any) {
-      addToDebugLog(`❌ Failed to load recommendations: ${error.message}`);
-      console.error('Recommendation loading error:', error);
-    } finally {
-      setIsLoadingRecommendations(false);
-    }
-  };
-
-  const executeRecommendation = async (recommendation: MigrationRecommendation) => {
-    if (!recommendationEngine) {
-      addToDebugLog('❌ Recommendation engine not initialized');
-      return;
-    }
-
-    if (recommendation.readiness !== 'ready') {
-      addToDebugLog(`⚠️ Cannot execute ${recommendation.rule.name}: ${recommendation.readiness}`);
-      return;
-    }
-
-    addToDebugLog(`🚀 Executing recommendation: ${recommendation.rule.name}`);
-    setIsExecuting(true);
-
-    try {
-      // This would integrate with the existing migration engine
-      // For now, just show the execution flow
-      addToDebugLog(`⏳ Executing rule: ${recommendation.rule.id}`);
-      addToDebugLog(`🎯 Estimated impact: ${recommendation.estimatedImpact.affectedRows} rows`);
-      
-      // Simulate execution (in real implementation, this would use the migration engine)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      addToDebugLog(`✅ Successfully executed: ${recommendation.rule.name}`);
-      
-      // Refresh recommendations after execution
-      await loadRecommendations();
-
-    } catch (error: any) {
-      addToDebugLog(`❌ Execution failed: ${error.message}`);
-      console.error('Recommendation execution error:', error);
-    } finally {
-      setIsExecuting(false);
-    }
-  };
+  // NEW: Recommendation Engine Functions - REMOVED
 
   const handlePreviewRule = async (rule: VisualRule) => {
     addToDebugLog(`🔍 Generating real preview for: ${rule.title}`);
@@ -2650,7 +2580,6 @@ export default function MigrationToolsInterface() {
 
   const tabs = [
     { id: 'audit', name: 'Tag Audit', description: 'Analyze current tag consistency' },
-    { id: 'recommendations', name: 'Smart Recommendations', description: 'AI-powered migration suggestions' },
     { id: 'migration', name: 'Visual Migration Rules', description: 'WYSIWYG migration management' },
     { id: 'progress', name: 'Execution History', description: 'Track migration progress' },
   ];
@@ -3374,8 +3303,8 @@ export default function MigrationToolsInterface() {
           </div>
         )}
 
-        {/* Smart Recommendations Tab */}
-        {currentTab === 'recommendations' && (
+        {/* Visual Migration Rules Tab */}
+        {currentTab === 'migration' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
