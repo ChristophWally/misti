@@ -1678,9 +1678,8 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const handleCustomizeRule = (rule: VisualRule) => {
+  const handleCustomizeRule = async (rule: VisualRule) => {
     setSelectedRule(rule);
-    setShowRuleBuilder(true);
     setRuleTitle(rule.title);
     setRuleDescription(rule.description);
     setOperationType(rule.operationType || 'replace');
@@ -1694,7 +1693,100 @@ export default function MigrationToolsInterface() {
 
     // If rule has stored configuration (loaded/custom rules), restore it
     if (rule.ruleConfig) {
-      const config = rule.ruleConfig;
+      let config = rule.ruleConfig;
+      
+      // Apply UUID reconstruction if needed (for backward compatibility)
+      if (config.selectedWords && config.selectedWords.length > 0) {
+        const hasRealUUIDs = config.selectedWords.every(word => 
+          word.id && word.id.length === 36 && word.id.includes('-') && !word.id.startsWith('word-')
+        );
+        
+        if (!hasRealUUIDs) {
+          addToDebugLog(`🔍 Word card needs UUID reconstruction for ${config.selectedWords.length} words`);
+          
+          try {
+            const wordNames = config.selectedWords.map(w => w.italian).filter(Boolean);
+            if (wordNames.length > 0) {
+              const { data: realWords, error } = await supabase
+                .from('dictionary')
+                .select('id, italian, word_type')
+                .in('italian', wordNames);
+              
+              if (!error && realWords && realWords.length > 0) {
+                const reconstructedWords = realWords.map((word: any) => ({
+                  id: word.id,
+                  italian: word.italian,
+                  english: '', 
+                  pos: word.word_type || 'unknown',
+                  source: 'database-lookup',
+                  wordId: word.id
+                }));
+                
+                // Update config with real UUIDs
+                config = {
+                  ...config,
+                  selectedWords: reconstructedWords
+                };
+                
+                addToDebugLog(`✅ Word card UUID reconstruction successful: ${reconstructedWords.length} words`);
+              } else {
+                addToDebugLog(`⚠️ Word card UUID reconstruction failed: ${error?.message || 'no words found'}`);
+              }
+            }
+          } catch (error: any) {
+            addToDebugLog(`❌ Word card UUID reconstruction error: ${error.message}`);
+          }
+        } else {
+          addToDebugLog(`✅ Word card already has real UUIDs`);
+        }
+      } else if ((!config.selectedWords || config.selectedWords.length === 0) && 
+                 config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
+        // Handle case where words are missing but translation IDs exist - reconstruct from translations
+        addToDebugLog(`🔍 Word card missing words but has ${config.selectedTranslationIds.length} translation IDs - reconstructing words from translations`);
+        
+        try {
+          const { data: translations, error } = await supabase
+            .from('word_translations')
+            .select('word_id, translation')
+            .in('id', config.selectedTranslationIds);
+          
+          if (!error && translations && translations.length > 0) {
+            // Get unique word IDs from translations
+            const wordIds = [...new Set(translations.map(t => t.word_id))];
+            
+            // Look up the words
+            const { data: realWords, error: wordError } = await supabase
+              .from('dictionary')
+              .select('id, italian, word_type')
+              .in('id', wordIds);
+            
+            if (!wordError && realWords && realWords.length > 0) {
+              const reconstructedWords = realWords.map((word: any) => ({
+                id: word.id,
+                italian: word.italian,
+                english: '', 
+                pos: word.word_type || 'unknown',
+                source: 'translation-lookup',
+                wordId: word.id
+              }));
+              
+              // Update config with reconstructed words
+              config = {
+                ...config,
+                selectedWords: reconstructedWords
+              };
+              
+              addToDebugLog(`✅ Word card reconstructed ${reconstructedWords.length} words from translation IDs`);
+            } else {
+              addToDebugLog(`⚠️ Failed to lookup words from translation IDs: ${wordError?.message || 'no words found'}`);
+            }
+          } else {
+            addToDebugLog(`⚠️ Failed to lookup translations: ${error?.message || 'no translations found'}`);
+          }
+        } catch (error: any) {
+          addToDebugLog(`❌ Word reconstruction from translations error: ${error.message}`);
+        }
+      }
       
       // Debug: Log the entire config to see what we're working with
       addToDebugLog(`🔍 FULL CONFIG DEBUG: ${JSON.stringify(config, null, 2)}`);
@@ -1868,6 +1960,9 @@ export default function MigrationToolsInterface() {
         setTagsToRemove([]);
         break;
     }
+    
+    // Show rule builder after all configuration is loaded
+    setShowRuleBuilder(true);
   };
 
   const handleCloseRuleBuilder = () => {
