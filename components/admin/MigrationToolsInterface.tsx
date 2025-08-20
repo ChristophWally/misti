@@ -2642,7 +2642,8 @@ export default function MigrationToolsInterface() {
             return acc;
           }, {} as Record<string, string>) || {},
           tagsToRemove: config?.tagsToRemove || [],
-          newTagToAdd: config?.newTagToAdd || ''
+          newTagToAdd: config?.newTagToAdd || '',
+          tagsToAdd: config?.tagsToAdd || []
         },
         safety_checks: [
           {
@@ -2688,13 +2689,22 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const loadCustomRule = async (savedRule: any) => {
+  const loadCustomRule = async (savedRule: any, openInBuilder: boolean = true) => {
     addToDebugLog(`📤 Loading custom rule: ${savedRule.name}`);
     
     try {
       // Convert database format back to VisualRule with full configuration
       const pattern = savedRule.pattern || {};
       const transformation = savedRule.transformation || {};
+      
+      // Reconstruct selectedWords from targetWords if available
+      const reconstructedWords = (pattern.targetWords || []).map((word: string, index: number) => ({
+        id: `word-${index}`,
+        italian: word,
+        english: '', // We don't have the English translation stored
+        pos: 'unknown', // We don't have the part of speech stored
+        source: 'loaded-rule'
+      }));
       
       const visualRule: VisualRule = {
         id: savedRule.rule_id,
@@ -2726,17 +2736,23 @@ export default function MigrationToolsInterface() {
           tagsToRemove: transformation.tagsToRemove || [],
           newTagToAdd: transformation.newTagToAdd || '',
           tagsToAdd: transformation.tagsToAdd || [],
-          selectedWords: [], // Cannot reconstruct full WordSearchResult objects
+          selectedWords: reconstructedWords, // Reconstruct words from saved targetWords
           selectedFormIds: pattern.targetFormIds || [],
           selectedTranslationIds: pattern.targetTranslationIds || []
         }
       };
       
-      // Add to current migration rules
+      // Add to current migration rules and immediately load into rule builder
       setMigrationRules(prev => [...prev, visualRule]);
       addToDebugLog(`✅ Custom rule loaded: ${savedRule.name}`);
       
-      setShowLoadRulesModal(false);
+      // Close the modal first (only when opening in builder)
+      if (openInBuilder) {
+        setShowLoadRulesModal(false);
+        
+        // Load the rule into the rule builder for editing
+        handleCustomizeRule(visualRule);
+      }
       
     } catch (error: any) {
       addToDebugLog(`❌ Failed to load custom rule: ${error.message}`);
@@ -2894,10 +2910,11 @@ export default function MigrationToolsInterface() {
       const customRules = savedCustomRules.filter(rule => !rule.tags?.includes('default-rule'));
       
       for (const rule of customRules) {
-        await loadCustomRule(rule);
+        await loadCustomRule(rule, false); // Don't open each rule in builder when loading all
       }
       
       addToDebugLog(`✅ Loaded ${customRules.length} custom rules`);
+      setShowLoadRulesModal(false);
       
     } catch (error: any) {
       addToDebugLog(`❌ Failed to load all saved rules: ${error.message}`);
