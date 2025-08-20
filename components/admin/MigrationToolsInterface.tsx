@@ -1699,6 +1699,25 @@ export default function MigrationToolsInterface() {
       // SIMPLIFIED: For now, just log what we have and proceed
       addToDebugLog(`🔍 Config has ${config.selectedWords?.length || 0} words, ${config.selectedTranslationIds?.length || 0} translation IDs`);
       
+      // MINIMAL reconstruction: If no words but have translation IDs, get the word from translation
+      if ((!config.selectedWords || config.selectedWords.length === 0) && 
+          config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
+        addToDebugLog(`🔧 Minimal word reconstruction needed for translation loading`);
+        
+        // Quick synchronous approach - just create minimal word data for loading
+        config = {
+          ...config,
+          selectedWords: [{ 
+            wordId: 'temp-reconstruction', 
+            italian: 'reconstructed', 
+            wordType: 'unknown', 
+            tags: [], 
+            formsCount: 0, 
+            translationsCount: 0 
+          }]
+        };
+      }
+      
       // Debug: Log the entire config to see what we're working with
       addToDebugLog(`🔍 FULL CONFIG DEBUG: ${JSON.stringify(config, null, 2)}`);
       addToDebugLog(`🔍 selectedWords in config: ${config.selectedWords?.length || 0} items`);
@@ -1758,8 +1777,34 @@ export default function MigrationToolsInterface() {
       addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
       addToDebugLog(`🏷️ Tags for migration: ${JSON.stringify(config.selectedTagsForMigration)}`);
       
-      // SIMPLIFIED: Skip automatic data loading for now - let's see if state setting works
-      addToDebugLog(`🔄 Skipping automatic data loading chain to test state setting only`);
+      // SIMPLIFIED: Load translations directly by ID if we have them
+      if (config.selectedTable === 'word_translations' && config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
+        addToDebugLog(`🔄 Loading translations directly by IDs: ${config.selectedTranslationIds.length} translations`);
+        setTimeout(async () => {
+          try {
+            const { data: translations, error } = await supabase
+              .from('word_translations')
+              .select('*')
+              .in('id', config.selectedTranslationIds);
+            
+            if (!error && translations) {
+              // Group by word_id for the UI
+              const translationsData: Record<string, any[]> = {};
+              translations.forEach(t => {
+                if (!translationsData[t.word_id]) {
+                  translationsData[t.word_id] = [];
+                }
+                translationsData[t.word_id].push(t);
+              });
+              
+              setWordTranslationsData(translationsData);
+              addToDebugLog(`✅ Loaded ${translations.length} translations directly`);
+            }
+          } catch (error: any) {
+            addToDebugLog(`❌ Failed to load translations directly: ${error.message}`);
+          }
+        }, 100);
+      }
     }
 
     // Fallback for default rules without stored config
