@@ -313,14 +313,26 @@ export default function MigrationToolsInterface() {
   }, [migrationRules]);
 
   useEffect(() => {
+    // Skip reset when restoring loaded/custom/default rules - they have their selections configured
+    if (selectedRule && (selectedRule.ruleSource === 'loaded' || selectedRule.ruleSource === 'custom' || selectedRule.ruleSource === 'default')) {
+      addToDebugLog('⏭️ Skipping tag cache reset for loaded/custom/default rule - selections preserved');
+      return;
+    }
+    
     resetTagLoadingStates();
     addToDebugLog('🔄 Reset tag cache due to word selection change');
-  }, [selectedWords]);
+  }, [selectedWords, selectedRule]);
 
   useEffect(() => {
+    // Skip reset when restoring loaded/custom/default rules - they have their selections configured
+    if (selectedRule && (selectedRule.ruleSource === 'loaded' || selectedRule.ruleSource === 'custom' || selectedRule.ruleSource === 'default')) {
+      addToDebugLog('⏭️ Skipping tag cache reset for loaded/custom/default rule - selections preserved');
+      return;
+    }
+    
     resetTagLoadingStates();
     addToDebugLog(`🔄 Cleared tag cache due to table/column change: ${selectedTable}.${selectedColumn}`);
-  }, [selectedTable, selectedColumn]);
+  }, [selectedTable, selectedColumn, selectedRule]);
 
   useEffect(() => {
     // CRITICAL: Skip sync entirely for loaded/custom/default rules - they have their mappings already set
