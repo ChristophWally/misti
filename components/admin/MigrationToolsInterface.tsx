@@ -1715,16 +1715,28 @@ export default function MigrationToolsInterface() {
       addToDebugLog(`🔍 Config validation - selectedFormIds is array: ${Array.isArray(config.selectedFormIds)}, selectedTranslationIds is array: ${Array.isArray(config.selectedTranslationIds)}`);
       addToDebugLog(`🔍 Setting selectedTranslationIds to: ${JSON.stringify(config.selectedTranslationIds)} (type: ${typeof config.selectedTranslationIds})`);
       
+      // Debug: What we expect to be set (from config)
+      addToDebugLog(`🔍 Expected state - FormIds: ${config.selectedFormIds?.length || 0}, TranslationIds: ${config.selectedTranslationIds?.length || 0}`);
+      
       // Debug: Verify state was set correctly after React update cycle
       setTimeout(() => {
         addToDebugLog(`🔍 State verification (50ms) - selectedFormIds: ${selectedFormIds.length}, selectedTranslationIds: ${selectedTranslationIds.length}`);
-        addToDebugLog(`🔍 Actual selectedFormIds: ${JSON.stringify(selectedFormIds)}`);
-        addToDebugLog(`🔍 Actual selectedTranslationIds: ${JSON.stringify(selectedTranslationIds)}`);
+        if (selectedTranslationIds.length === 0 && config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
+          addToDebugLog(`⚠️ TIMING ISSUE: Expected ${config.selectedTranslationIds.length} translation IDs but state shows 0`);
+        }
+        if (selectedFormIds.length === 0 && config.selectedFormIds && config.selectedFormIds.length > 0) {
+          addToDebugLog(`⚠️ TIMING ISSUE: Expected ${config.selectedFormIds.length} form IDs but state shows 0`);
+        }
       }, 50);
       
-      // Additional verification with longer delay
+      // Additional verification with longer delay to see if state eventually updates
       setTimeout(() => {
         addToDebugLog(`🔍 State verification (200ms) - selectedFormIds: ${selectedFormIds.length}, selectedTranslationIds: ${selectedTranslationIds.length}`);
+        if (selectedTranslationIds.length > 0) {
+          addToDebugLog(`✅ SUCCESS: Translation IDs eventually set correctly`);
+        } else if (config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
+          addToDebugLog(`❌ FAILURE: Translation IDs still not set after 200ms`);
+        }
       }, 200);
       
       // Reset only general cache/loading states, not configuration or word-specific data
@@ -1754,8 +1766,8 @@ export default function MigrationToolsInterface() {
                 if (config.selectedFormIds && config.selectedFormIds.length > 0) {
                   addToDebugLog(`📋 Found ${config.selectedFormIds.length} specific form IDs to restore`);
                   if (config.selectedColumn === 'tags') {
-                    addToDebugLog(`🏷️ Loading selected form tags...`);
-                    loadSelectedFormTags();
+                    addToDebugLog(`🏷️ Loading selected form tags using CONFIG data...`);
+                    loadSelectedFormTags(config.selectedFormIds);
                   }
                 } else {
                   addToDebugLog(`ℹ️ No specific forms selected - forms data loaded for selection`);
@@ -1776,8 +1788,9 @@ export default function MigrationToolsInterface() {
                 if (config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
                   addToDebugLog(`📋 Found ${config.selectedTranslationIds.length} specific translation IDs to restore`);
                   if (config.selectedColumn === 'context_metadata') {
-                    addToDebugLog(`📊 Loading selected translation metadata...`);
-                    loadSelectedTranslationMetadata();
+                    addToDebugLog(`📊 Loading selected translation metadata using CONFIG data...`);
+                    // Use config data directly instead of potentially stale state
+                    loadSelectedTranslationMetadata(config.selectedTranslationIds);
                   }
                 } else {
                   addToDebugLog(`ℹ️ No specific translations selected - translations data loaded for selection`);
@@ -2428,18 +2441,20 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const loadSelectedFormTags = () => {
-    if (selectedFormIds.length === 0) {
+  const loadSelectedFormTags = (formIds?: string[]) => {
+    const idsToUse = formIds || selectedFormIds;
+    
+    if (idsToUse.length === 0) {
       addToDebugLog('⚠️ No forms selected for tag loading');
       return;
     }
 
-    addToDebugLog(`🏷️ Loading tags from ${selectedFormIds.length} selected forms...`);
+    addToDebugLog(`🏷️ Loading tags from ${idsToUse.length} selected forms...`);
 
     try {
       const selectedForms = Object.values(wordFormsData || {})
         .flat()
-        .filter((form: any) => selectedFormIds.includes(form.id));
+        .filter((form: any) => idsToUse.includes(form.id));
 
       const tagCounts: Record<string, number> = {};
       selectedForms.forEach((form: any) => {
@@ -2455,18 +2470,20 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const loadSelectedTranslationMetadata = () => {
-    if (selectedTranslationIds.length === 0) {
+  const loadSelectedTranslationMetadata = (translationIds?: string[]) => {
+    const idsToUse = translationIds || selectedTranslationIds;
+    
+    if (idsToUse.length === 0) {
       addToDebugLog('⚠️ No translations selected for metadata loading');
       return;
     }
 
-    addToDebugLog(`📋 Loading metadata from ${selectedTranslationIds.length} selected translations...`);
+    addToDebugLog(`📋 Loading metadata from ${idsToUse.length} selected translations...`);
 
     try {
       const selectedTranslations = Object.values(wordTranslationsData || {})
         .flat()
-        .filter((translation: any) => selectedTranslationIds.includes(translation.id));
+        .filter((translation: any) => idsToUse.includes(translation.id));
 
       addToDebugLog(`Found ${selectedTranslations.length} matching translations`);
 
