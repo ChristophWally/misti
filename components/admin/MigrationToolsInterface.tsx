@@ -2806,18 +2806,58 @@ export default function MigrationToolsInterface() {
       const pattern = savedRule.pattern || {};
       const transformation = savedRule.transformation || {};
       
-      // Use saved word objects if available, otherwise reconstruct from strings (backward compatibility)
-      const reconstructedWords = pattern.targetWordObjects && pattern.targetWordObjects.length > 0 
-        ? pattern.targetWordObjects 
-        : (pattern.targetWords || []).map((word: string, index: number) => ({
-            id: `word-${index}`,
+      // Use saved word objects if available, otherwise reconstruct from strings with real UUIDs
+      let reconstructedWords = [];
+      
+      if (pattern.targetWordObjects && pattern.targetWordObjects.length > 0) {
+        reconstructedWords = pattern.targetWordObjects;
+        addToDebugLog(`🔍 Word reconstruction - Using saved objects: ${reconstructedWords.length} words`);
+      } else if (pattern.targetWords && pattern.targetWords.length > 0) {
+        // Need to look up real UUIDs from database for backward compatibility
+        addToDebugLog(`🔍 Word reconstruction - Looking up real UUIDs for ${pattern.targetWords.length} words: [${pattern.targetWords.join(', ')}]`);
+        
+        try {
+          const { data: realWords, error } = await supabase
+            .from('dictionary')
+            .select('id, italian, word_type')
+            .in('italian', pattern.targetWords);
+          
+          if (error) {
+            addToDebugLog(`❌ Failed to lookup real words: ${error.message}`);
+            reconstructedWords = pattern.targetWords.map((word: string, index: number) => ({
+              id: `word-${index}`, // Fallback to fake ID
+              italian: word,
+              english: '', 
+              pos: 'unknown',
+              source: 'loaded-rule',
+              wordId: null // No real UUID available
+            }));
+          } else {
+            reconstructedWords = realWords.map((word: any) => ({
+              id: word.id,
+              italian: word.italian,
+              english: '', 
+              pos: word.word_type || 'unknown',
+              source: 'database-lookup',
+              wordId: word.id
+            }));
+            addToDebugLog(`✅ Successfully looked up ${realWords.length} real words with UUIDs`);
+          }
+        } catch (lookupError: any) {
+          addToDebugLog(`❌ Database lookup error: ${lookupError.message}`);
+          reconstructedWords = pattern.targetWords.map((word: string, index: number) => ({
+            id: `word-${index}`, // Fallback to fake ID
             italian: word,
             english: '', 
             pos: 'unknown',
-            source: 'loaded-rule'
+            source: 'loaded-rule',
+            wordId: null // No real UUID available
           }));
-      
-      addToDebugLog(`🔍 Word reconstruction - Using ${pattern.targetWordObjects ? 'saved objects' : 'string fallback'}: ${reconstructedWords.length} words`);
+        }
+      } else {
+        reconstructedWords = [];
+        addToDebugLog(`🔍 Word reconstruction - No words to reconstruct`);
+      }
       
       const visualRule: VisualRule = {
         id: savedRule.rule_id,
