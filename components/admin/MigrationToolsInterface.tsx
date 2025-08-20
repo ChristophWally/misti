@@ -1696,6 +1696,14 @@ export default function MigrationToolsInterface() {
       setSelectedFormIds(config.selectedFormIds);
       setSelectedTranslationIds(config.selectedTranslationIds);
       
+      // Debug: Log what we're restoring
+      addToDebugLog(`🔧 Restoring selections - FormIds: ${JSON.stringify(config.selectedFormIds)}, TranslationIds: ${JSON.stringify(config.selectedTranslationIds)}`);
+      
+      // Debug: Verify state was set correctly after React update cycle
+      setTimeout(() => {
+        addToDebugLog(`🔍 State verification - selectedFormIds length: ${selectedFormIds.length}, selectedTranslationIds length: ${selectedTranslationIds.length}`);
+      }, 50);
+      
       // Reset only general cache/loading states, not configuration or word-specific data
       setCurrentLocationTags(null);
       setGlobalTags(null);
@@ -1712,27 +1720,39 @@ export default function MigrationToolsInterface() {
         // Trigger data loading based on table type
         setTimeout(async () => {
           try {
-            if (config.selectedTable === 'word_forms' && config.selectedFormIds && config.selectedFormIds.length > 0) {
-              addToDebugLog(`📝 Loading word forms data...`);
+            addToDebugLog(`🔍 Data loading chain - Table: ${config.selectedTable}, FormIds: ${config.selectedFormIds?.length || 0}, TranslationIds: ${config.selectedTranslationIds?.length || 0}`);
+            
+            if (config.selectedTable === 'word_forms') {
+              addToDebugLog(`📝 Loading word forms data for ${config.selectedWords.length} words...`);
               await loadWordFormsData();
               
-              // After forms data is loaded, load the form-specific tags
+              // After forms data is loaded, check if specific forms were selected
               setTimeout(() => {
-                if (config.selectedColumn === 'tags') {
-                  addToDebugLog(`🏷️ Loading selected form tags...`);
-                  loadSelectedFormTags();
+                if (config.selectedFormIds && config.selectedFormIds.length > 0) {
+                  addToDebugLog(`📋 Found ${config.selectedFormIds.length} specific form IDs to restore`);
+                  if (config.selectedColumn === 'tags') {
+                    addToDebugLog(`🏷️ Loading selected form tags...`);
+                    loadSelectedFormTags();
+                  }
+                } else {
+                  addToDebugLog(`ℹ️ No specific forms selected - forms data loaded for selection`);
                 }
               }, 100);
               
-            } else if (config.selectedTable === 'word_translations' && config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
-              addToDebugLog(`🔄 Loading word translations data...`);
+            } else if (config.selectedTable === 'word_translations') {
+              addToDebugLog(`🔄 Loading word translations data for ${config.selectedWords.length} words...`);
               await loadWordTranslationsData();
               
-              // After translations data is loaded, load the translation metadata
+              // After translations data is loaded, check if specific translations were selected
               setTimeout(() => {
-                if (config.selectedColumn === 'context_metadata') {
-                  addToDebugLog(`📊 Loading selected translation metadata...`);
-                  loadSelectedTranslationMetadata();
+                if (config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
+                  addToDebugLog(`📋 Found ${config.selectedTranslationIds.length} specific translation IDs to restore`);
+                  if (config.selectedColumn === 'context_metadata') {
+                    addToDebugLog(`📊 Loading selected translation metadata...`);
+                    loadSelectedTranslationMetadata();
+                  }
+                } else {
+                  addToDebugLog(`ℹ️ No specific translations selected - translations data loaded for selection`);
                 }
               }, 100);
             }
