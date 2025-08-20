@@ -1859,7 +1859,7 @@ export default function MigrationToolsInterface() {
             
             if (config.selectedTable === 'word_forms') {
               addToDebugLog(`📝 Loading word forms data for ${config.selectedWords.length} words...`);
-              await loadWordFormsData();
+              await loadWordFormsData(config.selectedWords);
               
               // After forms data is loaded, check if specific forms were selected
               setTimeout(() => {
@@ -1876,7 +1876,7 @@ export default function MigrationToolsInterface() {
               
             } else if (config.selectedTable === 'word_translations') {
               addToDebugLog(`🔄 Loading word translations data for ${config.selectedWords.length} words...`);
-              await loadWordTranslationsData();
+              await loadWordTranslationsData(config.selectedWords);
               
               // After translations data is loaded, check if specific translations were selected
               setTimeout(() => {
@@ -2450,19 +2450,20 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const loadWordFormsData = async () => {
-    if (selectedWords.length === 0) {
+  const loadWordFormsData = async (wordsToLoad?: any[]) => {
+    const words = wordsToLoad || selectedWords;
+    if (words.length === 0) {
       addToDebugLog('⚠️ No words selected for forms loading');
       return;
     }
 
     setIsLoadingWordForms(true);
-    addToDebugLog(`📝 Loading word forms for ${selectedWords.length} words...`);
+    addToDebugLog(`📝 Loading word forms for ${words.length} words...`);
 
     try {
       const formsData: Record<string, any[]> = {};
 
-      for (const word of selectedWords) {
+      for (const word of words) {
         addToDebugLog(`🔍 Loading forms for: ${word.italian}`);
 
         const { data: forms, error } = await supabase
@@ -2495,19 +2496,20 @@ export default function MigrationToolsInterface() {
     }
   };
 
-  const loadWordTranslationsData = async () => {
-    if (selectedWords.length === 0) {
+  const loadWordTranslationsData = async (wordsToLoad?: any[]) => {
+    const words = wordsToLoad || selectedWords;
+    if (words.length === 0) {
       addToDebugLog('⚠️ No words selected for translations loading');
       return;
     }
 
     setIsLoadingWordTranslations(true);
-    addToDebugLog(`🌍 Loading translations for ${selectedWords.length} words...`);
+    addToDebugLog(`🌍 Loading translations for ${words.length} words...`);
 
     try {
       const translationsData: Record<string, any[]> = {};
 
-      for (const word of selectedWords) {
+      for (const word of words) {
         addToDebugLog(`🔍 Loading translations for: ${word.italian}`);
 
         const { data: translations, error } = await supabase
