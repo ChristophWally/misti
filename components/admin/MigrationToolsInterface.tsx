@@ -2993,8 +2993,11 @@ export default function MigrationToolsInterface() {
       // Find the execution
       const execution = executionHistory.find(e => e.id === executionId);
       if (!execution) {
+        addToDebugLog(`❌ Execution not found in history array`);
         throw new Error('Execution not found');
       }
+
+      addToDebugLog(`✅ Found execution: ${execution.rule_name}, can_rollback: ${execution.can_rollback}`);
 
       if (!execution.can_rollback) {
         throw new Error('This execution cannot be rolled back');
@@ -3002,29 +3005,50 @@ export default function MigrationToolsInterface() {
 
       // Extract rollback data
       const rollbackData = execution.rollback_data;
-      if (!rollbackData?.changes || !Array.isArray(rollbackData.changes)) {
+      if (!rollbackData) {
+        addToDebugLog(`❌ No rollback_data found`);
         throw new Error('No rollback data available');
       }
 
+      if (!rollbackData.changes || !Array.isArray(rollbackData.changes)) {
+        addToDebugLog(`❌ Invalid rollback_data.changes: ${JSON.stringify(rollbackData)}`);
+        throw new Error('No rollback changes data available');
+      }
+
       addToDebugLog(`📊 Reverting ${rollbackData.changes.length} individual changes...`);
+      addToDebugLog(`🔍 Sample change structure: ${JSON.stringify(rollbackData.changes[0], null, 2)}`);
 
       // Execute rollback for each change in reverse order
       let revertedCount = 0;
       const changes = [...rollbackData.changes].reverse(); // Reverse order for rollback
 
-      for (const change of changes) {
+      for (let i = 0; i < changes.length; i++) {
+        const change = changes[i];
+        addToDebugLog(`🔄 Processing change ${i + 1}/${changes.length}: ${change.change_id}`);
+        
         if (change.rollback_data?.rollback_operation === 'direct_restore') {
-          const { error: revertError } = await supabase
+          addToDebugLog(`📊 Reverting ${change.rollback_data.target_table}.${change.rollback_data.target_column} for record ${change.rollback_data.target_record_uuid}`);
+          
+          const { data: revertData, error: revertError } = await supabase
             .from(change.rollback_data.target_table)
             .update({ [change.rollback_data.target_column]: change.rollback_data.restore_to_value })
-            .eq('id', change.rollback_data.target_record_uuid);
+            .eq('id', change.rollback_data.target_record_uuid)
+            .select('id');
 
           if (revertError) {
             addToDebugLog(`⚠️ Failed to revert change ${change.change_id}: ${revertError.message}`);
             continue;
           }
 
+          if (!revertData || revertData.length === 0) {
+            addToDebugLog(`⚠️ Revert returned no data for change ${change.change_id} - record may not exist`);
+            continue;
+          }
+
+          addToDebugLog(`✅ Successfully reverted change ${change.change_id}`);
           revertedCount++;
+        } else {
+          addToDebugLog(`⚠️ Skipping change ${change.change_id}: unsupported rollback operation ${change.rollback_data?.rollback_operation}`);
         }
       }
 
