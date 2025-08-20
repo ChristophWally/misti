@@ -1696,18 +1696,52 @@ export default function MigrationToolsInterface() {
       setSelectedFormIds(config.selectedFormIds);
       setSelectedTranslationIds(config.selectedTranslationIds);
       
-      // Reset only cache/loading states, not configuration
+      // Reset only general cache/loading states, not configuration or word-specific data
       setCurrentLocationTags(null);
       setGlobalTags(null);
       setWordSpecificTags(null);
-      setWordFormsData(null);
-      setWordTranslationsData(null);
-      setSelectedFormTags(null);
-      setSelectedTranslationMetadata(null);
       
       addToDebugLog(`🔧 Restored rule configuration for: ${rule.title}`);
       addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
       addToDebugLog(`🏷️ Tags for migration: ${JSON.stringify(config.selectedTagsForMigration)}`);
+      
+      // For loaded rules with specific selections, trigger data loading chain
+      if (config.selectedWords && config.selectedWords.length > 0) {
+        addToDebugLog(`🔄 Triggering data loading chain for ${config.selectedWords.length} words...`);
+        
+        // Trigger data loading based on table type
+        setTimeout(async () => {
+          try {
+            if (config.selectedTable === 'word_forms' && config.selectedFormIds && config.selectedFormIds.length > 0) {
+              addToDebugLog(`📝 Loading word forms data...`);
+              await loadWordFormsData();
+              
+              // After forms data is loaded, load the form-specific tags
+              setTimeout(() => {
+                if (config.selectedColumn === 'tags') {
+                  addToDebugLog(`🏷️ Loading selected form tags...`);
+                  loadSelectedFormTags();
+                }
+              }, 100);
+              
+            } else if (config.selectedTable === 'word_translations' && config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
+              addToDebugLog(`🔄 Loading word translations data...`);
+              await loadWordTranslationsData();
+              
+              // After translations data is loaded, load the translation metadata
+              setTimeout(() => {
+                if (config.selectedColumn === 'context_metadata') {
+                  addToDebugLog(`📊 Loading selected translation metadata...`);
+                  loadSelectedTranslationMetadata();
+                }
+              }, 100);
+            }
+          } catch (error: any) {
+            addToDebugLog(`❌ Error in data loading chain: ${error.message}`);
+          }
+        }, 200); // Small delay to ensure state updates have processed
+      }
+      
       return;
     }
 
