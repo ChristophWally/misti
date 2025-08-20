@@ -4730,7 +4730,7 @@ export default function MigrationToolsInterface() {
 
                       {!wordFormsData && !isLoadingWordForms && (
                         <button
-                          onClick={loadWordFormsData}
+                          onClick={() => loadWordFormsData()}
                           className="w-full py-1.5 text-sm bg-yellow-600 text-white rounded hover:bg-yellow-700"
                         >
                           📝 Load Word Forms
@@ -4875,7 +4875,7 @@ export default function MigrationToolsInterface() {
 
                     {!wordTranslationsData && (
                       <button
-                        onClick={loadWordTranslationsData}
+                        onClick={() => loadWordTranslationsData()}
                         disabled={isLoadingWordTranslations}
                         className="w-full py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
                       >
