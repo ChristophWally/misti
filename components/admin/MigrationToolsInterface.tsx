@@ -49,6 +49,8 @@ interface VisualRule {
     selectedWords: WordSearchResult[];
     selectedFormIds: string[];
     selectedTranslationIds: string[];
+    selectedFormNames?: string[]; // NEW: Actual form names for display
+    selectedTranslationNames?: string[]; // NEW: Actual translation names for display
   };
   // NEW: Rule source tracking
   ruleSource?: 'default' | 'custom' | 'loaded';
