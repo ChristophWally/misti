@@ -1853,6 +1853,7 @@ export default function MigrationToolsInterface() {
         setRuleBuilderMappings([]);
         setTagsToRemove([]);
         break;
+      }
     }
   };
 
