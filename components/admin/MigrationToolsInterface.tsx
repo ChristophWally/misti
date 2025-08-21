@@ -2276,16 +2276,37 @@ export default function MigrationToolsInterface() {
       const tagData: Record<string, any> = {};
 
       for (const word of selectedWords) {
-        addToDebugLog(`🔍 Loading tags for: ${word.italian}`);
+        addToDebugLog(`🔍 Loading tags for: ${word.italian} (ID: ${word.wordId})`);
+        
+        // CRITICAL FIX: Handle fake word IDs by looking up real IDs
+        let realWordId = word.wordId;
+        if (word.wordId.startsWith('word-')) {
+          addToDebugLog(`🔧 Detected fake ID ${word.wordId}, looking up real ID for "${word.italian}"`);
+          const { data: realWord, error: lookupError } = await supabase
+            .from('dictionary')
+            .select('id')
+            .eq('italian', word.italian)
+            .single();
+          
+          if (lookupError || !realWord) {
+            addToDebugLog(`❌ Could not find real ID for word "${word.italian}": ${lookupError?.message}`);
+            continue; // Skip this word
+          }
+          realWordId = realWord.id;
+          addToDebugLog(`✅ Found real ID: ${realWordId} for "${word.italian}"`);
+        }
 
         if (selectedTable === 'dictionary') {
           const { data: dictData, error: dictError } = await supabase
             .from('dictionary')
             .select('tags')
-            .eq('id', word.wordId)
+            .eq('id', realWordId)
             .single();
 
-          if (dictError) throw dictError;
+          if (dictError) {
+            addToDebugLog(`❌ Error loading dictionary data for ${word.italian}: ${dictError.message}`);
+            continue;
+          }
 
           tagData[word.wordId] = {
             dictionaryTags: dictData?.tags || []
@@ -2295,9 +2316,12 @@ export default function MigrationToolsInterface() {
           const { data: formsData, error: formsError } = await supabase
             .from('word_forms')
             .select('tags')
-            .eq('word_id', word.wordId);
+            .eq('word_id', realWordId);
 
-          if (formsError) throw formsError;
+          if (formsError) {
+            addToDebugLog(`❌ Error loading forms data for ${word.italian}: ${formsError.message}`);
+            continue;
+          }
 
           const tagCounts: Record<string, number> = {};
           (formsData || []).forEach((form: any) => {
@@ -2314,9 +2338,12 @@ export default function MigrationToolsInterface() {
           const { data: transData, error: transError } = await supabase
             .from('word_translations')
             .select('context_metadata')
-            .eq('word_id', word.wordId);
+            .eq('word_id', realWordId);
 
-          if (transError) throw transError;
+          if (transError) {
+            addToDebugLog(`❌ Error loading translations data for ${word.italian}: ${transError.message}`);
+            continue;
+          }
 
           const metadataKeys = new Set<string>();
           (transData || []).forEach((translation: any) => {
