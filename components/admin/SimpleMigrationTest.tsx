@@ -5,13 +5,24 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 const supabase = createClientComponentClient();
 
-// Simple, working rule structure
+// Enhanced rule structure with Step 2 metadata
 interface SimpleRule {
   id: string;
   name: string;
   mappings: { from: string; to: string }[];
   selectedTranslations: { id: string; name: string }[];
+  selectedForms: { id: string; name: string }[];
+  availableMetadataKeys: string[];
+  selectedTagsForMigration: string[];
   status: 'ready' | 'saved';
+}
+
+interface WordSearchResult {
+  wordId: string;
+  italian: string;
+  wordType: string;
+  forms: { id: string; form_text: string; context_metadata?: any }[];
+  translations: { id: string; translation: string; context_metadata?: any }[];
 }
 
 export default function SimpleMigrationTest() {
@@ -23,11 +34,142 @@ export default function SimpleMigrationTest() {
   const [ruleName, setRuleName] = useState('');
   const [mappings, setMappings] = useState<{ from: string; to: string }[]>([]);
   const [selectedTranslations, setSelectedTranslations] = useState<{ id: string; name: string }[]>([]);
+  const [selectedForms, setSelectedForms] = useState<{ id: string; name: string }[]>([]);
+  const [availableMetadataKeys, setAvailableMetadataKeys] = useState<string[]>([]);
+  const [selectedTagsForMigration, setSelectedTagsForMigration] = useState<string[]>([]);
+
+  // Word search state
+  const [wordSearchTerm, setWordSearchTerm] = useState('');
+  const [wordSearchResults, setWordSearchResults] = useState<WordSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Load saved rules on mount
   useEffect(() => {
     loadRules();
   }, []);
+
+  // Search words when term changes
+  useEffect(() => {
+    if (wordSearchTerm.trim().length > 2) {
+      searchWords();
+    } else {
+      setWordSearchResults([]);
+    }
+  }, [wordSearchTerm]);
+
+  // Load Step 2 metadata when forms/translations change
+  useEffect(() => {
+    if (selectedForms.length > 0 || selectedTranslations.length > 0) {
+      loadAvailableMetadata();
+    } else {
+      setAvailableMetadataKeys([]);
+      setSelectedTagsForMigration([]);
+    }
+  }, [selectedForms, selectedTranslations]);
+
+  const searchWords = async () => {
+    if (isSearching) return;
+    setIsSearching(true);
+
+    try {
+      console.log('🔍 Searching for words:', wordSearchTerm);
+      
+      const { data: wordsData, error: wordsError } = await supabase
+        .from('words')
+        .select('word_id, italian, word_type')
+        .ilike('italian', `%${wordSearchTerm}%`)
+        .limit(10);
+
+      if (wordsError) throw wordsError;
+      if (!wordsData?.length) {
+        setWordSearchResults([]);
+        return;
+      }
+
+      const wordIds = wordsData.map(w => w.word_id);
+
+      // Get forms for these words
+      const { data: formsData, error: formsError } = await supabase
+        .from('word_forms')
+        .select('id, word_id, form_text, context_metadata')
+        .in('word_id', wordIds);
+
+      // Get translations for these words  
+      const { data: translationsData, error: translationsError } = await supabase
+        .from('word_translations')
+        .select('id, word_id, translation, context_metadata')
+        .in('word_id', wordIds);
+
+      if (formsError) throw formsError;
+      if (translationsError) throw translationsError;
+
+      const searchResults: WordSearchResult[] = wordsData.map(word => ({
+        wordId: word.word_id,
+        italian: word.italian,
+        wordType: word.word_type,
+        forms: formsData?.filter(f => f.word_id === word.word_id) || [],
+        translations: translationsData?.filter(t => t.word_id === word.word_id) || []
+      }));
+
+      setWordSearchResults(searchResults);
+      console.log('✅ Found words:', searchResults);
+    } catch (error) {
+      console.error('❌ Word search failed:', error);
+      setWordSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const loadAvailableMetadata = async () => {
+    console.log('📊 Loading metadata for selected items...');
+    
+    const metadataKeys = new Set<string>();
+
+    // Extract metadata from selected forms
+    if (selectedForms.length > 0) {
+      try {
+        const { data: formsData, error: formsError } = await supabase
+          .from('word_forms')
+          .select('context_metadata')
+          .in('id', selectedForms.map(f => f.id));
+
+        if (formsError) throw formsError;
+        
+        formsData?.forEach(form => {
+          if (form.context_metadata && typeof form.context_metadata === 'object') {
+            Object.keys(form.context_metadata).forEach(key => metadataKeys.add(key));
+          }
+        });
+      } catch (error) {
+        console.error('❌ Failed to load form metadata:', error);
+      }
+    }
+
+    // Extract metadata from selected translations
+    if (selectedTranslations.length > 0) {
+      try {
+        const { data: translationsData, error: translationsError } = await supabase
+          .from('word_translations')
+          .select('context_metadata')
+          .in('id', selectedTranslations.map(t => t.id));
+
+        if (translationsError) throw translationsError;
+        
+        translationsData?.forEach(translation => {
+          if (translation.context_metadata && typeof translation.context_metadata === 'object') {
+            Object.keys(translation.context_metadata).forEach(key => metadataKeys.add(key));
+          }
+        });
+      } catch (error) {
+        console.error('❌ Failed to load translation metadata:', error);
+      }
+    }
+
+    const keys = Array.from(metadataKeys).sort();
+    setAvailableMetadataKeys(keys);
+    console.log('✅ Available metadata keys:', keys);
+  };
 
   const loadRules = async () => {
     try {
@@ -47,6 +189,12 @@ export default function SimpleMigrationTest() {
           id: rule.rule_config?.selectedTranslationIds?.[index] || `id-${index}`,
           name
         })) || [],
+        selectedForms: rule.rule_config?.selectedFormNames?.map((name: string, index: number) => ({
+          id: rule.rule_config?.selectedFormIds?.[index] || `id-${index}`,
+          name
+        })) || [],
+        availableMetadataKeys: rule.rule_config?.availableMetadataKeys || [],
+        selectedTagsForMigration: rule.rule_config?.selectedTagsForMigration || [],
         status: 'saved'
       })) || [];
 
@@ -66,10 +214,11 @@ export default function SimpleMigrationTest() {
       const ruleData = {
         rule_id: ruleId,
         name: ruleName,
-        description: 'Test rule',
+        description: 'Test rule with Step 2 metadata',
         pattern: {
           table: 'word_translations',
           column: 'context_metadata',
+          targetFormIds: selectedForms.map(f => f.id),
           targetTranslationIds: selectedTranslations.map(t => t.id)
         },
         transformation: {
@@ -80,8 +229,12 @@ export default function SimpleMigrationTest() {
           }, {} as Record<string, string>)
         },
         rule_config: {
+          selectedFormIds: selectedForms.map(f => f.id),
+          selectedFormNames: selectedForms.map(f => f.name),
           selectedTranslationIds: selectedTranslations.map(t => t.id),
           selectedTranslationNames: selectedTranslations.map(t => t.name),
+          availableMetadataKeys,
+          selectedTagsForMigration,
           ruleBuilderMappings: mappings.map((m, i) => ({ id: i.toString(), from: m.from, to: m.to }))
         },
         status: 'active',
@@ -108,6 +261,9 @@ export default function SimpleMigrationTest() {
         name: ruleName,
         mappings: [...mappings],
         selectedTranslations: [...selectedTranslations],
+        selectedForms: [...selectedForms],
+        availableMetadataKeys: [...availableMetadataKeys],
+        selectedTagsForMigration: [...selectedTagsForMigration],
         status: 'saved'
       };
 
@@ -129,8 +285,14 @@ export default function SimpleMigrationTest() {
     setRuleName(rule.name);
     setMappings([...rule.mappings]);
     setSelectedTranslations([...rule.selectedTranslations]);
+    setSelectedForms([...rule.selectedForms]);
+    setAvailableMetadataKeys([...rule.availableMetadataKeys]);
+    setSelectedTagsForMigration([...rule.selectedTagsForMigration]);
     setShowBuilder(true);
-    console.log('✏️ Editing rule:', rule);
+    console.log('✏️ Editing rule - Step 2 should load:', {
+      availableKeys: rule.availableMetadataKeys,
+      selectedTags: rule.selectedTagsForMigration
+    });
   };
 
   const resetBuilder = () => {
@@ -138,6 +300,11 @@ export default function SimpleMigrationTest() {
     setRuleName('');
     setMappings([]);
     setSelectedTranslations([]);
+    setSelectedForms([]);
+    setAvailableMetadataKeys([]);
+    setSelectedTagsForMigration([]);
+    setWordSearchTerm('');
+    setWordSearchResults([]);
     setShowBuilder(false);
   };
 
@@ -153,18 +320,36 @@ export default function SimpleMigrationTest() {
     setMappings(prev => prev.filter((_, i) => i !== index));
   };
 
-  const addTranslation = () => {
-    const id = `trans-${Date.now()}`;
-    const name = `Sample Translation ${selectedTranslations.length + 1}`;
-    setSelectedTranslations(prev => [...prev, { id, name }]);
+  const selectForm = (word: WordSearchResult, form: any) => {
+    const formItem = { id: form.id, name: form.form_text };
+    if (!selectedForms.find(f => f.id === form.id)) {
+      setSelectedForms(prev => [...prev, formItem]);
+      console.log('📝 Selected form:', formItem);
+    }
+  };
+
+  const selectTranslation = (word: WordSearchResult, translation: any) => {
+    const translationItem = { id: translation.id, name: translation.translation };
+    if (!selectedTranslations.find(t => t.id === translation.id)) {
+      setSelectedTranslations(prev => [...prev, translationItem]);
+      console.log('🔤 Selected translation:', translationItem);
+    }
+  };
+
+  const toggleMetadataTag = (key: string) => {
+    setSelectedTagsForMigration(prev => 
+      prev.includes(key) 
+        ? prev.filter(tag => tag !== key)
+        : [...prev, key]
+    );
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
-            Simple Migration Test - Prove Translations Work
+            Enhanced Migration Test - WITH STEP 2 METADATA LOADING
           </h1>
           <button
             onClick={() => setShowBuilder(true)}
@@ -201,8 +386,20 @@ export default function SimpleMigrationTest() {
                   ))}
                 </div>
                 <div>
+                  <span className="font-medium">Forms:</span> 
+                  {rule.selectedForms.map(f => f.name).join(', ') || 'None'}
+                </div>
+                <div>
                   <span className="font-medium">Translations:</span> 
                   {rule.selectedTranslations.map(t => t.name).join(', ') || 'None'}
+                </div>
+                <div>
+                  <span className="font-medium">Available Metadata Keys:</span> 
+                  <span className="ml-2">{rule.availableMetadataKeys.join(', ') || 'None'}</span>
+                </div>
+                <div>
+                  <span className="font-medium">Selected Tags for Migration:</span> 
+                  <span className="ml-2 text-green-700">{rule.selectedTagsForMigration.join(', ') || 'None'}</span>
                 </div>
               </div>
             </div>
@@ -210,18 +407,18 @@ export default function SimpleMigrationTest() {
           
           {rules.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              No rules found. Create a test rule to verify functionality.
+              No rules found. Create a test rule to verify Step 2 functionality.
             </div>
           )}
         </div>
 
-        {/* Simple Builder Modal */}
+        {/* Enhanced Builder Modal */}
         {showBuilder && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <div className="bg-white rounded-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">
-                  {editingRule ? 'Edit' : 'Create'} Test Rule
+                  {editingRule ? 'Edit' : 'Create'} Test Rule - WITH STEP 2
                 </h2>
                 <button
                   onClick={resetBuilder}
@@ -231,88 +428,161 @@ export default function SimpleMigrationTest() {
                 </button>
               </div>
 
-              <div className="space-y-4">
-                {/* Rule Name */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Rule Name</label>
-                  <input
-                    type="text"
-                    value={ruleName}
-                    onChange={(e) => setRuleName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter rule name..."
-                  />
+              <div className="grid grid-cols-2 gap-6">
+                {/* LEFT: Word Selection */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Rule Name</label>
+                    <input
+                      type="text"
+                      value={ruleName}
+                      onChange={(e) => setRuleName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter rule name..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Search Words</label>
+                    <input
+                      type="text"
+                      value={wordSearchTerm}
+                      onChange={(e) => setWordSearchTerm(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Search for Italian words..."
+                    />
+                    {isSearching && <div className="text-sm text-blue-600 mt-1">Searching...</div>}
+                  </div>
+
+                  {wordSearchResults.length > 0 && (
+                    <div className="max-h-96 overflow-y-auto border border-gray-200 rounded">
+                      {wordSearchResults.map((word) => (
+                        <div key={word.wordId} className="border-b border-gray-100 p-3">
+                          <div className="font-medium text-gray-900">
+                            {word.italian} <span className="text-sm text-gray-500">({word.wordType})</span>
+                          </div>
+                          
+                          <div className="mt-2 space-y-1">
+                            <div className="text-sm font-medium text-blue-700">Forms:</div>
+                            {word.forms.map((form) => (
+                              <button
+                                key={form.id}
+                                onClick={() => selectForm(word, form)}
+                                className={`mr-2 mb-1 px-2 py-1 text-xs rounded ${
+                                  selectedForms.find(f => f.id === form.id)
+                                    ? 'bg-blue-200 text-blue-800'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                {form.form_text}
+                              </button>
+                            ))}
+                          </div>
+                          
+                          <div className="mt-2 space-y-1">
+                            <div className="text-sm font-medium text-purple-700">Translations:</div>
+                            {word.translations.map((translation) => (
+                              <button
+                                key={translation.id}
+                                onClick={() => selectTranslation(word, translation)}
+                                className={`mr-2 mb-1 px-2 py-1 text-xs rounded ${
+                                  selectedTranslations.find(t => t.id === translation.id)
+                                    ? 'bg-purple-200 text-purple-800'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                              >
+                                {translation.translation}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Mappings */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium">Mappings</label>
-                    <button
-                      onClick={addMapping}
-                      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-                    >
-                      Add Mapping
-                    </button>
+                {/* RIGHT: Step 2 Configuration */}
+                <div className="space-y-4">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-yellow-900">STEP 2: Available Metadata Keys</h3>
+                    <div className="text-sm text-yellow-800 mt-1">
+                      {availableMetadataKeys.length === 0 ? (
+                        <div>Select forms or translations to see available metadata keys</div>
+                      ) : (
+                        <div>
+                          <div className="mb-2">Found {availableMetadataKeys.length} metadata keys:</div>
+                          <div className="space-y-1">
+                            {availableMetadataKeys.map((key) => (
+                              <label key={key} className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedTagsForMigration.includes(key)}
+                                  onChange={() => toggleMetadataTag(key)}
+                                  className="rounded"
+                                />
+                                <span className="font-mono text-sm bg-yellow-100 px-2 py-1 rounded">
+                                  {key}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    {mappings.map((mapping, index) => (
-                      <div key={index} className="flex space-x-2 items-center">
-                        <input
-                          type="text"
-                          value={mapping.from}
-                          onChange={(e) => updateMapping(index, 'from', e.target.value)}
-                          placeholder="From..."
-                          className="flex-1 px-2 py-1 border border-gray-300 rounded"
-                        />
-                        <span>→</span>
-                        <input
-                          type="text"
-                          value={mapping.to}
-                          onChange={(e) => updateMapping(index, 'to', e.target.value)}
-                          placeholder="To..."
-                          className="flex-1 px-2 py-1 border border-gray-300 rounded"
-                        />
-                        <button
-                          onClick={() => removeMapping(index)}
-                          className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Translations */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium">Selected Translations</label>
-                    <button
-                      onClick={addTranslation}
-                      className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
-                    >
-                      Add Translation
-                    </button>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium">Mappings</label>
+                      <button
+                        onClick={addMapping}
+                        className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                      >
+                        Add Mapping
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {mappings.map((mapping, index) => (
+                        <div key={index} className="flex space-x-2 items-center">
+                          <input
+                            type="text"
+                            value={mapping.from}
+                            onChange={(e) => updateMapping(index, 'from', e.target.value)}
+                            placeholder="From..."
+                            className="flex-1 px-2 py-1 border border-gray-300 rounded"
+                          />
+                          <span>→</span>
+                          <input
+                            type="text"
+                            value={mapping.to}
+                            onChange={(e) => updateMapping(index, 'to', e.target.value)}
+                            placeholder="To..."
+                            className="flex-1 px-2 py-1 border border-gray-300 rounded"
+                          />
+                          <button
+                            onClick={() => removeMapping(index)}
+                            className="px-2 py-1 text-red-600 hover:bg-red-50 rounded"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    {selectedTranslations.map((trans, index) => (
-                      <div key={trans.id} className="flex items-center justify-between px-2 py-1 bg-purple-50 rounded">
-                        <span className="text-sm">{trans.name}</span>
-                        <button
-                          onClick={() => setSelectedTranslations(prev => prev.filter(t => t.id !== trans.id))}
-                          className="text-purple-600 hover:text-purple-800"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
+
+                  <div>
+                    <div className="text-sm font-medium mb-2">Selected Items Summary:</div>
+                    <div className="bg-gray-50 p-3 rounded text-sm">
+                      <div><strong>Forms:</strong> {selectedForms.length} selected</div>
+                      <div><strong>Translations:</strong> {selectedTranslations.length} selected</div>
+                      <div><strong>Tags for Migration:</strong> {selectedTagsForMigration.length} selected</div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex justify-end space-x-3 mt-6">
+              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
                 <button
                   onClick={resetBuilder}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded hover:bg-gray-50"
