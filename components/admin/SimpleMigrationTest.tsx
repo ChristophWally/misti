@@ -37,6 +37,10 @@ export default function SimpleMigrationTest() {
   const [selectedForms, setSelectedForms] = useState<{ id: string; name: string }[]>([]);
   const [availableMetadataKeys, setAvailableMetadataKeys] = useState<string[]>([]);
   const [selectedTagsForMigration, setSelectedTagsForMigration] = useState<string[]>([]);
+  
+  // Separate tracking for clearer UI
+  const [availableFormTags, setAvailableFormTags] = useState<string[]>([]);
+  const [availableTranslationKeys, setAvailableTranslationKeys] = useState<string[]>([]);
 
   // Word search state
   const [wordSearchTerm, setWordSearchTerm] = useState('');
@@ -73,6 +77,8 @@ export default function SimpleMigrationTest() {
       console.log('🧹 Clearing metadata - no items selected');
       setAvailableMetadataKeys([]);
       setSelectedTagsForMigration([]);
+      setAvailableFormTags([]);
+      setAvailableTranslationKeys([]);
     }
   }, [selectedForms, selectedTranslations]);
 
@@ -136,9 +142,10 @@ export default function SimpleMigrationTest() {
       selectedTranslationIds: selectedTranslations.map(t => t.id)
     });
     
-    const metadataKeys = new Set<string>();
+    const formTags = new Set<string>();
+    const translationKeys = new Set<string>();
 
-    // Extract metadata from selected forms (using tags array, not context_metadata)
+    // Extract tags from selected forms (direct tag values)
     if (selectedForms.length > 0) {
       try {
         console.log('🔍 Fetching form tags...');
@@ -155,7 +162,7 @@ export default function SimpleMigrationTest() {
           if (form.tags && Array.isArray(form.tags)) {
             form.tags.forEach(tag => {
               console.log('🏷️ Adding form tag:', tag);
-              metadataKeys.add(tag);
+              formTags.add(tag);
             });
           }
         });
@@ -164,7 +171,7 @@ export default function SimpleMigrationTest() {
       }
     }
 
-    // Extract metadata from selected translations
+    // Extract metadata keys from selected translations (object keys)
     if (selectedTranslations.length > 0) {
       try {
         console.log('🔍 Fetching translation metadata...');
@@ -181,7 +188,7 @@ export default function SimpleMigrationTest() {
           if (translation.context_metadata && typeof translation.context_metadata === 'object') {
             Object.keys(translation.context_metadata).forEach(key => {
               console.log('🏷️ Adding translation metadata key:', key);
-              metadataKeys.add(key);
+              translationKeys.add(key);
             });
           }
         });
@@ -190,13 +197,17 @@ export default function SimpleMigrationTest() {
       }
     }
 
-    const keys = Array.from(metadataKeys).sort();
-    console.log('🎯 SETTING metadata keys:', keys);
-    setAvailableMetadataKeys(keys);
+    // Combine both sets for backward compatibility, but track separately
+    const allKeys = [...Array.from(formTags), ...Array.from(translationKeys)].sort();
+    console.log('🎯 SETTING metadata - Form tags:', Array.from(formTags), 'Translation keys:', Array.from(translationKeys));
+    
+    setAvailableMetadataKeys(allKeys);
+    setAvailableFormTags(Array.from(formTags));
+    setAvailableTranslationKeys(Array.from(translationKeys));
     
     // In edit mode, preserve previously selected tags that are still available
     if (editingRule) {
-      const stillAvailableTags = selectedTagsForMigration.filter(tag => keys.includes(tag));
+      const stillAvailableTags = selectedTagsForMigration.filter(tag => allKeys.includes(tag));
       if (stillAvailableTags.length !== selectedTagsForMigration.length) {
         console.log('🔄 Some tags no longer available, filtering:', {
           previous: selectedTagsForMigration,
@@ -206,7 +217,7 @@ export default function SimpleMigrationTest() {
       }
     }
     
-    console.log('✅ Metadata loading COMPLETED. Keys set:', keys);
+    console.log('✅ Metadata loading COMPLETED. Combined keys:', allKeys);
   };
 
   const loadRules = async () => {
@@ -354,6 +365,8 @@ export default function SimpleMigrationTest() {
     setSelectedForms([]);
     setAvailableMetadataKeys([]);
     setSelectedTagsForMigration([]);
+    setAvailableFormTags([]);
+    setAvailableTranslationKeys([]);
     setWordSearchTerm('');
     setWordSearchResults([]);
     setShowBuilder(false);
@@ -556,32 +569,73 @@ export default function SimpleMigrationTest() {
                 <div className="space-y-4">
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <h3 className="font-semibold text-yellow-900">
-                      STEP 2: Available Metadata Keys 
+                      STEP 2: Migration Targets 
                       {editingRule && <span className="text-xs font-normal">(Re-queried from database)</span>}
                     </h3>
                     <div className="text-sm text-yellow-800 mt-1">
-                      {availableMetadataKeys.length === 0 ? (
-                        <div>Select forms or translations to see available metadata keys</div>
+                      {availableFormTags.length === 0 && availableTranslationKeys.length === 0 ? (
+                        <div>Select forms or translations to see available migration targets</div>
                       ) : (
-                        <div>
-                          <div className="mb-2">
-                            Found {availableMetadataKeys.length} metadata keys 
-                            {editingRule && <span className="text-green-700"> (current database state)</span>}:
-                          </div>
-                          <div className="space-y-1">
-                            {availableMetadataKeys.map((key) => (
-                              <label key={key} className="flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedTagsForMigration.includes(key)}
-                                  onChange={() => toggleMetadataTag(key)}
-                                  className="rounded"
-                                />
-                                <span className="font-mono text-sm bg-yellow-100 px-2 py-1 rounded">
-                                  {key}
-                                </span>
-                              </label>
-                            ))}
+                        <div className="space-y-3">
+                          {/* Form Tags Section */}
+                          {availableFormTags.length > 0 && (
+                            <div>
+                              <div className="font-medium text-blue-900 mb-1">
+                                📝 Form Tags ({availableFormTags.length}) - Direct Values:
+                              </div>
+                              <div className="text-xs text-blue-700 mb-2 italic">
+                                These are grammatical tags applied to word forms
+                              </div>
+                              <div className="space-y-1">
+                                {availableFormTags.map((tag) => (
+                                  <label key={`form-${tag}`} className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedTagsForMigration.includes(tag)}
+                                      onChange={() => toggleMetadataTag(tag)}
+                                      className="rounded"
+                                    />
+                                    <span className="font-mono text-sm bg-blue-100 px-2 py-1 rounded border-blue-300">
+                                      {tag}
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Translation Keys Section */}
+                          {availableTranslationKeys.length > 0 && (
+                            <div>
+                              <div className="font-medium text-purple-900 mb-1">
+                                🔤 Translation Metadata Keys ({availableTranslationKeys.length}) - Object Properties:
+                              </div>
+                              <div className="text-xs text-purple-700 mb-2 italic">
+                                These are metadata fields attached to translations (you migrate their values)
+                              </div>
+                              <div className="space-y-1">
+                                {availableTranslationKeys.map((key) => (
+                                  <label key={`trans-${key}`} className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedTagsForMigration.includes(key)}
+                                      onChange={() => toggleMetadataTag(key)}
+                                      className="rounded"
+                                    />
+                                    <span className="font-mono text-sm bg-purple-100 px-2 py-1 rounded border-purple-300">
+                                      {key}
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="pt-2 border-t border-yellow-300">
+                            <div className="text-xs text-yellow-700">
+                              <strong>Total selected:</strong> {selectedTagsForMigration.length} migration targets
+                              {editingRule && <span className="text-green-700"> (showing current database state)</span>}
+                            </div>
                           </div>
                         </div>
                       )}
