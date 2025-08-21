@@ -42,9 +42,6 @@ export default function SimpleMigrationTest() {
   const [wordSearchTerm, setWordSearchTerm] = useState('');
   const [wordSearchResults, setWordSearchResults] = useState<WordSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  
-  // Prevent useEffect from clearing when restoring rule state
-  const [isRestoringRule, setIsRestoringRule] = useState(false);
 
   // Load saved rules on mount
   useEffect(() => {
@@ -60,29 +57,24 @@ export default function SimpleMigrationTest() {
     }
   }, [wordSearchTerm]);
 
-  // Load Step 2 metadata when forms/translations change
+  // Load Step 2 metadata when forms/translations change (same behavior for create AND edit)
   useEffect(() => {
-    console.log('🔄 Step 2 useEffect triggered:', { 
+    console.log('🔄 Step 2 useEffect triggered (create AND edit mode):', { 
       formCount: selectedForms.length, 
       translationCount: selectedTranslations.length,
       currentKeys: availableMetadataKeys.length,
-      isRestoringRule 
+      editingMode: !!editingRule
     });
     
-    if (isRestoringRule) {
-      console.log('⏸️ Skipping useEffect - currently restoring rule state');
-      return;
-    }
-    
     if (selectedForms.length > 0 || selectedTranslations.length > 0) {
-      console.log('📊 Loading metadata for selected items...');
+      console.log('📊 Re-querying current metadata from database...');
       loadAvailableMetadata();
     } else {
       console.log('🧹 Clearing metadata - no items selected');
       setAvailableMetadataKeys([]);
       setSelectedTagsForMigration([]);
     }
-  }, [selectedForms, selectedTranslations, isRestoringRule]);
+  }, [selectedForms, selectedTranslations]);
 
   const searchWords = async () => {
     if (isSearching) return;
@@ -202,7 +194,18 @@ export default function SimpleMigrationTest() {
     console.log('🎯 SETTING metadata keys:', keys);
     setAvailableMetadataKeys(keys);
     
-    // Don't clear existing selected tags if we're just reloading the same data
+    // In edit mode, preserve previously selected tags that are still available
+    if (editingRule) {
+      const stillAvailableTags = selectedTagsForMigration.filter(tag => keys.includes(tag));
+      if (stillAvailableTags.length !== selectedTagsForMigration.length) {
+        console.log('🔄 Some tags no longer available, filtering:', {
+          previous: selectedTagsForMigration,
+          stillAvailable: stillAvailableTags
+        });
+        setSelectedTagsForMigration(stillAvailableTags);
+      }
+    }
+    
     console.log('✅ Metadata loading COMPLETED. Keys set:', keys);
   };
 
@@ -315,43 +318,35 @@ export default function SimpleMigrationTest() {
     }
   };
 
-  const editRule = (rule: SimpleRule) => {
-    console.log('✏️ STARTING editRule - restoring state:', {
+  const editRule = async (rule: SimpleRule) => {
+    console.log('✏️ STARTING editRule - will re-query metadata like create mode:', {
       ruleName: rule.name,
       mappings: rule.mappings,
       selectedForms: rule.selectedForms,
       selectedTranslations: rule.selectedTranslations,
-      availableKeys: rule.availableMetadataKeys,
-      selectedTags: rule.selectedTagsForMigration
+      storedKeys: rule.availableMetadataKeys,
+      storedTags: rule.selectedTagsForMigration
     });
 
-    // Set flag to prevent useEffect from interfering
-    setIsRestoringRule(true);
-    
+    // Set editing rule and basic data
     setEditingRule(rule);
     setRuleName(rule.name);
     setMappings([...rule.mappings]);
+    
+    // Pre-set the tags we want to restore after metadata loads
+    setSelectedTagsForMigration([...rule.selectedTagsForMigration]);
+    
+    // Set forms and translations - this will trigger useEffect to re-query metadata
     setSelectedTranslations([...rule.selectedTranslations]);
     setSelectedForms([...rule.selectedForms]);
-    setAvailableMetadataKeys([...rule.availableMetadataKeys]);
-    setSelectedTagsForMigration([...rule.selectedTagsForMigration]);
     
     setShowBuilder(true);
     
-    // Clear the flag after a small delay to allow state to settle
-    setTimeout(() => {
-      setIsRestoringRule(false);
-      console.log('✅ Rule restoration complete - useEffect re-enabled');
-    }, 100);
-    
-    console.log('✏️ Edit rule state set - Step 2 should persist:', {
-      availableKeys: rule.availableMetadataKeys,
-      selectedTags: rule.selectedTagsForMigration
-    });
+    console.log('✏️ Basic state restored - useEffect will re-query current metadata and preserve selected tags');
+    console.log('✅ Edit mode activated - Step 2 will show current metadata with previous selections');
   };
 
   const resetBuilder = () => {
-    setIsRestoringRule(false);
     setEditingRule(null);
     setRuleName('');
     setMappings([]);
@@ -560,13 +555,19 @@ export default function SimpleMigrationTest() {
                 {/* RIGHT: Step 2 Configuration */}
                 <div className="space-y-4">
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-yellow-900">STEP 2: Available Metadata Keys</h3>
+                    <h3 className="font-semibold text-yellow-900">
+                      STEP 2: Available Metadata Keys 
+                      {editingRule && <span className="text-xs font-normal">(Re-queried from database)</span>}
+                    </h3>
                     <div className="text-sm text-yellow-800 mt-1">
                       {availableMetadataKeys.length === 0 ? (
                         <div>Select forms or translations to see available metadata keys</div>
                       ) : (
                         <div>
-                          <div className="mb-2">Found {availableMetadataKeys.length} metadata keys:</div>
+                          <div className="mb-2">
+                            Found {availableMetadataKeys.length} metadata keys 
+                            {editingRule && <span className="text-green-700"> (current database state)</span>}:
+                          </div>
                           <div className="space-y-1">
                             {availableMetadataKeys.map((key) => (
                               <label key={key} className="flex items-center space-x-2">
