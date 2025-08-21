@@ -42,7 +42,7 @@ export default function SimpleMigrationTest() {
       const simpleRules: SimpleRule[] = data?.map(rule => ({
         id: rule.rule_id,
         name: rule.name,
-        mappings: Object.entries(rule.transformation?.mappings || {}).map(([from, to]) => ({ from, to })),
+        mappings: Object.entries(rule.transformation?.mappings || {}).map(([from, to]) => ({ from, to: to as string })),
         selectedTranslations: rule.rule_config?.selectedTranslationNames?.map((name: string, index: number) => ({
           id: rule.rule_config?.selectedTranslationIds?.[index] || `id-${index}`,
           name
