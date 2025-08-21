@@ -33,12 +33,17 @@ export default function RuleBuilder({ isOpen, editingRule, onClose, onSave }: Ru
   const [selectedFormIds, setSelectedFormIds] = useState<string[]>([]);
   const [selectedTranslationIds, setSelectedTranslationIds] = useState<string[]>([]);
 
-  // UI state
+  // UI state  
   const [wordFormsData, setWordFormsData] = useState<Record<string, any[]>>({});
   const [wordTranslationsData, setWordTranslationsData] = useState<Record<string, any[]>>({});
   const [selectedFormTags, setSelectedFormTags] = useState<Record<string, number>>({});
   const [selectedTranslationMetadata, setSelectedTranslationMetadata] = useState<Record<string, number>>({});
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Word search
+  const [wordSearchTerm, setWordSearchTerm] = useState('');
+  const [wordSearchResults, setWordSearchResults] = useState<WordSearchResult[]>([]);
+  const [isSearchingWords, setIsSearchingWords] = useState(false);
 
   // Reset form when opening/closing
   useEffect(() => {
@@ -104,6 +109,68 @@ export default function RuleBuilder({ isOpen, editingRule, onClose, onSave }: Ru
     setWordTranslationsData({});
     setSelectedFormTags({});
     setSelectedTranslationMetadata({});
+    setWordSearchTerm('');
+    setWordSearchResults([]);
+  };
+
+  // Search for words
+  const searchWords = async () => {
+    if (!wordSearchTerm.trim()) return;
+    
+    setIsSearchingWords(true);
+    try {
+      const { data, error } = await supabase
+        .from('dictionary')
+        .select('id, italian, word_type, tags')
+        .ilike('italian', `%${wordSearchTerm}%`)
+        .limit(10);
+
+      if (error) throw error;
+
+      const results: WordSearchResult[] = data?.map(word => ({
+        wordId: word.id,
+        italian: word.italian,
+        wordType: word.word_type || 'unknown',
+        tags: word.tags || [],
+        formsCount: 0, // Will be updated when forms are loaded
+        translationsCount: 0 // Will be updated when translations are loaded
+      })) || [];
+
+      setWordSearchResults(results);
+    } catch (error) {
+      console.error('Word search failed:', error);
+    } finally {
+      setIsSearchingWords(false);
+    }
+  };
+
+  // Add word to selected words
+  const addWordToSelection = (word: WordSearchResult) => {
+    if (!selectedWords.find(w => w.wordId === word.wordId)) {
+      const updatedWords = [...selectedWords, word];
+      setSelectedWords(updatedWords);
+      
+      // Load data for all selected words
+      loadWordData(updatedWords);
+    }
+  };
+
+  // Remove word from selection
+  const removeWordFromSelection = (wordId: string) => {
+    const updatedWords = selectedWords.filter(w => w.wordId !== wordId);
+    setSelectedWords(updatedWords);
+    
+    if (updatedWords.length > 0) {
+      loadWordData(updatedWords);
+    } else {
+      // Clear all data if no words selected
+      setWordFormsData({});
+      setWordTranslationsData({});
+      setSelectedFormIds([]);
+      setSelectedTranslationIds([]);
+      setSelectedFormTags({});
+      setSelectedTranslationMetadata({});
+    }
   };
 
   // Load word forms and translations data
@@ -406,6 +473,191 @@ export default function RuleBuilder({ isOpen, editingRule, onClose, onSave }: Ru
                   </label>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Word Selection */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Target Words</label>
+            <div className="space-y-2">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={wordSearchTerm}
+                  onChange={(e) => setWordSearchTerm(e.target.value)}
+                  placeholder="Search for words..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onKeyDown={(e) => e.key === 'Enter' && searchWords()}
+                />
+                <button
+                  onClick={searchWords}
+                  disabled={isSearchingWords || !wordSearchTerm.trim()}
+                  className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {isSearchingWords ? 'Searching...' : 'Search'}
+                </button>
+              </div>
+
+              {/* Selected Words */}
+              {selectedWords.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                  <div className="text-sm font-medium text-blue-900 mb-2">
+                    Selected Words ({selectedWords.length}):
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedWords.map((word) => (
+                      <span
+                        key={word.wordId}
+                        className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                      >
+                        {word.italian}
+                        <button
+                          onClick={() => removeWordFromSelection(word.wordId)}
+                          className="ml-1 text-blue-600 hover:text-blue-800"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Search Results */}
+              {wordSearchResults.length > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded p-2 max-h-32 overflow-y-auto">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Search Results:</div>
+                  <div className="space-y-1">
+                    {wordSearchResults.map((word) => {
+                      const isSelected = selectedWords.some(w => w.wordId === word.wordId);
+                      return (
+                        <button
+                          key={word.wordId}
+                          onClick={() => addWordToSelection(word)}
+                          disabled={isSelected}
+                          className={`block w-full text-left px-2 py-1 text-sm rounded ${
+                            isSelected 
+                              ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
+                              : 'hover:bg-gray-100'
+                          }`}
+                        >
+                          {word.italian} ({word.wordType})
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Step 1: Form Selection */}
+          {selectedWords.length > 0 && selectedTable === 'word_forms' && (
+            <div className="border rounded p-3 bg-green-50">
+              <h4 className="font-medium text-green-900 mb-2">
+                Step 1: Select Word Forms
+              </h4>
+              {Object.entries(wordFormsData).map(([wordId, forms]) => {
+                const word = selectedWords.find(w => w.wordId === wordId);
+                if (!word) return null;
+                
+                return (
+                  <div key={wordId} className="mb-3">
+                    <div className="text-sm font-medium text-green-800 mb-1">
+                      Forms for "{word.italian}":
+                    </div>
+                    <div className="space-y-1 ml-2">
+                      {forms.map((form: any) => (
+                        <label key={form.id} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedFormIds.includes(form.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                const updatedIds = [...selectedFormIds, form.id];
+                                setSelectedFormIds(updatedIds);
+                                setTimeout(() => loadSelectedFormTags(updatedIds), 100);
+                              } else {
+                                const updatedIds = selectedFormIds.filter(id => id !== form.id);
+                                setSelectedFormIds(updatedIds);
+                                if (updatedIds.length > 0) {
+                                  setTimeout(() => loadSelectedFormTags(updatedIds), 100);
+                                } else {
+                                  setSelectedFormTags({});
+                                }
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                          <span className="text-sm">
+                            {form.form_text} 
+                            {form.tags?.length > 0 && (
+                              <span className="text-gray-500 ml-1">
+                                ({form.tags.length} tags)
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Step 1: Translation Selection */}
+          {selectedWords.length > 0 && selectedTable === 'word_translations' && (
+            <div className="border rounded p-3 bg-purple-50">
+              <h4 className="font-medium text-purple-900 mb-2">
+                Step 1: Select Word Translations
+              </h4>
+              {Object.entries(wordTranslationsData).map(([wordId, translations]) => {
+                const word = selectedWords.find(w => w.wordId === wordId);
+                if (!word) return null;
+                
+                return (
+                  <div key={wordId} className="mb-3">
+                    <div className="text-sm font-medium text-purple-800 mb-1">
+                      Translations for "{word.italian}":
+                    </div>
+                    <div className="space-y-1 ml-2">
+                      {translations.map((trans: any) => (
+                        <label key={trans.id} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedTranslationIds.includes(trans.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                const updatedIds = [...selectedTranslationIds, trans.id];
+                                setSelectedTranslationIds(updatedIds);
+                                setTimeout(() => loadSelectedTranslationMetadata(updatedIds), 100);
+                              } else {
+                                const updatedIds = selectedTranslationIds.filter(id => id !== trans.id);
+                                setSelectedTranslationIds(updatedIds);
+                                if (updatedIds.length > 0) {
+                                  setTimeout(() => loadSelectedTranslationMetadata(updatedIds), 100);
+                                } else {
+                                  setSelectedTranslationMetadata({});
+                                }
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                          <span className="text-sm">
+                            {trans.translation_text}
+                            {trans.context_metadata && (
+                              <span className="text-gray-500 ml-1">
+                                ({Object.keys(trans.context_metadata).length} metadata keys)
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
