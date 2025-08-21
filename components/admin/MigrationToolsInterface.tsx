@@ -202,8 +202,9 @@ export default function MigrationToolsInterface() {
     setWordTranslationsData(null);
     setTextContentOptions(null);
     setSelectedTagsForMigration([]);
-    setSelectedFormIds([]);
-    setSelectedTranslationIds([]);
+    // Don't clear selection IDs - they should only be cleared by resetAllRuleBuilderState
+    // setSelectedFormIds([]);
+    // setSelectedTranslationIds([]);
     setSelectedTextValues([]);
     setFormSelectionMode('all-forms');
     setTranslationSelectionMode('all-translations');
@@ -1729,41 +1730,8 @@ export default function MigrationToolsInterface() {
       setSelectedFormIds(config.selectedFormIds);
       setSelectedTranslationIds(config.selectedTranslationIds);
       
-      // Debug: Immediate check (before React processes state updates)
-      addToDebugLog(`🔍 IMMEDIATE: Just called setSelectedTranslationIds with ${config.selectedTranslationIds?.length || 0} items`);
-      
-      // Debug: Check if config values are valid
-      addToDebugLog(`🔍 Config validation - selectedFormIds is array: ${Array.isArray(config.selectedFormIds)}, selectedTranslationIds is array: ${Array.isArray(config.selectedTranslationIds)}`);
-      addToDebugLog(`🔍 Setting selectedTranslationIds to: ${JSON.stringify(config.selectedTranslationIds)} (type: ${typeof config.selectedTranslationIds})`);
-      
-      // Debug: What we expect to be set (from config)
-      addToDebugLog(`🔍 Expected state - FormIds: ${config.selectedFormIds?.length || 0}, TranslationIds: ${config.selectedTranslationIds?.length || 0}`);
-      
-      // Debug: Verify state was set correctly after React update cycle
-      setTimeout(() => {
-        addToDebugLog(`🔍 State verification (50ms) - selectedFormIds: ${selectedFormIds.length}, selectedTranslationIds: ${selectedTranslationIds.length}`);
-        if (selectedTranslationIds.length === 0 && config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
-          addToDebugLog(`⚠️ TIMING ISSUE: Expected ${config.selectedTranslationIds.length} translation IDs but state shows 0`);
-        }
-        if (selectedFormIds.length === 0 && config.selectedFormIds && config.selectedFormIds.length > 0) {
-          addToDebugLog(`⚠️ TIMING ISSUE: Expected ${config.selectedFormIds.length} form IDs but state shows 0`);
-        }
-      }, 50);
-      
-      // Additional verification with longer delay to see if state eventually updates
-      setTimeout(() => {
-        addToDebugLog(`🔍 State verification (200ms) - selectedFormIds: ${selectedFormIds.length}, selectedTranslationIds: ${selectedTranslationIds.length}`);
-        if (selectedTranslationIds.length > 0) {
-          addToDebugLog(`✅ SUCCESS: Translation IDs eventually set correctly`);
-        } else if (config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
-          addToDebugLog(`❌ FAILURE: Translation IDs still not set after 200ms`);
-        }
-      }, 200);
-      
-      // Reset only general cache/loading states, not configuration or word-specific data
-      setCurrentLocationTags(null);
-      setGlobalTags(null);
-      setWordSpecificTags(null);
+      // Reset tag cache states (this is also handled by useEffect, but doing it explicitly here for immediate effect)
+      resetTagLoadingStates();
       
       addToDebugLog(`🔧 Restored rule configuration for: ${rule.title}`);
       addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
@@ -1830,8 +1798,9 @@ export default function MigrationToolsInterface() {
       }
     }
 
-    // Fallback for default rules without stored config
-    switch (rule.id) {
+    // Fallback ONLY for default rules without stored config
+    if (rule.ruleSource === 'default' && !rule.ruleConfig) {
+      switch (rule.id) {
       case 'italian-to-universal-terminology':
         const italianMappings = [
           { id: '1', from: 'io', to: 'prima-persona' },
