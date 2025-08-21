@@ -1719,6 +1719,7 @@ export default function MigrationToolsInterface() {
       setSelectedTable(config.selectedTable);
       setSelectedColumn(config.selectedColumn);
       setSelectedTagsForMigration(config.selectedTagsForMigration);
+      addToDebugLog(`🔧 ULTRAFIX: Restoring ${config.ruleBuilderMappings?.length || 0} mappings: ${JSON.stringify(config.ruleBuilderMappings)}`);
       setRuleBuilderMappings(config.ruleBuilderMappings);
       setTagsToRemove(config.tagsToRemove);
       setNewTagToAdd(config.newTagToAdd);
@@ -1729,6 +1730,21 @@ export default function MigrationToolsInterface() {
       setSelectedWords(config.selectedWords);
       setSelectedFormIds(config.selectedFormIds);
       setSelectedTranslationIds(config.selectedTranslationIds);
+      
+      // ULTRAFIX: Force Step 2 loading after state restoration
+      setTimeout(() => {
+        // Force form tags loading if forms are selected
+        if (config.selectedFormIds && config.selectedFormIds.length > 0 && config.selectedTable === 'word_forms') {
+          addToDebugLog(`🔧 ULTRAFIX: Force loading form tags for ${config.selectedFormIds.length} forms`);
+          loadSelectedFormTags(config.selectedFormIds);
+        }
+        
+        // Force translation metadata loading if translations are selected
+        if (config.selectedTranslationIds && config.selectedTranslationIds.length > 0 && config.selectedTable === 'word_translations') {
+          addToDebugLog(`🔧 ULTRAFIX: Force loading translation metadata for ${config.selectedTranslationIds.length} translations`);
+          loadSelectedTranslationMetadata(config.selectedTranslationIds);
+        }
+      }, 500); // Longer delay to ensure all data is loaded
       
       // Reset tag cache states (this is also handled by useEffect, but doing it explicitly here for immediate effect)
       resetTagLoadingStates();
