@@ -1,6 +1,6 @@
 'use client';
 
-import MigrationToolsRefactored from '@/components/admin/MigrationToolsRefactored';
+import MigrationToolsRefactored from '../../../components/admin/MigrationToolsRefactored';
 
 export default function MigrationToolsRefactoredPage() {
   return (
