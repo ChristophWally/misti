@@ -21,7 +21,7 @@ interface WordSearchResult {
   wordId: string;
   italian: string;
   wordType: string;
-  forms: { id: string; form_text: string; context_metadata?: any }[];
+  forms: { id: string; form_text: string; tags?: string[] }[];
   translations: { id: string; translation: string; context_metadata?: any }[];
 }
 
@@ -42,6 +42,9 @@ export default function SimpleMigrationTest() {
   const [wordSearchTerm, setWordSearchTerm] = useState('');
   const [wordSearchResults, setWordSearchResults] = useState<WordSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  
+  // Prevent useEffect from clearing when restoring rule state
+  const [isRestoringRule, setIsRestoringRule] = useState(false);
 
   // Load saved rules on mount
   useEffect(() => {
@@ -59,13 +62,27 @@ export default function SimpleMigrationTest() {
 
   // Load Step 2 metadata when forms/translations change
   useEffect(() => {
+    console.log('🔄 Step 2 useEffect triggered:', { 
+      formCount: selectedForms.length, 
+      translationCount: selectedTranslations.length,
+      currentKeys: availableMetadataKeys.length,
+      isRestoringRule 
+    });
+    
+    if (isRestoringRule) {
+      console.log('⏸️ Skipping useEffect - currently restoring rule state');
+      return;
+    }
+    
     if (selectedForms.length > 0 || selectedTranslations.length > 0) {
+      console.log('📊 Loading metadata for selected items...');
       loadAvailableMetadata();
     } else {
+      console.log('🧹 Clearing metadata - no items selected');
       setAvailableMetadataKeys([]);
       setSelectedTagsForMigration([]);
     }
-  }, [selectedForms, selectedTranslations]);
+  }, [selectedForms, selectedTranslations, isRestoringRule]);
 
   const searchWords = async () => {
     if (isSearching) return;
@@ -75,8 +92,8 @@ export default function SimpleMigrationTest() {
       console.log('🔍 Searching for words:', wordSearchTerm);
       
       const { data: wordsData, error: wordsError } = await supabase
-        .from('words')
-        .select('word_id, italian, word_type')
+        .from('dictionary')
+        .select('id, italian, word_type')
         .ilike('italian', `%${wordSearchTerm}%`)
         .limit(10);
 
@@ -86,12 +103,12 @@ export default function SimpleMigrationTest() {
         return;
       }
 
-      const wordIds = wordsData.map(w => w.word_id);
+      const wordIds = wordsData.map(w => w.id);
 
-      // Get forms for these words
+      // Get forms for these words (using tags, not context_metadata)
       const { data: formsData, error: formsError } = await supabase
         .from('word_forms')
-        .select('id, word_id, form_text, context_metadata')
+        .select('id, word_id, form_text, tags')
         .in('word_id', wordIds);
 
       // Get translations for these words  
@@ -104,11 +121,11 @@ export default function SimpleMigrationTest() {
       if (translationsError) throw translationsError;
 
       const searchResults: WordSearchResult[] = wordsData.map(word => ({
-        wordId: word.word_id,
+        wordId: word.id,
         italian: word.italian,
         wordType: word.word_type,
-        forms: formsData?.filter(f => f.word_id === word.word_id) || [],
-        translations: translationsData?.filter(t => t.word_id === word.word_id) || []
+        forms: formsData?.filter(f => f.word_id === word.id) || [],
+        translations: translationsData?.filter(t => t.word_id === word.id) || []
       }));
 
       setWordSearchResults(searchResults);
@@ -122,43 +139,58 @@ export default function SimpleMigrationTest() {
   };
 
   const loadAvailableMetadata = async () => {
-    console.log('📊 Loading metadata for selected items...');
+    console.log('📊 STARTING metadata loading for:', { 
+      selectedFormIds: selectedForms.map(f => f.id),
+      selectedTranslationIds: selectedTranslations.map(t => t.id)
+    });
     
     const metadataKeys = new Set<string>();
 
-    // Extract metadata from selected forms
+    // Extract metadata from selected forms (using tags array, not context_metadata)
     if (selectedForms.length > 0) {
       try {
+        console.log('🔍 Fetching form tags...');
         const { data: formsData, error: formsError } = await supabase
           .from('word_forms')
-          .select('context_metadata')
+          .select('id, tags')
           .in('id', selectedForms.map(f => f.id));
 
         if (formsError) throw formsError;
+        console.log('📝 Forms data received:', formsData);
         
         formsData?.forEach(form => {
-          if (form.context_metadata && typeof form.context_metadata === 'object') {
-            Object.keys(form.context_metadata).forEach(key => metadataKeys.add(key));
+          console.log('📝 Processing form:', form.id, form.tags);
+          if (form.tags && Array.isArray(form.tags)) {
+            form.tags.forEach(tag => {
+              console.log('🏷️ Adding form tag:', tag);
+              metadataKeys.add(tag);
+            });
           }
         });
       } catch (error) {
-        console.error('❌ Failed to load form metadata:', error);
+        console.error('❌ Failed to load form tags:', error);
       }
     }
 
     // Extract metadata from selected translations
     if (selectedTranslations.length > 0) {
       try {
+        console.log('🔍 Fetching translation metadata...');
         const { data: translationsData, error: translationsError } = await supabase
           .from('word_translations')
-          .select('context_metadata')
+          .select('id, context_metadata')
           .in('id', selectedTranslations.map(t => t.id));
 
         if (translationsError) throw translationsError;
+        console.log('🔤 Translations data received:', translationsData);
         
         translationsData?.forEach(translation => {
+          console.log('🔤 Processing translation:', translation.id, translation.context_metadata);
           if (translation.context_metadata && typeof translation.context_metadata === 'object') {
-            Object.keys(translation.context_metadata).forEach(key => metadataKeys.add(key));
+            Object.keys(translation.context_metadata).forEach(key => {
+              console.log('🏷️ Adding translation metadata key:', key);
+              metadataKeys.add(key);
+            });
           }
         });
       } catch (error) {
@@ -167,8 +199,11 @@ export default function SimpleMigrationTest() {
     }
 
     const keys = Array.from(metadataKeys).sort();
+    console.log('🎯 SETTING metadata keys:', keys);
     setAvailableMetadataKeys(keys);
-    console.log('✅ Available metadata keys:', keys);
+    
+    // Don't clear existing selected tags if we're just reloading the same data
+    console.log('✅ Metadata loading COMPLETED. Keys set:', keys);
   };
 
   const loadRules = async () => {
@@ -281,6 +316,18 @@ export default function SimpleMigrationTest() {
   };
 
   const editRule = (rule: SimpleRule) => {
+    console.log('✏️ STARTING editRule - restoring state:', {
+      ruleName: rule.name,
+      mappings: rule.mappings,
+      selectedForms: rule.selectedForms,
+      selectedTranslations: rule.selectedTranslations,
+      availableKeys: rule.availableMetadataKeys,
+      selectedTags: rule.selectedTagsForMigration
+    });
+
+    // Set flag to prevent useEffect from interfering
+    setIsRestoringRule(true);
+    
     setEditingRule(rule);
     setRuleName(rule.name);
     setMappings([...rule.mappings]);
@@ -288,14 +335,23 @@ export default function SimpleMigrationTest() {
     setSelectedForms([...rule.selectedForms]);
     setAvailableMetadataKeys([...rule.availableMetadataKeys]);
     setSelectedTagsForMigration([...rule.selectedTagsForMigration]);
+    
     setShowBuilder(true);
-    console.log('✏️ Editing rule - Step 2 should load:', {
+    
+    // Clear the flag after a small delay to allow state to settle
+    setTimeout(() => {
+      setIsRestoringRule(false);
+      console.log('✅ Rule restoration complete - useEffect re-enabled');
+    }, 100);
+    
+    console.log('✏️ Edit rule state set - Step 2 should persist:', {
       availableKeys: rule.availableMetadataKeys,
       selectedTags: rule.selectedTagsForMigration
     });
   };
 
   const resetBuilder = () => {
+    setIsRestoringRule(false);
     setEditingRule(null);
     setRuleName('');
     setMappings([]);
