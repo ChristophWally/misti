@@ -696,7 +696,19 @@ export default function MigrationToolsInterface() {
         operationType: rule.transformation?.type === 'array_replace' ? 'replace' : 
                        rule.transformation?.type === 'array_add' ? 'add' : 'replace',
         ruleSource: rule.tags?.includes('default-rule') ? 'default' : 'custom',
-        ruleConfig: {
+        ruleConfig: rule.rule_config ? {
+          // SUPER ULTRA FIX: Use stored rule_config if available (contains form/translation names)
+          ...rule.rule_config,
+          // Ensure mappings have proper structure for UI
+          ruleBuilderMappings: rule.rule_config.ruleBuilderMappings || 
+            (rule.transformation?.mappings ? 
+              Object.entries(rule.transformation.mappings).map(([from, to], index) => ({
+                id: (index + 1).toString(),
+                from,
+                to: to as string
+              })) : [])
+        } : {
+          // Fallback to manual reconstruction for old rules
           selectedTable: rule.pattern?.table,
           selectedColumn: rule.pattern?.column,
           selectedTagsForMigration: rule.pattern?.targetTags || [],
@@ -2594,76 +2606,168 @@ export default function MigrationToolsInterface() {
     return Math.max(1, Math.min(count, 10000));
   };
 
-  const saveCustomRule = () => {
-    if (selectedRule) {
-      // Editing existing rule
-      addToDebugLog(`🔧 Updating existing rule with mappings: ${JSON.stringify(ruleBuilderMappings)}`);
-      
-      setMigrationRules(prev => prev.map(rule =>
-        rule.id === selectedRule.id
-          ? {
-              ...rule,
-              title: ruleTitle,
-              description: ruleDescription,
-              operationType,
-              preventDuplicates,
-              targetedWords: selectedWords.map(w => w.italian),
-              affectedCount: calculateAffectedCount(),
-              // Update rule configuration
-              ruleConfig: {
-                selectedTable,
-                selectedColumn,
-                selectedTagsForMigration: [...selectedTagsForMigration],
-                ruleBuilderMappings: [...ruleBuilderMappings],
-                tagsToRemove: [...tagsToRemove],
-                newTagToAdd,
-                tagsToAdd: [...tagsToAdd], // NEW: Multiple tags support
-                selectedWords: [...selectedWords],
-                selectedFormIds: [...selectedFormIds],
-                selectedTranslationIds: [...selectedTranslationIds]
-              }
-            }
-          : rule
-      ));
-      addToDebugLog(`✅ Updated existing rule: ${ruleTitle}`);
-    } else {
-      // Creating new rule
-      addToDebugLog(`💾 Saving rule with mappings: ${JSON.stringify(ruleBuilderMappings)}`);
-      
-      const newRule: VisualRule = {
-        id: `custom-${Date.now()}`,
-        title: ruleTitle,
-        description: ruleDescription,
-        impact: selectedTagsForMigration.length > 50 ? 'high' : selectedTagsForMigration.length > 10 ? 'medium' : 'low',
-        status: 'ready',
-        affectedCount: calculateAffectedCount(),
-        autoExecutable: true,
-        requiresInput: operationType === 'add' || operationType === 'replace',
-        category: 'custom',
-        estimatedTime: '1-2 seconds',
-        canRollback: true,
-        targetedWords: selectedWords.map(w => w.italian),
-        preventDuplicates,
-        operationType,
-        ruleSource: 'custom',
-        // NEW: Capture full rule configuration
-        ruleConfig: {
-          selectedTable,
-          selectedColumn,
-          selectedTagsForMigration: [...selectedTagsForMigration],
-          ruleBuilderMappings: [...ruleBuilderMappings],
-          tagsToRemove: [...tagsToRemove],
-          newTagToAdd,
-          tagsToAdd: [...tagsToAdd], // NEW: Multiple tags support
-          selectedWords: [...selectedWords],
-          selectedFormIds: [...selectedFormIds],
-          selectedTranslationIds: [...selectedTranslationIds]
+  const saveCustomRule = async () => {
+    // SUPER ULTRA FIX: Get actual form/translation names for display
+    const selectedFormNames: string[] = [];
+    const selectedTranslationNames: string[] = [];
+    
+    // Get form names if forms are selected
+    if (selectedFormIds.length > 0 && wordFormsData) {
+      Object.values(wordFormsData).flat().forEach((form: any) => {
+        if (selectedFormIds.includes(form.id)) {
+          selectedFormNames.push(form.form_text || form.text || `Form ${form.id}`);
         }
-      };
+      });
+    }
+    
+    // Get translation names if translations are selected
+    if (selectedTranslationIds.length > 0 && wordTranslationsData) {
+      Object.values(wordTranslationsData).flat().forEach((trans: any) => {
+        if (selectedTranslationIds.includes(trans.id)) {
+          selectedTranslationNames.push(trans.translation_text || trans.text || `Translation ${trans.id}`);
+        }
+      });
+    }
 
-      addToDebugLog(`📦 Complete rule config: ${JSON.stringify(newRule.ruleConfig)}`);
-      setMigrationRules(prev => [...prev, newRule]);
-      addToDebugLog(`✅ Created new rule: ${ruleTitle}`);
+    const ruleConfigWithNames = {
+      selectedTable,
+      selectedColumn,
+      selectedTagsForMigration: [...selectedTagsForMigration],
+      ruleBuilderMappings: [...ruleBuilderMappings],
+      tagsToRemove: [...tagsToRemove],
+      newTagToAdd,
+      tagsToAdd: [...tagsToAdd],
+      selectedWords: [...selectedWords],
+      selectedFormIds: [...selectedFormIds],
+      selectedTranslationIds: [...selectedTranslationIds],
+      selectedFormNames: [...selectedFormNames], // NEW: Store actual names
+      selectedTranslationNames: [...selectedTranslationNames] // NEW: Store actual names
+    };
+
+    if (selectedRule) {
+      // Editing existing rule - UPDATE DATABASE
+      addToDebugLog(`🔧 SUPER ULTRA FIX: Updating rule ${selectedRule.id} in database with mappings: ${JSON.stringify(ruleBuilderMappings)}`);
+      
+      try {
+        const { error } = await supabase
+          .from('custom_migration_rules')
+          .update({
+            name: ruleTitle,
+            description: ruleDescription,
+            pattern: {
+              table: selectedTable,
+              column: selectedColumn,
+              targetTags: selectedTagsForMigration,
+              targetWords: selectedWords.map(w => w.italian),
+              targetWordObjects: selectedWords,
+              targetFormIds: selectedFormIds,
+              targetTranslationIds: selectedTranslationIds
+            },
+            transformation: {
+              type: operationType === 'replace' ? 'array_replace' : operationType === 'add' ? 'array_add' : 'array_remove',
+              mappings: ruleBuilderMappings.reduce((acc, mapping) => {
+                acc[mapping.from] = mapping.to;
+                return acc;
+              }, {} as Record<string, string>),
+              tagsToRemove,
+              newTagToAdd: newTagToAdd || null,
+              tagsToAdd,
+              preventDuplicates
+            },
+            rule_config: ruleConfigWithNames // Store complete config for UI restoration
+          })
+          .eq('rule_id', selectedRule.id);
+
+        if (error) throw error;
+        
+        // Update local state
+        setMigrationRules(prev => prev.map(rule =>
+          rule.id === selectedRule.id
+            ? {
+                ...rule,
+                title: ruleTitle,
+                description: ruleDescription,
+                operationType,
+                preventDuplicates,
+                targetedWords: selectedWords.map(w => w.italian),
+                affectedCount: calculateAffectedCount(),
+                ruleConfig: ruleConfigWithNames
+              }
+            : rule
+        ));
+        
+        addToDebugLog(`✅ SUPER ULTRA FIX: Updated rule ${selectedRule.id} in database successfully`);
+      } catch (error: any) {
+        addToDebugLog(`❌ Error updating rule: ${error.message}`);
+        console.error('Error updating rule:', error);
+        return;
+      }
+    } else {
+      // Creating new rule - INSERT INTO DATABASE
+      const ruleId = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      addToDebugLog(`💾 SUPER ULTRA FIX: Creating new rule ${ruleId} in database with mappings: ${JSON.stringify(ruleBuilderMappings)}`);
+      
+      try {
+        const { error } = await supabase
+          .from('custom_migration_rules')
+          .insert({
+            rule_id: ruleId,
+            name: ruleTitle,
+            description: ruleDescription,
+            pattern: {
+              table: selectedTable,
+              column: selectedColumn,
+              targetTags: selectedTagsForMigration,
+              targetWords: selectedWords.map(w => w.italian),
+              targetWordObjects: selectedWords,
+              targetFormIds: selectedFormIds,
+              targetTranslationIds: selectedTranslationIds
+            },
+            transformation: {
+              type: operationType === 'replace' ? 'array_replace' : operationType === 'add' ? 'array_add' : 'array_remove',
+              mappings: ruleBuilderMappings.reduce((acc, mapping) => {
+                acc[mapping.from] = mapping.to;
+                return acc;
+              }, {} as Record<string, string>),
+              tagsToRemove,
+              newTagToAdd: newTagToAdd || null,
+              tagsToAdd,
+              preventDuplicates
+            },
+            rule_config: ruleConfigWithNames, // Store complete config for UI restoration
+            tags: ['custom-rule'],
+            created_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+        
+        // Create local rule object
+        const newRule: VisualRule = {
+          id: ruleId,
+          title: ruleTitle,
+          description: ruleDescription,
+          impact: selectedTagsForMigration.length > 50 ? 'high' : selectedTagsForMigration.length > 10 ? 'medium' : 'low',
+          status: 'ready',
+          affectedCount: calculateAffectedCount(),
+          autoExecutable: true,
+          requiresInput: operationType === 'add' || operationType === 'replace',
+          category: 'custom',
+          estimatedTime: '1-2 seconds',
+          canRollback: true,
+          targetedWords: selectedWords.map(w => w.italian),
+          preventDuplicates,
+          operationType,
+          ruleSource: 'custom',
+          ruleConfig: ruleConfigWithNames
+        };
+
+        setMigrationRules(prev => [...prev, newRule]);
+        addToDebugLog(`✅ SUPER ULTRA FIX: Created new rule ${ruleId} in database successfully`);
+      } catch (error: any) {
+        addToDebugLog(`❌ Error creating rule: ${error.message}`);
+        console.error('Error creating rule:', error);
+        return;
+      }
     }
 
     setShowRuleBuilder(false);
@@ -3724,12 +3828,22 @@ export default function MigrationToolsInterface() {
                               )}
                               {rule.ruleConfig.selectedFormIds?.length > 0 && (
                                 <div>
-                                  <span className="font-medium">Target Forms:</span> {rule.ruleConfig.selectedFormIds.length} specific form{rule.ruleConfig.selectedFormIds.length > 1 ? 's' : ''} selected
+                                  <span className="font-medium">Target Forms:</span> 
+                                  {rule.ruleConfig.selectedFormNames?.length > 0 
+                                    ? rule.ruleConfig.selectedFormNames.slice(0, 2).join(', ') + 
+                                      (rule.ruleConfig.selectedFormNames.length > 2 ? ` (+${rule.ruleConfig.selectedFormNames.length - 2} more)` : '')
+                                    : `${rule.ruleConfig.selectedFormIds.length} specific form${rule.ruleConfig.selectedFormIds.length > 1 ? 's' : ''} selected`
+                                  }
                                 </div>
                               )}
                               {rule.ruleConfig.selectedTranslationIds?.length > 0 && (
                                 <div>
-                                  <span className="font-medium">Target Translations:</span> {rule.ruleConfig.selectedTranslationIds.length} specific translation{rule.ruleConfig.selectedTranslationIds.length > 1 ? 's' : ''} selected
+                                  <span className="font-medium">Target Translations:</span> 
+                                  {rule.ruleConfig.selectedTranslationNames?.length > 0 
+                                    ? rule.ruleConfig.selectedTranslationNames.slice(0, 2).join(', ') + 
+                                      (rule.ruleConfig.selectedTranslationNames.length > 2 ? ` (+${rule.ruleConfig.selectedTranslationNames.length - 2} more)` : '')
+                                    : `${rule.ruleConfig.selectedTranslationIds.length} specific translation${rule.ruleConfig.selectedTranslationIds.length > 1 ? 's' : ''} selected`
+                                  }
                                 </div>
                               )}
                               <div>
@@ -4181,10 +4295,24 @@ export default function MigrationToolsInterface() {
                           <div><span className="font-medium">Target Words:</span> {selectedRule.ruleConfig.selectedWords.map(w => w.italian).join(', ')}</div>
                         )}
                         {selectedRule.ruleConfig.selectedFormIds?.length > 0 && (
-                          <div><span className="font-medium">Target Forms:</span> {selectedRule.ruleConfig.selectedFormIds.length} specific form{selectedRule.ruleConfig.selectedFormIds.length > 1 ? 's' : ''} selected</div>
+                          <div>
+                            <span className="font-medium">Target Forms:</span> 
+                            {selectedRule.ruleConfig.selectedFormNames?.length > 0 
+                              ? selectedRule.ruleConfig.selectedFormNames.slice(0, 2).join(', ') + 
+                                (selectedRule.ruleConfig.selectedFormNames.length > 2 ? ` (+${selectedRule.ruleConfig.selectedFormNames.length - 2} more)` : '')
+                              : `${selectedRule.ruleConfig.selectedFormIds.length} specific form${selectedRule.ruleConfig.selectedFormIds.length > 1 ? 's' : ''} selected`
+                            }
+                          </div>
                         )}
                         {selectedRule.ruleConfig.selectedTranslationIds?.length > 0 && (
-                          <div><span className="font-medium">Target Translations:</span> {selectedRule.ruleConfig.selectedTranslationIds.length} specific translation{selectedRule.ruleConfig.selectedTranslationIds.length > 1 ? 's' : ''} selected</div>
+                          <div>
+                            <span className="font-medium">Target Translations:</span> 
+                            {selectedRule.ruleConfig.selectedTranslationNames?.length > 0 
+                              ? selectedRule.ruleConfig.selectedTranslationNames.slice(0, 2).join(', ') + 
+                                (selectedRule.ruleConfig.selectedTranslationNames.length > 2 ? ` (+${selectedRule.ruleConfig.selectedTranslationNames.length - 2} more)` : '')
+                              : `${selectedRule.ruleConfig.selectedTranslationIds.length} specific translation${selectedRule.ruleConfig.selectedTranslationIds.length > 1 ? 's' : ''} selected`
+                            }
+                          </div>
                         )}
                         <div><span className="font-medium">Prevent Duplicates:</span> {selectedRule.preventDuplicates ? 'Yes' : 'No'}</div>
                         {previewData?.affectedTables?.length > 0 && (
