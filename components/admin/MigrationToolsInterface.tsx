@@ -708,7 +708,16 @@ export default function MigrationToolsInterface() {
           tagsToRemove: rule.transformation?.tagsToRemove || [],
           newTagToAdd: rule.transformation?.newTagToAdd || '',
           tagsToAdd: rule.transformation?.tagsToAdd || [],
-          selectedWords: [],
+          selectedWords: rule.pattern?.targetWordObjects && rule.pattern.targetWordObjects.length > 0 
+            ? rule.pattern.targetWordObjects
+            : rule.pattern?.targetWords ? rule.pattern.targetWords.map((word: string, index: number) => ({
+                wordId: `word-${index}`, // Fallback for old rules without proper UUIDs
+                italian: word,
+                wordType: 'unknown',
+                tags: [],
+                formsCount: 0,
+                translationsCount: 0
+              })) : [],
           selectedFormIds: rule.pattern?.targetFormIds || [],
           selectedTranslationIds: rule.pattern?.targetTranslationIds || []
         }
@@ -1699,28 +1708,7 @@ export default function MigrationToolsInterface() {
       // SIMPLIFIED: For now, just log what we have and proceed
       addToDebugLog(`🔍 Config has ${config.selectedWords?.length || 0} words, ${config.selectedTranslationIds?.length || 0} translation IDs`);
       
-      // SIMPLE FIX: If no words but have translation IDs, reconstruct word data from translation
-      if ((!config.selectedWords || config.selectedWords.length === 0) && 
-          config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
-        addToDebugLog(`🔧 Reconstructing missing word data from translation ID`);
-        
-        // Reconstruct from the saved rule's pattern data if available
-        if (rule.ruleConfig?.selectedTable === 'word_translations') {
-          // For this specific rule, we know it's about "finire" -> "to finish"
-          config = {
-            ...config,
-            selectedWords: [{ 
-              wordId: '09ff00e2-be6e-44b6-a194-2aefad56057e', // Real UUID for finire
-              italian: 'finire', 
-              wordType: 'VERB', 
-              tags: [], 
-              formsCount: 0, 
-              translationsCount: 0 
-            }]
-          };
-          addToDebugLog(`✅ Reconstructed word data for finire`);
-        }
-      }
+      // No need for reconstruction - data should come from loadMigrationRules now
       
       // Debug: Log the entire config to see what we're working with
       addToDebugLog(`🔍 FULL CONFIG DEBUG: ${JSON.stringify(config, null, 2)}`);
@@ -1781,11 +1769,64 @@ export default function MigrationToolsInterface() {
       addToDebugLog(`📋 Mappings restored: ${JSON.stringify(config.ruleBuilderMappings)}`);
       addToDebugLog(`🏷️ Tags for migration: ${JSON.stringify(config.selectedTagsForMigration)}`);
       
-      // Load translation data if we have words and it's a translation table
-      if (config.selectedTable === 'word_translations' && config.selectedWords && config.selectedWords.length > 0) {
-        addToDebugLog(`🔄 Loading translation data for word: ${config.selectedWords[0].italian}`);
-        // Use the existing function with the reconstructed words
-        loadWordTranslationsData(config.selectedWords);
+      // Load appropriate data based on table type and selections
+      if (config.selectedWords && config.selectedWords.length > 0) {
+        addToDebugLog(`🔄 Loading data for table: ${config.selectedTable}, words: ${config.selectedWords.length}`);
+        
+        setTimeout(async () => {
+          try {
+            switch (config.selectedTable) {
+              case 'word_forms':
+                addToDebugLog(`📝 Loading word forms for ${config.selectedWords.length} words`);
+                await loadWordFormsData(config.selectedWords);
+                
+                // If specific forms are selected, load their tags
+                if (config.selectedFormIds && config.selectedFormIds.length > 0) {
+                  setTimeout(() => {
+                    addToDebugLog(`🏷️ Loading tags for ${config.selectedFormIds.length} selected forms`);
+                    loadSelectedFormTags(config.selectedFormIds);
+                  }, 200);
+                }
+                break;
+                
+              case 'word_translations':
+                addToDebugLog(`🌍 Loading word translations for ${config.selectedWords.length} words`);
+                await loadWordTranslationsData(config.selectedWords);
+                
+                // If specific translations are selected, load their metadata
+                if (config.selectedTranslationIds && config.selectedTranslationIds.length > 0) {
+                  setTimeout(() => {
+                    addToDebugLog(`📊 Loading metadata for ${config.selectedTranslationIds.length} selected translations`);
+                    loadSelectedTranslationMetadata(config.selectedTranslationIds);
+                  }, 200);
+                }
+                break;
+                
+              case 'dictionary':
+                addToDebugLog(`📚 Loading dictionary tags for ${config.selectedWords.length} words`);
+                // Dictionary table - load word-specific tags
+                loadWordSpecificTags();
+                break;
+                
+              case 'all_tables':
+                addToDebugLog(`🌐 Loading data across all tables for ${config.selectedWords.length} words`);
+                // Load data from all relevant tables
+                await Promise.all([
+                  loadWordFormsData(config.selectedWords),
+                  loadWordTranslationsData(config.selectedWords)
+                ]);
+                loadWordSpecificTags();
+                break;
+                
+              default:
+                addToDebugLog(`⚠️ Unknown table type: ${config.selectedTable}`);
+            }
+          } catch (error: any) {
+            addToDebugLog(`❌ Error loading data for table ${config.selectedTable}: ${error.message}`);
+          }
+        }, 100);
+      } else {
+        addToDebugLog(`ℹ️ No specific words selected - rule applies globally`);
       }
     }
 
@@ -3668,6 +3709,19 @@ export default function MigrationToolsInterface() {
                                   {rule.ruleConfig.selectedWords.length > 2 && ` (+${rule.ruleConfig.selectedWords.length - 2} more)`}
                                 </div>
                               )}
+                              {rule.ruleConfig.selectedFormIds?.length > 0 && (
+                                <div>
+                                  <span className="font-medium">Target Forms:</span> {rule.ruleConfig.selectedFormIds.length} specific form{rule.ruleConfig.selectedFormIds.length > 1 ? 's' : ''} selected
+                                </div>
+                              )}
+                              {rule.ruleConfig.selectedTranslationIds?.length > 0 && (
+                                <div>
+                                  <span className="font-medium">Target Translations:</span> {rule.ruleConfig.selectedTranslationIds.length} specific translation{rule.ruleConfig.selectedTranslationIds.length > 1 ? 's' : ''} selected
+                                </div>
+                              )}
+                              <div>
+                                <span className="font-medium">Prevent Duplicates:</span> {rule.preventDuplicates ? 'Yes' : 'No'}
+                              </div>
                             </div>
                           </div>
                         )}
@@ -4113,6 +4167,13 @@ export default function MigrationToolsInterface() {
                         {selectedRule.ruleConfig.selectedWords?.length > 0 && (
                           <div><span className="font-medium">Target Words:</span> {selectedRule.ruleConfig.selectedWords.map(w => w.italian).join(', ')}</div>
                         )}
+                        {selectedRule.ruleConfig.selectedFormIds?.length > 0 && (
+                          <div><span className="font-medium">Target Forms:</span> {selectedRule.ruleConfig.selectedFormIds.length} specific form{selectedRule.ruleConfig.selectedFormIds.length > 1 ? 's' : ''} selected</div>
+                        )}
+                        {selectedRule.ruleConfig.selectedTranslationIds?.length > 0 && (
+                          <div><span className="font-medium">Target Translations:</span> {selectedRule.ruleConfig.selectedTranslationIds.length} specific translation{selectedRule.ruleConfig.selectedTranslationIds.length > 1 ? 's' : ''} selected</div>
+                        )}
+                        <div><span className="font-medium">Prevent Duplicates:</span> {selectedRule.preventDuplicates ? 'Yes' : 'No'}</div>
                         {previewData?.affectedTables?.length > 0 && (
                           <div><span className="font-medium">Affected Tables:</span> {previewData.affectedTables.join(', ')}</div>
                         )}
