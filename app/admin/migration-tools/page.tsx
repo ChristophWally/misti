@@ -14,12 +14,18 @@ export default function MigrationToolsPage() {
                 Migration Tools
               </h1>
               <p className="mt-2 text-sm text-gray-600">
-                Story 002.003: Core Validation Systems and Tag Consistency Migration
+                Core Validation Systems and Tag Consistency Migration
               </p>
             </div>
-            <div className="mt-4 flex md:mt-0 md:ml-4">
+            <div className="mt-4 flex md:mt-0 md:ml-4 space-x-3">
+              <a
+                href="/admin/migration-tools/test"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                🧪 Integration Tests
+              </a>
               <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Phase A: Infrastructure Development
+                Infrastructure Development
               </span>
             </div>
           </div>
