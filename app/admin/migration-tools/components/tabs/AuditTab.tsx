@@ -51,11 +51,23 @@ export default function AuditTab({ debugState, updateDebugState }: AuditTabProps
         }
       };
 
-      // Get record counts and sample metadata
+      // Get database statistics
+      const stats = await databaseService.getDatabaseStats();
+      results.totalRecords = {
+        dictionary: stats.totalDictionary,
+        word_forms: stats.totalWordForms,
+        word_translations: stats.totalWordTranslations,
+        form_translations: stats.totalFormTranslations
+      };
+
+      // Analyze metadata consistency across tables
       for (const table of ['dictionary', 'word_forms', 'word_translations', 'form_translations']) {
-        addDebugLog(`📊 Analyzing ${table} table...`);
-        const metadata = await databaseService.extractMetadata(table as any, []);
-        results.totalRecords[table as keyof typeof results.totalRecords] = metadata.combined.length;
+        addDebugLog(`📊 Analyzing ${table} table metadata structure...`);
+        const tableInfo = await databaseService.getTableMetadata(table);
+        
+        if (tableInfo.hasMetadata) results.metadataConsistency.withMetadata++;
+        if (tableInfo.hasOptionalTags) results.metadataConsistency.withOptionalTags++;
+        if (tableInfo.hasLegacyTags) results.metadataConsistency.withLegacyTags++;
       }
 
       addDebugLog('✅ Database analysis complete');
