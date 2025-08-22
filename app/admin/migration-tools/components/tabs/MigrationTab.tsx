@@ -231,11 +231,11 @@ export default function MigrationTab({
             <h3 className="text-lg font-medium text-gray-900">Step 3: Metadata & Tags (Step 2 Auto-Loading)</h3>
             
             <Step2MetadataLoader
+              tableName={tableState.selectedTable}
               selectedRecordIds={getSelectedRecordIds()}
-              selectedTable={tableState.selectedTable}
-              metadataState={metadataState}
-              updateMetadataState={updateMetadataState}
-              addDebugLog={addDebugLog}
+              selectedMetadata={metadataState.selectedTags}
+              onMetadataChange={(metadata) => updateMetadataState({ selectedTags: metadata })}
+              debugLog={addDebugLog}
             />
           </div>
         )}
