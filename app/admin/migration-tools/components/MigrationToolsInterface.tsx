@@ -2,6 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { ValidationService } from '../services/ValidationService';
+import AuditTab from './tabs/AuditTab';
+import MigrationTab from './tabs/MigrationTab';
+import ProgressTab from './tabs/ProgressTab';
 
 // Types for simplified state management (collaborative decision: 8 grouped useState)
 type StepType = 'config' | 'words' | 'forms' | 'translations' | 'tags' | 'mappings' | 'preview' | 'execute';
@@ -201,64 +204,39 @@ export default function MigrationToolsInterface() {
       {/* Tab Content */}
       <div className="p-6">
         {activeTab === 'audit' && (
-          <div className="space-y-6">
-            <div className="text-center py-12 text-gray-500">
-              <div className="text-4xl mb-4">📊</div>
-              <h3 className="text-lg font-medium mb-2">Audit Tab</h3>
-              <p className="text-sm">Database analysis and tag consistency checking</p>
-              <p className="text-xs mt-2 text-blue-600">Coming in Phase 2.2 - Three-Tab Architecture</p>
-            </div>
-          </div>
+          <AuditTab
+            debugState={debugState}
+            updateDebugState={updateDebugState}
+          />
         )}
 
         {activeTab === 'migration' && (
-          <div className="space-y-6">
-            {/* Step Indicator */}
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-medium text-gray-900">
-                Migration Workflow - Step: {workflowState.currentStep}
-              </div>
-              <div className="text-xs text-gray-500">
-                Operation: {workflowState.operationType}
-              </div>
-            </div>
-
-            {/* Simplified Step Display for Now */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <h3 className="text-lg font-medium mb-4">🚧 Migration Tab Implementation</h3>
-              <div className="space-y-3 text-sm">
-                <div>✅ <strong>State Management</strong>: 8 grouped useState implemented</div>
-                <div>✅ <strong>Step 2 Component</strong>: Auto-loading metadata loader ready</div>
-                <div>✅ <strong>Database Service</strong>: Story 2.3.1 integration complete</div>
-                <div>⏳ <strong>Step Components</strong>: Coming in Phase 2.2</div>
-                
-                <div className="mt-4 p-3 bg-blue-50 rounded">
-                  <div className="text-xs font-medium text-blue-900 mb-2">Current State Summary:</div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
-                    <div>Table: {tableState.selectedTable}</div>
-                    <div>Column: {tableState.selectedColumn}</div>
-                    <div>Step: {workflowState.currentStep}</div>
-                    <div>Operation: {workflowState.operationType}</div>
-                    <div>Selected Words: {recordState.selectedWords.length}</div>
-                    <div>Selected Forms: {recordState.selectedFormIds.length}</div>
-                    <div>Selected Translations: {recordState.selectedTranslationIds.length}</div>
-                    <div>Selected Tags: {metadataState.selectedTags.length}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MigrationTab
+            workflowState={workflowState}
+            tableState={tableState}
+            recordState={recordState}
+            metadataState={metadataState}
+            ruleState={ruleState}
+            executionState={executionState}
+            debugState={debugState}
+            updateWorkflowState={updateWorkflowState}
+            updateTableState={updateTableState}
+            updateRecordState={updateRecordState}
+            updateMetadataState={updateMetadataState}
+            updateRuleState={updateRuleState}
+            updateExecutionState={updateExecutionState}
+            updateDebugState={updateDebugState}
+            getSelectedRecordIds={getSelectedRecordIds}
+          />
         )}
 
         {activeTab === 'progress' && (
-          <div className="space-y-6">
-            <div className="text-center py-12 text-gray-500">
-              <div className="text-4xl mb-4">📈</div>
-              <h3 className="text-lg font-medium mb-2">Progress Tab</h3>
-              <p className="text-sm">Execution history and migration tracking</p>
-              <p className="text-xs mt-2 text-blue-600">Coming in Phase 2.2 - Three-Tab Architecture</p>
-            </div>
-          </div>
+          <ProgressTab
+            executionState={executionState}
+            debugState={debugState}
+            updateExecutionState={updateExecutionState}
+            updateDebugState={updateDebugState}
+          />
         )}
       </div>
 
