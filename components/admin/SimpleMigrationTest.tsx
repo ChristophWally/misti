@@ -35,12 +35,14 @@ export default function SimpleMigrationTest() {
   const [mappings, setMappings] = useState<{ from: string; to: string }[]>([]);
   const [selectedTranslations, setSelectedTranslations] = useState<{ id: string; name: string }[]>([]);
   const [selectedForms, setSelectedForms] = useState<{ id: string; name: string }[]>([]);
+  const [selectedDictionaryWords, setSelectedDictionaryWords] = useState<{ id: string; name: string }[]>([]);
   const [availableMetadataKeys, setAvailableMetadataKeys] = useState<string[]>([]);
   const [selectedTagsForMigration, setSelectedTagsForMigration] = useState<string[]>([]);
   
   // Separate tracking for clearer UI
   const [availableFormTags, setAvailableFormTags] = useState<string[]>([]);
   const [availableTranslationKeys, setAvailableTranslationKeys] = useState<string[]>([]);
+  const [availableDictionaryKeys, setAvailableDictionaryKeys] = useState<string[]>([]);
 
   // Word search state
   const [wordSearchTerm, setWordSearchTerm] = useState('');
@@ -61,16 +63,17 @@ export default function SimpleMigrationTest() {
     }
   }, [wordSearchTerm]);
 
-  // Load Step 2 metadata when forms/translations change (same behavior for create AND edit)
+  // Load Step 2 metadata when forms/translations/dictionary words change (same behavior for create AND edit)
   useEffect(() => {
     console.log('🔄 Step 2 useEffect triggered (create AND edit mode):', { 
       formCount: selectedForms.length, 
       translationCount: selectedTranslations.length,
+      dictionaryCount: selectedDictionaryWords.length,
       currentKeys: availableMetadataKeys.length,
       editingMode: !!editingRule
     });
     
-    if (selectedForms.length > 0 || selectedTranslations.length > 0) {
+    if (selectedForms.length > 0 || selectedTranslations.length > 0 || selectedDictionaryWords.length > 0) {
       console.log('📊 Re-querying current metadata from database...');
       loadAvailableMetadata();
     } else {
@@ -79,8 +82,9 @@ export default function SimpleMigrationTest() {
       setSelectedTagsForMigration([]);
       setAvailableFormTags([]);
       setAvailableTranslationKeys([]);
+      setAvailableDictionaryKeys([]);
     }
-  }, [selectedForms, selectedTranslations]);
+  }, [selectedForms, selectedTranslations, selectedDictionaryWords]);
 
   const searchWords = async () => {
     if (isSearching) return;
@@ -139,11 +143,13 @@ export default function SimpleMigrationTest() {
   const loadAvailableMetadata = async () => {
     console.log('📊 STARTING metadata loading for NEW UNIFIED SCHEMA:', { 
       selectedFormIds: selectedForms.map(f => f.id),
-      selectedTranslationIds: selectedTranslations.map(t => t.id)
+      selectedTranslationIds: selectedTranslations.map(t => t.id),
+      selectedDictionaryIds: selectedDictionaryWords.map(d => d.id)
     });
     
     const formTags = new Set<string>();
     const translationKeys = new Set<string>();
+    const dictionaryKeys = new Set<string>();
 
     // Extract metadata and optional_tags from selected forms (NEW unified structure)
     if (selectedForms.length > 0) {
@@ -223,13 +229,53 @@ export default function SimpleMigrationTest() {
       }
     }
 
-    // Combine both sets for backward compatibility, but track separately
-    const allKeys = [...Array.from(formTags), ...Array.from(translationKeys)].sort();
-    console.log('🎯 SETTING metadata - Form tags:', Array.from(formTags), 'Translation keys:', Array.from(translationKeys));
+    // Extract metadata and optional_tags from selected dictionary words (NEW unified structure)
+    if (selectedDictionaryWords.length > 0) {
+      try {
+        console.log('🔍 Fetching dictionary metadata with NEW unified schema...');
+        const { data: dictionaryData, error: dictionaryError } = await supabase
+          .from('dictionary')
+          .select('id, metadata, optional_tags')
+          .in('id', selectedDictionaryWords.map(d => d.id));
+
+        if (dictionaryError) throw dictionaryError;
+        console.log('📖 Dictionary data received (NEW schema):', dictionaryData);
+        
+        dictionaryData?.forEach(word => {
+          console.log('📖 Processing dictionary word (NEW schema):', word.id, word.metadata, word.optional_tags);
+          
+          // Extract metadata fields (structured) - NEW: word_type, conjugation_type, auxiliary, etc.
+          if (word.metadata && typeof word.metadata === 'object') {
+            Object.entries(word.metadata).forEach(([key, value]) => {
+              if (value !== null && value !== undefined) {
+                const displayValue = `metadata.${key}: ${value}`;
+                console.log('🏷️ Adding dictionary metadata key-value:', displayValue);
+                dictionaryKeys.add(displayValue); // Show actual values for migration decisions
+              }
+            });
+          }
+          
+          // Extract optional_tags array - NEW: descriptive tags only  
+          if (word.optional_tags && Array.isArray(word.optional_tags)) {
+            word.optional_tags.forEach(tag => {
+              console.log('🏷️ Adding dictionary optional tag:', tag);
+              dictionaryKeys.add(tag);
+            });
+          }
+        });
+      } catch (error) {
+        console.error('❌ Failed to load dictionary metadata:', error);
+      }
+    }
+
+    // Combine all three sets for backward compatibility, but track separately
+    const allKeys = [...Array.from(formTags), ...Array.from(translationKeys), ...Array.from(dictionaryKeys)].sort();
+    console.log('🎯 SETTING metadata - Form tags:', Array.from(formTags), 'Translation keys:', Array.from(translationKeys), 'Dictionary keys:', Array.from(dictionaryKeys));
     
     setAvailableMetadataKeys(allKeys);
     setAvailableFormTags(Array.from(formTags));
     setAvailableTranslationKeys(Array.from(translationKeys));
+    setAvailableDictionaryKeys(Array.from(dictionaryKeys));
     
     // In edit mode, preserve previously selected tags that are still available
     if (editingRule) {
@@ -389,10 +435,12 @@ export default function SimpleMigrationTest() {
     setMappings([]);
     setSelectedTranslations([]);
     setSelectedForms([]);
+    setSelectedDictionaryWords([]);
     setAvailableMetadataKeys([]);
     setSelectedTagsForMigration([]);
     setAvailableFormTags([]);
     setAvailableTranslationKeys([]);
+    setAvailableDictionaryKeys([]);
     setWordSearchTerm('');
     setWordSearchResults([]);
     setShowBuilder(false);
@@ -423,6 +471,14 @@ export default function SimpleMigrationTest() {
     if (!selectedTranslations.find(t => t.id === translation.id)) {
       setSelectedTranslations(prev => [...prev, translationItem]);
       console.log('🔤 Selected translation:', translationItem);
+    }
+  };
+
+  const selectDictionaryWord = (word: WordSearchResult) => {
+    const dictionaryItem = { id: word.wordId, name: word.italian };
+    if (!selectedDictionaryWords.find(d => d.id === word.wordId)) {
+      setSelectedDictionaryWords(prev => [...prev, dictionaryItem]);
+      console.log('📖 Selected dictionary word:', dictionaryItem);
     }
   };
 
@@ -548,8 +604,18 @@ export default function SimpleMigrationTest() {
                     <div className="max-h-96 overflow-y-auto border border-gray-200 rounded">
                       {wordSearchResults.map((word) => (
                         <div key={word.wordId} className="border-b border-gray-100 p-3">
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-gray-900 mb-2">
                             {word.italian} <span className="text-sm text-gray-500">({word.wordType})</span>
+                            <button
+                              onClick={() => selectDictionaryWord(word)}
+                              className={`ml-3 px-2 py-1 text-xs rounded ${
+                                selectedDictionaryWords.find(d => d.id === word.wordId)
+                                  ? 'bg-green-200 text-green-800'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              Select Dictionary Word
+                            </button>
                           </div>
                           
                           <div className="mt-2 space-y-1">
@@ -599,8 +665,8 @@ export default function SimpleMigrationTest() {
                       {editingRule && <span className="text-xs font-normal">(Live database query)</span>}
                     </h3>
                     <div className="text-sm text-yellow-800 mt-1">
-                      {availableFormTags.length === 0 && availableTranslationKeys.length === 0 ? (
-                        <div>Select forms or translations to see new metadata structure (metadata jsonb + optional_tags text[])</div>
+                      {availableFormTags.length === 0 && availableTranslationKeys.length === 0 && availableDictionaryKeys.length === 0 ? (
+                        <div>Select dictionary words, forms, or translations to see new metadata structure (metadata jsonb + optional_tags text[])</div>
                       ) : (
                         <div className="space-y-3">
                           {/* Form Tags Section */}
@@ -649,6 +715,33 @@ export default function SimpleMigrationTest() {
                                       className="rounded"
                                     />
                                     <span className="font-mono text-sm bg-purple-100 px-2 py-1 rounded border-purple-300">
+                                      {key}
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Dictionary Keys Section */}
+                          {availableDictionaryKeys.length > 0 && (
+                            <div>
+                              <div className="font-medium text-green-900 mb-1">
+                                📖 Dictionary Metadata & Tags ({availableDictionaryKeys.length}) - NEW UNIFIED SCHEMA:
+                              </div>
+                              <div className="text-xs text-green-700 mb-2 italic">
+                                metadata.* = word-level properties (conjugation_type, auxiliary, word_type, etc.) | others = optional descriptive tags
+                              </div>
+                              <div className="space-y-1">
+                                {availableDictionaryKeys.map((key) => (
+                                  <label key={`dict-${key}`} className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedTagsForMigration.includes(key)}
+                                      onChange={() => toggleMetadataTag(key)}
+                                      className="rounded"
+                                    />
+                                    <span className="font-mono text-sm bg-green-100 px-2 py-1 rounded border-green-300">
                                       {key}
                                     </span>
                                   </label>
@@ -710,6 +803,7 @@ export default function SimpleMigrationTest() {
                   <div>
                     <div className="text-sm font-medium mb-2">Selected Items Summary:</div>
                     <div className="bg-gray-50 p-3 rounded text-sm">
+                      <div><strong>Dictionary Words:</strong> {selectedDictionaryWords.length} selected</div>
                       <div><strong>Forms:</strong> {selectedForms.length} selected</div>
                       <div><strong>Translations:</strong> {selectedTranslations.length} selected</div>
                       <div><strong>Tags for Migration:</strong> {selectedTagsForMigration.length} selected</div>
