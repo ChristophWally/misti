@@ -162,9 +162,12 @@ export default function SimpleMigrationTest() {
           
           // Extract metadata fields (structured) - NEW: tense, person, number, etc.
           if (form.metadata && typeof form.metadata === 'object') {
-            Object.keys(form.metadata).forEach(key => {
-              console.log('🏷️ Adding form metadata key:', key);
-              formTags.add(`metadata.${key}`); // Prefix to distinguish from optional tags
+            Object.entries(form.metadata).forEach(([key, value]) => {
+              if (value !== null && value !== undefined) {
+                const displayValue = `metadata.${key}: ${value}`;
+                console.log('🏷️ Adding form metadata key-value:', displayValue);
+                formTags.add(displayValue); // Show actual values for migration decisions
+              }
             });
           }
           
@@ -198,9 +201,12 @@ export default function SimpleMigrationTest() {
           
           // Extract metadata fields (structured) - NEW: register, gender_usage, auxiliary, etc.
           if (translation.metadata && typeof translation.metadata === 'object') {
-            Object.keys(translation.metadata).forEach(key => {
-              console.log('🏷️ Adding translation metadata key:', key);
-              translationKeys.add(`metadata.${key}`); // Prefix to distinguish from optional tags
+            Object.entries(translation.metadata).forEach(([key, value]) => {
+              if (value !== null && value !== undefined) {
+                const displayValue = `metadata.${key}: ${value}`;
+                console.log('🏷️ Adding translation metadata key-value:', displayValue);
+                translationKeys.add(displayValue); // Show actual values for migration decisions
+              }
             });
           }
           
