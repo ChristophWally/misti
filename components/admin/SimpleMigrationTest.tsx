@@ -21,8 +21,8 @@ interface WordSearchResult {
   wordId: string;
   italian: string;
   wordType: string;
-  forms: { id: string; form_text: string; tags?: string[] }[];
-  translations: { id: string; translation: string; context_metadata?: any }[];
+  forms: { id: string; form_text: string; metadata?: any; optional_tags?: string[] }[];
+  translations: { id: string; translation: string; metadata?: any; optional_tags?: string[] }[];
 }
 
 export default function SimpleMigrationTest() {
@@ -103,16 +103,16 @@ export default function SimpleMigrationTest() {
 
       const wordIds = wordsData.map(w => w.id);
 
-      // Get forms for these words (using tags, not context_metadata)
+      // Get forms for these words (using new metadata structure)
       const { data: formsData, error: formsError } = await supabase
         .from('word_forms')
-        .select('id, word_id, form_text, tags')
+        .select('id, word_id, form_text, metadata, optional_tags')
         .in('word_id', wordIds);
 
-      // Get translations for these words  
+      // Get translations for these words (metadata column renamed from context_metadata)
       const { data: translationsData, error: translationsError } = await supabase
         .from('word_translations')
-        .select('id, word_id, translation, context_metadata')
+        .select('id, word_id, translation, metadata, optional_tags')
         .in('word_id', wordIds);
 
       if (formsError) throw formsError;
@@ -137,7 +137,7 @@ export default function SimpleMigrationTest() {
   };
 
   const loadAvailableMetadata = async () => {
-    console.log('📊 STARTING metadata loading for:', { 
+    console.log('📊 STARTING metadata loading for NEW UNIFIED SCHEMA:', { 
       selectedFormIds: selectedForms.map(f => f.id),
       selectedTranslationIds: selectedTranslations.map(t => t.id)
     });
@@ -145,50 +145,70 @@ export default function SimpleMigrationTest() {
     const formTags = new Set<string>();
     const translationKeys = new Set<string>();
 
-    // Extract tags from selected forms (direct tag values)
+    // Extract metadata and optional_tags from selected forms (NEW unified structure)
     if (selectedForms.length > 0) {
       try {
-        console.log('🔍 Fetching form tags...');
+        console.log('🔍 Fetching form metadata with NEW unified schema...');
         const { data: formsData, error: formsError } = await supabase
           .from('word_forms')
-          .select('id, tags')
+          .select('id, metadata, optional_tags')
           .in('id', selectedForms.map(f => f.id));
 
         if (formsError) throw formsError;
-        console.log('📝 Forms data received:', formsData);
+        console.log('📝 Forms data received (NEW schema):', formsData);
         
         formsData?.forEach(form => {
-          console.log('📝 Processing form:', form.id, form.tags);
-          if (form.tags && Array.isArray(form.tags)) {
-            form.tags.forEach(tag => {
-              console.log('🏷️ Adding form tag:', tag);
+          console.log('📝 Processing form (NEW schema):', form.id, form.metadata, form.optional_tags);
+          
+          // Extract metadata fields (structured) - NEW: tense, person, number, etc.
+          if (form.metadata && typeof form.metadata === 'object') {
+            Object.keys(form.metadata).forEach(key => {
+              console.log('🏷️ Adding form metadata key:', key);
+              formTags.add(`metadata.${key}`); // Prefix to distinguish from optional tags
+            });
+          }
+          
+          // Extract optional_tags array - NEW: descriptive tags only
+          if (form.optional_tags && Array.isArray(form.optional_tags)) {
+            form.optional_tags.forEach(tag => {
+              console.log('🏷️ Adding form optional tag:', tag);
               formTags.add(tag);
             });
           }
         });
       } catch (error) {
-        console.error('❌ Failed to load form tags:', error);
+        console.error('❌ Failed to load form metadata:', error);
       }
     }
 
-    // Extract metadata keys from selected translations (object keys)
+    // Extract metadata and optional_tags from selected translations (NEW unified structure)
     if (selectedTranslations.length > 0) {
       try {
-        console.log('🔍 Fetching translation metadata...');
+        console.log('🔍 Fetching translation metadata with NEW unified schema...');
         const { data: translationsData, error: translationsError } = await supabase
           .from('word_translations')
-          .select('id, context_metadata')
+          .select('id, metadata, optional_tags')
           .in('id', selectedTranslations.map(t => t.id));
 
         if (translationsError) throw translationsError;
-        console.log('🔤 Translations data received:', translationsData);
+        console.log('🔤 Translations data received (NEW schema):', translationsData);
         
         translationsData?.forEach(translation => {
-          console.log('🔤 Processing translation:', translation.id, translation.context_metadata);
-          if (translation.context_metadata && typeof translation.context_metadata === 'object') {
-            Object.keys(translation.context_metadata).forEach(key => {
+          console.log('🔤 Processing translation (NEW schema):', translation.id, translation.metadata, translation.optional_tags);
+          
+          // Extract metadata fields (structured) - NEW: register, gender_usage, auxiliary, etc.
+          if (translation.metadata && typeof translation.metadata === 'object') {
+            Object.keys(translation.metadata).forEach(key => {
               console.log('🏷️ Adding translation metadata key:', key);
-              translationKeys.add(key);
+              translationKeys.add(`metadata.${key}`); // Prefix to distinguish from optional tags
+            });
+          }
+          
+          // Extract optional_tags array - NEW: descriptive tags only  
+          if (translation.optional_tags && Array.isArray(translation.optional_tags)) {
+            translation.optional_tags.forEach(tag => {
+              console.log('🏷️ Adding translation optional tag:', tag);
+              translationKeys.add(tag);
             });
           }
         });
@@ -413,7 +433,7 @@ export default function SimpleMigrationTest() {
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
-            Enhanced Migration Test - WITH STEP 2 METADATA LOADING
+            UNIFIED METADATA MIGRATION TEST - Story 002.003.1 Implementation
           </h1>
           <button
             onClick={() => setShowBuilder(true)}
@@ -569,22 +589,22 @@ export default function SimpleMigrationTest() {
                 <div className="space-y-4">
                   <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <h3 className="font-semibold text-yellow-900">
-                      STEP 2: Migration Targets 
-                      {editingRule && <span className="text-xs font-normal">(Re-queried from database)</span>}
+                      STEP 2: NEW UNIFIED METADATA SCHEMA (Story 002.003.1)
+                      {editingRule && <span className="text-xs font-normal">(Live database query)</span>}
                     </h3>
                     <div className="text-sm text-yellow-800 mt-1">
                       {availableFormTags.length === 0 && availableTranslationKeys.length === 0 ? (
-                        <div>Select forms or translations to see available migration targets</div>
+                        <div>Select forms or translations to see new metadata structure (metadata jsonb + optional_tags text[])</div>
                       ) : (
                         <div className="space-y-3">
                           {/* Form Tags Section */}
                           {availableFormTags.length > 0 && (
                             <div>
                               <div className="font-medium text-blue-900 mb-1">
-                                📝 Form Tags ({availableFormTags.length}) - Direct Values:
+                                📝 Form Metadata & Tags ({availableFormTags.length}) - NEW UNIFIED SCHEMA:
                               </div>
                               <div className="text-xs text-blue-700 mb-2 italic">
-                                These are grammatical tags applied to word forms
+                                metadata.* = structured grammatical properties (tense, person, etc.) | others = optional descriptive tags
                               </div>
                               <div className="space-y-1">
                                 {availableFormTags.map((tag) => (
@@ -608,10 +628,10 @@ export default function SimpleMigrationTest() {
                           {availableTranslationKeys.length > 0 && (
                             <div>
                               <div className="font-medium text-purple-900 mb-1">
-                                🔤 Translation Metadata Keys ({availableTranslationKeys.length}) - Object Properties:
+                                🔤 Translation Metadata & Tags ({availableTranslationKeys.length}) - NEW UNIFIED SCHEMA:
                               </div>
                               <div className="text-xs text-purple-700 mb-2 italic">
-                                These are metadata fields attached to translations (you migrate their values)
+                                metadata.* = structured functional properties (register, auxiliary, etc.) | others = optional descriptive tags
                               </div>
                               <div className="space-y-1">
                                 {availableTranslationKeys.map((key) => (
