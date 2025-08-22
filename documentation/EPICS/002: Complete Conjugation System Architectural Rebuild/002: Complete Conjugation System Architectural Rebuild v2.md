@@ -227,7 +227,7 @@ Translations determine which forms are displayed and how they behave, making tra
   "transitivity": "transitive|intransitive",         // VERBS - Affects form filtering
   
   // Usage constraints - Control form availability  
-  "plurality": "singular-only|plural-only|any",     // Reciprocal verb constraints
+  "plural_only": true/false,                        // Simple boolean for reciprocal constraints
   "usage": "direct-reflexive|reciprocal|intransitive" // Semantic behavior type
 }
 ```
@@ -236,7 +236,7 @@ Translations determine which forms are displayed and how they behave, making tra
 - **register**: Determines appropriate contexts for display
 - **gender_usage**: Controls UI symbol display (♂/♀)
 - **auxiliary**: Critical for verb conjugation systems
-- **plurality**: Essential for reciprocal verbs (can't use "wash each other" with singular)
+- **plural_only**: Essential for reciprocal verbs (can't use "wash each other" with singular subjects)
 
 ### Form Translations Minimal Metadata
 

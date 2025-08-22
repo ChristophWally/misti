@@ -390,7 +390,7 @@ Translation metadata determines how forms are displayed and filtered based on me
   "transitivity": "transitive|intransitive",
   
   // Usage Constraint Fields (Required for specific cases)
-  "plurality": "singular-only|plural-only|any",
+  "plural_only": true/false,
   "usage": "direct-reflexive|reciprocal|intransitive"
 }
 ```
@@ -422,12 +422,12 @@ Translation metadata determines how forms are displayed and filtered based on me
 - **Purpose**: Specifies argument structure for this specific meaning
 - **System Impact**: Affects form filtering and sentence construction validation
 
-**plurality** (Conditional - for reflexive verbs)
-- **Purpose**: Constrains form availability based on semantic requirements
+**plural_only** (Conditional - boolean flag)
+- **Purpose**: Constrains form availability based on semantic requirements  
 - **Critical Use Case**: Reciprocal verbs require plural subjects
-  - "wash each other" → `plurality: "plural-only"` → hides singular forms
-  - "wash oneself" → `plurality: "any"` → shows all forms
-- **System Impact**: Drives form filtering in UI
+  - "wash each other" → `plural_only: true` → hides singular forms
+  - "wash oneself" → `plural_only: false` → shows all forms
+- **System Impact**: Simple boolean drives form filtering in UI - cleaner than tri-state values
 
 **usage** (Conditional - for reflexive verbs)
 - **Purpose**: Distinguishes reflexive semantic types
@@ -1154,11 +1154,11 @@ const customValidationRules = [
     name: 'ReciprocalPluralityCheck',
     check: (translation: any) => {
       if (translation.metadata?.usage === 'reciprocal') {
-        return translation.metadata?.plurality === 'plural-only';
+        return translation.metadata?.plural_only === true;
       }
       return true;
     },
-    message: 'Reciprocal translations must have plural-only plurality constraint'
+    message: 'Reciprocal translations must have plural_only: true constraint'
   },
   {
     name: 'AuxiliaryConsistencyCheck', 
