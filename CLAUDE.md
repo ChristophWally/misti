@@ -117,3 +117,42 @@ This ensures:
 - Database integrations function correctly
 - No deployment surprises or failures
 - Quality assurance before affecting main branch
+
+## Backup Archive Management Protocol
+
+**CRITICAL**: Maintain comprehensive backup archives with full documentation:
+
+1. **Backup Creation Requirements**
+   - Create `.bak` files or `.bak` directories for all significant code being replaced
+   - Never delete, move, or modify any existing backup files without explicit user approval
+   - Preserve original file paths and directory structures in backup naming
+
+2. **Backup Archive Documentation**
+   - Maintain `/backup-archive/backup-explainer.md` file documenting all backup files
+   - Include for each backup:
+     * File/directory path and name
+     * Original purpose and functionality  
+     * Date and time of backup creation
+     * Reason for archival (what was replacing it)
+     * Size/complexity metrics where relevant
+     * Dependencies or related files
+   - Update explainer file whenever new backups are created
+
+3. **Cleanup Protocol**
+   - **NEVER remove backup files without explicit testing and user approval first**
+   - Test all new implementations thoroughly in deployed environment
+   - Verify all functionality works correctly for at least one full development cycle
+   - Get explicit user confirmation before any cleanup operations
+   - Archive old backups to `/backup-archive/` directory before deletion
+   - Update backup-explainer.md when archiving or removing backups
+
+4. **Archive Directory Structure**
+   ```
+   /backup-archive/
+   ├── backup-explainer.md              # Master documentation file
+   ├── [YYYY-MM-DD]/                    # Date-organized archives
+   │   ├── archived-backups/            # Moved .bak files
+   │   └── archive-notes.md             # Specific archive session notes
+   ```
+
+**Rationale**: Backup files are critical safety nets for complex refactoring work. Premature cleanup can cause irreversible loss of working implementations and historical context needed for debugging or rollback scenarios.
