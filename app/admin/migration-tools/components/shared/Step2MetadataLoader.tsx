@@ -1,25 +1,25 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { DatabaseService, UnifiedMetadata } from '../../services/DatabaseService';
 
 interface Step2MetadataLoaderProps {
   tableName: string;
-  columnName: string;
   selectedRecordIds: string[];
   selectedMetadata: string[];
   onMetadataChange: (metadata: string[]) => void;
   onLoadingStateChange?: (isLoading: boolean) => void;
+  autoLoad?: boolean; // NEW: Automatic loading decision (collaborative decision)
   debugLog?: (message: string) => void;
 }
 
 export default function Step2MetadataLoader({
   tableName,
-  columnName,
   selectedRecordIds,
   selectedMetadata,
   onMetadataChange,
   onLoadingStateChange,
+  autoLoad = true, // Default to automatic loading
   debugLog
 }: Step2MetadataLoaderProps) {
   const [availableMetadata, setAvailableMetadata] = useState<UnifiedMetadata | null>(null);
@@ -31,6 +31,13 @@ export default function Step2MetadataLoader({
   }, [debugLog]);
 
   const databaseService = new DatabaseService(log);
+
+  // AUTO-LOAD: Trigger when selectedRecordIds changes (collaborative decision)
+  useEffect(() => {
+    if (autoLoad && selectedRecordIds.length > 0) {
+      loadMetadata();
+    }
+  }, [selectedRecordIds, autoLoad]);
 
   const loadMetadata = useCallback(async () => {
     if (selectedRecordIds.length === 0) {
@@ -96,16 +103,16 @@ export default function Step2MetadataLoader({
     
     return (
       <div className="text-xs text-gray-600 mb-3 p-2 bg-gray-50 rounded">
-        <div className="font-medium mb-1">Metadata Sources Found:</div>
+        <div className="font-medium mb-1">Metadata Sources Found (Story 2.3.1 Integration):</div>
         <div className="space-y-1">
           {fromMetadata.length > 0 && (
-            <div>📋 <span className="font-mono">metadata</span> (JSONB): {fromMetadata.length} keys</div>
+            <div>📋 <span className="font-mono">Mandatory Tags (metadata)</span>: {fromMetadata.length} keys</div>
           )}
           {fromOptionalTags.length > 0 && (
-            <div>🏷️ <span className="font-mono">optional_tags</span> (array): {fromOptionalTags.length} items</div>
+            <div>🏷️ <span className="font-mono">Optional Tags (optional_tags)</span>: {fromOptionalTags.length} items</div>
           )}
           {fromLegacyTags.length > 0 && (
-            <div>⚠️ <span className="font-mono">tags</span> (legacy array): {fromLegacyTags.length} items</div>
+            <div className="text-yellow-600">⚠️ <span className="font-mono">Legacy Tags (transition)</span>: {fromLegacyTags.length} items</div>
           )}
         </div>
       </div>
@@ -116,7 +123,7 @@ export default function Step2MetadataLoader({
     <div className="border rounded p-3 bg-blue-50">
       <div className="flex items-center justify-between mb-3">
         <div className="text-sm font-medium text-blue-900">
-          🔍 Step 2: Select {columnName === 'metadata' ? 'Metadata Keys' : 'Tags'} from {selectedRecordIds.length} Selected Record(s)
+          🔍 Step 2: Select Metadata/Tags from {selectedRecordIds.length} Selected Record(s)
         </div>
         {isLoading && (
           <div className="text-xs text-blue-600">Loading...</div>
@@ -129,14 +136,20 @@ export default function Step2MetadataLoader({
         </div>
       )}
 
-      {!availableMetadata && !isLoading && (
+      {!availableMetadata && !isLoading && !autoLoad && (
         <button
           onClick={loadMetadata}
           disabled={selectedRecordIds.length === 0}
           className="w-full py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          🔄 Load {columnName === 'metadata' ? 'Metadata Keys' : 'Tags'} from Selected Records
+          🔄 Load Metadata/Tags from Selected Records
         </button>
+      )}
+
+      {!availableMetadata && !isLoading && autoLoad && selectedRecordIds.length === 0 && (
+        <div className="text-sm text-gray-500 text-center py-4">
+          Select records first - metadata will load automatically
+        </div>
       )}
 
       {availableMetadata && (
@@ -145,12 +158,12 @@ export default function Step2MetadataLoader({
           
           {availableMetadata.combined.length === 0 ? (
             <div className="text-sm text-gray-500 text-center py-4">
-              No {columnName === 'metadata' ? 'metadata keys' : 'tags'} found in selected records
+              No metadata or tags found in selected records
             </div>
           ) : (
             <div>
               <div className="text-xs text-blue-800 mb-2">
-                Available {columnName === 'metadata' ? 'metadata keys' : 'tags'} from selected records:
+                Available metadata/tags from selected records (prioritizing mandatory):
               </div>
               
               <div className="max-h-40 overflow-y-auto space-y-1">
@@ -188,7 +201,7 @@ export default function Step2MetadataLoader({
 
               {selectedMetadata.length > 0 && (
                 <div className="mt-2 text-xs text-blue-800">
-                  ✅ {selectedMetadata.length} {columnName === 'metadata' ? 'metadata key(s)' : 'tag(s)'} selected for migration
+                  ✅ {selectedMetadata.length} metadata/tag(s) selected for migration
                 </div>
               )}
             </div>

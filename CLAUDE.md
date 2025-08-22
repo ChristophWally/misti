@@ -98,7 +98,8 @@ Collaborative planning ensures:
    - Use descriptive branch names (e.g., `feature/reciprocal-metadata`, `fix/migration-bug`)
 
 2. **Deploy to Vercel for Testing**
-   - Deploy the development branch to Vercel
+   - Push development branch to remote repository (git push origin branch-name)
+   - Vercel automatically deploys the branch through git integration
    - Test all functionality in the deployed environment
    - Verify database connections and operations work correctly
    - Confirm UI/UX changes render properly

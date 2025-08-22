@@ -26,19 +26,19 @@ export interface DatabaseStats {
 
 const COLUMN_MAPPINGS = {
   dictionary: {
-    metadata: ['metadata', 'optional_tags', 'tags'],
+    metadata: ['metadata', 'optional_tags', 'tags'] as string[],
     primary: 'italian'
   },
   word_forms: {
-    metadata: ['metadata', 'optional_tags', 'tags'], 
+    metadata: ['metadata', 'optional_tags', 'tags'] as string[], 
     primary: 'form_text'
   },
   word_translations: {
-    metadata: ['metadata', 'optional_tags'], // No legacy tags column
+    metadata: ['metadata', 'optional_tags'] as string[], // No legacy tags column
     primary: 'translation'
   },
   form_translations: {
-    metadata: ['metadata', 'optional_tags'], // No legacy tags column
+    metadata: ['metadata', 'optional_tags'] as string[], // No legacy tags column
     primary: 'translation'
   }
 } as const;
@@ -279,5 +279,71 @@ export class DatabaseService {
       this.debugLog(`❌ Error searching records: ${error}`);
       return [];
     }
+  }
+
+  // Test database connection
+  async testConnection(): Promise<{ status: 'success' | 'error', message: string }> {
+    try {
+      const { data, error } = await this.supabase
+        .from('dictionary')
+        .select('id')
+        .limit(1);
+
+      if (error) throw error;
+
+      return {
+        status: 'success',
+        message: 'Database connection successful'
+      };
+    } catch (error: any) {
+      return {
+        status: 'error',
+        message: `Database connection failed: ${error.message}`
+      };
+    }
+  }
+
+  // Get sample record IDs for testing
+  async getSampleRecordIds(tableName: string, count: number = 3): Promise<string[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from(tableName)
+        .select('id')
+        .limit(count);
+
+      if (error) throw error;
+
+      return data?.map(record => record.id) || [];
+    } catch (error) {
+      this.debugLog(`❌ Error getting sample record IDs: ${error}`);
+      return [];
+    }
+  }
+
+  // Combine metadata results from multiple sources
+  private combineMetadataResults(results: string[][]): UnifiedMetadata {
+    const [fromMetadata = [], fromOptionalTags = [], fromLegacyTags = []] = results;
+    
+    // Combine all unique values
+    const combinedSet = new Set([
+      ...fromMetadata,
+      ...fromOptionalTags,
+      ...fromLegacyTags
+    ]);
+    const combined = Array.from(combinedSet).sort();
+
+    // Determine primary source
+    let source: UnifiedMetadata['source'] = 'metadata';
+    if (fromMetadata.length > 0) source = 'metadata';
+    else if (fromOptionalTags.length > 0) source = 'optional_tags';
+    else if (fromLegacyTags.length > 0) source = 'legacy_tags';
+
+    return {
+      fromMetadata,
+      fromOptionalTags,
+      fromLegacyTags,
+      source,
+      combined
+    };
   }
 }
