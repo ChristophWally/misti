@@ -24,21 +24,21 @@ export default function RuleManager() {
   const loadRules = useCallback(async () => {
     try {
       setError(null);
-      const { data, error } = await supabase
+      const { data, error: dbError } = await supabase
         .from('custom_migration_rules')
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Database error:', error);
-        setError(`Database error: ${error.message}`);
+      if (dbError) {
+        console.error('Database error:', dbError);
+        setError(`Database error: ${dbError.message}`);
         return;
       }
       
       setRules(data || []);
-    } catch (error) {
-      console.error('Error loading rules:', error);
+    } catch (catchError) {
+      console.error('Error loading rules:', catchError);
       setError('Failed to load migration rules. Please try again.');
     } finally {
       setIsLoading(false);
@@ -58,7 +58,7 @@ export default function RuleManager() {
       alert(`Rule "${rule.name}" executed successfully!`);
       
       // Update execution count
-      await supabase
+      const { error: updateError } = await supabase
         .from('custom_migration_rules')
         .update({ 
           execution_count: rule.execution_count + 1,
@@ -66,9 +66,13 @@ export default function RuleManager() {
         })
         .eq('rule_id', rule.rule_id);
 
+      if (updateError) {
+        console.error('Error updating rule:', updateError);
+      }
+
       loadRules(); // Refresh
-    } catch (error) {
-      alert(`Execution failed: ${error}`);
+    } catch (executeError) {
+      alert(`Execution failed: ${executeError}`);
     }
   };
 
