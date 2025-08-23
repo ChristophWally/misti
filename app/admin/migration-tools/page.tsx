@@ -159,8 +159,8 @@ export default function MigrationToolsPage() {
               <div className="border border-gray-300 rounded p-4">
                 {(() => {
                   try {
-                    const { default: TestClient } = require('./components/TestClient');
-                    return <TestClient />;
+                    const { default: TestHooks } = require('./components/TestHooks');
+                    return <TestHooks />;
                   } catch (err: any) {
                     return (
                       <div className="p-3 bg-red-100 border border-red-300 rounded">
