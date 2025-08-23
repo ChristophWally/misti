@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../../../lib/supabase';
 
 interface MigrationRule {
@@ -21,12 +21,7 @@ export default function RuleManager() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // Load rules from database
-  useEffect(() => {
-    loadRules();
-  }, []);
-
-  const loadRules = async () => {
+  const loadRules = useCallback(async () => {
     try {
       setError(null);
       const { data, error } = await supabase
@@ -48,7 +43,12 @@ export default function RuleManager() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Load rules from database
+  useEffect(() => {
+    loadRules();
+  }, [loadRules]);
 
   const executeRule = async (rule: MigrationRule) => {
     if (!confirm(`Execute "${rule.name}"? This will modify your database.`)) return;
