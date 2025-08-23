@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from '../../../../lib/supabase';
 
 interface ExecutionRecord {
   execution_id: string;
@@ -21,8 +21,6 @@ export default function ExecutionHistory() {
   const [executions, setExecutions] = useState<ExecutionRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'success' | 'failed'>('all');
-  
-  const supabase = createClientComponentClient();
 
   useEffect(() => {
     loadExecutionHistory();

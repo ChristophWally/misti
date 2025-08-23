@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from '../../../../lib/supabase';
 
 type SearchMode = 'tag' | 'text' | 'metadata';
 type TableName = 'dictionary' | 'word_forms' | 'word_translations' | 'form_translations';
@@ -34,8 +34,6 @@ export default function SearchInterface() {
   });
   const [isSearching, setIsSearching] = useState(false);
   const [transformRule, setTransformRule] = useState({ from: '', to: '' });
-  
-  const supabase = createClientComponentClient();
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;

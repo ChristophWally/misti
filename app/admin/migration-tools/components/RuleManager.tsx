@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from '../../../../lib/supabase';
 
 interface MigrationRule {
   rule_id: string;
@@ -19,7 +19,6 @@ export default function RuleManager() {
   const [rules, setRules] = useState<MigrationRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const supabase = createClientComponentClient();
 
   // Load rules from database
   useEffect(() => {
