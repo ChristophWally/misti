@@ -159,8 +159,8 @@ export default function MigrationToolsPage() {
               <div className="border border-gray-300 rounded p-4">
                 {(() => {
                   try {
-                    const { default: RuleManager } = require('./components/RuleManager');
-                    return <RuleManager />;
+                    const { default: SimpleRuleManager } = require('./components/SimpleRuleManager');
+                    return <SimpleRuleManager />;
                   } catch (err: any) {
                     return (
                       <div className="p-3 bg-red-100 border border-red-300 rounded">
