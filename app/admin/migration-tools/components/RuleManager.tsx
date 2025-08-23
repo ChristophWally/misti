@@ -7,7 +7,7 @@ interface RuleManagerProps {
   state: {
     uiState: { isLoading: boolean; error: string | null; successMessage: string | null };
     dataState: { rules: any[]; searchResults: Record<string, any[]>; executionHistory: any[] };
-    formState: { selectedTables: string[]; searchCriteria: any; currentRule: any };
+    formState: { selectedTables: string[]; searchCriteria: any; currentRule: any; showCreateForm?: boolean; showEditForm?: boolean };
   };
   actions: {
     updateUIState: (updates: any) => void;
