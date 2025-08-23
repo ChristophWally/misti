@@ -33,6 +33,7 @@ export default function SearchInterface() {
     form_translations: []
   });
   const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [transformRule, setTransformRule] = useState({ from: '', to: '' });
 
   const handleSearch = async () => {
@@ -82,7 +83,7 @@ export default function SearchInterface() {
       setResults(searchResults);
     } catch (error) {
       console.error('Search error:', error);
-      alert('Search failed. Please try again.');
+      setError('Search failed. Please try again.');
     } finally {
       setIsSearching(false);
     }
@@ -178,6 +179,9 @@ export default function SearchInterface() {
             >
               {isSearching ? 'Searching...' : 'Search Across All Tables'}
             </button>
+            {error && (
+              <p className="text-sm text-red-600 mt-2">{error}</p>
+            )}
           </div>
         </div>
       </div>

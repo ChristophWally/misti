@@ -20,6 +20,7 @@ interface ExecutionRecord {
 export default function ExecutionHistory() {
   const [executions, setExecutions] = useState<ExecutionRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'success' | 'failed'>('all');
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function ExecutionHistory() {
 
   const loadExecutionHistory = async () => {
     try {
+      setError(null);
       let query = supabase
         .from('migration_execution_history')
         .select('*')
@@ -39,10 +41,16 @@ export default function ExecutionHistory() {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        setError(`Database error: ${error.message}`);
+        return;
+      }
+      
       setExecutions(data || []);
     } catch (error) {
       console.error('Error loading execution history:', error);
+      setError('Failed to load execution history. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -90,6 +98,25 @@ export default function ExecutionHistory() {
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         <span className="ml-2">Loading execution history...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-4xl mb-4">⚠️</div>
+        <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading History</h3>
+        <p className="text-sm text-red-600 mb-4">{error}</p>
+        <button 
+          onClick={() => {
+            setIsLoading(true);
+            loadExecutionHistory();
+          }}
+          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }

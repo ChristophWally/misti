@@ -18,6 +18,7 @@ interface MigrationRule {
 export default function RuleManager() {
   const [rules, setRules] = useState<MigrationRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   // Load rules from database
@@ -27,16 +28,23 @@ export default function RuleManager() {
 
   const loadRules = async () => {
     try {
+      setError(null);
       const { data, error } = await supabase
         .from('custom_migration_rules')
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        setError(`Database error: ${error.message}`);
+        return;
+      }
+      
       setRules(data || []);
     } catch (error) {
       console.error('Error loading rules:', error);
+      setError('Failed to load migration rules. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -69,6 +77,25 @@ export default function RuleManager() {
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         <span className="ml-2">Loading rules...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-4xl mb-4">⚠️</div>
+        <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading Rules</h3>
+        <p className="text-sm text-red-600 mb-4">{error}</p>
+        <button 
+          onClick={() => {
+            setIsLoading(true);
+            loadRules();
+          }}
+          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
