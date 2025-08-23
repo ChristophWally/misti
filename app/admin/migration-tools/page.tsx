@@ -125,24 +125,94 @@ export default function MigrationToolsPage() {
             </div>
           )}
 
-          {/* Full Interface */}
+          {/* Controlled Render Test */}
           {testStep >= 5 && (
             <div className="bg-white shadow rounded-lg p-6">
-              <p className="text-red-600 font-medium">
-                Loading full interface - if this crashes, we know it's a render issue...
-              </p>
-              {(() => {
-                try {
-                  const { default: MigrationTools } = require('./components/MigrationTools');
-                  return <MigrationTools />;
-                } catch (err: any) {
-                  return (
-                    <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded">
-                      <p className="text-red-800">Render Error: {err.message}</p>
-                    </div>
-                  );
-                }
-              })()}
+              <h2 className="text-lg font-medium mb-4">3. Safe Component Rendering</h2>
+              <div className="space-y-4">
+                <button 
+                  onClick={() => setTestStep(6)}
+                  className="bg-green-600 text-white px-4 py-2 rounded"
+                >
+                  Test RuleManager Render
+                </button>
+                <button 
+                  onClick={() => setTestStep(7)}
+                  className="bg-green-600 text-white px-4 py-2 rounded ml-2"
+                >
+                  Test SearchInterface Render
+                </button>
+                <button 
+                  onClick={() => setTestStep(8)}
+                  className="bg-green-600 text-white px-4 py-2 rounded ml-2"
+                >
+                  Test ExecutionHistory Render
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Individual Component Renders */}
+          {testStep === 6 && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium mb-4">RuleManager Component</h3>
+              <div className="border border-gray-300 rounded p-4">
+                {(() => {
+                  try {
+                    const { default: RuleManager } = require('./components/RuleManager');
+                    return <RuleManager />;
+                  } catch (err: any) {
+                    return (
+                      <div className="p-3 bg-red-100 border border-red-300 rounded">
+                        <p className="text-red-800 font-mono text-sm">RuleManager Error: {err.message}</p>
+                        <pre className="text-xs mt-2 overflow-auto">{err.stack}</pre>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            </div>
+          )}
+
+          {testStep === 7 && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium mb-4">SearchInterface Component</h3>
+              <div className="border border-gray-300 rounded p-4">
+                {(() => {
+                  try {
+                    const { default: SearchInterface } = require('./components/SearchInterface');
+                    return <SearchInterface />;
+                  } catch (err: any) {
+                    return (
+                      <div className="p-3 bg-red-100 border border-red-300 rounded">
+                        <p className="text-red-800 font-mono text-sm">SearchInterface Error: {err.message}</p>
+                        <pre className="text-xs mt-2 overflow-auto">{err.stack}</pre>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            </div>
+          )}
+
+          {testStep === 8 && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium mb-4">ExecutionHistory Component</h3>
+              <div className="border border-gray-300 rounded p-4">
+                {(() => {
+                  try {
+                    const { default: ExecutionHistory } = require('./components/ExecutionHistory');
+                    return <ExecutionHistory />;
+                  } catch (err: any) {
+                    return (
+                      <div className="p-3 bg-red-100 border border-red-300 rounded">
+                        <p className="text-red-800 font-mono text-sm">ExecutionHistory Error: {err.message}</p>
+                        <pre className="text-xs mt-2 overflow-auto">{err.stack}</pre>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
             </div>
           )}
         </div>
