@@ -29,6 +29,8 @@ interface FormState {
   selectedTables: string[];
   searchCriteria: any;
   currentRule: any;
+  showCreateForm?: boolean;
+  showEditForm?: boolean;
 }
 
 export default function MigrationTools() {
