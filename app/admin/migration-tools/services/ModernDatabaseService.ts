@@ -236,6 +236,136 @@ export class ModernDatabaseService {
     return ['dictionary', 'word_forms', 'word_translations', 'form_translations'];
   }
 
+  // Unified tag discovery - get ALL tags from metadata and optional_tags
+  async getAllAvailableTags(): Promise<{
+    coreTags: { tag: string; count: number; tables: string[] }[];
+    optionalTags: { tag: string; count: number; tables: string[] }[];
+  }> {
+    const coreTags: Map<string, { count: number; tables: Set<string> }> = new Map();
+    const optionalTags: Map<string, { count: number; tables: Set<string> }> = new Map();
+    const tables = ['dictionary', 'word_forms', 'word_translations', 'form_translations'];
+
+    for (const table of tables) {
+      try {
+        // Get all records with metadata and optional_tags
+        const { data, error } = await supabase
+          .from(table)
+          .select('metadata, optional_tags')
+          .not('metadata', 'is', null)
+          .not('optional_tags', 'is', null);
+
+        if (error) {
+          console.error(`Error fetching tags from ${table}:`, error);
+          continue;
+        }
+
+        if (data) {
+          for (const record of data) {
+            // Extract core tags from metadata JSONB
+            if (record.metadata && typeof record.metadata === 'object') {
+              for (const [key, value] of Object.entries(record.metadata)) {
+                if (value && typeof value === 'string') {
+                  const tag = `${key}: ${value}`;
+                  if (!coreTags.has(tag)) {
+                    coreTags.set(tag, { count: 0, tables: new Set() });
+                  }
+                  coreTags.get(tag)!.count++;
+                  coreTags.get(tag)!.tables.add(table);
+                }
+              }
+            }
+
+            // Extract optional tags from array
+            if (record.optional_tags && Array.isArray(record.optional_tags)) {
+              for (const tag of record.optional_tags) {
+                if (tag && typeof tag === 'string') {
+                  if (!optionalTags.has(tag)) {
+                    optionalTags.set(tag, { count: 0, tables: new Set() });
+                  }
+                  optionalTags.get(tag)!.count++;
+                  optionalTags.get(tag)!.tables.add(table);
+                }
+              }
+            }
+          }
+        }
+      } catch (tableError) {
+        console.error(`Error processing tags for table ${table}:`, tableError);
+      }
+    }
+
+    return {
+      coreTags: Array.from(coreTags.entries()).map(([tag, data]) => ({
+        tag,
+        count: data.count,
+        tables: Array.from(data.tables)
+      })).sort((a, b) => b.count - a.count),
+      optionalTags: Array.from(optionalTags.entries()).map(([tag, data]) => ({
+        tag,
+        count: data.count,
+        tables: Array.from(data.tables)
+      })).sort((a, b) => b.count - a.count)
+    };
+  }
+
+  // Unified search - find records containing ANY of the selected tags
+  async searchByUnifiedTags(selectedTags: {
+    coreTags: string[];
+    optionalTags: string[];
+    contentTypes: string[];
+  }): Promise<Record<string, any[]>> {
+    const results: Record<string, any[]> = {};
+    const tableMap = {
+      'dictionary': 'Dictionary Words',
+      'word_forms': 'Conjugated Forms', 
+      'word_translations': 'English Translations',
+      'form_translations': 'Form Translations'
+    };
+
+    // Filter tables based on content types
+    const tablesToSearch = Object.entries(tableMap)
+      .filter(([_, contentType]) => selectedTags.contentTypes.includes(contentType))
+      .map(([table, _]) => table);
+
+    for (const table of tablesToSearch) {
+      try {
+        let query = supabase.from(table).select('*');
+        const conditions: string[] = [];
+
+        // Search for core tags in metadata
+        for (const coreTag of selectedTags.coreTags) {
+          if (coreTag.includes(': ')) {
+            const [key, value] = coreTag.split(': ', 2);
+            conditions.push(`metadata->${key}.eq."${value}"`);
+          }
+        }
+
+        // Search for optional tags in optional_tags array
+        for (const optionalTag of selectedTags.optionalTags) {
+          conditions.push(`optional_tags.cs.{"${optionalTag}"}`);
+        }
+
+        if (conditions.length > 0) {
+          query = query.or(conditions.join(','));
+        }
+
+        const { data, error } = await query.limit(50);
+
+        if (error) {
+          console.error(`Error searching ${table}:`, error);
+          results[tableMap[table as keyof typeof tableMap]] = [];
+        } else {
+          results[tableMap[table as keyof typeof tableMap]] = data || [];
+        }
+      } catch (tableError) {
+        console.error(`Error searching table ${table}:`, tableError);
+        results[tableMap[table as keyof typeof tableMap]] = [];
+      }
+    }
+
+    return results;
+  }
+
   // Get sample records for preview
   async getTableSample(table: string, limit: number = 5): Promise<DatabaseRecord[]> {
     try {

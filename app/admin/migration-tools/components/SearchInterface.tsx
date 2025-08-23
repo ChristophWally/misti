@@ -26,68 +26,115 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   const { updateUIState, updateDataState, updateFormState } = actions;
   const { handleError, handleSuccess } = handlers;
 
-  const [searchMode, setSearchMode] = useState<'metadata' | 'optional_tags'>('metadata');
-  const [metadataPath, setMetadataPath] = useState('');
-  const [searchValue, setSearchValue] = useState('');
-  const [availableTables] = useState(['dictionary', 'word_forms', 'word_translations', 'form_translations']);
+  const [availableTags, setAvailableTags] = useState<{
+    coreTags: { tag: string; count: number; tables: string[] }[];
+    optionalTags: { tag: string; count: number; tables: string[] }[];
+  }>({ coreTags: [], optionalTags: [] });
+  
+  const [selectedTags, setSelectedTags] = useState<{
+    coreTags: string[];
+    optionalTags: string[];
+  }>({ coreTags: [], optionalTags: [] });
+  
+  const [contentTypes] = useState(['Dictionary Words', 'Conjugated Forms', 'English Translations', 'Form Translations']);
+  const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>(['Dictionary Words', 'Conjugated Forms', 'English Translations', 'Form Translations']);
+  
+  const [tagSearch, setTagSearch] = useState('');
+  const [showTagBrowser, setShowTagBrowser] = useState(false);
 
-  // Initialize selected tables
-  useEffect(() => {
-    if (formState.selectedTables.length === 0) {
-      updateFormState({ selectedTables: [...availableTables] });
+  // Load all available tags on mount
+  const loadAvailableTags = async () => {
+    try {
+      updateUIState({ isLoading: true, error: null });
+      const tags = await dbService.getAllAvailableTags();
+      setAvailableTags(tags);
+      updateUIState({ isLoading: false });
+    } catch (error) {
+      handleError(error, 'Failed to load available tags');
     }
+  };
+
+  useEffect(() => {
+    loadAvailableTags();
   }, []);
 
-  // Perform cross-table search with live data
-  const performSearch = async () => {
-    if (!searchValue.trim()) {
-      handleError(new Error('Please enter a search value'), 'Search validation');
+  // Perform unified tag search
+  const performUnifiedSearch = async () => {
+    const hasSelectedTags = selectedTags.coreTags.length > 0 || selectedTags.optionalTags.length > 0;
+    
+    if (!hasSelectedTags) {
+      handleError(new Error('Please select at least one tag to search'), 'Search validation');
       return;
     }
 
-    if (searchMode === 'metadata' && !metadataPath.trim()) {
-      handleError(new Error('Please enter a metadata path (e.g., person, tense, mood)'), 'Search validation');
+    if (selectedContentTypes.length === 0) {
+      handleError(new Error('Please select at least one content type'), 'Search validation');
       return;
     }
 
     try {
       updateUIState({ isLoading: true, error: null });
 
-      const criteria: ModernSelectionCriteria = {
-        field: searchMode,
-        metadataPath: searchMode === 'metadata' ? metadataPath : undefined,
-        value: searchValue,
-        selectedTables: formState.selectedTables
-      };
-
-      const results = await dbService.searchAcrossTables(criteria);
+      const results = await dbService.searchByUnifiedTags({
+        coreTags: selectedTags.coreTags,
+        optionalTags: selectedTags.optionalTags,
+        contentTypes: selectedContentTypes
+      });
       
       updateDataState({ searchResults: results });
-      updateFormState({ searchCriteria: criteria });
       
       const totalResults = Object.values(results).reduce((sum, records) => sum + records.length, 0);
-      handleSuccess(`Found ${totalResults} matching records across ${Object.keys(results).length} tables`);
+      const totalTags = selectedTags.coreTags.length + selectedTags.optionalTags.length;
+      handleSuccess(`Found ${totalResults} records with ANY of ${totalTags} selected tags`);
       
     } catch (error) {
       handleError(error, 'Search failed');
     }
   };
 
-  // Toggle table selection
-  const toggleTable = (table: string) => {
-    const updated = formState.selectedTables.includes(table)
-      ? formState.selectedTables.filter(t => t !== table)
-      : [...formState.selectedTables, table];
-    
-    updateFormState({ selectedTables: updated });
+  // Toggle tag selection
+  const toggleTag = (tag: string, type: 'core' | 'optional') => {
+    if (type === 'core') {
+      setSelectedTags(prev => ({
+        ...prev,
+        coreTags: prev.coreTags.includes(tag)
+          ? prev.coreTags.filter(t => t !== tag)
+          : [...prev.coreTags, tag]
+      }));
+    } else {
+      setSelectedTags(prev => ({
+        ...prev,
+        optionalTags: prev.optionalTags.includes(tag)
+          ? prev.optionalTags.filter(t => t !== tag)
+          : [...prev.optionalTags, tag]
+      }));
+    }
   };
 
-  // Clear search results
-  const clearResults = () => {
+  // Toggle content type selection
+  const toggleContentType = (contentType: string) => {
+    setSelectedContentTypes(prev => 
+      prev.includes(contentType)
+        ? prev.filter(ct => ct !== contentType)
+        : [...prev, contentType]
+    );
+  };
+
+  // Filter tags based on search
+  const filteredCoreTags = availableTags.coreTags.filter(tag => 
+    tag.tag.toLowerCase().includes(tagSearch.toLowerCase())
+  );
+  
+  const filteredOptionalTags = availableTags.optionalTags.filter(tag => 
+    tag.tag.toLowerCase().includes(tagSearch.toLowerCase())
+  );
+
+  // Clear all selections
+  const clearAll = () => {
+    setSelectedTags({ coreTags: [], optionalTags: [] });
+    setSelectedContentTypes(['Dictionary Words', 'Conjugated Forms', 'English Translations', 'Form Translations']);
     updateDataState({ searchResults: {} });
-    updateFormState({ searchCriteria: null });
-    setSearchValue('');
-    setMetadataPath('');
+    setTagSearch('');
   };
 
   const hasResults = Object.keys(dataState.searchResults).length > 0;
@@ -98,88 +145,148 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       {/* Header */}
       <div>
         <h2 className="text-lg font-medium text-gray-900">Search & Execute</h2>
-        <p className="text-sm text-gray-600">Search across multiple tables and execute transformations with live data</p>
+        <p className="text-sm text-gray-600">Browse and search by tags across all content types with live data</p>
       </div>
 
-      {/* Search Form */}
+      {/* Tag Selection Interface */}
       <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-        <h3 className="font-medium text-gray-900">Search Configuration</h3>
-        
-        {/* Search Mode */}
-        <div>
-          <label className="text-sm font-medium text-gray-700 block mb-2">Search Mode</label>
-          <div className="flex space-x-4">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                value="metadata"
-                checked={searchMode === 'metadata'}
-                onChange={(e) => setSearchMode(e.target.value as 'metadata')}
-                className="mr-2"
-              />
-              <span className="text-sm">Metadata (JSONB)</span>
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                value="optional_tags"
-                checked={searchMode === 'optional_tags'}
-                onChange={(e) => setSearchMode(e.target.value as 'optional_tags')}
-                className="mr-2"
-              />
-              <span className="text-sm">Optional Tags (Array)</span>
-            </label>
+        <div className="flex justify-between items-center">
+          <h3 className="font-medium text-gray-900">Select Tags to Search</h3>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setShowTagBrowser(!showTagBrowser)}
+              className="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200 transition-colors"
+            >
+              {showTagBrowser ? 'Hide' : 'Browse'} Available Tags
+            </button>
+            <button
+              onClick={clearAll}
+              className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors"
+            >
+              Clear All
+            </button>
           </div>
         </div>
 
-        {/* Metadata Path (only for metadata search) */}
-        {searchMode === 'metadata' && (
-          <div>
-            <label className="text-sm font-medium text-gray-700 block mb-2">
-              Metadata Path
-            </label>
-            <input
-              type="text"
-              value={metadataPath}
-              onChange={(e) => setMetadataPath(e.target.value)}
-              placeholder="e.g., person, tense, mood"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Enter the JSON path within the metadata field (e.g., "person" for metadata.person)
-            </p>
+        {/* Tag Browser */}
+        {showTagBrowser && (
+          <div className="border border-gray-200 rounded-lg p-4 bg-white">
+            <div className="mb-3">
+              <input
+                type="text"
+                value={tagSearch}
+                onChange={(e) => setTagSearch(e.target.value)}
+                placeholder="Search available tags..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
+              {/* Core Tags */}
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2 flex items-center">
+                  📋 Core Tags <span className="text-xs text-gray-500 ml-1">(mandatory fields)</span>
+                </h4>
+                <div className="space-y-1">
+                  {filteredCoreTags.slice(0, 20).map((tagData) => (
+                    <label key={tagData.tag} className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedTags.coreTags.includes(tagData.tag)}
+                        onChange={() => toggleTag(tagData.tag, 'core')}
+                        className="mr-2"
+                      />
+                      <span className="text-sm flex-1 truncate">{tagData.tag}</span>
+                      <span className="text-xs text-gray-500 ml-2">({tagData.count})</span>
+                    </label>
+                  ))}
+                  {filteredCoreTags.length > 20 && (
+                    <div className="text-xs text-gray-500 text-center">
+                      ... and {filteredCoreTags.length - 20} more
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Optional Tags */}
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2 flex items-center">
+                  🏷️ Optional Tags <span className="text-xs text-gray-500 ml-1">(supplementary)</span>
+                </h4>
+                <div className="space-y-1">
+                  {filteredOptionalTags.slice(0, 20).map((tagData) => (
+                    <label key={tagData.tag} className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedTags.optionalTags.includes(tagData.tag)}
+                        onChange={() => toggleTag(tagData.tag, 'optional')}
+                        className="mr-2"
+                      />
+                      <span className="text-sm flex-1 truncate">{tagData.tag}</span>
+                      <span className="text-xs text-gray-500 ml-2">({tagData.count})</span>
+                    </label>
+                  ))}
+                  {filteredOptionalTags.length > 20 && (
+                    <div className="text-xs text-gray-500 text-center">
+                      ... and {filteredOptionalTags.length - 20} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Search Value */}
-        <div>
-          <label className="text-sm font-medium text-gray-700 block mb-2">
-            Search Value
-          </label>
-          <input
-            type="text"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            placeholder={searchMode === 'metadata' ? "e.g., first, past, indicative" : "e.g., A1, beginner, common"}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        {/* Selected Tags Display */}
+        <div className="space-y-2">
+          {selectedTags.coreTags.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-1">📋 Selected Core Tags:</h4>
+              <div className="flex flex-wrap gap-1">
+                {selectedTags.coreTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200"
+                    onClick={() => toggleTag(tag, 'core')}
+                  >
+                    {tag} ×
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {selectedTags.optionalTags.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-1">🏷️ Selected Optional Tags:</h4>
+              <div className="flex flex-wrap gap-1">
+                {selectedTags.optionalTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 cursor-pointer hover:bg-green-200"
+                    onClick={() => toggleTag(tag, 'optional')}
+                  >
+                    {tag} ×
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Table Selection */}
+        {/* Content Type Selection */}
         <div>
-          <label className="text-sm font-medium text-gray-700 block mb-2">
-            Tables to Search ({formState.selectedTables.length} selected)
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            {availableTables.map((table) => (
-              <label key={table} className="flex items-center">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Content Types to Search:</h4>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            {contentTypes.map((contentType) => (
+              <label key={contentType} className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={formState.selectedTables.includes(table)}
-                  onChange={() => toggleTable(table)}
+                  checked={selectedContentTypes.includes(contentType)}
+                  onChange={() => toggleContentType(contentType)}
                   className="mr-2"
                 />
-                <span className="text-sm">{table}</span>
+                <span className="text-sm">{contentType}</span>
               </label>
             ))}
           </div>
@@ -188,18 +295,18 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         {/* Search Actions */}
         <div className="flex space-x-2 pt-2">
           <button
-            onClick={performSearch}
-            disabled={uiState.isLoading || formState.selectedTables.length === 0}
+            onClick={performUnifiedSearch}
+            disabled={uiState.isLoading || (selectedTags.coreTags.length === 0 && selectedTags.optionalTags.length === 0)}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
           >
-            {uiState.isLoading ? '🔄 Searching...' : '🔍 Search'}
+            {uiState.isLoading ? '🔄 Searching...' : `🔍 Search (${selectedTags.coreTags.length + selectedTags.optionalTags.length} tags)`}
           </button>
           <button
-            onClick={clearResults}
-            disabled={!hasResults}
+            onClick={loadAvailableTags}
+            disabled={uiState.isLoading}
             className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 disabled:bg-gray-100 transition-colors"
           >
-            Clear Results
+            🔄 Refresh Tags
           </button>
         </div>
       </div>
@@ -209,24 +316,24 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="font-medium text-gray-900">
-              Search Results ({totalResults} total records)
+              Search Results ({totalResults} total records with ANY selected tags)
             </h3>
             <div className="text-sm text-gray-500">
               Last search: {new Date().toLocaleTimeString()}
             </div>
           </div>
 
-          {/* Results by Table */}
-          {Object.entries(dataState.searchResults).map(([table, records]) => (
-            <div key={table} className="border border-gray-200 rounded-lg overflow-hidden">
+          {/* Results by Content Type */}
+          {Object.entries(dataState.searchResults).map(([contentType, records]) => (
+            <div key={contentType} className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
                 <div className="flex justify-between items-center">
                   <h4 className="font-medium text-gray-900">
-                    {table} ({records.length} records)
+                    {contentType} ({records.length} records)
                   </h4>
                   {records.length > 0 && (
                     <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
-                      Select All
+                      Select All ({records.length})
                     </button>
                   )}
                 </div>
@@ -234,45 +341,70 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
               
               {records.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
-                  No matching records found in {table}
+                  No matching records found in {contentType}
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200">
-                  {records.slice(0, 5).map((record, index) => (
+                  {records.slice(0, 10).map((record, index) => (
                     <div key={index} className="p-4 hover:bg-gray-50">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <div className="text-sm font-medium text-gray-900">
-                            ID: {record.id}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              {/* Primary Content */}
+                              <div className="font-medium text-gray-900 mb-1">
+                                {record.italian || record.form_text || record.translation || record.english || `Record ${record.id}`}
+                              </div>
+                              
+                              {/* Secondary Content */}
+                              {record.english && record.italian !== record.english && (
+                                <div className="text-sm text-gray-600 mb-1">
+                                  English: {record.english}
+                                </div>
+                              )}
+                              
+                              {/* Core Tags Display */}
+                              {record.metadata && Object.keys(record.metadata).length > 0 && (
+                                <div className="mb-2">
+                                  <span className="text-xs font-medium text-blue-700">📋 Core Tags: </span>
+                                  <div className="inline-flex flex-wrap gap-1">
+                                    {Object.entries(record.metadata).map(([key, value]) => (
+                                      <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                                        {key}: {value as string}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Optional Tags Display */}
+                              {record.optional_tags && record.optional_tags.length > 0 && (
+                                <div className="mb-2">
+                                  <span className="text-xs font-medium text-green-700">🏷️ Optional Tags: </span>
+                                  <div className="inline-flex flex-wrap gap-1">
+                                    {record.optional_tags.map((tag: string) => (
+                                      <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <input 
+                              type="checkbox" 
+                              className="ml-4 mt-1"
+                              title={`Select ${record.italian || record.form_text || record.translation || record.english}`}
+                            />
                           </div>
-                          {searchMode === 'metadata' && record.metadata && (
-                            <div className="text-xs text-gray-600 mt-1">
-                              <span className="font-medium">Metadata:</span> {JSON.stringify(record.metadata)}
-                            </div>
-                          )}
-                          {record.optional_tags && record.optional_tags.length > 0 && (
-                            <div className="text-xs text-gray-600 mt-1">
-                              <span className="font-medium">Tags:</span> {record.optional_tags.join(', ')}
-                            </div>
-                          )}
-                          {record.english && (
-                            <div className="text-xs text-gray-600 mt-1">
-                              <span className="font-medium">English:</span> {record.english}
-                            </div>
-                          )}
-                          {record.italian && (
-                            <div className="text-xs text-gray-600 mt-1">
-                              <span className="font-medium">Italian:</span> {record.italian}
-                            </div>
-                          )}
                         </div>
-                        <input type="checkbox" className="ml-2" />
                       </div>
                     </div>
                   ))}
-                  {records.length > 5 && (
+                  {records.length > 10 && (
                     <div className="p-4 bg-gray-50 text-center text-sm text-gray-600">
-                      ... and {records.length - 5} more records
+                      ... and {records.length - 10} more records
                     </div>
                   )}
                 </div>
@@ -282,18 +414,22 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
 
           {/* Transformation Actions */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h4 className="font-medium text-yellow-800 mb-2">Next Steps</h4>
+            <h4 className="font-medium text-yellow-800 mb-2">Phase 2: Advanced Transformation Features</h4>
             <p className="text-sm text-yellow-700 mb-3">
-              Advanced transformation interface is coming in Phase 2. Selected records will be available for:
+              Coming next: Selected records will support:
             </p>
             <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1 mb-3">
-              <li>Metadata field updates (JSONB operations)</li>
-              <li>Optional tags modifications (array operations)</li>
-              <li>Bulk transformations across multiple tables</li>
-              <li>Rule creation and execution</li>
+              <li>📋 Core tag modifications (metadata JSONB field updates)</li>
+              <li>🏷️ Optional tag additions/removals (array operations)</li>
+              <li>🔄 Bulk transformations across multiple content types</li>
+              <li>💾 Save selections as reusable migration rules</li>
+              <li>⚡ One-click execution with audit trail</li>
             </ul>
-            <button className="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-700 transition-colors">
-              Configure Transformation
+            <button 
+              disabled
+              className="bg-gray-300 text-gray-500 px-4 py-2 rounded-md text-sm cursor-not-allowed"
+            >
+              Configure Transformation (Phase 2)
             </button>
           </div>
         </div>
@@ -302,11 +438,16 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       {/* Empty State */}
       {!hasResults && !uiState.isLoading && (
         <div className="text-center py-12 text-gray-500">
-          <div className="text-4xl mb-4">🔍</div>
-          <h3 className="text-lg font-medium mb-2">Search Database</h3>
-          <p className="mb-4">Search across multiple tables using modern metadata and optional_tags fields</p>
-          <div className="text-sm text-gray-400">
-            Connected to live Supabase database • {new Date().toLocaleString()}
+          <div className="text-4xl mb-4">🏷️</div>
+          <h3 className="text-lg font-medium mb-2">Browse and Search by Tags</h3>
+          <p className="mb-4">
+            Click "Browse Available Tags" to see all 📋 core tags and 🏷️ optional tags in your database
+          </p>
+          <div className="text-sm text-gray-400 space-y-1">
+            <div>Connected to live Supabase database • {new Date().toLocaleString()}</div>
+            <div>
+              Available: {availableTags.coreTags.length} core tags, {availableTags.optionalTags.length} optional tags
+            </div>
           </div>
         </div>
       )}
