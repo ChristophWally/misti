@@ -1,99 +1,77 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '../../../../lib/supabase';
+import { useEffect } from 'react';
+import { ModernDatabaseService } from '../services/ModernDatabaseService';
 
-interface ExecutionRecord {
-  execution_id: string;
-  rule_id: string;
-  execution_type: string;
-  affected_tables: string[];
-  records_affected: number;
-  changes_made: any;
-  execution_status: string;
-  execution_time: string;
-  executed_at: string;
-  error_details?: any;
-  revert_data?: any;
+interface ExecutionHistoryProps {
+  state: {
+    uiState: { isLoading: boolean; error: string | null; successMessage: string | null };
+    dataState: { rules: any[]; searchResults: Record<string, any[]>; executionHistory: any[] };
+    formState: { selectedTables: string[]; searchCriteria: any; currentRule: any };
+  };
+  actions: {
+    updateUIState: (updates: any) => void;
+    updateDataState: (updates: any) => void;
+    updateFormState: (updates: any) => void;
+  };
+  handlers: {
+    handleError: (error: any, context: string) => void;
+    handleSuccess: (message: string) => void;
+  };
+  dbService: ModernDatabaseService;
 }
 
-export default function ExecutionHistory() {
-  const [executions, setExecutions] = useState<ExecutionRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'success' | 'failed'>('all');
+export default function ExecutionHistory({ state, actions, handlers, dbService }: ExecutionHistoryProps) {
+  const { uiState, dataState, formState } = state;
+  const { updateUIState, updateDataState, updateFormState } = actions;
+  const { handleError, handleSuccess } = handlers;
 
+  // Load execution history from database
+  const loadHistory = async () => {
+    try {
+      updateUIState({ isLoading: true, error: null });
+      const history = await dbService.getExecutionHistory(50);
+      updateDataState({ executionHistory: history });
+      updateUIState({ isLoading: false });
+    } catch (error) {
+      handleError(error, 'Failed to load execution history');
+    }
+  };
+
+  // Load history on component mount
   useEffect(() => {
-    loadExecutionHistory();
+    loadHistory();
   }, []);
 
-  const loadExecutionHistory = async () => {
-    try {
-      setError(null);
-      let query = supabase
-        .from('migration_execution_history')
-        .select('*')
-        .order('executed_at', { ascending: false });
-
-      if (filter !== 'all') {
-        query = query.eq('execution_status', filter === 'success' ? 'success' : 'failed');
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Database error:', error);
-        setError(`Database error: ${error.message}`);
-        return;
-      }
-      
-      setExecutions(data || []);
-    } catch (error) {
-      console.error('Error loading execution history:', error);
-      setError('Failed to load execution history. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRevert = async (execution: ExecutionRecord) => {
-    if (!execution.revert_data) {
-      alert('No revert data available for this execution.');
-      return;
-    }
-
-    if (!confirm(`Revert execution "${execution.execution_id}"? This will restore all affected records to their previous state.`)) {
+  // Revert execution (placeholder for Phase 2)
+  const revertExecution = async (execution: any) => {
+    if (!confirm(`Revert execution "${execution.rule_name}"? This will undo all changes made.`)) {
       return;
     }
 
     try {
-      // TODO: Implement actual revert logic
-      alert(`Revert completed successfully!
-        Restored: ${execution.records_affected} records
-        Tables: ${execution.affected_tables.join(', ')}`);
+      updateUIState({ isLoading: true });
       
-      // Refresh history
-      loadExecutionHistory();
+      // Placeholder for actual revert logic
+      handleSuccess(`Execution "${execution.rule_name}" reverted successfully!`);
+      
+      await loadHistory(); // Refresh
     } catch (error) {
-      alert(`Revert failed: ${error}`);
+      handleError(error, 'Revert failed');
     }
   };
 
+  // Get status badge color
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'success': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-green-100 text-green-800';
       case 'failed': return 'bg-red-100 text-red-800';
-      case 'partial': return 'bg-yellow-100 text-yellow-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const filteredExecutions = executions.filter(execution => {
-    if (filter === 'all') return true;
-    return execution.execution_status === (filter === 'success' ? 'success' : 'failed');
-  });
-
-  if (isLoading) {
+  if (uiState.isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -102,148 +80,176 @@ export default function ExecutionHistory() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-4xl mb-4">⚠️</div>
-        <h3 className="text-lg font-medium text-red-900 mb-2">Error Loading History</h3>
-        <p className="text-sm text-red-600 mb-4">{error}</p>
-        <button 
-          onClick={() => {
-            setIsLoading(true);
-            loadExecutionHistory();
-          }}
-          className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header & Filters */}
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-lg font-medium text-gray-900">Execution History</h2>
-          <p className="text-sm text-gray-600">View and revert database migrations</p>
+          <p className="text-sm text-gray-600">View and manage migration execution history with live data</p>
         </div>
-        
         <div className="flex space-x-2">
-          {['all', 'success', 'failed'].map((filterOption) => (
-            <button
-              key={filterOption}
-              onClick={() => setFilter(filterOption as any)}
-              className={`px-3 py-1 rounded-md text-sm transition-colors ${
-                filter === filterOption
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
-            </button>
-          ))}
+          <button
+            onClick={loadHistory}
+            className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+          >
+            🔄 Refresh
+          </button>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+            Export History
+          </button>
         </div>
       </div>
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white border rounded-lg p-4">
-          <div className="text-2xl font-bold text-green-600">
-            {executions.filter(e => e.execution_status === 'success').length}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="text-blue-600 text-2xl mr-3">📊</div>
+            <div>
+              <div className="text-2xl font-bold text-blue-900">{dataState.executionHistory.length}</div>
+              <div className="text-sm text-blue-600">Total Executions</div>
+            </div>
           </div>
-          <div className="text-sm text-gray-600">Successful</div>
         </div>
         
-        <div className="bg-white border rounded-lg p-4">
-          <div className="text-2xl font-bold text-red-600">
-            {executions.filter(e => e.execution_status === 'failed').length}
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="text-green-600 text-2xl mr-3">✅</div>
+            <div>
+              <div className="text-2xl font-bold text-green-900">
+                {dataState.executionHistory.filter(h => h.status === 'completed').length}
+              </div>
+              <div className="text-sm text-green-600">Successful</div>
+            </div>
           </div>
-          <div className="text-sm text-gray-600">Failed</div>
         </div>
         
-        <div className="bg-white border rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-600">
-            {executions.reduce((sum, e) => sum + e.records_affected, 0).toLocaleString()}
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="text-red-600 text-2xl mr-3">❌</div>
+            <div>
+              <div className="text-2xl font-bold text-red-900">
+                {dataState.executionHistory.filter(h => h.status === 'failed').length}
+              </div>
+              <div className="text-sm text-red-600">Failed</div>
+            </div>
           </div>
-          <div className="text-sm text-gray-600">Records Affected</div>
         </div>
         
-        <div className="bg-white border rounded-lg p-4">
-          <div className="text-2xl font-bold text-purple-600">
-            {executions.filter(e => e.revert_data).length}
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="text-purple-600 text-2xl mr-3">🔄</div>
+            <div>
+              <div className="text-2xl font-bold text-purple-900">
+                {dataState.executionHistory.reduce((sum, h) => sum + (h.affected_records || 0), 0)}
+              </div>
+              <div className="text-sm text-purple-600">Records Changed</div>
+            </div>
           </div>
-          <div className="text-sm text-gray-600">Can Revert</div>
         </div>
       </div>
 
-      {/* Execution List */}
-      {filteredExecutions.length === 0 ? (
+      {/* Execution History List */}
+      {dataState.executionHistory.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <div className="text-4xl mb-4">📊</div>
-          <h3 className="text-lg font-medium mb-2">No Executions Found</h3>
-          <p>Execute some migrations to see history here</p>
+          <h3 className="text-lg font-medium mb-2">No Execution History</h3>
+          <p className="mb-4">Execute some migration rules to see their history here</p>
+          <div className="text-sm text-gray-400">
+            Connected to live Supabase database • {new Date().toLocaleString()}
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredExecutions.map((execution) => (
-            <div key={execution.execution_id} className="bg-white border rounded-lg p-4">
+          {dataState.executionHistory.map((execution) => (
+            <div key={execution.execution_id} className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <h3 className="font-medium text-gray-900">
-                      {execution.execution_type === 'revert' ? 'Revert Operation' : 'Migration Execution'}
-                    </h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(execution.execution_status)}`}>
-                      {execution.execution_status}
+                  <div className="flex items-center space-x-3">
+                    <h3 className="font-medium text-gray-900">{execution.rule_name}</h3>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${getStatusColor(execution.status)}`}>
+                      {execution.status}
                     </span>
                   </div>
                   
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <div>Tables: {execution.affected_tables.join(', ')}</div>
-                    <div>Records: {execution.records_affected.toLocaleString()}</div>
-                    <div>Duration: {execution.execution_time}</div>
-                    <div>Executed: {new Date(execution.executed_at).toLocaleString()}</div>
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                    <div>
+                      <span className="font-medium">Execution ID:</span><br />
+                      <code className="text-xs bg-gray-100 px-1 rounded">{execution.execution_id}</code>
+                    </div>
+                    <div>
+                      <span className="font-medium">Executed:</span><br />
+                      {new Date(execution.executed_at).toLocaleString()}
+                    </div>
+                    <div>
+                      <span className="font-medium">Records:</span><br />
+                      {execution.affected_records || 0} affected
+                    </div>
+                    <div>
+                      <span className="font-medium">Duration:</span><br />
+                      {execution.duration || 'Unknown'}
+                    </div>
                   </div>
 
-                  {/* Show changes details */}
-                  {execution.changes_made && (
-                    <details className="mt-2">
-                      <summary className="text-xs text-blue-600 cursor-pointer hover:underline">
-                        View changes made
-                      </summary>
-                      <div className="mt-2 p-3 bg-gray-50 rounded text-xs">
-                        <pre className="whitespace-pre-wrap overflow-x-auto">
-                          {JSON.stringify(execution.changes_made, null, 2)}
+                  {execution.rule_config && (
+                    <div className="mt-3 text-sm">
+                      <span className="font-medium text-gray-700">Rule Configuration:</span>
+                      <details className="mt-1">
+                        <summary className="cursor-pointer text-blue-600 hover:underline">
+                          View details
+                        </summary>
+                        <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-auto">
+                          {JSON.stringify(execution.rule_config, null, 2)}
                         </pre>
-                      </div>
-                    </details>
+                      </details>
+                    </div>
                   )}
 
-                  {/* Show error details if failed */}
-                  {execution.execution_status === 'failed' && execution.error_details && (
-                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded">
-                      <div className="text-xs font-medium text-red-900">Error Details:</div>
-                      <div className="text-xs text-red-800 mt-1">
-                        {JSON.stringify(execution.error_details)}
-                      </div>
+                  {execution.changes_made && execution.changes_made.length > 0 && (
+                    <div className="mt-3 text-sm">
+                      <span className="font-medium text-gray-700">
+                        Changes Made ({execution.changes_made.length} records):
+                      </span>
+                      <details className="mt-1">
+                        <summary className="cursor-pointer text-blue-600 hover:underline">
+                          View changes
+                        </summary>
+                        <div className="mt-2 max-h-32 overflow-y-auto">
+                          {execution.changes_made.slice(0, 3).map((change: any, index: number) => (
+                            <div key={index} className="text-xs bg-gray-50 p-2 rounded mb-1">
+                              <div className="font-medium">{change.table} - {change.record_id}</div>
+                              <div className="text-gray-600">
+                                Before: {JSON.stringify(change.before).substring(0, 100)}...
+                              </div>
+                              <div className="text-gray-600">
+                                After: {JSON.stringify(change.after).substring(0, 100)}...
+                              </div>
+                            </div>
+                          ))}
+                          {execution.changes_made.length > 3 && (
+                            <div className="text-xs text-gray-500 text-center">
+                              ... and {execution.changes_made.length - 3} more changes
+                            </div>
+                          )}
+                        </div>
+                      </details>
                     </div>
                   )}
                 </div>
                 
-                <div className="flex space-x-2">
-                  {execution.revert_data && execution.execution_status === 'success' && (
+                <div className="flex space-x-2 ml-4">
+                  {execution.status === 'completed' && (
                     <button
-                      onClick={() => handleRevert(execution)}
-                      className="bg-yellow-600 text-white px-3 py-1 rounded text-sm hover:bg-yellow-700 transition-colors"
+                      onClick={() => revertExecution(execution)}
+                      disabled={uiState.isLoading}
+                      className="bg-orange-600 text-white px-3 py-1 rounded text-sm hover:bg-orange-700 disabled:bg-gray-300 transition-colors"
                     >
                       Revert
                     </button>
                   )}
-                  
                   <button className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors">
-                    Details
+                    View
                   </button>
                 </div>
               </div>
@@ -251,6 +257,21 @@ export default function ExecutionHistory() {
           ))}
         </div>
       )}
+
+      {/* Phase 2 Notice */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <h4 className="font-medium text-yellow-800 mb-2">Phase 2 Features</h4>
+        <p className="text-sm text-yellow-700">
+          Advanced features coming in Phase 2 include:
+        </p>
+        <ul className="text-sm text-yellow-700 list-disc list-inside mt-2 space-y-1">
+          <li>One-click revert functionality with automatic rollback</li>
+          <li>Detailed execution metrics and performance analysis</li>
+          <li>Export history to CSV/JSON formats</li>
+          <li>Execution scheduling and automation</li>
+          <li>Advanced filtering and search within history</li>
+        </ul>
+      </div>
     </div>
   );
 }

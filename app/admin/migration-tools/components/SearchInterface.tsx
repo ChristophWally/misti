@@ -1,282 +1,313 @@
 'use client';
 
-import { useState } from 'react';
-import { supabase } from '../../../../lib/supabase';
+import { useState, useEffect } from 'react';
+import { ModernDatabaseService, ModernSelectionCriteria } from '../services/ModernDatabaseService';
 
-type SearchMode = 'tag' | 'text' | 'metadata';
-type TableName = 'dictionary' | 'word_forms' | 'word_translations' | 'form_translations';
-
-interface SearchResult {
-  id: string;
-  table: TableName;
-  primaryText: string;
-  tags: string[];
-  metadata: any;
-  optional_tags: string[];
+interface SearchInterfaceProps {
+  state: {
+    uiState: { isLoading: boolean; error: string | null; successMessage: string | null };
+    dataState: { rules: any[]; searchResults: Record<string, any[]>; executionHistory: any[] };
+    formState: { selectedTables: string[]; searchCriteria: any; currentRule: any };
+  };
+  actions: {
+    updateUIState: (updates: any) => void;
+    updateDataState: (updates: any) => void;
+    updateFormState: (updates: any) => void;
+  };
+  handlers: {
+    handleError: (error: any, context: string) => void;
+    handleSuccess: (message: string) => void;
+  };
+  dbService: ModernDatabaseService;
 }
 
-interface SelectionState {
-  dictionary: string[];
-  word_forms: string[];
-  word_translations: string[];
-  form_translations: string[];
-}
+export default function SearchInterface({ state, actions, handlers, dbService }: SearchInterfaceProps) {
+  const { uiState, dataState, formState } = state;
+  const { updateUIState, updateDataState, updateFormState } = actions;
+  const { handleError, handleSuccess } = handlers;
 
-export default function SearchInterface() {
-  const [searchMode, setSearchMode] = useState<SearchMode>('tag');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [selectedRecords, setSelectedRecords] = useState<SelectionState>({
-    dictionary: [],
-    word_forms: [],
-    word_translations: [],
-    form_translations: []
-  });
-  const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [transformRule, setTransformRule] = useState({ from: '', to: '' });
+  const [searchMode, setSearchMode] = useState<'metadata' | 'optional_tags'>('metadata');
+  const [metadataPath, setMetadataPath] = useState('');
+  const [searchValue, setSearchValue] = useState('');
+  const [availableTables] = useState(['dictionary', 'word_forms', 'word_translations', 'form_translations']);
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) return;
+  // Initialize selected tables
+  useEffect(() => {
+    if (formState.selectedTables.length === 0) {
+      updateFormState({ selectedTables: [...availableTables] });
+    }
+  }, []);
+
+  // Perform cross-table search with live data
+  const performSearch = async () => {
+    if (!searchValue.trim()) {
+      handleError(new Error('Please enter a search value'), 'Search validation');
+      return;
+    }
+
+    if (searchMode === 'metadata' && !metadataPath.trim()) {
+      handleError(new Error('Please enter a metadata path (e.g., person, tense, mood)'), 'Search validation');
+      return;
+    }
+
+    try {
+      updateUIState({ isLoading: true, error: null });
+
+      const criteria: ModernSelectionCriteria = {
+        field: searchMode,
+        metadataPath: searchMode === 'metadata' ? metadataPath : undefined,
+        value: searchValue,
+        selectedTables: formState.selectedTables
+      };
+
+      const results = await dbService.searchAcrossTables(criteria);
+      
+      updateDataState({ searchResults: results });
+      updateFormState({ searchCriteria: criteria });
+      
+      const totalResults = Object.values(results).reduce((sum, records) => sum + records.length, 0);
+      handleSuccess(`Found ${totalResults} matching records across ${Object.keys(results).length} tables`);
+      
+    } catch (error) {
+      handleError(error, 'Search failed');
+    }
+  };
+
+  // Toggle table selection
+  const toggleTable = (table: string) => {
+    const updated = formState.selectedTables.includes(table)
+      ? formState.selectedTables.filter(t => t !== table)
+      : [...formState.selectedTables, table];
     
-    setIsSearching(true);
-    const searchResults: SearchResult[] = [];
-
-    try {
-      const tables: TableName[] = ['dictionary', 'word_forms', 'word_translations', 'form_translations'];
-      
-      for (const table of tables) {
-        let query = supabase.from(table).select('*').limit(50);
-        
-        // Different search strategies based on mode
-        if (searchMode === 'tag') {
-          // Search in tags arrays and metadata
-          query = query.or(`tags.cs.{"${searchTerm}"},optional_tags.cs.{"${searchTerm}"}`);
-        } else if (searchMode === 'text') {
-          // Search in primary text fields
-          const primaryField = table === 'dictionary' ? 'italian' : 
-                              table === 'word_forms' ? 'form_text' : 'translation';
-          query = query.ilike(primaryField, `%${searchTerm}%`);
-        }
-
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error(`Error searching ${table}:`, error);
-          continue;
-        }
-
-        if (data) {
-          const tableResults: SearchResult[] = data.map(record => ({
-            id: record.id,
-            table,
-            primaryText: record.italian || record.form_text || record.translation || 'Unknown',
-            tags: record.tags || [],
-            metadata: record.metadata || {},
-            optional_tags: record.optional_tags || []
-          }));
-          
-          searchResults.push(...tableResults);
-        }
-      }
-
-      setResults(searchResults);
-    } catch (error) {
-      console.error('Search error:', error);
-      setError('Search failed. Please try again.');
-    } finally {
-      setIsSearching(false);
-    }
+    updateFormState({ selectedTables: updated });
   };
 
-  const toggleRecord = (table: TableName, recordId: string) => {
-    setSelectedRecords(prev => ({
-      ...prev,
-      [table]: prev[table].includes(recordId)
-        ? prev[table].filter(id => id !== recordId)
-        : [...prev[table], recordId]
-    }));
+  // Clear search results
+  const clearResults = () => {
+    updateDataState({ searchResults: {} });
+    updateFormState({ searchCriteria: null });
+    setSearchValue('');
+    setMetadataPath('');
   };
 
-  const executeTransform = async () => {
-    if (!transformRule.from || !transformRule.to) {
-      alert('Please specify both "from" and "to" values for the transformation.');
-      return;
-    }
-
-    const totalSelected = Object.values(selectedRecords).flat().length;
-    if (totalSelected === 0) {
-      alert('Please select at least one record to transform.');
-      return;
-    }
-
-    if (!confirm(`Transform "${transformRule.from}" → "${transformRule.to}" across ${totalSelected} selected records?`)) {
-      return;
-    }
-
-    try {
-      // TODO: Implement actual transformation
-      alert(`Transformation completed successfully!
-        Changed: ${totalSelected} records
-        From: "${transformRule.from}" 
-        To: "${transformRule.to}"`);
-      
-      // Clear selections and refresh
-      setSelectedRecords({
-        dictionary: [],
-        word_forms: [],
-        word_translations: [],
-        form_translations: []
-      });
-      
-    } catch (error) {
-      alert(`Transformation failed: ${error}`);
-    }
-  };
-
-  const totalSelected = Object.values(selectedRecords).flat().length;
-  const resultsByTable = results.reduce((acc, result) => {
-    if (!acc[result.table]) acc[result.table] = [];
-    acc[result.table].push(result);
-    return acc;
-  }, {} as Record<TableName, SearchResult[]>);
+  const hasResults = Object.keys(dataState.searchResults).length > 0;
+  const totalResults = Object.values(dataState.searchResults).reduce((sum, records) => sum + records.length, 0);
 
   return (
     <div className="space-y-6">
-      {/* Search Interface */}
-      <div className="bg-gray-50 p-4 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search Mode</label>
-            <select
-              value={searchMode}
-              onChange={(e) => setSearchMode(e.target.value as SearchMode)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
-            >
-              <option value="tag">Search by Tag</option>
-              <option value="text">Search by Text</option>
-              <option value="metadata">Search by Metadata</option>
-            </select>
+      {/* Header */}
+      <div>
+        <h2 className="text-lg font-medium text-gray-900">Search & Execute</h2>
+        <p className="text-sm text-gray-600">Search across multiple tables and execute transformations with live data</p>
+      </div>
+
+      {/* Search Form */}
+      <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+        <h3 className="font-medium text-gray-900">Search Configuration</h3>
+        
+        {/* Search Mode */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 block mb-2">Search Mode</label>
+          <div className="flex space-x-4">
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="metadata"
+                checked={searchMode === 'metadata'}
+                onChange={(e) => setSearchMode(e.target.value as 'metadata')}
+                className="mr-2"
+              />
+              <span className="text-sm">Metadata (JSONB)</span>
+            </label>
+            <label className="flex items-center">
+              <input
+                type="radio"
+                value="optional_tags"
+                checked={searchMode === 'optional_tags'}
+                onChange={(e) => setSearchMode(e.target.value as 'optional_tags')}
+                className="mr-2"
+              />
+              <span className="text-sm">Optional Tags (Array)</span>
+            </label>
           </div>
-          
+        </div>
+
+        {/* Metadata Path (only for metadata search) */}
+        {searchMode === 'metadata' && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search Term</label>
+            <label className="text-sm font-medium text-gray-700 block mb-2">
+              Metadata Path
+            </label>
             <input
               type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder={`Enter ${searchMode} to search...`}
-              className="w-full border border-gray-300 rounded-md px-3 py-2"
+              value={metadataPath}
+              onChange={(e) => setMetadataPath(e.target.value)}
+              placeholder="e.g., person, tense, mood"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Enter the JSON path within the metadata field (e.g., "person" for metadata.person)
+            </p>
           </div>
-          
-          <div className="md:col-span-2">
-            <button
-              onClick={handleSearch}
-              disabled={isSearching || !searchTerm.trim()}
-              className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-            >
-              {isSearching ? 'Searching...' : 'Search Across All Tables'}
-            </button>
-            {error && (
-              <p className="text-sm text-red-600 mt-2">{error}</p>
-            )}
+        )}
+
+        {/* Search Value */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 block mb-2">
+            Search Value
+          </label>
+          <input
+            type="text"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder={searchMode === 'metadata' ? "e.g., first, past, indicative" : "e.g., A1, beginner, common"}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Table Selection */}
+        <div>
+          <label className="text-sm font-medium text-gray-700 block mb-2">
+            Tables to Search ({formState.selectedTables.length} selected)
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {availableTables.map((table) => (
+              <label key={table} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formState.selectedTables.includes(table)}
+                  onChange={() => toggleTable(table)}
+                  className="mr-2"
+                />
+                <span className="text-sm">{table}</span>
+              </label>
+            ))}
           </div>
+        </div>
+
+        {/* Search Actions */}
+        <div className="flex space-x-2 pt-2">
+          <button
+            onClick={performSearch}
+            disabled={uiState.isLoading || formState.selectedTables.length === 0}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
+          >
+            {uiState.isLoading ? '🔄 Searching...' : '🔍 Search'}
+          </button>
+          <button
+            onClick={clearResults}
+            disabled={!hasResults}
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 disabled:bg-gray-100 transition-colors"
+          >
+            Clear Results
+          </button>
         </div>
       </div>
 
-      {/* Results */}
-      {results.length > 0 && (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-4">
-            {Object.entries(resultsByTable).map(([table, tableResults]) => (
-              <div key={table} className="bg-white border rounded-lg p-4">
-                <h3 className="font-medium text-gray-900 mb-3 capitalize">
-                  {table.replace('_', ' ')} ({tableResults.length})
-                </h3>
-                
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {tableResults.map((result) => (
-                    <div key={result.id} className="flex items-start space-x-2 p-2 hover:bg-gray-50 rounded">
-                      <input
-                        type="checkbox"
-                        checked={selectedRecords[result.table].includes(result.id)}
-                        onChange={() => toggleRecord(result.table, result.id)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{result.primaryText}</div>
-                        <div className="text-xs text-gray-500 truncate">
-                          Tags: {[...result.tags, ...result.optional_tags].join(', ') || 'None'}
+      {/* Search Results */}
+      {hasResults && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium text-gray-900">
+              Search Results ({totalResults} total records)
+            </h3>
+            <div className="text-sm text-gray-500">
+              Last search: {new Date().toLocaleTimeString()}
+            </div>
+          </div>
+
+          {/* Results by Table */}
+          {Object.entries(dataState.searchResults).map(([table, records]) => (
+            <div key={table} className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium text-gray-900">
+                    {table} ({records.length} records)
+                  </h4>
+                  {records.length > 0 && (
+                    <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
+                      Select All
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {records.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  No matching records found in {table}
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {records.slice(0, 5).map((record, index) => (
+                    <div key={index} className="p-4 hover:bg-gray-50">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">
+                            ID: {record.id}
+                          </div>
+                          {searchMode === 'metadata' && record.metadata && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              <span className="font-medium">Metadata:</span> {JSON.stringify(record.metadata)}
+                            </div>
+                          )}
+                          {record.optional_tags && record.optional_tags.length > 0 && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              <span className="font-medium">Tags:</span> {record.optional_tags.join(', ')}
+                            </div>
+                          )}
+                          {record.english && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              <span className="font-medium">English:</span> {record.english}
+                            </div>
+                          )}
+                          {record.italian && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              <span className="font-medium">Italian:</span> {record.italian}
+                            </div>
+                          )}
                         </div>
-                        <button
-                          onClick={() => toggleRecord(result.table, result.id)}
-                          className="text-blue-600 hover:underline text-xs mt-1"
-                        >
-                          Quick Execute →
-                        </button>
+                        <input type="checkbox" className="ml-2" />
                       </div>
                     </div>
                   ))}
+                  {records.length > 5 && (
+                    <div className="p-4 bg-gray-50 text-center text-sm text-gray-600">
+                      ... and {records.length - 5} more records
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          ))}
 
-          {/* Transformation Interface */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-medium text-blue-900 mb-4">Transform Selected Records</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-              <div>
-                <label className="block text-sm font-medium text-blue-800 mb-1">From</label>
-                <input
-                  type="text"
-                  value={transformRule.from}
-                  onChange={(e) => setTransformRule(prev => ({ ...prev, from: e.target.value }))}
-                  placeholder="Current tag/value"
-                  className="w-full border border-blue-300 rounded-md px-3 py-2"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-blue-800 mb-1">To</label>
-                <input
-                  type="text"
-                  value={transformRule.to}
-                  onChange={(e) => setTransformRule(prev => ({ ...prev, to: e.target.value }))}
-                  placeholder="New tag/value"
-                  className="w-full border border-blue-300 rounded-md px-3 py-2"
-                />
-              </div>
-              
-              <div>
-                <button
-                  onClick={executeTransform}
-                  disabled={!transformRule.from || !transformRule.to || totalSelected === 0}
-                  className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 disabled:bg-gray-400 transition-colors"
-                >
-                  Execute Transform ({totalSelected})
-                </button>
-              </div>
-            </div>
-            
-            <div className="mt-2 text-sm text-blue-800">
-              Selected: {Object.entries(selectedRecords).map(([table, ids]) => 
-                `${table.replace('_', ' ')}: ${ids.length}`
-              ).join(' | ')}
-            </div>
+          {/* Transformation Actions */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h4 className="font-medium text-yellow-800 mb-2">Next Steps</h4>
+            <p className="text-sm text-yellow-700 mb-3">
+              Advanced transformation interface is coming in Phase 2. Selected records will be available for:
+            </p>
+            <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1 mb-3">
+              <li>Metadata field updates (JSONB operations)</li>
+              <li>Optional tags modifications (array operations)</li>
+              <li>Bulk transformations across multiple tables</li>
+              <li>Rule creation and execution</li>
+            </ul>
+            <button className="bg-yellow-600 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-700 transition-colors">
+              Configure Transformation
+            </button>
           </div>
-        </>
+        </div>
       )}
 
       {/* Empty State */}
-      {results.length === 0 && !isSearching && (
+      {!hasResults && !uiState.isLoading && (
         <div className="text-center py-12 text-gray-500">
           <div className="text-4xl mb-4">🔍</div>
           <h3 className="text-lg font-medium mb-2">Search Database</h3>
-          <p>Search across all tables to find and transform records</p>
+          <p className="mb-4">Search across multiple tables using modern metadata and optional_tags fields</p>
+          <div className="text-sm text-gray-400">
+            Connected to live Supabase database • {new Date().toLocaleString()}
+          </div>
         </div>
       )}
     </div>
