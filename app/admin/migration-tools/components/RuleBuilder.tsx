@@ -132,6 +132,45 @@ export default function RuleBuilder({
   }, [sourceSelections])
 
   // ========================================================================
+  // UTILITY FUNCTIONS - Record Display Names
+  // ========================================================================
+  const getRecordDisplayName = (recordId: string, recordType: string): { displayName: string, recordTypeName: string } => {
+    // For now, we need to look up the actual record names from the source data
+    // This is a simplified version - full implementation would need access to the original record data
+    
+    let displayName = `Record ${recordId.slice(-8)}`
+    let recordTypeName = recordType.replace('_', ' ')
+    
+    // Try to find the record in sourceSelections to get more context
+    const selection = sourceSelections[recordId]
+    if (selection) {
+      recordTypeName = selection.recordType.replace('_', ' ')
+      
+      // TODO: In a full implementation, we'd need access to the original record data
+      // from the search interface to show actual names like "testverb", "to test", etc.
+      // For now, we'll improve the display format
+      switch (selection.recordType) {
+        case 'word':
+          displayName = `Dictionary Word`
+          break
+        case 'form':
+          displayName = `Word Form`
+          break
+        case 'word_translation':
+          displayName = `Word Translation`
+          break
+        case 'form_translation':
+          displayName = `Form Translation`
+          break
+        default:
+          displayName = recordTypeName
+      }
+    }
+    
+    return { displayName, recordTypeName }
+  }
+
+  // ========================================================================
   // OPERATION HANDLERS - Advanced Rule Configuration
   // ========================================================================
   const updateMetadataOperation = (recordId: string, metadataKey: string, config: Partial<OperationConfig>) => {
@@ -165,12 +204,7 @@ export default function RuleBuilder({
     const affectedTables = new Set<string>()
     let estimatedRecords = 0
 
-    // Debug logging
-    console.log('🔍 Calculating preview...', {
-      metadataOps: Object.keys(ruleState.metadataOperations).length,
-      optionalOps: Object.keys(ruleState.optionalTagOperations).length,
-      sourceSelections: Object.keys(sourceSelections).length
-    })
+    // Calculate operations with scope analysis
 
     // Analyze metadata operations
     Object.entries(ruleState.metadataOperations).forEach(([recordId, operations]) => {
@@ -248,8 +282,6 @@ export default function RuleBuilder({
       conflicts: []
     }
 
-    console.log('📊 Setting preview state:', newPreviewState)
-    
     setPreviewState(newPreviewState)
   }
 
@@ -326,10 +358,15 @@ export default function RuleBuilder({
               </h3>
               
               <div className="space-y-3">
-                {Object.entries(sourceSelections).map(([recordId, selection]) => (
+                {Object.entries(sourceSelections).map(([recordId, selection]) => {
+                  const { displayName, recordTypeName } = getRecordDisplayName(recordId, selection.recordType)
+                  return (
                   <div key={recordId} className="bg-white p-3 rounded border">
-                    <div className="text-sm font-medium text-gray-800 mb-2">
-                      {selection.recordType.replace('_', ' ').toUpperCase()} #{recordId.slice(-8)}
+                    <div className="text-sm font-medium text-gray-800 mb-1">
+                      {displayName}
+                    </div>
+                    <div className="text-xs text-gray-500 mb-2">
+                      {recordTypeName} #{recordId.slice(-8)}
                     </div>
                     
                     {/* Metadata Tags */}
@@ -360,7 +397,8 @@ export default function RuleBuilder({
                       </div>
                     )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -418,10 +456,15 @@ export default function RuleBuilder({
                 <h4 className="font-medium">Per-Tag Operations</h4>
                 
                 {/* Metadata Operations */}
-                {Object.entries(ruleState.metadataOperations).map(([recordId, operations]) => (
+                {Object.entries(ruleState.metadataOperations).map(([recordId, operations]) => {
+                  const { displayName, recordTypeName } = getRecordDisplayName(recordId, sourceSelections[recordId]?.recordType || 'unknown')
+                  return (
                   <div key={recordId} className="border rounded p-3">
-                    <div className="text-sm font-medium mb-3">
-                      📋 Record #{recordId.slice(-8)} Metadata
+                    <div className="text-sm font-medium mb-1">
+                      📋 {displayName} - Core Tags
+                    </div>
+                    <div className="text-xs text-gray-500 mb-2">
+                      {recordTypeName} #{recordId.slice(-8)}
                     </div>
                     
                     {Object.entries(operations).map(([metadataKey, config]) => (
@@ -463,13 +506,23 @@ export default function RuleBuilder({
                       </div>
                     ))}
                   </div>
-                ))}
+                  )
+                })}
 
                 {/* Optional Tag Operations */}
-                {Object.entries(ruleState.optionalTagOperations).map(([tagKey, config]) => (
+                {Object.entries(ruleState.optionalTagOperations).map(([tagKey, config]) => {
+                  // Extract recordId from tagKey format: recordId_tagValue
+                  const recordId = tagKey.split('_')[0]
+                  const tagValue = tagKey.split('_').slice(1).join('_')
+                  const { displayName, recordTypeName } = getRecordDisplayName(recordId, sourceSelections[recordId]?.recordType || 'unknown')
+                  
+                  return (
                   <div key={tagKey} className="border rounded p-3">
-                    <div className="text-sm font-medium mb-3">
-                      🏷️ Optional Tag: {tagKey.split('_').slice(-1)[0]}
+                    <div className="text-sm font-medium mb-1">
+                      🏷️ {displayName} - Optional Tags
+                    </div>
+                    <div className="text-xs text-gray-500 mb-2">
+                      {recordTypeName} #{recordId.slice(-8)} - Tag: "{tagValue}"
                     </div>
                     
                     <div className="flex items-center space-x-3">
@@ -505,7 +558,8 @@ export default function RuleBuilder({
                       </select>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
 
               {/* Quick Operation Shortcuts */}
