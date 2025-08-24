@@ -240,12 +240,13 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         const newCollapsedSections = { ...prev.collapsedSections };
         
         hierarchyResults.forEach(({ wordId, hierarchy }) => {
+          console.log(`Loading hierarchy for ${wordId}:`, hierarchy); // Debug
           newHierarchies[wordId] = hierarchy;
-          // Default to collapsed for cleaner initial view
+          // Default to expanded so user can see hierarchy immediately
           newCollapsedSections[wordId] = {
-            forms: true,
-            translations: true,
-            formTranslations: true
+            forms: false,
+            translations: false,
+            formTranslations: false
           };
         });
         
@@ -850,20 +851,10 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                             className="mt-1 flex-shrink-0"
                           />
                           <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">Dictionary</span>
-                                <span className="font-medium">{word.italian}</span>
-                                {word.english && <span className="text-gray-500">({word.english})</span>}
-                              </div>
-                              {hierarchy && (
-                                <button
-                                  onClick={() => toggleSectionCollapse(wordId, 'forms')}
-                                  className="text-gray-400 hover:text-gray-600"
-                                >
-                                  {collapsed?.forms ? '▼' : '▲'} Expand
-                                </button>
-                              )}
+                            <div className="flex items-center space-x-2">
+                              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">Dictionary</span>
+                              <span className="font-medium">{word.italian}</span>
+                              {word.english && <span className="text-gray-500">({word.english})</span>}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
                               {hierarchy ? `${hierarchy.forms.length} forms, ${hierarchy.translations.length} translations` : 'Loading...'}
@@ -886,9 +877,18 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                         </div>
 
                         {/* Word Forms Level */}
-                        {hierarchy && hierarchy.forms.length > 0 && !collapsed?.forms && (
+                        {hierarchy && hierarchy.forms.length > 0 && (
                           <div className="ml-6 mb-2">
-                            <div className="text-xs text-gray-600 font-medium mb-2">Word Forms ({hierarchy.forms.length}):</div>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-xs text-gray-600 font-medium">Word Forms ({hierarchy.forms.length}):</div>
+                              <button
+                                onClick={() => toggleSectionCollapse(wordId, 'forms')}
+                                className="text-xs text-gray-400 hover:text-gray-600"
+                              >
+                                {collapsed?.forms ? '▼ Show' : '▲ Hide'}
+                              </button>
+                            </div>
+                            {!collapsed?.forms && (
                             <div className="grid grid-cols-1 gap-2">
                               {hierarchy.forms.map((form) => {
                                 const isFormSelected = hierarchicalSelection.selectedTags[form.id]?.allTagsSelected || false;
@@ -921,13 +921,23 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                 );
                               })}
                             </div>
+                            )}
                           </div>
                         )}
 
                         {/* Word Translations Level */}
-                        {hierarchy && hierarchy.translations.length > 0 && !collapsed?.translations && (
+                        {hierarchy && hierarchy.translations.length > 0 && (
                           <div className="ml-6 mb-2">
-                            <div className="text-xs text-gray-600 font-medium mb-2">Word Translations ({hierarchy.translations.length}):</div>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-xs text-gray-600 font-medium">Word Translations ({hierarchy.translations.length}):</div>
+                              <button
+                                onClick={() => toggleSectionCollapse(wordId, 'translations')}
+                                className="text-xs text-gray-400 hover:text-gray-600"
+                              >
+                                {collapsed?.translations ? '▼ Show' : '▲ Hide'}
+                              </button>
+                            </div>
+                            {!collapsed?.translations && (
                             <div className="space-y-1">
                               {hierarchy.translations.map((translation) => {
                                 const isTranslationSelected = hierarchicalSelection.selectedTags[translation.id]?.allTagsSelected || false;
@@ -960,13 +970,23 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                 );
                               })}
                             </div>
+                            )}
                           </div>
                         )}
 
                         {/* Form Translations Level */}
-                        {hierarchy && hierarchy.formTranslations.length > 0 && !collapsed?.formTranslations && (
+                        {hierarchy && hierarchy.formTranslations.length > 0 && (
                           <div className="ml-6">
-                            <div className="text-xs text-gray-600 font-medium mb-2">Form Translations ({hierarchy.formTranslations.length}):</div>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-xs text-gray-600 font-medium">Form Translations ({hierarchy.formTranslations.length}):</div>
+                              <button
+                                onClick={() => toggleSectionCollapse(wordId, 'formTranslations')}
+                                className="text-xs text-gray-400 hover:text-gray-600"
+                              >
+                                {collapsed?.formTranslations ? '▼ Show' : '▲ Hide'}
+                              </button>
+                            </div>
+                            {!collapsed?.formTranslations && (
                             <div className="space-y-1">
                               {hierarchy.formTranslations.map((formTranslation) => {
                                 const isFormTranslationSelected = hierarchicalSelection.selectedTags[formTranslation.id]?.allTagsSelected || false;
@@ -999,6 +1019,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                 );
                               })}
                             </div>
+                            )}
                           </div>
                         )}
                       </div>
