@@ -240,7 +240,6 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         const newCollapsedSections = { ...prev.collapsedSections };
         
         hierarchyResults.forEach(({ wordId, hierarchy }) => {
-          console.log(`Loading hierarchy for ${wordId}:`, hierarchy); // Debug
           newHierarchies[wordId] = hierarchy;
           // Collapsed by default for cleaner interface
           newCollapsedSections[wordId] = {
@@ -837,7 +836,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                     }
                     
                     const hierarchy = hierarchicalSelection.wordHierarchies[wordId];
-                    const isWordSelected = hierarchicalSelection.selectedTags[wordId]?.allTagsSelected || false;
+                    const selectedTags = hierarchicalSelection.selectedTags[wordId];
+                    const hasAnyTagSelected = selectedTags && (selectedTags.selectedMetadataPaths.size > 0 || selectedTags.selectedOptionalTags.size > 0);
+                    const totalTags = (word.metadata ? Object.keys(word.metadata).length : 0) + (word.optional_tags ? word.optional_tags.length : 0);
+                    const selectedTagsCount = selectedTags ? selectedTags.selectedMetadataPaths.size + selectedTags.selectedOptionalTags.size : 0;
+                    const isWordSelected = selectedTags?.allTagsSelected || false;
                     const collapsed = hierarchicalSelection.collapsedSections[wordId];
                     
                     return (
@@ -847,8 +850,12 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                           <input
                             type="checkbox"
                             checked={isWordSelected}
+                            ref={input => {
+                              if (input) input.indeterminate = hasAnyTagSelected && !isWordSelected;
+                            }}
                             onChange={() => toggleAllTagsForRecord(wordId, 'word', word)}
                             className="mt-1 flex-shrink-0"
+                            title={hasAnyTagSelected && !isWordSelected ? `${selectedTagsCount}/${totalTags} tags selected` : isWordSelected ? 'All tags selected' : 'No tags selected'}
                           />
                           <div className="flex-1">
                             <div className="flex items-center space-x-2">
@@ -860,19 +867,58 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                               {hierarchy ? `${hierarchy.forms.length} forms, ${hierarchy.translations.length} translations` : 'Loading...'}
                             </div>
                             
-                            {/* Show tags for this word */}
-                            {word.metadata && Object.keys(word.metadata).length > 0 && (
-                              <div className="mt-2">
-                                <div className="text-xs text-gray-600 mb-1">Tags:</div>
-                                <div className="flex flex-wrap gap-1">
-                                  {Object.entries(word.metadata).map(([key, value]) => (
-                                    <span key={key} className="px-1 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
-                                      {key}: {value as string}
-                                    </span>
-                                  ))}
+                            {/* Individual Tag Selection for this word */}
+                            <div className="mt-2">
+                              {/* Core Metadata Tags */}
+                              {word.metadata && Object.keys(word.metadata).length > 0 && (
+                                <div className="mb-2">
+                                  <div className="text-xs text-gray-600 font-medium mb-1">Core Tags:</div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {Object.entries(word.metadata).map(([key, value]) => {
+                                      const isSelected = hierarchicalSelection.selectedTags[wordId]?.selectedMetadataPaths.has(key) || false;
+                                      return (
+                                        <label key={key} className="flex items-center space-x-1 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={() => toggleMetadataTag(wordId, key, 'word', word)}
+                                            className="w-3 h-3"
+                                          />
+                                          <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
+                                            {key}: {value as string}
+                                          </span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
+                              
+                              {/* Optional Tags */}
+                              {word.optional_tags && word.optional_tags.length > 0 && (
+                                <div>
+                                  <div className="text-xs text-gray-600 font-medium mb-1">Optional Tags:</div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {word.optional_tags.map((tag: string) => {
+                                      const isSelected = hierarchicalSelection.selectedTags[wordId]?.selectedOptionalTags.has(tag) || false;
+                                      return (
+                                        <label key={tag} className="flex items-center space-x-1 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={() => toggleOptionalTag(wordId, tag, 'word', word)}
+                                            className="w-3 h-3"
+                                          />
+                                          <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
+                                            {tag}
+                                          </span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -905,18 +951,58 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                       <span className="font-medium">{form.form_text}</span>
                                     </label>
                                     
-                                    {/* Show tags for this form */}
-                                    {form.metadata && Object.keys(form.metadata).length > 0 && (
-                                      <div className="mt-1 ml-6">
-                                        <div className="flex flex-wrap gap-1">
-                                          {Object.entries(form.metadata).map(([key, value]) => (
-                                            <span key={key} className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
-                                              {key}: {value as string}
-                                            </span>
-                                          ))}
+                                    {/* Individual Tag Selection for this form */}
+                                    <div className="mt-1 ml-6">
+                                      {/* Core Metadata Tags */}
+                                      {form.metadata && Object.keys(form.metadata).length > 0 && (
+                                        <div className="mb-1">
+                                          <div className="text-xs text-gray-600 font-medium mb-1">Core Tags:</div>
+                                          <div className="flex flex-wrap gap-1">
+                                            {Object.entries(form.metadata).map(([key, value]) => {
+                                              const isSelected = hierarchicalSelection.selectedTags[form.id]?.selectedMetadataPaths.has(key) || false;
+                                              return (
+                                                <label key={key} className="flex items-center space-x-1 cursor-pointer">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleMetadataTag(form.id, key, 'form', form)}
+                                                    className="w-3 h-3"
+                                                  />
+                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {key}: {value as string}
+                                                  </span>
+                                                </label>
+                                              );
+                                            })}
+                                          </div>
                                         </div>
-                                      </div>
-                                    )}
+                                      )}
+                                      
+                                      {/* Optional Tags */}
+                                      {form.optional_tags && form.optional_tags.length > 0 && (
+                                        <div>
+                                          <div className="text-xs text-gray-600 font-medium mb-1">Optional Tags:</div>
+                                          <div className="flex flex-wrap gap-1">
+                                            {form.optional_tags.map((tag: string) => {
+                                              const isSelected = hierarchicalSelection.selectedTags[form.id]?.selectedOptionalTags.has(tag) || false;
+                                              return (
+                                                <label key={tag} className="flex items-center space-x-1 cursor-pointer">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleOptionalTag(form.id, tag, 'form', form)}
+                                                    className="w-3 h-3"
+                                                  />
+                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {tag}
+                                                  </span>
+                                                </label>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -954,18 +1040,58 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                       <span className="font-medium">{translation.english || translation.translation}</span>
                                     </label>
                                     
-                                    {/* Show tags for this translation */}
-                                    {translation.metadata && Object.keys(translation.metadata).length > 0 && (
-                                      <div className="mt-1 ml-6">
-                                        <div className="flex flex-wrap gap-1">
-                                          {Object.entries(translation.metadata).map(([key, value]) => (
-                                            <span key={key} className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
-                                              {key}: {value as string}
-                                            </span>
-                                          ))}
+                                    {/* Individual Tag Selection for this translation */}
+                                    <div className="mt-1 ml-6">
+                                      {/* Core Metadata Tags */}
+                                      {translation.metadata && Object.keys(translation.metadata).length > 0 && (
+                                        <div className="mb-1">
+                                          <div className="text-xs text-gray-600 font-medium mb-1">Core Tags:</div>
+                                          <div className="flex flex-wrap gap-1">
+                                            {Object.entries(translation.metadata).map(([key, value]) => {
+                                              const isSelected = hierarchicalSelection.selectedTags[translation.id]?.selectedMetadataPaths.has(key) || false;
+                                              return (
+                                                <label key={key} className="flex items-center space-x-1 cursor-pointer">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleMetadataTag(translation.id, key, 'word_translation', translation)}
+                                                    className="w-3 h-3"
+                                                  />
+                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {key}: {value as string}
+                                                  </span>
+                                                </label>
+                                              );
+                                            })}
+                                          </div>
                                         </div>
-                                      </div>
-                                    )}
+                                      )}
+                                      
+                                      {/* Optional Tags */}
+                                      {translation.optional_tags && translation.optional_tags.length > 0 && (
+                                        <div>
+                                          <div className="text-xs text-gray-600 font-medium mb-1">Optional Tags:</div>
+                                          <div className="flex flex-wrap gap-1">
+                                            {translation.optional_tags.map((tag: string) => {
+                                              const isSelected = hierarchicalSelection.selectedTags[translation.id]?.selectedOptionalTags.has(tag) || false;
+                                              return (
+                                                <label key={tag} className="flex items-center space-x-1 cursor-pointer">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleOptionalTag(translation.id, tag, 'word_translation', translation)}
+                                                    className="w-3 h-3"
+                                                  />
+                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {tag}
+                                                  </span>
+                                                </label>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -1003,18 +1129,58 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                       <span className="font-medium">{formTranslation.translation}</span>
                                     </label>
                                     
-                                    {/* Show tags for this form translation */}
-                                    {formTranslation.metadata && Object.keys(formTranslation.metadata).length > 0 && (
-                                      <div className="mt-1 ml-6">
-                                        <div className="flex flex-wrap gap-1">
-                                          {Object.entries(formTranslation.metadata).map(([key, value]) => (
-                                            <span key={key} className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
-                                              {key}: {value as string}
-                                            </span>
-                                          ))}
+                                    {/* Individual Tag Selection for this form translation */}
+                                    <div className="mt-1 ml-6">
+                                      {/* Core Metadata Tags */}
+                                      {formTranslation.metadata && Object.keys(formTranslation.metadata).length > 0 && (
+                                        <div className="mb-1">
+                                          <div className="text-xs text-gray-600 font-medium mb-1">Core Tags:</div>
+                                          <div className="flex flex-wrap gap-1">
+                                            {Object.entries(formTranslation.metadata).map(([key, value]) => {
+                                              const isSelected = hierarchicalSelection.selectedTags[formTranslation.id]?.selectedMetadataPaths.has(key) || false;
+                                              return (
+                                                <label key={key} className="flex items-center space-x-1 cursor-pointer">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleMetadataTag(formTranslation.id, key, 'form_translation', formTranslation)}
+                                                    className="w-3 h-3"
+                                                  />
+                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {key}: {value as string}
+                                                  </span>
+                                                </label>
+                                              );
+                                            })}
+                                          </div>
                                         </div>
-                                      </div>
-                                    )}
+                                      )}
+                                      
+                                      {/* Optional Tags */}
+                                      {formTranslation.optional_tags && formTranslation.optional_tags.length > 0 && (
+                                        <div>
+                                          <div className="text-xs text-gray-600 font-medium mb-1">Optional Tags:</div>
+                                          <div className="flex flex-wrap gap-1">
+                                            {formTranslation.optional_tags.map((tag: string) => {
+                                              const isSelected = hierarchicalSelection.selectedTags[formTranslation.id]?.selectedOptionalTags.has(tag) || false;
+                                              return (
+                                                <label key={tag} className="flex items-center space-x-1 cursor-pointer">
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleOptionalTag(formTranslation.id, tag, 'form_translation', formTranslation)}
+                                                    className="w-3 h-3"
+                                                  />
+                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                    {tag}
+                                                  </span>
+                                                </label>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -1071,8 +1237,18 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                       <div className="text-gray-600">
                         {selection.allTagsSelected 
                           ? "All tags selected" 
-                          : `${selection.selectedMetadataPaths.size} metadata + ${selection.selectedOptionalTags.size} optional tags`
+                          : `${selection.selectedMetadataPaths.size} core + ${selection.selectedOptionalTags.size} optional tags selected`
                         }
+                        {!selection.allTagsSelected && selection.selectedMetadataPaths.size > 0 && (
+                          <div className="text-xs mt-1">
+                            Core: {Array.from(selection.selectedMetadataPaths).join(', ')}
+                          </div>
+                        )}
+                        {!selection.allTagsSelected && selection.selectedOptionalTags.size > 0 && (
+                          <div className="text-xs mt-1">
+                            Optional: {Array.from(selection.selectedOptionalTags).join(', ')}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
