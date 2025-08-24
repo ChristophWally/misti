@@ -214,9 +214,32 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       .filter(([_, values]) => values.length > 0)
   ) as Record<string, { value: string; count: number; tables: string[] }[]>;
 
-  // Toggle word selection and load hierarchy
+  // Load word hierarchy (separate from selection)
+  const loadWordHierarchy = async (wordId: string) => {
+    if (hierarchicalSelection.wordHierarchies[wordId]) {
+      return; // Already loaded
+    }
+    
+    try {
+      const hierarchy = await dbService.buildWordHierarchy(wordId);
+      setHierarchicalSelection(prev => ({
+        ...prev,
+        wordHierarchies: {
+          ...prev.wordHierarchies,
+          [wordId]: hierarchy
+        }
+      }));
+    } catch (error) {
+      handleError(error, 'Failed to load word hierarchy');
+    }
+  };
+
+  // Toggle word selection
   const toggleWordSelection = async (wordId: string) => {
     const isSelected = hierarchicalSelection.selectedWords.has(wordId);
+    
+    // Always load hierarchy when interacting with word
+    await loadWordHierarchy(wordId);
     
     if (isSelected) {
       // Remove word and its children
@@ -231,20 +254,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         ))
       }));
     } else {
-      // Add word and load hierarchy
-      try {
-        const hierarchy = await dbService.buildWordHierarchy(wordId);
-        setHierarchicalSelection(prev => ({
-          ...prev,
-          selectedWords: new Set([...Array.from(prev.selectedWords), wordId]),
-          wordHierarchies: {
-            ...prev.wordHierarchies,
-            [wordId]: hierarchy
-          }
-        }));
-      } catch (error) {
-        handleError(error, 'Failed to load word hierarchy');
-      }
+      // Add word to selection
+      setHierarchicalSelection(prev => ({
+        ...prev,
+        selectedWords: new Set([...Array.from(prev.selectedWords), wordId])
+      }));
     }
   };
 
@@ -713,14 +727,17 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                             onChange={() => toggleWordSelection(wordId)}
                             className="mt-1 flex-shrink-0"
                           />
-                          <div className="flex-1 cursor-pointer" onClick={() => toggleWordSelection(wordId)}>
-                            <div className="flex items-center space-x-2">
+                          <div className="flex-1">
+                            <div 
+                              className="flex items-center space-x-2 cursor-pointer" 
+                              onClick={() => loadWordHierarchy(wordId)}
+                            >
                               <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">Dictionary</span>
                               <span className="font-medium">{word.italian}</span>
                               {word.english && <span className="text-gray-500">({word.english})</span>}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
-                              {hierarchy ? `${hierarchy.forms.length} forms, ${hierarchy.translations.length} translations` : 'Click to load hierarchy'}
+                              {hierarchy ? `${hierarchy.forms.length} forms, ${hierarchy.translations.length} translations` : 'Click word to load hierarchy'}
                             </div>
                           </div>
                         </div>
