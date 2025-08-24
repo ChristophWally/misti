@@ -336,12 +336,36 @@ export class ModernDatabaseService {
     };
   }
 
+  // Test database connection and data
+  async testDatabaseConnection(): Promise<{ success: boolean; sampleData: any; error?: string }> {
+    try {
+      console.log('Testing database connection...');
+      const { data, error } = await supabase
+        .from('dictionary')
+        .select('id, italian, english, metadata, optional_tags')
+        .limit(3);
+      
+      if (error) {
+        console.error('Database connection test failed:', error);
+        return { success: false, sampleData: null, error: error.message };
+      }
+      
+      console.log('Database connection successful. Sample data:', data);
+      return { success: true, sampleData: data };
+    } catch (err) {
+      console.error('Database connection test error:', err);
+      return { success: false, sampleData: null, error: String(err) };
+    }
+  }
+
   // Unified search - find records containing ANY of the selected tags
   async searchByUnifiedTags(selectedTags: {
     coreTags: string[];
     optionalTags: string[];
     contentTypes: string[];
   }): Promise<Record<string, any[]>> {
+    console.log('🔍 Starting unified search with:', selectedTags);
+    
     const results: Record<string, any[]> = {};
     const tableMap = {
       'dictionary': 'Dictionary Words',
@@ -355,15 +379,29 @@ export class ModernDatabaseService {
       .filter(([_, contentType]) => selectedTags.contentTypes.includes(contentType))
       .map(([table, _]) => table);
 
+    console.log('🗂️ Tables to search:', tablesToSearch);
+
+    // If no tags selected, return empty results
+    if (selectedTags.coreTags.length === 0 && selectedTags.optionalTags.length === 0) {
+      console.log('⚠️ No tags selected, returning empty results');
+      for (const table of tablesToSearch) {
+        results[tableMap[table as keyof typeof tableMap]] = [];
+      }
+      return results;
+    }
+
     for (const table of tablesToSearch) {
+      console.log(`🔍 Searching table: ${table}`);
       try {
-        // Build separate queries for each tag type, then combine results
         let allRecords: any[] = [];
 
         // Search for core tags in metadata
         for (const coreTag of selectedTags.coreTags) {
+          console.log(`🏷️ Searching core tag: "${coreTag}" in ${table}`);
           if (coreTag.includes(': ')) {
             const [key, value] = coreTag.split(': ', 2);
+            console.log(`   Metadata query: ${key} = ${value}`);
+            
             const { data, error } = await supabase
               .from(table)
               .select('*')
@@ -371,15 +409,20 @@ export class ModernDatabaseService {
               .limit(20);
             
             if (error) {
-              console.error(`Error searching core tag ${coreTag} in ${table}:`, error);
-            } else if (data) {
-              allRecords.push(...data);
+              console.error(`❌ Error searching core tag ${coreTag} in ${table}:`, error);
+            } else {
+              console.log(`✅ Found ${data?.length || 0} records for core tag ${coreTag} in ${table}`);
+              if (data) {
+                allRecords.push(...data);
+              }
             }
           }
         }
 
         // Search for optional tags in optional_tags array
         for (const optionalTag of selectedTags.optionalTags) {
+          console.log(`🏷️ Searching optional tag: "${optionalTag}" in ${table}`);
+          
           const { data, error } = await supabase
             .from(table)
             .select('*')
@@ -387,9 +430,12 @@ export class ModernDatabaseService {
             .limit(20);
           
           if (error) {
-            console.error(`Error searching optional tag ${optionalTag} in ${table}:`, error);
-          } else if (data) {
-            allRecords.push(...data);
+            console.error(`❌ Error searching optional tag ${optionalTag} in ${table}:`, error);
+          } else {
+            console.log(`✅ Found ${data?.length || 0} records for optional tag ${optionalTag} in ${table}`);
+            if (data) {
+              allRecords.push(...data);
+            }
           }
         }
 
@@ -398,13 +444,16 @@ export class ModernDatabaseService {
           index === self.findIndex(r => r.id === record.id)
         );
 
+        console.log(`📊 Total unique records in ${table}: ${uniqueRecords.length}`);
         results[tableMap[table as keyof typeof tableMap]] = uniqueRecords;
+        
       } catch (tableError) {
-        console.error(`Error searching table ${table}:`, tableError);
+        console.error(`❌ Error searching table ${table}:`, tableError);
         results[tableMap[table as keyof typeof tableMap]] = [];
       }
     }
 
+    console.log('🎯 Final search results:', results);
     return results;
   }
 

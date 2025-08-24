@@ -90,6 +90,25 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     }
   };
 
+  // Test database connection
+  const testConnection = async () => {
+    try {
+      updateUIState({ isLoading: true, error: null });
+      const result = await dbService.testDatabaseConnection();
+      
+      if (result.success) {
+        handleSuccess(`Database connection successful! Found ${result.sampleData?.length || 0} sample records.`);
+        console.log('Sample data:', result.sampleData);
+      } else {
+        handleError(new Error(result.error || 'Unknown database error'), 'Database connection failed');
+      }
+      
+      updateUIState({ isLoading: false });
+    } catch (error) {
+      handleError(error, 'Failed to test database connection');
+    }
+  };
+
   useEffect(() => {
     loadAvailableTags();
     loadAvailableWords();
@@ -97,6 +116,10 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
 
   // Perform unified tag search
   const performUnifiedSearch = async () => {
+    console.log('🚀 Starting performUnifiedSearch');
+    console.log('Selected tags:', selectedTags);
+    console.log('Selected content types:', selectedContentTypes);
+    
     const hasSelectedTags = selectedTags.coreTags.length > 0 || selectedTags.optionalTags.length > 0;
     
     if (!hasSelectedTags) {
@@ -112,19 +135,29 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     try {
       updateUIState({ isLoading: true, error: null });
 
-      const results = await dbService.searchByUnifiedTags({
+      const searchParams = {
         coreTags: selectedTags.coreTags,
         optionalTags: selectedTags.optionalTags,
         contentTypes: selectedContentTypes
-      });
+      };
       
+      console.log('🔍 Calling searchByUnifiedTags with:', searchParams);
+      const results = await dbService.searchByUnifiedTags(searchParams);
+      
+      console.log('📊 Search completed, results:', results);
       updateDataState({ searchResults: results });
       
       const totalResults = Object.values(results).reduce((sum, records) => sum + records.length, 0);
       const totalTags = selectedTags.coreTags.length + selectedTags.optionalTags.length;
-      handleSuccess(`Found ${totalResults} records with ANY of ${totalTags} selected tags`);
+      
+      if (totalResults === 0) {
+        handleError(new Error(`No results found for ${totalTags} selected tags. Check console for debugging info.`), 'No results');
+      } else {
+        handleSuccess(`Found ${totalResults} records with ANY of ${totalTags} selected tags`);
+      }
       
     } catch (error) {
+      console.error('❌ Search failed:', error);
       handleError(error, 'Search failed');
     }
   };
@@ -202,6 +235,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
 
   // Perform word-based search (search for selected words with their hierarchy)
   const performWordSearch = async () => {
+    console.log('🚀 Starting performWordSearch');
+    console.log('Selected words:', selectedWords);
+    
     if (selectedWords.length === 0) {
       handleError(new Error('Please select at least one word'), 'Word search validation');
       return;
@@ -217,20 +253,34 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         'Form Translations': []
       };
 
+      console.log('🔍 Loading hierarchy for each selected word...');
       // Load hierarchy for each selected word
       for (const word of selectedWords) {
-        const hierarchy = await dbService.buildWordHierarchy(word.id);
-        results['Word Forms'].push(...hierarchy.forms);
-        results['Word Translations'].push(...hierarchy.translations);
-        results['Form Translations'].push(...hierarchy.formTranslations);
+        console.log(`📖 Loading hierarchy for word: ${word.italian} (ID: ${word.id})`);
+        try {
+          const hierarchy = await dbService.buildWordHierarchy(word.id);
+          console.log(`   Found: ${hierarchy.forms.length} forms, ${hierarchy.translations.length} translations, ${hierarchy.formTranslations.length} form translations`);
+          results['Word Forms'].push(...hierarchy.forms);
+          results['Word Translations'].push(...hierarchy.translations);
+          results['Form Translations'].push(...hierarchy.formTranslations);
+        } catch (wordError) {
+          console.error(`❌ Failed to load hierarchy for word ${word.italian}:`, wordError);
+        }
       }
       
+      console.log('📊 Final word search results:', results);
       updateDataState({ searchResults: results });
       
       const totalResults = Object.values(results).reduce((sum, records) => sum + records.length, 0);
-      handleSuccess(`Found ${totalResults} total records for ${selectedWords.length} selected words`);
+      
+      if (totalResults === 0) {
+        handleError(new Error(`No results found for ${selectedWords.length} selected words. Check console for debugging info.`), 'No results');
+      } else {
+        handleSuccess(`Found ${totalResults} total records for ${selectedWords.length} selected words`);
+      }
       
     } catch (error) {
+      console.error('❌ Word search failed:', error);
       handleError(error, 'Word search failed');
     }
   };
@@ -499,6 +549,13 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
             className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 disabled:bg-gray-100 transition-colors"
           >
             🔄 Refresh Tags
+          </button>
+          <button
+            onClick={testConnection}
+            disabled={uiState.isLoading}
+            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-100 transition-colors"
+          >
+            🔧 Test DB
           </button>
         </div>
         </div>
