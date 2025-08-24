@@ -540,10 +540,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     setSelectedContentTypes(['Dictionary Words', 'Conjugated Forms', 'English Translations', 'Form Translations']);
     setSelectedTagTables(['dictionary', 'word_forms', 'word_translations', 'form_translations']);
     setHierarchicalSelection({
-      selectedWords: new Set(),
-      selectedForms: new Set(),
-      selectedTranslations: new Set(),
-      wordHierarchies: {}
+      wordHierarchies: {},
+      selectedTags: {},
+      collapsedSections: {}
     });
     setSelectedRecords({});
     setEditingRecord(null);
