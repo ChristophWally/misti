@@ -124,6 +124,10 @@ export default function RuleBuilder({
         metadataOperations: newMetadataOps,
         optionalTagOperations: newOptionalOps
       }))
+      
+      // Trigger preview calculation after operations are initialized
+      // Note: This will be called again by the useEffect, but ensures initial display
+      setTimeout(() => calculatePreview(), 0)
     }
   }, [sourceSelections])
 
@@ -154,43 +158,110 @@ export default function RuleBuilder({
   }
 
   const calculatePreview = () => {
-    const totalOperations = Object.keys(ruleState.metadataOperations).length + 
-                           Object.keys(ruleState.optionalTagOperations).length
-
+    // Calculate actual operations with scope analysis
+    let totalOperations = 0
     let riskLevel: 'low' | 'medium' | 'high' = 'low'
     const warnings: string[] = []
-    
-    if (totalOperations > 50) {
-      riskLevel = 'high'
-      warnings.push('Large number of operations - consider batch processing')
-    } else if (totalOperations > 10) {
-      riskLevel = 'medium'
-    }
+    const affectedTables = new Set<string>()
+    let estimatedRecords = 0
 
-    const affectedTables = Array.from(new Set(
-      Object.values(sourceSelections).map(sel => {
-        switch (sel.recordType) {
-          case 'word': return 'dictionary'
-          case 'form': return 'word_forms'
-          case 'word_translation': return 'word_translations'
-          case 'form_translation': return 'form_translations'
-          default: return 'dictionary'
+    // Debug logging
+    console.log('🔍 Calculating preview...', {
+      metadataOps: Object.keys(ruleState.metadataOperations).length,
+      optionalOps: Object.keys(ruleState.optionalTagOperations).length,
+      sourceSelections: Object.keys(sourceSelections).length
+    })
+
+    // Analyze metadata operations
+    Object.entries(ruleState.metadataOperations).forEach(([recordId, operations]) => {
+      Object.entries(operations).forEach(([metadataKey, config]) => {
+        totalOperations++
+        
+        // Add to affected tables based on record type
+        const selection = sourceSelections[recordId]
+        if (selection) {
+          switch (selection.recordType) {
+            case 'word': affectedTables.add('dictionary'); break
+            case 'form': affectedTables.add('word_forms'); break
+            case 'word_translation': affectedTables.add('word_translations'); break
+            case 'form_translation': affectedTables.add('form_translations'); break
+          }
+        }
+
+        // Risk assessment based on operation type and scope
+        if (config.action === 'remove') {
+          riskLevel = riskLevel === 'low' ? 'medium' : riskLevel
+          if (config.applyTo === 'all_with_tag') {
+            riskLevel = 'high'
+            warnings.push(`High-risk: Removing ${metadataKey} from ALL records with this tag`)
+            estimatedRecords += 50 // Estimate for "all with tag" operations
+          } else if (config.applyTo === 'hierarchy') {
+            riskLevel = 'high'
+            warnings.push(`High-risk: Removing ${metadataKey} from entire hierarchy`)
+            estimatedRecords += 10 // Estimate for hierarchy operations
+          } else {
+            estimatedRecords += 1 // Single record
+          }
+        } else if (config.action === 'update') {
+          if (config.applyTo === 'all_with_tag') {
+            riskLevel = riskLevel === 'low' ? 'medium' : 'high'
+            warnings.push(`Medium-risk: Updating ${metadataKey} across multiple records`)
+            estimatedRecords += 25
+          } else {
+            estimatedRecords += 1
+          }
+        } else {
+          estimatedRecords += 1
         }
       })
-    ))
+    })
 
-    setPreviewState({
-      expectedChanges: totalOperations,
-      affectedTables,
+    // Analyze optional tag operations  
+    Object.entries(ruleState.optionalTagOperations).forEach(([tagKey, config]) => {
+      totalOperations++
+      
+      if (config.action === 'remove' && config.applyTo === 'all_with_tag') {
+        riskLevel = 'high'
+        warnings.push(`High-risk: Removing optional tag from ALL records`)
+        estimatedRecords += 30
+      } else if (config.applyTo === 'hierarchy') {
+        riskLevel = riskLevel === 'low' ? 'medium' : riskLevel
+        estimatedRecords += 5
+      } else {
+        estimatedRecords += 1
+      }
+    })
+
+    // Overall risk assessment
+    if (totalOperations > 20) {
+      riskLevel = 'high'
+      warnings.push('Large number of operations - consider batch processing')
+    } else if (totalOperations > 8) {
+      riskLevel = riskLevel === 'low' ? 'medium' : riskLevel
+    }
+
+    const newPreviewState = {
+      expectedChanges: estimatedRecords,
+      affectedTables: Array.from(affectedTables),
       riskLevel,
       warnings,
       conflicts: []
-    })
+    }
+
+    console.log('📊 Setting preview state:', newPreviewState)
+    
+    setPreviewState(newPreviewState)
   }
 
+  // Calculate preview when any operation settings change
   useEffect(() => {
     calculatePreview()
-  }, [ruleState.metadataOperations, ruleState.optionalTagOperations, sourceSelections])
+  }, [
+    ruleState.metadataOperations, 
+    ruleState.optionalTagOperations, 
+    ruleState.target_field,
+    sourceSelections
+  ])
 
   // ========================================================================
   // RULE SERIALIZATION & EXECUTION
@@ -468,7 +539,7 @@ export default function RuleBuilder({
                   {previewState.expectedChanges}
                 </div>
                 <div className="text-sm text-gray-600 text-center">
-                  Operations Planned
+                  Records Affected
                 </div>
               </div>
 
@@ -524,7 +595,7 @@ export default function RuleBuilder({
         {/* Action Bar */}
         <div className="border-t p-4 flex justify-between items-center bg-white">
           <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <span>Ready to process {previewState.expectedChanges} operations</span>
+            <span>Ready to affect {previewState.expectedChanges} records</span>
           </div>
           
           <div className="flex space-x-3">
