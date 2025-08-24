@@ -103,6 +103,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     try {
       updateUIState({ isLoading: true, error: null });
       const words = await dbService.loadAllDictionaryWords(100);
+      console.log('Sample word object:', words[0]); // Debug: check word structure
       setAvailableWords(words);
       updateUIState({ isLoading: false });
     } catch (error) {
@@ -694,20 +695,28 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
               <div className="max-h-96 overflow-y-auto">
                 <div className="space-y-3">
                   {filteredWords.map((word) => {
-                    const hierarchy = hierarchicalSelection.wordHierarchies[word.id];
-                    const isWordSelected = hierarchicalSelection.selectedWords.has(word.id);
+                    console.log('Word object:', word); // Debug: check word properties
+                    const wordId = word.id || word.dictionary_id || word.word_id; // Handle different possible ID fields
+                    
+                    if (!wordId) {
+                      console.error('Word missing ID:', word);
+                      return null; // Skip words without valid IDs
+                    }
+                    
+                    const hierarchy = hierarchicalSelection.wordHierarchies[wordId];
+                    const isWordSelected = hierarchicalSelection.selectedWords.has(wordId);
                     
                     return (
-                      <div key={word.id} className="border border-gray-200 rounded-lg p-3 bg-white">
+                      <div key={wordId} className="border border-gray-200 rounded-lg p-3 bg-white">
                         {/* Dictionary Word Level */}
                         <div className="flex items-start space-x-3 mb-2">
                           <input
                             type="checkbox"
                             checked={isWordSelected}
-                            onChange={() => toggleWordSelection(word.id)}
+                            onChange={() => toggleWordSelection(wordId)}
                             className="mt-1 flex-shrink-0"
                           />
-                          <div className="flex-1 cursor-pointer" onClick={() => toggleWordSelection(word.id)}>
+                          <div className="flex-1 cursor-pointer" onClick={() => toggleWordSelection(wordId)}>
                             <div className="flex items-center space-x-2">
                               <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">Dictionary</span>
                               <span className="font-medium">{word.italian}</span>
