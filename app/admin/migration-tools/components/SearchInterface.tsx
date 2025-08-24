@@ -690,8 +690,8 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                     <label key={word.id} className="flex items-center cursor-pointer p-2 hover:bg-gray-50 rounded">
                       <input
                         type="checkbox"
-                        checked={selectedWords.some(w => w.id === word.id)}
-                        onChange={() => toggleWord(word)}
+                        checked={hierarchicalSelection.selectedWords.has(word.id)}
+                        onChange={() => toggleWordSelection(word.id)}
                         className="mr-3"
                       />
                       <div className="flex-1">
@@ -726,19 +726,23 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
           )}
 
           {/* Selected Words Display */}
-          {selectedWords.length > 0 && (
+          {hierarchicalSelection.selectedWords.size > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-2">📖 Selected Words ({selectedWords.length}):</h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-2">📖 Selected Words ({hierarchicalSelection.selectedWords.size}):</h4>
               <div className="flex flex-wrap gap-1">
-                {selectedWords.map((word) => (
-                  <span
-                    key={word.id}
-                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800 cursor-pointer hover:bg-orange-200"
-                    onClick={() => toggleWord(word)}
-                  >
-                    {word.italian} ×
-                  </span>
-                ))}
+                {Array.from(hierarchicalSelection.selectedWords).map((wordId) => {
+                  const word = hierarchicalSelection.wordHierarchies[wordId]?.word;
+                  if (!word) return null;
+                  return (
+                    <span
+                      key={word.id}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800 cursor-pointer hover:bg-orange-200"
+                      onClick={() => toggleWordSelection(word.id)}
+                    >
+                      {word.italian} ×
+                    </span>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -746,11 +750,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
           {/* Search Actions */}
           <div className="flex space-x-2 pt-2">
             <button
-              onClick={performWordSearch}
-              disabled={uiState.isLoading || selectedWords.length === 0}
+              onClick={performHierarchicalWordSearch}
+              disabled={uiState.isLoading || hierarchicalSelection.selectedWords.size === 0}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
             >
-              {uiState.isLoading ? '🔄 Loading...' : `🔍 Search (${selectedWords.length} words)`}
+              {uiState.isLoading ? '🔄 Loading...' : `🔍 Search (${hierarchicalSelection.selectedWords.size} words)`}
             </button>
             <button
               onClick={loadAvailableWords}
