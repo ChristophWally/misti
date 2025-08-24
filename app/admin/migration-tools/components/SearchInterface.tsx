@@ -175,7 +175,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
 
   const filteredGroupedCoreTags = Object.fromEntries(
     Object.entries(availableTags.groupedCoreTags)
-      .map(([key, values]) => [
+      .map(([key, values]: [string, { value: string; count: number; tables: string[] }[]]) => [
         key,
         values.filter(valueData => {
           const matchesSearch = tagSearch === '' || 
@@ -186,7 +186,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         })
       ])
       .filter(([_, values]) => values.length > 0)
-  );
+  ) as Record<string, { value: string; count: number; tables: string[] }[]>;
 
   // Toggle word selection (like tag selection)
   const toggleWord = (word: any) => {
