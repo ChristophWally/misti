@@ -242,11 +242,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         hierarchyResults.forEach(({ wordId, hierarchy }) => {
           console.log(`Loading hierarchy for ${wordId}:`, hierarchy); // Debug
           newHierarchies[wordId] = hierarchy;
-          // Default to expanded so user can see hierarchy immediately
+          // Collapsed by default for cleaner interface
           newCollapsedSections[wordId] = {
-            forms: false,
-            translations: false,
-            formTranslations: false
+            forms: true,
+            translations: true,
+            formTranslations: true
           };
         });
         
