@@ -514,7 +514,7 @@ export class ModernDatabaseService {
       const { data: forms, error: formsError } = await supabase
         .from('word_forms')
         .select('*')
-        .eq('dictionary_id', wordId);
+        .eq('word_id', wordId);
       
       if (formsError) {
         console.error('Error fetching word forms:', formsError);
@@ -524,7 +524,7 @@ export class ModernDatabaseService {
       const { data: translations, error: translationsError } = await supabase
         .from('word_translations')
         .select('*')
-        .eq('dictionary_id', wordId);
+        .eq('word_id', wordId);
       
       if (translationsError) {
         console.error('Error fetching word translations:', translationsError);
@@ -538,7 +538,7 @@ export class ModernDatabaseService {
         const { data: ftData, error: ftError } = await supabase
           .from('form_translations')
           .select('*')
-          .in('word_form_id', formIds);
+          .in('form_id', formIds);
         
         if (ftError) {
           console.error('Error fetching form translations:', ftError);
