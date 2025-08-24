@@ -103,7 +103,6 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     try {
       updateUIState({ isLoading: true, error: null });
       const words = await dbService.loadAllDictionaryWords(100);
-      console.log('Sample word object:', words[0]); // Debug: check word structure
       setAvailableWords(words);
       updateUIState({ isLoading: false });
     } catch (error) {
@@ -216,8 +215,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   ) as Record<string, { value: string; count: number; tables: string[] }[]>;
 
   // Toggle word selection and load hierarchy
-  const toggleWordSelection = async (word: any) => {
-    const wordId = word.id;
+  const toggleWordSelection = async (wordId: string) => {
     const isSelected = hierarchicalSelection.selectedWords.has(wordId);
     
     if (isSelected) {
@@ -695,8 +693,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
               <div className="max-h-96 overflow-y-auto">
                 <div className="space-y-3">
                   {filteredWords.map((word) => {
-                    console.log('Word object:', word); // Debug: check word properties
-                    const wordId = word.id || word.dictionary_id || word.word_id; // Handle different possible ID fields
+                    const wordId = word.id; // Use the confirmed ID field
                     
                     if (!wordId) {
                       console.error('Word missing ID:', word);
