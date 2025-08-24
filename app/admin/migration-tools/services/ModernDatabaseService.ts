@@ -391,7 +391,7 @@ export class ModernDatabaseService {
             const { data, error } = await supabase
               .from(table)
               .select('*')
-              .eq(`metadata->${key}`, value)
+              .eq(`metadata->>${key}`, value)
               .limit(20);
             
             if (!error && data) {

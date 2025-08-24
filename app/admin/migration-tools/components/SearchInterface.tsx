@@ -525,7 +525,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
           <div className="flex justify-between items-center">
             <div>
               <h3 className="font-medium text-gray-900">Select Words to Search</h3>
-              <p className="text-sm text-gray-600">Browse and select dictionary words to include their forms and translations</p>
+              <p className="text-sm text-gray-600">Browse and select dictionary words to include their forms and translations ({availableWords.length} words available)</p>
             </div>
             <div className="flex space-x-2">
               <button
@@ -589,7 +589,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                   ))}
                   {filteredWords.length === 0 && (
                     <div className="text-center py-4 text-gray-500 text-sm">
-                      {wordSearch ? `No words found matching "${wordSearch}"` : 'Loading words...'}
+                      {wordSearch ? `No words found matching "${wordSearch}"` : `${availableWords.length === 0 ? 'Loading words...' : 'No words available'}`}
                     </div>
                   )}
                 </div>
