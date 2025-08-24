@@ -386,11 +386,27 @@ export default function RuleBuilder({
                       <div className="mb-2">
                         <div className="text-xs text-gray-600 mb-1">📋 Metadata:</div>
                         <div className="flex flex-wrap gap-1">
-                          {Array.from(selection.selectedMetadataPaths).map(key => (
-                            <span key={key} className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-xs">
-                              {key}
-                            </span>
-                          ))}
+                          {Array.from(selection.selectedMetadataPaths).map(key => {
+                            // Look up the actual value from the record data
+                            let value = key // fallback to just key
+                            for (const hierarchy of Object.values(wordHierarchies)) {
+                              let record = null
+                              if (hierarchy.word.id === recordId) record = hierarchy.word
+                              else record = [...hierarchy.forms, ...hierarchy.translations, ...hierarchy.formTranslations]
+                                .find(r => r.id === recordId)
+                              
+                              if (record && record.metadata && record.metadata[key]) {
+                                value = `${key}: ${record.metadata[key]}`
+                                break
+                              }
+                            }
+                            
+                            return (
+                              <span key={key} className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-xs">
+                                {value}
+                              </span>
+                            )
+                          })}
                         </div>
                       </div>
                     )}
@@ -479,10 +495,25 @@ export default function RuleBuilder({
                       {recordTypeName} #{recordId.slice(-8)}
                     </div>
                     
-                    {Object.entries(operations).map(([metadataKey, config]) => (
+                    {Object.entries(operations).map(([metadataKey, config]) => {
+                      // Look up the actual value from the record data
+                      let displayText = metadataKey // fallback to just key
+                      for (const hierarchy of Object.values(wordHierarchies)) {
+                        let record = null
+                        if (hierarchy.word.id === recordId) record = hierarchy.word
+                        else record = [...hierarchy.forms, ...hierarchy.translations, ...hierarchy.formTranslations]
+                          .find(r => r.id === recordId)
+                        
+                        if (record && record.metadata && record.metadata[metadataKey]) {
+                          displayText = `${metadataKey}: ${record.metadata[metadataKey]}`
+                          break
+                        }
+                      }
+                      
+                      return (
                       <div key={metadataKey} className="flex items-center space-x-3 mb-2">
-                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs min-w-[80px]">
-                          {metadataKey}
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs min-w-[120px]">
+                          {displayText}
                         </span>
                         
                         <select
@@ -516,7 +547,8 @@ export default function RuleBuilder({
                           <option value="hierarchy">Whole Hierarchy</option>
                         </select>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                   )
                 })}
