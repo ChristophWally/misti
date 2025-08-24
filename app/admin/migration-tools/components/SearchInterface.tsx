@@ -291,7 +291,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       };
 
       // Add selected dictionary words
-      for (const wordId of hierarchicalSelection.selectedWords) {
+      for (const wordId of Array.from(hierarchicalSelection.selectedWords)) {
         const hierarchy = hierarchicalSelection.wordHierarchies[wordId];
         if (hierarchy?.word) {
           results['Dictionary Words'].push(hierarchy.word);
@@ -299,7 +299,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       }
 
       // Add selected forms and their translations
-      for (const wordId of hierarchicalSelection.selectedWords) {
+      for (const wordId of Array.from(hierarchicalSelection.selectedWords)) {
         const hierarchy = hierarchicalSelection.wordHierarchies[wordId];
         if (hierarchy) {
           // Add selected forms
