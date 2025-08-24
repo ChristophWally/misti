@@ -652,29 +652,36 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         <div className="bg-gray-50 rounded-lg p-4 space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="font-medium text-gray-900">Select Words to Search</h3>
-              <p className="text-sm text-gray-600">Browse and select dictionary words to include their forms and translations ({availableWords.length} words available)</p>
+              <h3 className="font-medium text-gray-900">Hierarchical Word Search</h3>
+              <p className="text-sm text-gray-600">Select records at different levels: Dictionary → Forms → Translations → Form Translations ({availableWords.length} words available)</p>
             </div>
             <div className="flex space-x-2">
               <button
                 onClick={() => setShowWordBrowser(!showWordBrowser)}
                 className="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200 transition-colors"
               >
-                {showWordBrowser ? 'Hide' : 'Show'} Available Words
+                {showWordBrowser ? 'Hide' : 'Show'} Word Hierarchy
               </button>
               <button
-                onClick={clearAll}
+                onClick={() => {
+                  setHierarchicalSelection({
+                    selectedWords: new Set(),
+                    selectedForms: new Set(),
+                    selectedTranslations: new Set(),
+                    wordHierarchies: {}
+                  });
+                }}
                 className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors"
               >
-                Clear All
+                Clear All Selections
               </button>
             </div>
           </div>
 
-          {/* Word Browser */}
+          {/* Hierarchical Word Browser */}
           {showWordBrowser && (
             <div className="border border-gray-200 rounded-lg p-4 bg-white">
-              <div className="mb-3">
+              <div className="mb-4">
                 <input
                   type="text"
                   value={wordSearch}
@@ -684,37 +691,99 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                 />
               </div>
 
-              <div className="max-h-64 overflow-y-auto">
-                <div className="space-y-1">
-                  {filteredWords.map((word) => (
-                    <label key={word.id} className="flex items-center cursor-pointer p-2 hover:bg-gray-50 rounded">
-                      <input
-                        type="checkbox"
-                        checked={hierarchicalSelection.selectedWords.has(word.id)}
-                        onChange={() => toggleWordSelection(word.id)}
-                        className="mr-3"
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{word.italian}</div>
-                        {word.english && (
-                          <div className="text-xs text-gray-600">{word.english}</div>
+              <div className="max-h-96 overflow-y-auto">
+                <div className="space-y-3">
+                  {filteredWords.map((word) => {
+                    const hierarchy = hierarchicalSelection.wordHierarchies[word.id];
+                    const isWordSelected = hierarchicalSelection.selectedWords.has(word.id);
+                    
+                    return (
+                      <div key={word.id} className="border border-gray-200 rounded-lg p-3 bg-white">
+                        {/* Dictionary Word Level */}
+                        <div className="flex items-start space-x-3 mb-2">
+                          <input
+                            type="checkbox"
+                            checked={isWordSelected}
+                            onChange={() => toggleWordSelection(word.id)}
+                            className="mt-1 flex-shrink-0"
+                          />
+                          <div className="flex-1 cursor-pointer" onClick={() => toggleWordSelection(word.id)}>
+                            <div className="flex items-center space-x-2">
+                              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">Dictionary</span>
+                              <span className="font-medium">{word.italian}</span>
+                              {word.english && <span className="text-gray-500">({word.english})</span>}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {hierarchy ? `${hierarchy.forms.length} forms, ${hierarchy.translations.length} translations` : 'Click to load hierarchy'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Word Forms Level */}
+                        {hierarchy && hierarchy.forms.length > 0 && (
+                          <div className="ml-6 mb-2">
+                            <div className="text-xs text-gray-600 font-medium mb-2">Word Forms ({hierarchy.forms.length}):</div>
+                            <div className="grid grid-cols-2 gap-2">
+                              {hierarchy.forms.map((form) => (
+                                <label key={form.id} className="flex items-center space-x-2 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded">
+                                  <input
+                                    type="checkbox"
+                                    checked={hierarchicalSelection.selectedForms.has(form.id)}
+                                    onChange={() => toggleFormSelection(form.id)}
+                                    className="flex-shrink-0"
+                                  />
+                                  <span className="px-1 py-0.5 text-xs bg-green-100 text-green-700 rounded">Form</span>
+                                  <span className="truncate">{form.italian_text || form.text}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
                         )}
-                      </div>
-                      
-                      {/* Word Tags Preview */}
-                      <div className="ml-2">
-                        {word.metadata && Object.keys(word.metadata).length > 0 && (
-                          <div className="inline-flex flex-wrap gap-1">
-                            {Object.entries(word.metadata).slice(0, 2).map(([key, value]) => (
-                              <span key={key} className="inline-flex items-center px-1 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
-                                {key}: {value as string}
-                              </span>
-                            ))}
+
+                        {/* Word Translations Level */}
+                        {hierarchy && hierarchy.translations.length > 0 && (
+                          <div className="ml-6 mb-2">
+                            <div className="text-xs text-gray-600 font-medium mb-2">Word Translations ({hierarchy.translations.length}):</div>
+                            <div className="space-y-1">
+                              {hierarchy.translations.map((translation) => (
+                                <label key={translation.id} className="flex items-center space-x-2 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded">
+                                  <input
+                                    type="checkbox"
+                                    checked={hierarchicalSelection.selectedTranslations.has(translation.id)}
+                                    onChange={() => toggleTranslationSelection(translation.id)}
+                                    className="flex-shrink-0"
+                                  />
+                                  <span className="px-1 py-0.5 text-xs bg-purple-100 text-purple-700 rounded">Translation</span>
+                                  <span className="truncate">{translation.english || translation.translation}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Form Translations Level */}
+                        {hierarchy && hierarchy.formTranslations.length > 0 && (
+                          <div className="ml-6">
+                            <div className="text-xs text-gray-600 font-medium mb-2">Form Translations ({hierarchy.formTranslations.length}):</div>
+                            <div className="space-y-1">
+                              {hierarchy.formTranslations.map((formTranslation) => (
+                                <label key={formTranslation.id} className="flex items-center space-x-2 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded">
+                                  <input
+                                    type="checkbox"
+                                    checked={hierarchicalSelection.selectedTranslations.has(formTranslation.id)}
+                                    onChange={() => toggleTranslationSelection(formTranslation.id)}
+                                    className="flex-shrink-0"
+                                  />
+                                  <span className="px-1 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded">Form Translation</span>
+                                  <span className="truncate">{formTranslation.translation}</span>
+                                </label>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
-                    </label>
-                  ))}
+                    );
+                  })}
                   {filteredWords.length === 0 && (
                     <div className="text-center py-4 text-gray-500 text-sm">
                       {wordSearch ? `No words found matching "${wordSearch}"` : `${availableWords.length === 0 ? 'Loading words...' : 'No words available'}`}
@@ -725,25 +794,48 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
             </div>
           )}
 
-          {/* Selected Words Display */}
-          {hierarchicalSelection.selectedWords.size > 0 && (
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-2">📖 Selected Words ({hierarchicalSelection.selectedWords.size}):</h4>
-              <div className="flex flex-wrap gap-1">
-                {Array.from(hierarchicalSelection.selectedWords).map((wordId) => {
-                  const word = hierarchicalSelection.wordHierarchies[wordId]?.word;
-                  if (!word) return null;
-                  return (
-                    <span
-                      key={word.id}
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800 cursor-pointer hover:bg-orange-200"
-                      onClick={() => toggleWordSelection(word.id)}
-                    >
-                      {word.italian} ×
-                    </span>
-                  );
-                })}
-              </div>
+          {/* Hierarchical Selection Summary */}
+          {(hierarchicalSelection.selectedWords.size > 0 || hierarchicalSelection.selectedForms.size > 0 || hierarchicalSelection.selectedTranslations.size > 0) && (
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">📊 Hierarchical Selection Summary</h4>
+              
+              {/* Selected Dictionary Words */}
+              {hierarchicalSelection.selectedWords.size > 0 && (
+                <div className="mb-3">
+                  <div className="text-xs font-medium text-blue-700 mb-1">Dictionary Words ({hierarchicalSelection.selectedWords.size}):</div>
+                  <div className="flex flex-wrap gap-1">
+                    {Array.from(hierarchicalSelection.selectedWords).map((wordId) => {
+                      const word = hierarchicalSelection.wordHierarchies[wordId]?.word;
+                      if (!word) return null;
+                      return (
+                        <span
+                          key={word.id}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200"
+                          onClick={() => toggleWordSelection(word.id)}
+                        >
+                          {word.italian} ×
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Selected Forms */}
+              {hierarchicalSelection.selectedForms.size > 0 && (
+                <div className="mb-3">
+                  <div className="text-xs font-medium text-green-700 mb-1">Word Forms ({hierarchicalSelection.selectedForms.size}):</div>
+                  <div className="text-xs text-gray-600">Individual forms selected for targeted tag modifications</div>
+                </div>
+              )}
+
+              {/* Selected Translations */}
+              {hierarchicalSelection.selectedTranslations.size > 0 && (
+                <div>
+                  <div className="text-xs font-medium text-purple-700 mb-1">Translations ({hierarchicalSelection.selectedTranslations.size}):</div>
+                  <div className="text-xs text-gray-600">Individual translations selected for targeted tag modifications</div>
+                </div>
+              )}
             </div>
           )}
 
@@ -751,10 +843,10 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
           <div className="flex space-x-2 pt-2">
             <button
               onClick={performHierarchicalWordSearch}
-              disabled={uiState.isLoading || hierarchicalSelection.selectedWords.size === 0}
+              disabled={uiState.isLoading || (hierarchicalSelection.selectedWords.size === 0 && hierarchicalSelection.selectedForms.size === 0 && hierarchicalSelection.selectedTranslations.size === 0)}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
             >
-              {uiState.isLoading ? '🔄 Loading...' : `🔍 Search (${hierarchicalSelection.selectedWords.size} words)`}
+              {uiState.isLoading ? '🔄 Loading...' : `🔍 Search Hierarchical Selection (${hierarchicalSelection.selectedWords.size}W + ${hierarchicalSelection.selectedForms.size}F + ${hierarchicalSelection.selectedTranslations.size}T)`}
             </button>
             <button
               onClick={loadAvailableWords}
