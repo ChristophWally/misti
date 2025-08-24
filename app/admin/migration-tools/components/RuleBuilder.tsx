@@ -15,6 +15,12 @@ interface RuleBuilderProps {
     selectedOptionalTags: Set<string>
     allTagsSelected: boolean
   }>
+  wordHierarchies: Record<string, {
+    word: any
+    forms: any[]
+    translations: any[]
+    formTranslations: any[]
+  }>
   onSave: (rule: SerializedRule) => void
   onExecute: (rule: SerializedRule) => void
   onClose: () => void
@@ -51,6 +57,7 @@ interface OperationConfig {
 export default function RuleBuilder({ 
   isOpen, 
   sourceSelections, 
+  wordHierarchies,
   onSave, 
   onExecute, 
   onClose 
@@ -135,35 +142,40 @@ export default function RuleBuilder({
   // UTILITY FUNCTIONS - Record Display Names
   // ========================================================================
   const getRecordDisplayName = (recordId: string, recordType: string): { displayName: string, recordTypeName: string } => {
-    // For now, we need to look up the actual record names from the source data
-    // This is a simplified version - full implementation would need access to the original record data
-    
     let displayName = `Record ${recordId.slice(-8)}`
     let recordTypeName = recordType.replace('_', ' ')
     
-    // Try to find the record in sourceSelections to get more context
-    const selection = sourceSelections[recordId]
-    if (selection) {
-      recordTypeName = selection.recordType.replace('_', ' ')
+    // Look up the actual record content from wordHierarchies
+    for (const hierarchy of Object.values(wordHierarchies)) {
+      // Check if it's the main word
+      if (hierarchy.word.id === recordId) {
+        displayName = hierarchy.word.italian || `Word ${recordId.slice(-8)}`
+        recordTypeName = 'word'
+        break
+      }
       
-      // TODO: In a full implementation, we'd need access to the original record data
-      // from the search interface to show actual names like "testverb", "to test", etc.
-      // For now, we'll improve the display format
-      switch (selection.recordType) {
-        case 'word':
-          displayName = `Dictionary Word`
-          break
-        case 'form':
-          displayName = `Word Form`
-          break
-        case 'word_translation':
-          displayName = `Word Translation`
-          break
-        case 'form_translation':
-          displayName = `Form Translation`
-          break
-        default:
-          displayName = recordTypeName
+      // Check if it's a form
+      const form = hierarchy.forms.find(f => f.id === recordId)
+      if (form) {
+        displayName = form.form_text || `Form ${recordId.slice(-8)}`
+        recordTypeName = 'form'
+        break
+      }
+      
+      // Check if it's a word translation
+      const translation = hierarchy.translations.find(t => t.id === recordId)
+      if (translation) {
+        displayName = translation.translation || translation.english || `Translation ${recordId.slice(-8)}`
+        recordTypeName = 'word translation'
+        break
+      }
+      
+      // Check if it's a form translation
+      const formTranslation = hierarchy.formTranslations.find(ft => ft.id === recordId)
+      if (formTranslation) {
+        displayName = formTranslation.translation || `Form Translation ${recordId.slice(-8)}`
+        recordTypeName = 'form translation'
+        break
       }
     }
     

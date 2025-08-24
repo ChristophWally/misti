@@ -1561,6 +1561,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       <RuleBuilder
         isOpen={showRuleBuilder}
         sourceSelections={hierarchicalSelection.selectedTags}
+        wordHierarchies={hierarchicalSelection.wordHierarchies}
         onSave={(rule) => {
           console.log('Saving rule:', rule);
           handleSuccess('Rule saved successfully! (Phase 2.2 - Persistence coming soon)');
