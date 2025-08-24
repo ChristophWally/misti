@@ -384,12 +384,10 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
 
   // Execute hierarchical word search - build results from selections
   const performHierarchicalWordSearch = async () => {
-    const selectedWordsCount = hierarchicalSelection.selectedWords.size;
-    const selectedFormsCount = hierarchicalSelection.selectedForms.size;  
-    const selectedTranslationsCount = hierarchicalSelection.selectedTranslations.size;
+    const selectedTagsCount = Object.keys(hierarchicalSelection.selectedTags).length;
     
-    if (selectedWordsCount === 0 && selectedFormsCount === 0 && selectedTranslationsCount === 0) {
-      handleError(new Error('Please select at least one word, form, or translation'), 'Word search validation');
+    if (selectedTagsCount === 0) {
+      handleError(new Error('No tags selected'), 'Please select tags or records to search');
       return;
     }
 
@@ -403,35 +401,53 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         'Form Translations': []
       };
 
-      // Add selected dictionary words
-      for (const wordId of Array.from(hierarchicalSelection.selectedWords)) {
-        const hierarchy = hierarchicalSelection.wordHierarchies[wordId];
-        if (hierarchy?.word) {
-          results['Dictionary Words'].push(hierarchy.word);
+      // Process each selected record and its tags
+      for (const [recordId, selection] of Object.entries(hierarchicalSelection.selectedTags)) {
+        // Find the record data
+        let record: any = null;
+        let resultCategory = '';
+        
+        // Find record in hierarchies
+        for (const hierarchy of Object.values(hierarchicalSelection.wordHierarchies)) {
+          if (hierarchy.word.id === recordId) {
+            record = hierarchy.word;
+            resultCategory = 'Dictionary Words';
+            break;
+          }
+          
+          const form = hierarchy.forms.find(f => f.id === recordId);
+          if (form) {
+            record = form;
+            resultCategory = 'Word Forms';
+            break;
+          }
+          
+          const translation = hierarchy.translations.find(t => t.id === recordId);
+          if (translation) {
+            record = translation;
+            resultCategory = 'Word Translations';
+            break;
+          }
+          
+          const formTranslation = hierarchy.formTranslations.find(ft => ft.id === recordId);
+          if (formTranslation) {
+            record = formTranslation;
+            resultCategory = 'Form Translations';
+            break;
+          }
         }
-      }
-
-      // Add selected forms and their translations
-      for (const wordId of Array.from(hierarchicalSelection.selectedWords)) {
-        const hierarchy = hierarchicalSelection.wordHierarchies[wordId];
-        if (hierarchy) {
-          // Add selected forms
-          const selectedForms = hierarchy.forms.filter(form => 
-            hierarchicalSelection.selectedForms.has(form.id)
-          );
-          results['Word Forms'].push(...selectedForms);
+        
+        if (record && resultCategory) {
+          // Add metadata about selected tags to the record for display
+          const recordWithSelection = {
+            ...record,
+            _selectedMetadataPaths: Array.from(selection.selectedMetadataPaths),
+            _selectedOptionalTags: Array.from(selection.selectedOptionalTags),
+            _allTagsSelected: selection.allTagsSelected,
+            _tableName: selection.tableName
+          };
           
-          // Add selected translations
-          const selectedTranslations = hierarchy.translations.filter(trans => 
-            hierarchicalSelection.selectedTranslations.has(trans.id)
-          );
-          results['Word Translations'].push(...selectedTranslations);
-          
-          // Add form translations for selected forms
-          const selectedFormTranslations = hierarchy.formTranslations.filter(ft =>
-            selectedForms.some(form => form.id === ft.word_form_id)
-          );
-          results['Form Translations'].push(...selectedFormTranslations);
+          results[resultCategory].push(recordWithSelection);
         }
       }
       
@@ -440,13 +456,13 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       const totalResults = Object.values(results).reduce((sum, records) => sum + records.length, 0);
       
       if (totalResults === 0) {
-        handleError(new Error('No results found for your selections'), 'No results');
+        handleError(new Error('No results found for selected tags'), 'No results');
       } else {
-        handleSuccess(`Found ${totalResults} records: ${selectedWordsCount} words, ${selectedFormsCount} forms, ${selectedTranslationsCount} translations`);
+        handleSuccess(`Found ${totalResults} records with selected tags across ${selectedTagsCount} selections`);
       }
       
     } catch (error) {
-      handleError(error, 'Word search failed');
+      handleError(error, 'Tag-based search failed');
     }
   };
 
@@ -785,10 +801,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
               <button
                 onClick={() => {
                   setHierarchicalSelection({
-                    selectedWords: new Set(),
-                    selectedForms: new Set(),
-                    selectedTranslations: new Set(),
-                    wordHierarchies: {}
+                    wordHierarchies: {},
+                    selectedTags: {},
+                    collapsedSections: {}
                   });
                 }}
                 className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors"
@@ -822,7 +837,8 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                     }
                     
                     const hierarchy = hierarchicalSelection.wordHierarchies[wordId];
-                    const isWordSelected = hierarchicalSelection.selectedWords.has(wordId);
+                    const isWordSelected = hierarchicalSelection.selectedTags[wordId]?.allTagsSelected || false;
+                    const collapsed = hierarchicalSelection.collapsedSections[wordId];
                     
                     return (
                       <div key={wordId} className="border border-gray-200 rounded-lg p-3 bg-white">
@@ -831,83 +847,158 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                           <input
                             type="checkbox"
                             checked={isWordSelected}
-                            onChange={() => toggleWordSelection(wordId)}
+                            onChange={() => toggleAllTagsForRecord(wordId, 'word', word)}
                             className="mt-1 flex-shrink-0"
                           />
                           <div className="flex-1">
-                            <div 
-                              className="flex items-center space-x-2 cursor-pointer" 
-                              onClick={() => loadWordHierarchy(wordId)}
-                            >
-                              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">Dictionary</span>
-                              <span className="font-medium">{word.italian}</span>
-                              {word.english && <span className="text-gray-500">({word.english})</span>}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">Dictionary</span>
+                                <span className="font-medium">{word.italian}</span>
+                                {word.english && <span className="text-gray-500">({word.english})</span>}
+                              </div>
+                              {hierarchy && (
+                                <button
+                                  onClick={() => toggleSectionCollapse(wordId, 'forms')}
+                                  className="text-gray-400 hover:text-gray-600"
+                                >
+                                  {collapsed?.forms ? '▼' : '▲'} Expand
+                                </button>
+                              )}
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
-                              {hierarchy ? `${hierarchy.forms.length} forms, ${hierarchy.translations.length} translations` : 'Click word to load hierarchy'}
+                              {hierarchy ? `${hierarchy.forms.length} forms, ${hierarchy.translations.length} translations` : 'Loading...'}
                             </div>
+                            
+                            {/* Show tags for this word */}
+                            {word.metadata && Object.keys(word.metadata).length > 0 && (
+                              <div className="mt-2">
+                                <div className="text-xs text-gray-600 mb-1">Tags:</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {Object.entries(word.metadata).map(([key, value]) => (
+                                    <span key={key} className="px-1 py-0.5 text-xs bg-gray-100 text-gray-700 rounded">
+                                      {key}: {value as string}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
 
                         {/* Word Forms Level */}
-                        {hierarchy && hierarchy.forms.length > 0 && (
+                        {hierarchy && hierarchy.forms.length > 0 && !collapsed?.forms && (
                           <div className="ml-6 mb-2">
                             <div className="text-xs text-gray-600 font-medium mb-2">Word Forms ({hierarchy.forms.length}):</div>
-                            <div className="grid grid-cols-2 gap-2">
-                              {hierarchy.forms.map((form) => (
-                                <label key={form.id} className="flex items-center space-x-2 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded">
-                                  <input
-                                    type="checkbox"
-                                    checked={hierarchicalSelection.selectedForms.has(form.id)}
-                                    onChange={() => toggleFormSelection(form.id)}
-                                    className="flex-shrink-0"
-                                  />
-                                  <span className="px-1 py-0.5 text-xs bg-green-100 text-green-700 rounded">Form</span>
-                                  <span className="truncate">{form.form_text}</span>
-                                </label>
-                              ))}
+                            <div className="grid grid-cols-1 gap-2">
+                              {hierarchy.forms.map((form) => {
+                                const isFormSelected = hierarchicalSelection.selectedTags[form.id]?.allTagsSelected || false;
+                                return (
+                                  <div key={form.id} className="border border-gray-100 rounded p-2">
+                                    <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isFormSelected}
+                                        onChange={() => toggleAllTagsForRecord(form.id, 'form', form)}
+                                        className="flex-shrink-0"
+                                      />
+                                      <span className="px-1 py-0.5 text-xs bg-green-100 text-green-700 rounded">Form</span>
+                                      <span className="font-medium">{form.form_text}</span>
+                                    </label>
+                                    
+                                    {/* Show tags for this form */}
+                                    {form.metadata && Object.keys(form.metadata).length > 0 && (
+                                      <div className="mt-1 ml-6">
+                                        <div className="flex flex-wrap gap-1">
+                                          {Object.entries(form.metadata).map(([key, value]) => (
+                                            <span key={key} className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                                              {key}: {value as string}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
 
                         {/* Word Translations Level */}
-                        {hierarchy && hierarchy.translations.length > 0 && (
+                        {hierarchy && hierarchy.translations.length > 0 && !collapsed?.translations && (
                           <div className="ml-6 mb-2">
                             <div className="text-xs text-gray-600 font-medium mb-2">Word Translations ({hierarchy.translations.length}):</div>
                             <div className="space-y-1">
-                              {hierarchy.translations.map((translation) => (
-                                <label key={translation.id} className="flex items-center space-x-2 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded">
-                                  <input
-                                    type="checkbox"
-                                    checked={hierarchicalSelection.selectedTranslations.has(translation.id)}
-                                    onChange={() => toggleTranslationSelection(translation.id)}
-                                    className="flex-shrink-0"
-                                  />
-                                  <span className="px-1 py-0.5 text-xs bg-purple-100 text-purple-700 rounded">Translation</span>
-                                  <span className="truncate">{translation.english || translation.translation}</span>
-                                </label>
-                              ))}
+                              {hierarchy.translations.map((translation) => {
+                                const isTranslationSelected = hierarchicalSelection.selectedTags[translation.id]?.allTagsSelected || false;
+                                return (
+                                  <div key={translation.id} className="border border-gray-100 rounded p-2">
+                                    <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isTranslationSelected}
+                                        onChange={() => toggleAllTagsForRecord(translation.id, 'word_translation', translation)}
+                                        className="flex-shrink-0"
+                                      />
+                                      <span className="px-1 py-0.5 text-xs bg-purple-100 text-purple-700 rounded">Translation</span>
+                                      <span className="font-medium">{translation.english || translation.translation}</span>
+                                    </label>
+                                    
+                                    {/* Show tags for this translation */}
+                                    {translation.metadata && Object.keys(translation.metadata).length > 0 && (
+                                      <div className="mt-1 ml-6">
+                                        <div className="flex flex-wrap gap-1">
+                                          {Object.entries(translation.metadata).map(([key, value]) => (
+                                            <span key={key} className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                                              {key}: {value as string}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
 
                         {/* Form Translations Level */}
-                        {hierarchy && hierarchy.formTranslations.length > 0 && (
+                        {hierarchy && hierarchy.formTranslations.length > 0 && !collapsed?.formTranslations && (
                           <div className="ml-6">
                             <div className="text-xs text-gray-600 font-medium mb-2">Form Translations ({hierarchy.formTranslations.length}):</div>
                             <div className="space-y-1">
-                              {hierarchy.formTranslations.map((formTranslation) => (
-                                <label key={formTranslation.id} className="flex items-center space-x-2 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded">
-                                  <input
-                                    type="checkbox"
-                                    checked={hierarchicalSelection.selectedTranslations.has(formTranslation.id)}
-                                    onChange={() => toggleTranslationSelection(formTranslation.id)}
-                                    className="flex-shrink-0"
-                                  />
-                                  <span className="px-1 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded">Form Translation</span>
-                                  <span className="truncate">{formTranslation.translation}</span>
-                                </label>
-                              ))}
+                              {hierarchy.formTranslations.map((formTranslation) => {
+                                const isFormTranslationSelected = hierarchicalSelection.selectedTags[formTranslation.id]?.allTagsSelected || false;
+                                return (
+                                  <div key={formTranslation.id} className="border border-gray-100 rounded p-2">
+                                    <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isFormTranslationSelected}
+                                        onChange={() => toggleAllTagsForRecord(formTranslation.id, 'form_translation', formTranslation)}
+                                        className="flex-shrink-0"
+                                      />
+                                      <span className="px-1 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded">Form Translation</span>
+                                      <span className="font-medium">{formTranslation.translation}</span>
+                                    </label>
+                                    
+                                    {/* Show tags for this form translation */}
+                                    {formTranslation.metadata && Object.keys(formTranslation.metadata).length > 0 && (
+                                      <div className="mt-1 ml-6">
+                                        <div className="flex flex-wrap gap-1">
+                                          {Object.entries(formTranslation.metadata).map(([key, value]) => (
+                                            <span key={key} className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                                              {key}: {value as string}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
@@ -925,47 +1016,48 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
           )}
 
           {/* Hierarchical Selection Summary */}
-          {(hierarchicalSelection.selectedWords.size > 0 || hierarchicalSelection.selectedForms.size > 0 || hierarchicalSelection.selectedTranslations.size > 0) && (
+          {Object.keys(hierarchicalSelection.selectedTags).length > 0 && (
             <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">📊 Hierarchical Selection Summary</h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-3">📊 Tag-Based Selection Summary</h4>
               
-              {/* Selected Dictionary Words */}
-              {hierarchicalSelection.selectedWords.size > 0 && (
-                <div className="mb-3">
-                  <div className="text-xs font-medium text-blue-700 mb-1">Dictionary Words ({hierarchicalSelection.selectedWords.size}):</div>
-                  <div className="flex flex-wrap gap-1">
-                    {Array.from(hierarchicalSelection.selectedWords).map((wordId) => {
-                      const word = hierarchicalSelection.wordHierarchies[wordId]?.word;
-                      if (!word) return null;
-                      return (
-                        <span
-                          key={word.id}
-                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200"
-                          onClick={() => toggleWordSelection(word.id)}
-                        >
-                          {word.italian} ×
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Selected Forms */}
-              {hierarchicalSelection.selectedForms.size > 0 && (
-                <div className="mb-3">
-                  <div className="text-xs font-medium text-green-700 mb-1">Word Forms ({hierarchicalSelection.selectedForms.size}):</div>
-                  <div className="text-xs text-gray-600">Individual forms selected for targeted tag modifications</div>
-                </div>
-              )}
-
-              {/* Selected Translations */}
-              {hierarchicalSelection.selectedTranslations.size > 0 && (
-                <div>
-                  <div className="text-xs font-medium text-purple-700 mb-1">Translations ({hierarchicalSelection.selectedTranslations.size}):</div>
-                  <div className="text-xs text-gray-600">Individual translations selected for targeted tag modifications</div>
-                </div>
-              )}
+              <div className="text-sm text-gray-700 mb-2">
+                Selected {Object.keys(hierarchicalSelection.selectedTags).length} records with tag modifications:
+              </div>
+              
+              <div className="space-y-2">
+                {Object.entries(hierarchicalSelection.selectedTags).map(([recordId, selection]) => {
+                  // Find the record name
+                  let recordName = recordId;
+                  for (const hierarchy of Object.values(hierarchicalSelection.wordHierarchies)) {
+                    if (hierarchy.word.id === recordId) {
+                      recordName = `${hierarchy.word.italian} (word)`;
+                      break;
+                    }
+                    const form = hierarchy.forms.find(f => f.id === recordId);
+                    if (form) {
+                      recordName = `${form.form_text} (form)`;
+                      break;
+                    }
+                    const translation = hierarchy.translations.find(t => t.id === recordId);
+                    if (translation) {
+                      recordName = `${translation.translation} (translation)`;
+                      break;
+                    }
+                  }
+                  
+                  return (
+                    <div key={recordId} className="text-xs bg-gray-50 p-2 rounded">
+                      <div className="font-medium text-gray-700">{recordName}</div>
+                      <div className="text-gray-600">
+                        {selection.allTagsSelected 
+                          ? "All tags selected" 
+                          : `${selection.selectedMetadataPaths.size} metadata + ${selection.selectedOptionalTags.size} optional tags`
+                        }
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -973,10 +1065,10 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
           <div className="flex space-x-2 pt-2">
             <button
               onClick={performHierarchicalWordSearch}
-              disabled={uiState.isLoading || (hierarchicalSelection.selectedWords.size === 0 && hierarchicalSelection.selectedForms.size === 0 && hierarchicalSelection.selectedTranslations.size === 0)}
+              disabled={uiState.isLoading || Object.keys(hierarchicalSelection.selectedTags).length === 0}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
             >
-              {uiState.isLoading ? '🔄 Loading...' : `🔍 Search Hierarchical Selection (${hierarchicalSelection.selectedWords.size}W + ${hierarchicalSelection.selectedForms.size}F + ${hierarchicalSelection.selectedTranslations.size}T)`}
+              {uiState.isLoading ? '🔄 Loading...' : `🔍 Search Selected Tags (${Object.keys(hierarchicalSelection.selectedTags).length} selections)`}
             </button>
             <button
               onClick={loadAvailableWords}
