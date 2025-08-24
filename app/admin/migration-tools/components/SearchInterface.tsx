@@ -223,11 +223,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       // Remove word and its children
       setHierarchicalSelection(prev => ({
         ...prev,
-        selectedWords: new Set([...prev.selectedWords].filter(id => id !== wordId)),
-        selectedForms: new Set([...prev.selectedForms].filter(id => 
+        selectedWords: new Set(Array.from(prev.selectedWords).filter(id => id !== wordId)),
+        selectedForms: new Set(Array.from(prev.selectedForms).filter(id => 
           !prev.wordHierarchies[wordId]?.forms.some(f => f.id === id)
         )),
-        selectedTranslations: new Set([...prev.selectedTranslations].filter(id =>
+        selectedTranslations: new Set(Array.from(prev.selectedTranslations).filter(id =>
           !prev.wordHierarchies[wordId]?.translations.some(t => t.id === id)
         ))
       }));
@@ -237,7 +237,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         const hierarchy = await dbService.buildWordHierarchy(wordId);
         setHierarchicalSelection(prev => ({
           ...prev,
-          selectedWords: new Set([...prev.selectedWords, wordId]),
+          selectedWords: new Set([...Array.from(prev.selectedWords), wordId]),
           wordHierarchies: {
             ...prev.wordHierarchies,
             [wordId]: hierarchy
@@ -254,8 +254,8 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     setHierarchicalSelection(prev => ({
       ...prev,
       selectedForms: prev.selectedForms.has(formId)
-        ? new Set([...prev.selectedForms].filter(id => id !== formId))
-        : new Set([...prev.selectedForms, formId])
+        ? new Set(Array.from(prev.selectedForms).filter(id => id !== formId))
+        : new Set([...Array.from(prev.selectedForms), formId])
     }));
   };
 
@@ -264,8 +264,8 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     setHierarchicalSelection(prev => ({
       ...prev,
       selectedTranslations: prev.selectedTranslations.has(translationId)
-        ? new Set([...prev.selectedTranslations].filter(id => id !== translationId))
-        : new Set([...prev.selectedTranslations, translationId])
+        ? new Set(Array.from(prev.selectedTranslations).filter(id => id !== translationId))
+        : new Set([...Array.from(prev.selectedTranslations), translationId])
     }));
   };
 
