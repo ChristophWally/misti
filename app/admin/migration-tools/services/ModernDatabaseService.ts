@@ -240,9 +240,11 @@ export class ModernDatabaseService {
   async getAllAvailableTags(): Promise<{
     coreTags: { tag: string; count: number; tables: string[] }[];
     optionalTags: { tag: string; count: number; tables: string[] }[];
+    groupedCoreTags: Record<string, { value: string; count: number; tables: string[] }[]>;
   }> {
     const coreTags: Map<string, { count: number; tables: Set<string> }> = new Map();
     const optionalTags: Map<string, { count: number; tables: Set<string> }> = new Map();
+    const coreTagsByKey: Map<string, Map<string, { count: number; tables: Set<string> }>> = new Map();
     const tables = ['dictionary', 'word_forms', 'word_translations', 'form_translations'];
 
     for (const table of tables) {
@@ -266,11 +268,24 @@ export class ModernDatabaseService {
               for (const [key, value] of Object.entries(record.metadata)) {
                 if (value && typeof value === 'string') {
                   const tag = `${key}: ${value}`;
+                  
+                  // Build original structure for backward compatibility
                   if (!coreTags.has(tag)) {
                     coreTags.set(tag, { count: 0, tables: new Set() });
                   }
                   coreTags.get(tag)!.count++;
                   coreTags.get(tag)!.tables.add(table);
+                  
+                  // Build grouped structure by metadata key
+                  if (!coreTagsByKey.has(key)) {
+                    coreTagsByKey.set(key, new Map());
+                  }
+                  const keyGroup = coreTagsByKey.get(key)!;
+                  if (!keyGroup.has(value)) {
+                    keyGroup.set(value, { count: 0, tables: new Set() });
+                  }
+                  keyGroup.get(value)!.count++;
+                  keyGroup.get(value)!.tables.add(table);
                 }
               }
             }
@@ -294,6 +309,18 @@ export class ModernDatabaseService {
       }
     }
 
+    // Build grouped core tags structure
+    const groupedCoreTags: Record<string, { value: string; count: number; tables: string[] }[]> = {};
+    for (const [key, valueMap] of Array.from(coreTagsByKey.entries()).sort()) {
+      groupedCoreTags[key] = Array.from(valueMap.entries())
+        .map(([value, data]) => ({
+          value,
+          count: data.count,
+          tables: Array.from(data.tables)
+        }))
+        .sort((a, b) => b.count - a.count);
+    }
+
     return {
       coreTags: Array.from(coreTags.entries()).map(([tag, data]) => ({
         tag,
@@ -304,7 +331,8 @@ export class ModernDatabaseService {
         tag,
         count: data.count,
         tables: Array.from(data.tables)
-      })).sort((a, b) => b.count - a.count)
+      })).sort((a, b) => b.count - a.count),
+      groupedCoreTags
     };
   }
 
@@ -382,6 +410,96 @@ export class ModernDatabaseService {
       return data || [];
     } catch (error) {
       console.error(`Failed to get sample from ${table}:`, error);
+      throw error;
+    }
+  }
+
+  // Search dictionary words by text
+  async searchDictionaryWords(searchTerm: string, limit: number = 10): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('dictionary')
+        .select('*')
+        .ilike('italian', `%${searchTerm}%`)
+        .limit(limit);
+      
+      if (error) {
+        console.error('Error searching dictionary words:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Failed to search dictionary words:', error);
+      throw error;
+    }
+  }
+
+  // Build word hierarchy (dictionary -> forms -> translations)
+  async buildWordHierarchy(wordId: string): Promise<{
+    word: any;
+    forms: any[];
+    translations: any[];
+    formTranslations: any[];
+  }> {
+    try {
+      // Get the dictionary word
+      const { data: word, error: wordError } = await supabase
+        .from('dictionary')
+        .select('*')
+        .eq('id', wordId)
+        .single();
+      
+      if (wordError) {
+        console.error('Error fetching dictionary word:', wordError);
+        throw wordError;
+      }
+
+      // Get word forms
+      const { data: forms, error: formsError } = await supabase
+        .from('word_forms')
+        .select('*')
+        .eq('dictionary_id', wordId);
+      
+      if (formsError) {
+        console.error('Error fetching word forms:', formsError);
+      }
+
+      // Get word translations
+      const { data: translations, error: translationsError } = await supabase
+        .from('word_translations')
+        .select('*')
+        .eq('dictionary_id', wordId);
+      
+      if (translationsError) {
+        console.error('Error fetching word translations:', translationsError);
+      }
+
+      // Get form translations for all forms
+      const formIds = forms?.map(f => f.id) || [];
+      let formTranslations: any[] = [];
+      
+      if (formIds.length > 0) {
+        const { data: ftData, error: ftError } = await supabase
+          .from('form_translations')
+          .select('*')
+          .in('word_form_id', formIds);
+        
+        if (ftError) {
+          console.error('Error fetching form translations:', ftError);
+        } else {
+          formTranslations = ftData || [];
+        }
+      }
+
+      return {
+        word: word || null,
+        forms: forms || [],
+        translations: translations || [],
+        formTranslations
+      };
+    } catch (error) {
+      console.error('Failed to build word hierarchy:', error);
       throw error;
     }
   }
