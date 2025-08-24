@@ -53,11 +53,28 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   ]);
   const [selectedTagTables, setSelectedTagTables] = useState<string[]>(['dictionary', 'word_forms', 'word_translations', 'form_translations']);
   
-  // Word search state  
+  // Hierarchical word search state
   const [wordSearch, setWordSearch] = useState('');
-  const [selectedWords, setSelectedWords] = useState<any[]>([]);
   const [availableWords, setAvailableWords] = useState<any[]>([]);
   const [showWordBrowser, setShowWordBrowser] = useState(true);
+  
+  // Hierarchical selection state
+  const [hierarchicalSelection, setHierarchicalSelection] = useState<{
+    selectedWords: Set<string>; // word IDs
+    selectedForms: Set<string>; // form IDs  
+    selectedTranslations: Set<string>; // translation IDs
+    wordHierarchies: Record<string, {
+      word: any;
+      forms: any[];
+      translations: any[];
+      formTranslations: any[];
+    }>;
+  }>({
+    selectedWords: new Set(),
+    selectedForms: new Set(),
+    selectedTranslations: new Set(),
+    wordHierarchies: {}
+  });
   
   // Record editing state
   const [editingRecord, setEditingRecord] = useState<{
@@ -65,6 +82,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     table: string;
     contentType: string;
   } | null>(null);
+  
+  // Selected records for bulk operations
+  const [selectedRecords, setSelectedRecords] = useState<Record<string, Set<string>>>({});
 
   // Load all available tags on mount
   const loadAvailableTags = async () => {
@@ -194,22 +214,69 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       .filter(([_, values]) => values.length > 0)
   ) as Record<string, { value: string; count: number; tables: string[] }[]>;
 
-  // Toggle word selection (like tag selection)
-  const toggleWord = (word: any) => {
-    setSelectedWords(prev => {
-      const isSelected = prev.some(w => w.id === word.id);
-      if (isSelected) {
-        return prev.filter(w => w.id !== word.id);
-      } else {
-        return [...prev, word];
+  // Toggle word selection and load hierarchy
+  const toggleWordSelection = async (word: any) => {
+    const wordId = word.id;
+    const isSelected = hierarchicalSelection.selectedWords.has(wordId);
+    
+    if (isSelected) {
+      // Remove word and its children
+      setHierarchicalSelection(prev => ({
+        ...prev,
+        selectedWords: new Set([...prev.selectedWords].filter(id => id !== wordId)),
+        selectedForms: new Set([...prev.selectedForms].filter(id => 
+          !prev.wordHierarchies[wordId]?.forms.some(f => f.id === id)
+        )),
+        selectedTranslations: new Set([...prev.selectedTranslations].filter(id =>
+          !prev.wordHierarchies[wordId]?.translations.some(t => t.id === id)
+        ))
+      }));
+    } else {
+      // Add word and load hierarchy
+      try {
+        const hierarchy = await dbService.buildWordHierarchy(wordId);
+        setHierarchicalSelection(prev => ({
+          ...prev,
+          selectedWords: new Set([...prev.selectedWords, wordId]),
+          wordHierarchies: {
+            ...prev.wordHierarchies,
+            [wordId]: hierarchy
+          }
+        }));
+      } catch (error) {
+        handleError(error, 'Failed to load word hierarchy');
       }
-    });
+    }
   };
 
-  // Perform word-based search (search for selected words with their hierarchy)
-  const performWordSearch = async () => {
-    if (selectedWords.length === 0) {
-      handleError(new Error('Please select at least one word'), 'Word search validation');
+  // Toggle form selection
+  const toggleFormSelection = (formId: string) => {
+    setHierarchicalSelection(prev => ({
+      ...prev,
+      selectedForms: prev.selectedForms.has(formId)
+        ? new Set([...prev.selectedForms].filter(id => id !== formId))
+        : new Set([...prev.selectedForms, formId])
+    }));
+  };
+
+  // Toggle translation selection
+  const toggleTranslationSelection = (translationId: string) => {
+    setHierarchicalSelection(prev => ({
+      ...prev,
+      selectedTranslations: prev.selectedTranslations.has(translationId)
+        ? new Set([...prev.selectedTranslations].filter(id => id !== translationId))
+        : new Set([...prev.selectedTranslations, translationId])
+    }));
+  };
+
+  // Execute hierarchical word search - build results from selections
+  const performHierarchicalWordSearch = async () => {
+    const selectedWordsCount = hierarchicalSelection.selectedWords.size;
+    const selectedFormsCount = hierarchicalSelection.selectedForms.size;  
+    const selectedTranslationsCount = hierarchicalSelection.selectedTranslations.size;
+    
+    if (selectedWordsCount === 0 && selectedFormsCount === 0 && selectedTranslationsCount === 0) {
+      handleError(new Error('Please select at least one word, form, or translation'), 'Word search validation');
       return;
     }
 
@@ -217,21 +284,41 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       updateUIState({ isLoading: true, error: null });
       
       const results: Record<string, any[]> = {
-        'Dictionary Words': selectedWords,
+        'Dictionary Words': [],
         'Word Forms': [],
         'Word Translations': [],
         'Form Translations': []
       };
 
-      // Load hierarchy for each selected word
-      for (const word of selectedWords) {
-        try {
-          const hierarchy = await dbService.buildWordHierarchy(word.id);
-          results['Word Forms'].push(...hierarchy.forms);
-          results['Word Translations'].push(...hierarchy.translations);
-          results['Form Translations'].push(...hierarchy.formTranslations);
-        } catch (wordError) {
-          // Continue with other words if one fails
+      // Add selected dictionary words
+      for (const wordId of hierarchicalSelection.selectedWords) {
+        const hierarchy = hierarchicalSelection.wordHierarchies[wordId];
+        if (hierarchy?.word) {
+          results['Dictionary Words'].push(hierarchy.word);
+        }
+      }
+
+      // Add selected forms and their translations
+      for (const wordId of hierarchicalSelection.selectedWords) {
+        const hierarchy = hierarchicalSelection.wordHierarchies[wordId];
+        if (hierarchy) {
+          // Add selected forms
+          const selectedForms = hierarchy.forms.filter(form => 
+            hierarchicalSelection.selectedForms.has(form.id)
+          );
+          results['Word Forms'].push(...selectedForms);
+          
+          // Add selected translations
+          const selectedTranslations = hierarchy.translations.filter(trans => 
+            hierarchicalSelection.selectedTranslations.has(trans.id)
+          );
+          results['Word Translations'].push(...selectedTranslations);
+          
+          // Add form translations for selected forms
+          const selectedFormTranslations = hierarchy.formTranslations.filter(ft =>
+            selectedForms.some(form => form.id === ft.word_form_id)
+          );
+          results['Form Translations'].push(...selectedFormTranslations);
         }
       }
       
@@ -240,9 +327,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       const totalResults = Object.values(results).reduce((sum, records) => sum + records.length, 0);
       
       if (totalResults === 0) {
-        handleError(new Error(`No results found for ${selectedWords.length} selected words`), 'No results');
+        handleError(new Error('No results found for your selections'), 'No results');
       } else {
-        handleSuccess(`Found ${totalResults} total records for ${selectedWords.length} selected words`);
+        handleSuccess(`Found ${totalResults} records: ${selectedWordsCount} words, ${selectedFormsCount} forms, ${selectedTranslationsCount} translations`);
       }
       
     } catch (error) {
@@ -276,12 +363,53 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     });
   };
 
+  // Toggle record selection
+  const toggleRecordSelection = (recordId: string, contentType: string) => {
+    setSelectedRecords(prev => {
+      const newSelection = { ...prev };
+      if (!newSelection[contentType]) {
+        newSelection[contentType] = new Set();
+      }
+      
+      if (newSelection[contentType].has(recordId)) {
+        newSelection[contentType].delete(recordId);
+      } else {
+        newSelection[contentType].add(recordId);
+      }
+      
+      return newSelection;
+    });
+  };
+
+  // Select all records for a content type
+  const selectAllRecords = (contentType: string, records: any[]) => {
+    setSelectedRecords(prev => ({
+      ...prev,
+      [contentType]: new Set(records.map(r => r.id))
+    }));
+  };
+
+  // Clear selected records for a content type
+  const clearSelectedRecords = (contentType: string) => {
+    setSelectedRecords(prev => {
+      const newSelection = { ...prev };
+      delete newSelection[contentType];
+      return newSelection;
+    });
+  };
+
   // Clear all selections
   const clearAll = () => {
     setSelectedTags({ coreTags: [], optionalTags: [] });
     setSelectedContentTypes(['Dictionary Words', 'Conjugated Forms', 'English Translations', 'Form Translations']);
     setSelectedTagTables(['dictionary', 'word_forms', 'word_translations', 'form_translations']);
-    setSelectedWords([]);
+    setHierarchicalSelection({
+      selectedWords: new Set(),
+      selectedForms: new Set(),
+      selectedTranslations: new Set(),
+      wordHierarchies: {}
+    });
+    setSelectedRecords({});
     setEditingRecord(null);
     updateDataState({ searchResults: {} });
     setTagSearch('');
@@ -657,9 +785,22 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                     {contentType} ({records.length} records)
                   </h4>
                   {records.length > 0 && (
-                    <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors">
-                      Select All ({records.length})
-                    </button>
+                    <div className="flex space-x-2">
+                      {selectedRecords[contentType]?.size > 0 && (
+                        <button 
+                          onClick={() => clearSelectedRecords(contentType)}
+                          className="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition-colors"
+                        >
+                          Clear ({selectedRecords[contentType]?.size})
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => selectAllRecords(contentType, records)}
+                        className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+                      >
+                        Select All ({records.length})
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -728,6 +869,8 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                               <input 
                                 type="checkbox" 
                                 className="mt-1"
+                                checked={selectedRecords[contentType]?.has(record.id) || false}
+                                onChange={() => toggleRecordSelection(record.id, contentType)}
                                 title={`Select ${record.italian || record.form_text || record.translation || record.english}`}
                               />
                             </div>
