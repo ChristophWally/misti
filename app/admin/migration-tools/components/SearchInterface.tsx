@@ -58,22 +58,30 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   const [availableWords, setAvailableWords] = useState<any[]>([]);
   const [showWordBrowser, setShowWordBrowser] = useState(true);
   
-  // Hierarchical selection state
+  // Hierarchical selection state with individual tag selection
   const [hierarchicalSelection, setHierarchicalSelection] = useState<{
-    selectedWords: Set<string>; // word IDs
-    selectedForms: Set<string>; // form IDs  
-    selectedTranslations: Set<string>; // translation IDs
     wordHierarchies: Record<string, {
       word: any;
       forms: any[];
       translations: any[];
       formTranslations: any[];
     }>;
+    selectedTags: Record<string, {
+      recordType: 'word' | 'form' | 'word_translation' | 'form_translation';
+      tableName: string;
+      selectedMetadataPaths: Set<string>; // metadata keys like "auxiliary", "person" 
+      selectedOptionalTags: Set<string>; // optional tag values
+      allTagsSelected: boolean; // if entire record's tags are selected
+    }>;
+    collapsedSections: Record<string, {
+      forms: boolean;
+      translations: boolean;
+      formTranslations: boolean;
+    }>;
   }>({
-    selectedWords: new Set(),
-    selectedForms: new Set(),
-    selectedTranslations: new Set(),
-    wordHierarchies: {}
+    wordHierarchies: {},
+    selectedTags: {},
+    collapsedSections: {}
   });
   
   // Record editing state
@@ -214,72 +222,164 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       .filter(([_, values]) => values.length > 0)
   ) as Record<string, { value: string; count: number; tables: string[] }[]>;
 
-  // Load word hierarchy (separate from selection)
-  const loadWordHierarchy = async (wordId: string) => {
-    if (hierarchicalSelection.wordHierarchies[wordId]) {
-      return; // Already loaded
-    }
+  // Auto-load hierarchies for all visible words
+  const autoLoadHierarchies = async (words: any[]) => {
+    const wordsToLoad = words.filter(word => !hierarchicalSelection.wordHierarchies[word.id]);
+    
+    if (wordsToLoad.length === 0) return;
     
     try {
-      const hierarchy = await dbService.buildWordHierarchy(wordId);
-      setHierarchicalSelection(prev => ({
-        ...prev,
-        wordHierarchies: {
-          ...prev.wordHierarchies,
-          [wordId]: hierarchy
-        }
-      }));
+      const hierarchyPromises = wordsToLoad.map(word => 
+        dbService.buildWordHierarchy(word.id).then(hierarchy => ({ wordId: word.id, hierarchy }))
+      );
+      
+      const hierarchyResults = await Promise.all(hierarchyPromises);
+      
+      setHierarchicalSelection(prev => {
+        const newHierarchies = { ...prev.wordHierarchies };
+        const newCollapsedSections = { ...prev.collapsedSections };
+        
+        hierarchyResults.forEach(({ wordId, hierarchy }) => {
+          newHierarchies[wordId] = hierarchy;
+          // Default to collapsed for cleaner initial view
+          newCollapsedSections[wordId] = {
+            forms: true,
+            translations: true,
+            formTranslations: true
+          };
+        });
+        
+        return {
+          ...prev,
+          wordHierarchies: newHierarchies,
+          collapsedSections: newCollapsedSections
+        };
+      });
     } catch (error) {
-      handleError(error, 'Failed to load word hierarchy');
+      console.error('Error auto-loading hierarchies:', error);
     }
   };
 
-  // Toggle word selection
-  const toggleWordSelection = async (wordId: string) => {
-    const isSelected = hierarchicalSelection.selectedWords.has(wordId);
+  // Toggle collapse state for sections
+  const toggleSectionCollapse = (wordId: string, section: 'forms' | 'translations' | 'formTranslations') => {
+    setHierarchicalSelection(prev => ({
+      ...prev,
+      collapsedSections: {
+        ...prev.collapsedSections,
+        [wordId]: {
+          ...prev.collapsedSections[wordId],
+          [section]: !prev.collapsedSections[wordId]?.[section]
+        }
+      }
+    }));
+  };
+
+  // Toggle all tags for a record (select/deselect entire record)
+  const toggleAllTagsForRecord = (recordId: string, recordType: 'word' | 'form' | 'word_translation' | 'form_translation', record: any) => {
+    const tableName = recordType === 'word' ? 'dictionary' : 
+                      recordType === 'form' ? 'word_forms' :
+                      recordType === 'word_translation' ? 'word_translations' : 'form_translations';
     
-    // Always load hierarchy when interacting with word
-    await loadWordHierarchy(wordId);
+    const isSelected = hierarchicalSelection.selectedTags[recordId]?.allTagsSelected;
     
     if (isSelected) {
-      // Remove word and its children
-      setHierarchicalSelection(prev => ({
-        ...prev,
-        selectedWords: new Set(Array.from(prev.selectedWords).filter(id => id !== wordId)),
-        selectedForms: new Set(Array.from(prev.selectedForms).filter(id => 
-          !prev.wordHierarchies[wordId]?.forms.some(f => f.id === id)
-        )),
-        selectedTranslations: new Set(Array.from(prev.selectedTranslations).filter(id =>
-          !prev.wordHierarchies[wordId]?.translations.some(t => t.id === id)
-        ))
-      }));
+      // Deselect all tags for this record
+      setHierarchicalSelection(prev => {
+        const newSelectedTags = { ...prev.selectedTags };
+        delete newSelectedTags[recordId];
+        return { ...prev, selectedTags: newSelectedTags };
+      });
     } else {
-      // Add word to selection
+      // Select all tags for this record
+      const metadataPaths = record.metadata ? Object.keys(record.metadata) : [];
+      const optionalTags = record.optional_tags || [];
+      
       setHierarchicalSelection(prev => ({
         ...prev,
-        selectedWords: new Set([...Array.from(prev.selectedWords), wordId])
+        selectedTags: {
+          ...prev.selectedTags,
+          [recordId]: {
+            recordType,
+            tableName,
+            selectedMetadataPaths: new Set(metadataPaths),
+            selectedOptionalTags: new Set(optionalTags),
+            allTagsSelected: true
+          }
+        }
       }));
     }
   };
 
-  // Toggle form selection
-  const toggleFormSelection = (formId: string) => {
-    setHierarchicalSelection(prev => ({
-      ...prev,
-      selectedForms: prev.selectedForms.has(formId)
-        ? new Set(Array.from(prev.selectedForms).filter(id => id !== formId))
-        : new Set([...Array.from(prev.selectedForms), formId])
-    }));
+  // Toggle individual metadata tag
+  const toggleMetadataTag = (recordId: string, tagPath: string, recordType: 'word' | 'form' | 'word_translation' | 'form_translation', record: any) => {
+    const tableName = recordType === 'word' ? 'dictionary' : 
+                      recordType === 'form' ? 'word_forms' :
+                      recordType === 'word_translation' ? 'word_translations' : 'form_translations';
+    
+    setHierarchicalSelection(prev => {
+      const existing = prev.selectedTags[recordId] || {
+        recordType,
+        tableName,
+        selectedMetadataPaths: new Set(),
+        selectedOptionalTags: new Set(),
+        allTagsSelected: false
+      };
+      
+      const newPaths = new Set(existing.selectedMetadataPaths);
+      if (newPaths.has(tagPath)) {
+        newPaths.delete(tagPath);
+      } else {
+        newPaths.add(tagPath);
+      }
+      
+      return {
+        ...prev,
+        selectedTags: {
+          ...prev.selectedTags,
+          [recordId]: {
+            ...existing,
+            selectedMetadataPaths: newPaths,
+            allTagsSelected: false
+          }
+        }
+      };
+    });
   };
 
-  // Toggle translation selection
-  const toggleTranslationSelection = (translationId: string) => {
-    setHierarchicalSelection(prev => ({
-      ...prev,
-      selectedTranslations: prev.selectedTranslations.has(translationId)
-        ? new Set(Array.from(prev.selectedTranslations).filter(id => id !== translationId))
-        : new Set([...Array.from(prev.selectedTranslations), translationId])
-    }));
+  // Toggle individual optional tag
+  const toggleOptionalTag = (recordId: string, tagValue: string, recordType: 'word' | 'form' | 'word_translation' | 'form_translation', record: any) => {
+    const tableName = recordType === 'word' ? 'dictionary' : 
+                      recordType === 'form' ? 'word_forms' :
+                      recordType === 'word_translation' ? 'word_translations' : 'form_translations';
+    
+    setHierarchicalSelection(prev => {
+      const existing = prev.selectedTags[recordId] || {
+        recordType,
+        tableName,
+        selectedMetadataPaths: new Set(),
+        selectedOptionalTags: new Set(),
+        allTagsSelected: false
+      };
+      
+      const newTags = new Set(existing.selectedOptionalTags);
+      if (newTags.has(tagValue)) {
+        newTags.delete(tagValue);
+      } else {
+        newTags.add(tagValue);
+      }
+      
+      return {
+        ...prev,
+        selectedTags: {
+          ...prev.selectedTags,
+          [recordId]: {
+            ...existing,
+            selectedOptionalTags: newTags,
+            allTagsSelected: false
+          }
+        }
+      };
+    });
   };
 
   // Execute hierarchical word search - build results from selections
@@ -355,6 +455,13 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     word.italian.toLowerCase().includes(wordSearch.toLowerCase()) ||
     (word.english && word.english.toLowerCase().includes(wordSearch.toLowerCase()))
   );
+
+  // Auto-load hierarchies when filtered words change
+  useEffect(() => {
+    if (filteredWords.length > 0 && showWordBrowser) {
+      autoLoadHierarchies(filteredWords);
+    }
+  }, [filteredWords, showWordBrowser]);
 
   // Get table name from content type
   const getTableFromContentType = (contentType: string): string => {
@@ -756,7 +863,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                     className="flex-shrink-0"
                                   />
                                   <span className="px-1 py-0.5 text-xs bg-green-100 text-green-700 rounded">Form</span>
-                                  <span className="truncate">{form.italian_text || form.text}</span>
+                                  <span className="truncate">{form.form_text}</span>
                                 </label>
                               ))}
                             </div>
