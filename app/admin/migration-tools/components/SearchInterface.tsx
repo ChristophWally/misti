@@ -44,14 +44,26 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   const [showTagBrowser, setShowTagBrowser] = useState(true);
   const [searchMode, setSearchMode] = useState<'tag' | 'word'>('tag');
   
-  // Word search state
+  // Table filtering for tags
+  const [availableTables] = useState([
+    { key: 'dictionary', name: 'Dictionary Words' },
+    { key: 'word_forms', name: 'Conjugated Forms' },
+    { key: 'word_translations', name: 'English Translations' },
+    { key: 'form_translations', name: 'Form Translations' }
+  ]);
+  const [selectedTagTables, setSelectedTagTables] = useState<string[]>(['dictionary', 'word_forms', 'word_translations', 'form_translations']);
+  
+  // Word search state  
   const [wordSearch, setWordSearch] = useState('');
-  const [selectedWord, setSelectedWord] = useState<any>(null);
-  const [wordHierarchy, setWordHierarchy] = useState<{
-    word: any;
-    forms: any[];
-    translations: any[];
-    formTranslations: any[];
+  const [selectedWords, setSelectedWords] = useState<any[]>([]);
+  const [availableWords, setAvailableWords] = useState<any[]>([]);
+  const [showWordBrowser, setShowWordBrowser] = useState(true);
+  
+  // Record editing state
+  const [editingRecord, setEditingRecord] = useState<{
+    record: any;
+    table: string;
+    contentType: string;
   } | null>(null);
 
   // Load all available tags on mount
@@ -66,8 +78,21 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     }
   };
 
+  // Load available words
+  const loadAvailableWords = async () => {
+    try {
+      updateUIState({ isLoading: true, error: null });
+      const words = await dbService.loadAllDictionaryWords(100);
+      setAvailableWords(words);
+      updateUIState({ isLoading: false });
+    } catch (error) {
+      handleError(error, 'Failed to load available words');
+    }
+  };
+
   useEffect(() => {
     loadAvailableTags();
+    loadAvailableWords();
   }, []);
 
   // Perform unified tag search
@@ -132,65 +157,120 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     );
   };
 
-  // Filter optional tags based on search
-  const filteredOptionalTags = availableTags.optionalTags.filter(tag => 
-    tag.tag.toLowerCase().includes(tagSearch.toLowerCase())
+  // Toggle table selection for tag filtering
+  const toggleTagTable = (tableKey: string) => {
+    setSelectedTagTables(prev => 
+      prev.includes(tableKey)
+        ? prev.filter(t => t !== tableKey)
+        : [...prev, tableKey]
+    );
+  };
+
+  // Filter tags based on search and selected tables
+  const filteredOptionalTags = availableTags.optionalTags.filter(tag => {
+    const matchesSearch = tag.tag.toLowerCase().includes(tagSearch.toLowerCase());
+    const matchesTables = tag.tables.some(table => selectedTagTables.includes(table));
+    return matchesSearch && matchesTables;
+  });
+
+  const filteredGroupedCoreTags = Object.fromEntries(
+    Object.entries(availableTags.groupedCoreTags)
+      .map(([key, values]) => [
+        key,
+        values.filter(valueData => {
+          const matchesSearch = tagSearch === '' || 
+            key.toLowerCase().includes(tagSearch.toLowerCase()) ||
+            valueData.value.toLowerCase().includes(tagSearch.toLowerCase());
+          const matchesTables = valueData.tables.some(table => selectedTagTables.includes(table));
+          return matchesSearch && matchesTables;
+        })
+      ])
+      .filter(([_, values]) => values.length > 0)
   );
 
-  // Search dictionary words
-  const searchWords = async () => {
-    if (!wordSearch.trim()) {
-      handleError(new Error('Please enter a word to search'), 'Word search validation');
+  // Toggle word selection (like tag selection)
+  const toggleWord = (word: any) => {
+    setSelectedWords(prev => {
+      const isSelected = prev.some(w => w.id === word.id);
+      if (isSelected) {
+        return prev.filter(w => w.id !== word.id);
+      } else {
+        return [...prev, word];
+      }
+    });
+  };
+
+  // Perform word-based search (search for selected words with their hierarchy)
+  const performWordSearch = async () => {
+    if (selectedWords.length === 0) {
+      handleError(new Error('Please select at least one word'), 'Word search validation');
       return;
     }
 
     try {
       updateUIState({ isLoading: true, error: null });
-      const words = await dbService.searchDictionaryWords(wordSearch.trim());
       
-      if (words.length === 0) {
-        handleError(new Error(`No dictionary words found matching "${wordSearch}"`), 'No results');
-        updateUIState({ isLoading: false });
-        return;
-      }
+      const results: Record<string, any[]> = {
+        'Dictionary Words': selectedWords,
+        'Word Forms': [],
+        'Word Translations': [],
+        'Form Translations': []
+      };
 
-      // Auto-select first word if only one result
-      if (words.length === 1) {
-        await selectWord(words[0]);
-      } else {
-        // Store search results for user selection
-        updateDataState({ searchResults: { 'Dictionary Words': words } });
-        updateUIState({ isLoading: false });
-        handleSuccess(`Found ${words.length} dictionary words matching "${wordSearch}"`);
+      // Load hierarchy for each selected word
+      for (const word of selectedWords) {
+        const hierarchy = await dbService.buildWordHierarchy(word.id);
+        results['Word Forms'].push(...hierarchy.forms);
+        results['Word Translations'].push(...hierarchy.translations);
+        results['Form Translations'].push(...hierarchy.formTranslations);
       }
+      
+      updateDataState({ searchResults: results });
+      
+      const totalResults = Object.values(results).reduce((sum, records) => sum + records.length, 0);
+      handleSuccess(`Found ${totalResults} total records for ${selectedWords.length} selected words`);
+      
     } catch (error) {
       handleError(error, 'Word search failed');
     }
   };
 
-  // Select a word and build hierarchy
-  const selectWord = async (word: any) => {
-    try {
-      updateUIState({ isLoading: true });
-      const hierarchy = await dbService.buildWordHierarchy(word.id);
-      setSelectedWord(word);
-      setWordHierarchy(hierarchy);
-      updateUIState({ isLoading: false });
-      handleSuccess(`Loaded hierarchy for "${word.italian}" - ${hierarchy.forms.length} forms, ${hierarchy.translations.length} translations`);
-    } catch (error) {
-      handleError(error, 'Failed to load word hierarchy');
-    }
+  // Filter words based on search
+  const filteredWords = availableWords.filter(word => 
+    word.italian.toLowerCase().includes(wordSearch.toLowerCase()) ||
+    (word.english && word.english.toLowerCase().includes(wordSearch.toLowerCase()))
+  );
+
+  // Get table name from content type
+  const getTableFromContentType = (contentType: string): string => {
+    const tableMap: Record<string, string> = {
+      'Dictionary Words': 'dictionary',
+      'Conjugated Forms': 'word_forms', 
+      'English Translations': 'word_translations',
+      'Form Translations': 'form_translations'
+    };
+    return tableMap[contentType] || 'dictionary';
+  };
+
+  // Open record for editing
+  const openRecordEditor = (record: any, contentType: string) => {
+    setEditingRecord({
+      record: { ...record },
+      table: getTableFromContentType(contentType),
+      contentType
+    });
   };
 
   // Clear all selections
   const clearAll = () => {
     setSelectedTags({ coreTags: [], optionalTags: [] });
     setSelectedContentTypes(['Dictionary Words', 'Conjugated Forms', 'English Translations', 'Form Translations']);
+    setSelectedTagTables(['dictionary', 'word_forms', 'word_translations', 'form_translations']);
+    setSelectedWords([]);
+    setEditingRecord(null);
     updateDataState({ searchResults: {} });
     setTagSearch('');
     setWordSearch('');
-    setSelectedWord(null);
-    setWordHierarchy(null);
   };
 
   const hasResults = Object.keys(dataState.searchResults).length > 0;
@@ -271,7 +351,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         {/* Tag Browser */}
         {showTagBrowser && (
           <div className="border border-gray-200 rounded-lg p-4 bg-white">
-            <div className="mb-3">
+            <div className="mb-3 space-y-3">
               <input
                 type="text"
                 value={tagSearch}
@@ -279,39 +359,49 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                 placeholder="Search available tags..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              
+              {/* Table Filter */}
+              <div>
+                <h5 className="text-xs font-medium text-gray-700 mb-2">Filter by Tables:</h5>
+                <div className="grid grid-cols-2 gap-2">
+                  {availableTables.map((table) => (
+                    <label key={table.key} className="flex items-center text-xs">
+                      <input
+                        type="checkbox"
+                        checked={selectedTagTables.includes(table.key)}
+                        onChange={() => toggleTagTable(table.key)}
+                        className="mr-1 scale-75"
+                      />
+                      <span className="truncate">{table.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-64 overflow-y-auto">
               {/* Core Tags - Grouped */}
               <div>
                 <div className="space-y-2">
-                  {Object.entries(availableTags.groupedCoreTags)
-                    .filter(([key, values]) => 
-                      tagSearch === '' || 
-                      key.toLowerCase().includes(tagSearch.toLowerCase()) ||
-                      values.some(v => v.value.toLowerCase().includes(tagSearch.toLowerCase()))
-                    )
-                    .map(([key, values]) => (
+                  {Object.entries(filteredGroupedCoreTags).map(([key, values]) => (
                     <div key={key} className="border-l-2 border-blue-200 pl-2">
                       <div className="text-xs font-medium text-blue-700 mb-1">{key}</div>
                       <div className="space-y-1">
-                        {values
-                          .filter(v => tagSearch === '' || v.value.toLowerCase().includes(tagSearch.toLowerCase()))
-                          .map((valueData) => {
-                            const fullTag = `${key}: ${valueData.value}`;
-                            return (
-                              <label key={fullTag} className="flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedTags.coreTags.includes(fullTag)}
-                                  onChange={() => toggleTag(fullTag, 'core')}
-                                  className="mr-2"
-                                />
-                                <span className="text-sm flex-1 truncate">{valueData.value}</span>
-                                <span className="text-xs text-gray-500 ml-2">({valueData.count})</span>
-                              </label>
-                            );
-                          })}
+                        {values.map((valueData) => {
+                          const fullTag = `${key}: ${valueData.value}`;
+                          return (
+                            <label key={fullTag} className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedTags.coreTags.includes(fullTag)}
+                                onChange={() => toggleTag(fullTag, 'core')}
+                                className="mr-2"
+                              />
+                              <span className="text-sm flex-1 truncate">{valueData.value}</span>
+                              <span className="text-xs text-gray-500 ml-2">({valueData.count})</span>
+                            </label>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -417,228 +507,119 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       {/* Search by Word Interface */}
       {searchMode === 'word' && (
         <div className="bg-gray-50 rounded-lg p-4 space-y-4">
-          <div>
-            <h3 className="font-medium text-gray-900">Search by Word</h3>
-            <p className="text-sm text-gray-600">Find words and modify their specific tags at each level</p>
-          </div>
-          
-          {/* Word Search */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-2">1. Find Dictionary Word:</h4>
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="font-medium text-gray-900">Select Words to Search</h3>
+              <p className="text-sm text-gray-600">Browse and select dictionary words to include their forms and translations</p>
+            </div>
             <div className="flex space-x-2">
-              <input
-                type="text"
-                value={wordSearch}
-                onChange={(e) => setWordSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && searchWords()}
-                placeholder="Search dictionary words..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button 
-                onClick={searchWords}
-                disabled={uiState.isLoading || !wordSearch.trim()}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
+              <button
+                onClick={() => setShowWordBrowser(!showWordBrowser)}
+                className="bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-200 transition-colors"
               >
-                {uiState.isLoading ? '🔄' : 'Search'}
+                {showWordBrowser ? 'Hide' : 'Show'} Available Words
+              </button>
+              <button
+                onClick={clearAll}
+                className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors"
+              >
+                Clear All
               </button>
             </div>
           </div>
-          
-          {/* Word Hierarchy Display */}
-          {wordHierarchy ? (
-            <div className="border border-gray-300 rounded-lg p-4 bg-white space-y-4">
-              <div className="flex justify-between items-center">
-                <h4 className="font-medium text-gray-900">📖 Word Hierarchy</h4>
-                <button 
-                  onClick={() => {
-                    setSelectedWord(null);
-                    setWordHierarchy(null);
-                    updateDataState({ searchResults: {} });
-                  }}
-                  className="text-gray-500 hover:text-gray-700 text-sm"
-                >
-                  Clear Selection
-                </button>
+
+          {/* Word Browser */}
+          {showWordBrowser && (
+            <div className="border border-gray-200 rounded-lg p-4 bg-white">
+              <div className="mb-3">
+                <input
+                  type="text"
+                  value={wordSearch}
+                  onChange={(e) => setWordSearch(e.target.value)}
+                  placeholder="Search dictionary words..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
 
-              {/* Dictionary Word Level */}
-              <div className="border border-blue-200 rounded-lg p-3 bg-blue-50">
-                <h5 className="font-medium text-blue-900 mb-2">📚 Dictionary Word</h5>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-medium">{wordHierarchy.word.italian}</div>
-                    <div className="text-sm text-gray-600">{wordHierarchy.word.english || 'No English translation'}</div>
-                    
-                    {/* Core Tags */}
-                    {wordHierarchy.word.metadata && Object.keys(wordHierarchy.word.metadata).length > 0 && (
-                      <div className="mt-2">
-                        <span className="text-xs font-medium text-blue-700">📋 Core Tags: </span>
-                        <div className="inline-flex flex-wrap gap-1">
-                          {Object.entries(wordHierarchy.word.metadata).map(([key, value]) => (
-                            <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
-                              {key}: {value as string}
-                            </span>
-                          ))}
-                        </div>
+              <div className="max-h-64 overflow-y-auto">
+                <div className="space-y-1">
+                  {filteredWords.map((word) => (
+                    <label key={word.id} className="flex items-center cursor-pointer p-2 hover:bg-gray-50 rounded">
+                      <input
+                        type="checkbox"
+                        checked={selectedWords.some(w => w.id === word.id)}
+                        onChange={() => toggleWord(word)}
+                        className="mr-3"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{word.italian}</div>
+                        {word.english && (
+                          <div className="text-xs text-gray-600">{word.english}</div>
+                        )}
                       </div>
-                    )}
-                    
-                    {/* Optional Tags */}
-                    {wordHierarchy.word.optional_tags && wordHierarchy.word.optional_tags.length > 0 && (
-                      <div className="mt-1">
-                        <span className="text-xs font-medium text-green-700">🏷️ Optional Tags: </span>
-                        <div className="inline-flex flex-wrap gap-1">
-                          {wordHierarchy.word.optional_tags.map((tag: string) => (
-                            <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <button className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 transition-colors">
-                    Edit Tags
-                  </button>
-                </div>
-              </div>
-
-              {/* Word Forms Level */}
-              {wordHierarchy.forms.length > 0 && (
-                <div className="border border-green-200 rounded-lg p-3 bg-green-50">
-                  <h5 className="font-medium text-green-900 mb-2">🔄 Word Forms ({wordHierarchy.forms.length})</h5>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {wordHierarchy.forms.slice(0, 5).map((form) => (
-                      <div key={form.id} className="flex justify-between items-center text-sm">
-                        <div>
-                          <span className="font-medium">{form.form_text}</span>
-                          {form.metadata && (
-                            <span className="ml-2 text-xs text-gray-600">
-                              {Object.entries(form.metadata).map(([k, v]) => `${k}: ${v}`).join(', ')}
-                            </span>
-                          )}
-                        </div>
-                        <button className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition-colors">
-                          Edit
-                        </button>
-                      </div>
-                    ))}
-                    {wordHierarchy.forms.length > 5 && (
-                      <div className="text-xs text-gray-500 text-center">
-                        ... and {wordHierarchy.forms.length - 5} more forms
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Translations Level */}
-              {wordHierarchy.translations.length > 0 && (
-                <div className="border border-purple-200 rounded-lg p-3 bg-purple-50">
-                  <h5 className="font-medium text-purple-900 mb-2">🌐 Translations ({wordHierarchy.translations.length})</h5>
-                  <div className="space-y-2 max-h-24 overflow-y-auto">
-                    {wordHierarchy.translations.slice(0, 3).map((translation) => (
-                      <div key={translation.id} className="flex justify-between items-center text-sm">
-                        <span>{translation.english}</span>
-                        <button className="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700 transition-colors">
-                          Edit
-                        </button>
-                      </div>
-                    ))}
-                    {wordHierarchy.translations.length > 3 && (
-                      <div className="text-xs text-gray-500 text-center">
-                        ... and {wordHierarchy.translations.length - 3} more translations
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="border border-gray-300 rounded-lg p-4 bg-white">
-              <div className="text-center py-8 text-gray-500">
-                <div className="text-3xl mb-2">📖</div>
-                <h4 className="font-medium mb-1">Word Hierarchy</h4>
-                <p className="text-sm">
-                  Search for dictionary words above to see their forms and translations.<br />
-                  Each level allows you to modify specific tags.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Dictionary Word Selection (when multiple words found) */}
-      {searchMode === 'word' && hasResults && dataState.searchResults['Dictionary Words'] && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="font-medium text-gray-900">
-              Select Dictionary Word ({dataState.searchResults['Dictionary Words'].length} found)
-            </h3>
-            <div className="text-sm text-gray-500">
-              Search term: "{wordSearch}"
-            </div>
-          </div>
-
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
-            <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-              <h4 className="font-medium text-gray-900">Dictionary Words</h4>
-            </div>
-            <div className="divide-y divide-gray-200">
-              {dataState.searchResults['Dictionary Words'].map((word, index) => (
-                <div key={index} className="p-4 hover:bg-gray-50 cursor-pointer" onClick={() => selectWord(word)}>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 mb-1">{word.italian}</div>
-                      {word.english && (
-                        <div className="text-sm text-gray-600 mb-1">English: {word.english}</div>
-                      )}
                       
-                      {/* Core Tags Display */}
-                      {word.metadata && Object.keys(word.metadata).length > 0 && (
-                        <div className="mb-2">
-                          <span className="text-xs font-medium text-blue-700">📋 Core Tags: </span>
+                      {/* Word Tags Preview */}
+                      <div className="ml-2">
+                        {word.metadata && Object.keys(word.metadata).length > 0 && (
                           <div className="inline-flex flex-wrap gap-1">
-                            {Object.entries(word.metadata).map(([key, value]) => (
-                              <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                            {Object.entries(word.metadata).slice(0, 2).map(([key, value]) => (
+                              <span key={key} className="inline-flex items-center px-1 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
                                 {key}: {value as string}
                               </span>
                             ))}
                           </div>
-                        </div>
-                      )}
-                      
-                      {/* Optional Tags Display */}
-                      {word.optional_tags && word.optional_tags.length > 0 && (
-                        <div>
-                          <span className="text-xs font-medium text-green-700">🏷️ Optional Tags: </span>
-                          <div className="inline-flex flex-wrap gap-1">
-                            {word.optional_tags.map((tag: string) => (
-                              <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                  {filteredWords.length === 0 && (
+                    <div className="text-center py-4 text-gray-500 text-sm">
+                      {wordSearch ? `No words found matching "${wordSearch}"` : 'Loading words...'}
                     </div>
-                    <button 
-                      className="ml-4 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        selectWord(word);
-                      }}
-                    >
-                      Select
-                    </button>
-                  </div>
+                  )}
                 </div>
-              ))}
+              </div>
             </div>
+          )}
+
+          {/* Selected Words Display */}
+          {selectedWords.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-2">📖 Selected Words ({selectedWords.length}):</h4>
+              <div className="flex flex-wrap gap-1">
+                {selectedWords.map((word) => (
+                  <span
+                    key={word.id}
+                    className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-orange-100 text-orange-800 cursor-pointer hover:bg-orange-200"
+                    onClick={() => toggleWord(word)}
+                  >
+                    {word.italian} ×
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Search Actions */}
+          <div className="flex space-x-2 pt-2">
+            <button
+              onClick={performWordSearch}
+              disabled={uiState.isLoading || selectedWords.length === 0}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 transition-colors"
+            >
+              {uiState.isLoading ? '🔄 Loading...' : `🔍 Search (${selectedWords.length} words)`}
+            </button>
+            <button
+              onClick={loadAvailableWords}
+              disabled={uiState.isLoading}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 disabled:bg-gray-100 transition-colors"
+            >
+              🔄 Refresh Words
+            </button>
           </div>
         </div>
       )}
+
 
       {/* Search Results (for tag search) */}
       {searchMode === 'tag' && hasResults && (
@@ -721,11 +702,20 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                               )}
                             </div>
                             
-                            <input 
-                              type="checkbox" 
-                              className="ml-4 mt-1"
-                              title={`Select ${record.italian || record.form_text || record.translation || record.english}`}
-                            />
+                            <div className="flex items-center space-x-2 ml-4">
+                              <button
+                                onClick={() => openRecordEditor(record, contentType)}
+                                className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 transition-colors"
+                                title="Edit tags for this record"
+                              >
+                                Edit Tags
+                              </button>
+                              <input 
+                                type="checkbox" 
+                                className="mt-1"
+                                title={`Select ${record.italian || record.form_text || record.translation || record.english}`}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -776,6 +766,109 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
             <div>Connected to live Supabase database • {new Date().toLocaleString()}</div>
             <div>
               Available: {availableTags.coreTags.length} core tags, {availableTags.optionalTags.length} optional tags
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Record Editing Modal */}
+      {editingRecord && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-lg font-medium">Edit Tags</h3>
+                <p className="text-sm text-gray-600">
+                  {editingRecord.contentType}: {editingRecord.record.italian || editingRecord.record.form_text || editingRecord.record.translation || editingRecord.record.english}
+                </p>
+              </div>
+              <button
+                onClick={() => setEditingRecord(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Core Tags (Metadata) Section */}
+              <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                <h4 className="font-medium text-blue-900 mb-3">📋 Core Tags (Metadata JSONB)</h4>
+                <div className="space-y-2">
+                  {editingRecord.record.metadata && Object.entries(editingRecord.record.metadata).map(([key, value]) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <span className="text-sm font-medium w-24">{key}:</span>
+                      <input 
+                        type="text" 
+                        defaultValue={value as string}
+                        className="flex-1 px-2 py-1 border border-blue-300 rounded text-sm"
+                        placeholder="Enter value"
+                      />
+                      <button className="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                    </div>
+                  ))}
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input 
+                      type="text" 
+                      placeholder="New key"
+                      className="w-24 px-2 py-1 border border-blue-300 rounded text-sm"
+                    />
+                    <span>:</span>
+                    <input 
+                      type="text" 
+                      placeholder="New value"
+                      className="flex-1 px-2 py-1 border border-blue-300 rounded text-sm"
+                    />
+                    <button className="bg-blue-600 text-white px-2 py-1 rounded text-sm hover:bg-blue-700">
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Optional Tags Section */}
+              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                <h4 className="font-medium text-green-900 mb-3">🏷️ Optional Tags (Text Array)</h4>
+                <div className="space-y-2">
+                  {editingRecord.record.optional_tags?.map((tag: string, index: number) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input 
+                        type="text" 
+                        defaultValue={tag}
+                        className="flex-1 px-2 py-1 border border-green-300 rounded text-sm"
+                        placeholder="Tag value"
+                      />
+                      <button className="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                    </div>
+                  ))}
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input 
+                      type="text" 
+                      placeholder="New optional tag"
+                      className="flex-1 px-2 py-1 border border-green-300 rounded text-sm"
+                    />
+                    <button className="bg-green-600 text-white px-2 py-1 rounded text-sm hover:bg-green-700">
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex justify-end space-x-2 mt-6 pt-4 border-t">
+              <button
+                onClick={() => setEditingRecord(null)}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                disabled
+              >
+                Save Changes (Phase 2)
+              </button>
             </div>
           </div>
         </div>

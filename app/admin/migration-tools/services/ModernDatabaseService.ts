@@ -357,34 +357,48 @@ export class ModernDatabaseService {
 
     for (const table of tablesToSearch) {
       try {
-        let query = supabase.from(table).select('*');
-        const conditions: string[] = [];
+        // Build separate queries for each tag type, then combine results
+        let allRecords: any[] = [];
 
         // Search for core tags in metadata
         for (const coreTag of selectedTags.coreTags) {
           if (coreTag.includes(': ')) {
             const [key, value] = coreTag.split(': ', 2);
-            conditions.push(`metadata->${key}.eq."${value}"`);
+            const { data, error } = await supabase
+              .from(table)
+              .select('*')
+              .eq(`metadata->${key}`, value)
+              .limit(20);
+            
+            if (error) {
+              console.error(`Error searching core tag ${coreTag} in ${table}:`, error);
+            } else if (data) {
+              allRecords.push(...data);
+            }
           }
         }
 
         // Search for optional tags in optional_tags array
         for (const optionalTag of selectedTags.optionalTags) {
-          conditions.push(`optional_tags.cs.{"${optionalTag}"}`);
+          const { data, error } = await supabase
+            .from(table)
+            .select('*')
+            .contains('optional_tags', [optionalTag])
+            .limit(20);
+          
+          if (error) {
+            console.error(`Error searching optional tag ${optionalTag} in ${table}:`, error);
+          } else if (data) {
+            allRecords.push(...data);
+          }
         }
 
-        if (conditions.length > 0) {
-          query = query.or(conditions.join(','));
-        }
+        // Remove duplicates based on ID
+        const uniqueRecords = allRecords.filter((record, index, self) =>
+          index === self.findIndex(r => r.id === record.id)
+        );
 
-        const { data, error } = await query.limit(50);
-
-        if (error) {
-          console.error(`Error searching ${table}:`, error);
-          results[tableMap[table as keyof typeof tableMap]] = [];
-        } else {
-          results[tableMap[table as keyof typeof tableMap]] = data || [];
-        }
+        results[tableMap[table as keyof typeof tableMap]] = uniqueRecords;
       } catch (tableError) {
         console.error(`Error searching table ${table}:`, tableError);
         results[tableMap[table as keyof typeof tableMap]] = [];
@@ -410,6 +424,27 @@ export class ModernDatabaseService {
       return data || [];
     } catch (error) {
       console.error(`Failed to get sample from ${table}:`, error);
+      throw error;
+    }
+  }
+
+  // Load all dictionary words (paginated)
+  async loadAllDictionaryWords(limit: number = 50): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('dictionary')
+        .select('*')
+        .order('italian')
+        .limit(limit);
+      
+      if (error) {
+        console.error('Error loading dictionary words:', error);
+        throw error;
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('Failed to load dictionary words:', error);
       throw error;
     }
   }
