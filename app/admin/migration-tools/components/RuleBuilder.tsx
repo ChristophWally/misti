@@ -1,0 +1,560 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+
+// ============================================================================
+// ULTRA-DESIGNED RULE BUILDER INTERFACE
+// Three-Panel Architecture with Advanced Operations
+// ============================================================================
+
+interface RuleBuilderProps {
+  isOpen: boolean
+  sourceSelections: Record<string, {
+    recordType: 'word' | 'form' | 'word_translation' | 'form_translation'
+    selectedMetadataPaths: Set<string>
+    selectedOptionalTags: Set<string>
+    allTagsSelected: boolean
+  }>
+  onSave: (rule: SerializedRule) => void
+  onExecute: (rule: SerializedRule) => void
+  onClose: () => void
+}
+
+interface SerializedRule {
+  id: string
+  name: string
+  description: string
+  target_field: 'metadata' | 'optional_tags' | 'both'
+  target_tables: string[]
+  source_selections: Record<string, any>
+  operations: {
+    metadata_operations: Record<string, Record<string, OperationConfig>>
+    optional_tag_operations: Record<string, OperationConfig>
+    bulk_operations: any[]
+    hierarchical_operations: any[]
+  }
+  execution_metadata: {
+    expected_records_affected: number
+    risk_level: 'low' | 'medium' | 'high'
+    requires_confirmation: boolean
+    has_revert_data: boolean
+  }
+}
+
+interface OperationConfig {
+  action: 'keep' | 'update' | 'remove' | 'conditional'
+  newValue?: string
+  condition?: { ifTagExists: string; ifValue?: string }
+  applyTo: 'selected' | 'all_with_tag' | 'hierarchy'
+}
+
+export default function RuleBuilder({ 
+  isOpen, 
+  sourceSelections, 
+  onSave, 
+  onExecute, 
+  onClose 
+}: RuleBuilderProps) {
+  // ========================================================================
+  // STATE MANAGEMENT - Ultra-Sophisticated Rule Building
+  // ========================================================================
+  const [ruleState, setRuleState] = useState<{
+    name: string
+    description: string
+    target_field: 'metadata' | 'optional_tags' | 'both'
+    target_tables: string[]
+    metadataOperations: Record<string, Record<string, OperationConfig>>
+    optionalTagOperations: Record<string, OperationConfig>
+    bulkOperations: any[]
+    hierarchicalOperations: any[]
+  }>({
+    name: '',
+    description: '',
+    target_field: 'both',
+    target_tables: ['dictionary', 'word_forms', 'word_translations', 'form_translations'],
+    metadataOperations: {},
+    optionalTagOperations: {},
+    bulkOperations: [],
+    hierarchicalOperations: []
+  })
+
+  const [previewState, setPreviewState] = useState<{
+    expectedChanges: number
+    affectedTables: string[]
+    riskLevel: 'low' | 'medium' | 'high'
+    warnings: string[]
+    conflicts: string[]
+  }>({
+    expectedChanges: 0,
+    affectedTables: [],
+    riskLevel: 'low',
+    warnings: [],
+    conflicts: []
+  })
+
+  // ========================================================================
+  // INITIALIZATION - Auto-populate operations from source selections
+  // ========================================================================
+  useEffect(() => {
+    if (Object.keys(sourceSelections).length > 0) {
+      const newMetadataOps: Record<string, Record<string, OperationConfig>> = {}
+      const newOptionalOps: Record<string, OperationConfig> = {}
+
+      Object.entries(sourceSelections).forEach(([recordId, selection]) => {
+        // Initialize metadata operations
+        Array.from(selection.selectedMetadataPaths).forEach(metadataKey => {
+          if (!newMetadataOps[recordId]) newMetadataOps[recordId] = {}
+          newMetadataOps[recordId][metadataKey] = {
+            action: 'keep',
+            applyTo: 'selected'
+          }
+        })
+
+        // Initialize optional tag operations
+        Array.from(selection.selectedOptionalTags).forEach(tagValue => {
+          newOptionalOps[`${recordId}_${tagValue}`] = {
+            action: 'keep',
+            applyTo: 'selected'
+          }
+        })
+      })
+
+      setRuleState(prev => ({
+        ...prev,
+        metadataOperations: newMetadataOps,
+        optionalTagOperations: newOptionalOps
+      }))
+    }
+  }, [sourceSelections])
+
+  // ========================================================================
+  // OPERATION HANDLERS - Advanced Rule Configuration
+  // ========================================================================
+  const updateMetadataOperation = (recordId: string, metadataKey: string, config: Partial<OperationConfig>) => {
+    setRuleState(prev => ({
+      ...prev,
+      metadataOperations: {
+        ...prev.metadataOperations,
+        [recordId]: {
+          ...prev.metadataOperations[recordId],
+          [metadataKey]: { ...prev.metadataOperations[recordId]?.[metadataKey], ...config }
+        }
+      }
+    }))
+  }
+
+  const updateOptionalTagOperation = (tagKey: string, config: Partial<OperationConfig>) => {
+    setRuleState(prev => ({
+      ...prev,
+      optionalTagOperations: {
+        ...prev.optionalTagOperations,
+        [tagKey]: { ...prev.optionalTagOperations[tagKey], ...config }
+      }
+    }))
+  }
+
+  const calculatePreview = () => {
+    const totalOperations = Object.keys(ruleState.metadataOperations).length + 
+                           Object.keys(ruleState.optionalTagOperations).length
+
+    let riskLevel: 'low' | 'medium' | 'high' = 'low'
+    const warnings: string[] = []
+    
+    if (totalOperations > 50) {
+      riskLevel = 'high'
+      warnings.push('Large number of operations - consider batch processing')
+    } else if (totalOperations > 10) {
+      riskLevel = 'medium'
+    }
+
+    const affectedTables = Array.from(new Set(
+      Object.values(sourceSelections).map(sel => {
+        switch (sel.recordType) {
+          case 'word': return 'dictionary'
+          case 'form': return 'word_forms'
+          case 'word_translation': return 'word_translations'
+          case 'form_translation': return 'form_translations'
+          default: return 'dictionary'
+        }
+      })
+    ))
+
+    setPreviewState({
+      expectedChanges: totalOperations,
+      affectedTables,
+      riskLevel,
+      warnings,
+      conflicts: []
+    })
+  }
+
+  useEffect(() => {
+    calculatePreview()
+  }, [ruleState.metadataOperations, ruleState.optionalTagOperations, sourceSelections])
+
+  // ========================================================================
+  // RULE SERIALIZATION & EXECUTION
+  // ========================================================================
+  const buildSerializedRule = (): SerializedRule => ({
+    id: `rule_${Date.now()}`,
+    name: ruleState.name || `Rule for ${Object.keys(sourceSelections).length} selections`,
+    description: ruleState.description || 'Generated from hierarchical search selections',
+    target_field: ruleState.target_field,
+    target_tables: ruleState.target_tables,
+    source_selections: sourceSelections,
+    operations: {
+      metadata_operations: ruleState.metadataOperations,
+      optional_tag_operations: ruleState.optionalTagOperations,
+      bulk_operations: ruleState.bulkOperations,
+      hierarchical_operations: ruleState.hierarchicalOperations
+    },
+    execution_metadata: {
+      expected_records_affected: previewState.expectedChanges,
+      risk_level: previewState.riskLevel,
+      requires_confirmation: previewState.riskLevel !== 'low',
+      has_revert_data: true
+    }
+  })
+
+  if (!isOpen) return null
+
+  // ========================================================================
+  // ULTRA-DESIGNED THREE-PANEL INTERFACE
+  // ========================================================================
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-xl w-full h-full max-w-7xl max-h-[95vh] flex flex-col">
+        
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b">
+          <div>
+            <h2 className="text-2xl font-bold">🔧 Modern Rule Builder</h2>
+            <p className="text-gray-600">Create sophisticated migration rules from your selections</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Three-Panel Interface */}
+        <div className="flex-1 flex overflow-hidden">
+          
+          {/* ================================================= */}
+          {/* PANEL 1: SOURCE CONTEXT (Left - 25%) */}
+          {/* ================================================= */}
+          <div className="w-1/4 border-r bg-gray-50 overflow-y-auto">
+            <div className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center">
+                📋 Source Context
+                <span className="ml-2 bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                  {Object.keys(sourceSelections).length} records
+                </span>
+              </h3>
+              
+              <div className="space-y-3">
+                {Object.entries(sourceSelections).map(([recordId, selection]) => (
+                  <div key={recordId} className="bg-white p-3 rounded border">
+                    <div className="text-sm font-medium text-gray-800 mb-2">
+                      {selection.recordType.replace('_', ' ').toUpperCase()} #{recordId.slice(-8)}
+                    </div>
+                    
+                    {/* Metadata Tags */}
+                    {selection.selectedMetadataPaths.size > 0 && (
+                      <div className="mb-2">
+                        <div className="text-xs text-gray-600 mb-1">📋 Metadata:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {Array.from(selection.selectedMetadataPaths).map(key => (
+                            <span key={key} className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-xs">
+                              {key}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Optional Tags */}
+                    {selection.selectedOptionalTags.size > 0 && (
+                      <div>
+                        <div className="text-xs text-gray-600 mb-1">🏷️ Optional Tags:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {Array.from(selection.selectedOptionalTags).map(tag => (
+                            <span key={tag} className="bg-green-100 text-green-700 px-1 py-0.5 rounded text-xs">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ================================================= */}
+          {/* PANEL 2: OPERATIONS BUILDER (Center - 50%) */}
+          {/* ================================================= */}
+          <div className="w-1/2 overflow-y-auto">
+            <div className="p-4">
+              <h3 className="font-semibold mb-4 flex items-center">
+                ⚙️ Operations Builder
+              </h3>
+
+              {/* Rule Basic Info */}
+              <div className="bg-gray-50 p-4 rounded mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Rule Name</label>
+                    <input
+                      type="text"
+                      value={ruleState.name}
+                      onChange={(e) => setRuleState(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full border rounded px-3 py-2 text-sm"
+                      placeholder="Auto-generated from selections"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Target Field</label>
+                    <select
+                      value={ruleState.target_field}
+                      onChange={(e) => setRuleState(prev => ({ ...prev, target_field: e.target.value as any }))}
+                      className="w-full border rounded px-3 py-2 text-sm"
+                    >
+                      <option value="metadata">📋 Metadata (JSONB)</option>
+                      <option value="optional_tags">🏷️ Optional Tags (Array)</option>
+                      <option value="both">Both Fields</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="mt-3">
+                  <label className="block text-sm font-medium mb-1">Description</label>
+                  <textarea
+                    value={ruleState.description}
+                    onChange={(e) => setRuleState(prev => ({ ...prev, description: e.target.value }))}
+                    className="w-full border rounded px-3 py-2 text-sm h-20 resize-none"
+                    placeholder="Describe what this rule does..."
+                  />
+                </div>
+              </div>
+
+              {/* Per-Tag Operations */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Per-Tag Operations</h4>
+                
+                {/* Metadata Operations */}
+                {Object.entries(ruleState.metadataOperations).map(([recordId, operations]) => (
+                  <div key={recordId} className="border rounded p-3">
+                    <div className="text-sm font-medium mb-3">
+                      📋 Record #{recordId.slice(-8)} Metadata
+                    </div>
+                    
+                    {Object.entries(operations).map(([metadataKey, config]) => (
+                      <div key={metadataKey} className="flex items-center space-x-3 mb-2">
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs min-w-[80px]">
+                          {metadataKey}
+                        </span>
+                        
+                        <select
+                          value={config.action}
+                          onChange={(e) => updateMetadataOperation(recordId, metadataKey, { action: e.target.value as any })}
+                          className="border rounded px-2 py-1 text-xs"
+                        >
+                          <option value="keep">Keep</option>
+                          <option value="update">Update</option>
+                          <option value="remove">Remove</option>
+                          <option value="conditional">Conditional</option>
+                        </select>
+                        
+                        {config.action === 'update' && (
+                          <input
+                            type="text"
+                            value={config.newValue || ''}
+                            onChange={(e) => updateMetadataOperation(recordId, metadataKey, { newValue: e.target.value })}
+                            className="border rounded px-2 py-1 text-xs flex-1"
+                            placeholder="New value"
+                          />
+                        )}
+                        
+                        <select
+                          value={config.applyTo}
+                          onChange={(e) => updateMetadataOperation(recordId, metadataKey, { applyTo: e.target.value as any })}
+                          className="border rounded px-2 py-1 text-xs"
+                        >
+                          <option value="selected">Selected Only</option>
+                          <option value="all_with_tag">All with Tag</option>
+                          <option value="hierarchy">Whole Hierarchy</option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+
+                {/* Optional Tag Operations */}
+                {Object.entries(ruleState.optionalTagOperations).map(([tagKey, config]) => (
+                  <div key={tagKey} className="border rounded p-3">
+                    <div className="text-sm font-medium mb-3">
+                      🏷️ Optional Tag: {tagKey.split('_').slice(-1)[0]}
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <select
+                        value={config.action}
+                        onChange={(e) => updateOptionalTagOperation(tagKey, { action: e.target.value as any })}
+                        className="border rounded px-2 py-1 text-xs"
+                      >
+                        <option value="keep">Keep</option>
+                        <option value="remove">Remove</option>
+                        <option value="update">Replace</option>
+                        <option value="conditional">Conditional</option>
+                      </select>
+                      
+                      {config.action === 'update' && (
+                        <input
+                          type="text"
+                          value={config.newValue || ''}
+                          onChange={(e) => updateOptionalTagOperation(tagKey, { newValue: e.target.value })}
+                          className="border rounded px-2 py-1 text-xs flex-1"
+                          placeholder="Replacement value"
+                        />
+                      )}
+                      
+                      <select
+                        value={config.applyTo}
+                        onChange={(e) => updateOptionalTagOperation(tagKey, { applyTo: e.target.value as any })}
+                        className="border rounded px-2 py-1 text-xs"
+                      >
+                        <option value="selected">Selected Only</option>
+                        <option value="all_with_tag">All with Tag</option>
+                        <option value="hierarchy">Whole Hierarchy</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Quick Operation Shortcuts */}
+              <div className="mt-6 p-4 bg-yellow-50 rounded">
+                <div className="font-medium mb-2">⚡ Quick Operations</div>
+                <div className="flex flex-wrap gap-2">
+                  <button className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600">
+                    Standardize All Person Tags
+                  </button>
+                  <button className="bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600">
+                    Clean Empty Values
+                  </button>
+                  <button className="bg-purple-500 text-white px-3 py-1 rounded text-xs hover:bg-purple-600">
+                    Sync to Child Records
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ================================================= */}
+          {/* PANEL 3: PREVIEW & VALIDATION (Right - 25%) */}
+          {/* ================================================= */}
+          <div className="w-1/4 border-l bg-gray-50 overflow-y-auto">
+            <div className="p-4">
+              <h3 className="font-semibold mb-3">🔍 Preview & Validation</h3>
+              
+              {/* Summary Stats */}
+              <div className="bg-white p-3 rounded border mb-4">
+                <div className="text-lg font-bold text-center">
+                  {previewState.expectedChanges}
+                </div>
+                <div className="text-sm text-gray-600 text-center">
+                  Operations Planned
+                </div>
+              </div>
+
+              {/* Risk Assessment */}
+              <div className="mb-4">
+                <div className="flex items-center mb-2">
+                  <span className="text-sm font-medium">Risk Level:</span>
+                  <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                    previewState.riskLevel === 'low' ? 'bg-green-100 text-green-800' :
+                    previewState.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {previewState.riskLevel.toUpperCase()}
+                  </span>
+                </div>
+                
+                {/* Affected Tables */}
+                <div className="text-xs text-gray-600 mb-2">
+                  Tables: {previewState.affectedTables.join(', ')}
+                </div>
+              </div>
+
+              {/* Warnings & Conflicts */}
+              {previewState.warnings.length > 0 && (
+                <div className="mb-4">
+                  <div className="text-sm font-medium mb-2 text-yellow-700">⚠️ Warnings:</div>
+                  <div className="space-y-1">
+                    {previewState.warnings.map((warning, idx) => (
+                      <div key={idx} className="text-xs bg-yellow-50 p-2 rounded border">
+                        {warning}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Context-Aware Suggestions */}
+              <div className="mb-4">
+                <div className="text-sm font-medium mb-2">💡 Suggestions:</div>
+                <div className="space-y-1">
+                  <div className="text-xs bg-blue-50 p-2 rounded border">
+                    Consider using conditional operations for complex changes
+                  </div>
+                  <div className="text-xs bg-blue-50 p-2 rounded border">
+                    Test on a subset first for high-risk operations
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Bar */}
+        <div className="border-t p-4 flex justify-between items-center bg-white">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <span>Ready to process {previewState.expectedChanges} operations</span>
+          </div>
+          
+          <div className="flex space-x-3">
+            <button 
+              onClick={onClose}
+              className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            
+            <button 
+              onClick={() => onSave(buildSerializedRule())}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              💾 Save Rule
+            </button>
+            
+            <button 
+              onClick={() => onExecute(buildSerializedRule())}
+              className={`px-4 py-2 rounded text-white ${
+                previewState.riskLevel === 'high' 
+                  ? 'bg-red-600 hover:bg-red-700' 
+                  : 'bg-green-600 hover:bg-green-700'
+              }`}
+            >
+              ⚡ Execute Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

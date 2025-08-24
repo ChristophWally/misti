@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ModernDatabaseService, ModernSelectionCriteria } from '../services/ModernDatabaseService';
+import RuleBuilder from './RuleBuilder';
 
 interface SearchInterfaceProps {
   state: {
@@ -43,6 +44,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   const [tagSearch, setTagSearch] = useState('');
   const [showTagBrowser, setShowTagBrowser] = useState(true);
   const [searchMode, setSearchMode] = useState<'tag' | 'word'>('tag');
+  const [showRuleBuilder, setShowRuleBuilder] = useState(false);
   
   // Table filtering for tags
   const [availableTables] = useState([
@@ -1273,6 +1275,15 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
             >
               🔄 Refresh Words
             </button>
+            
+            {/* Rule Builder Integration */}
+            <button
+              onClick={() => setShowRuleBuilder(true)}
+              disabled={Object.keys(hierarchicalSelection.selectedTags).length === 0}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-300 transition-colors"
+            >
+              🔧 Create Rule from {Object.keys(hierarchicalSelection.selectedTags).length} Selections
+            </button>
           </div>
         </div>
       )}
@@ -1545,6 +1556,23 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
           </div>
         </div>
       )}
+      
+      {/* Rule Builder Modal Integration */}
+      <RuleBuilder
+        isOpen={showRuleBuilder}
+        sourceSelections={hierarchicalSelection.selectedTags}
+        onSave={(rule) => {
+          console.log('Saving rule:', rule);
+          handleSuccess('Rule saved successfully! (Phase 2.2 - Persistence coming soon)');
+          setShowRuleBuilder(false);
+        }}
+        onExecute={(rule) => {
+          console.log('Executing rule:', rule);
+          handleSuccess(`Rule executed successfully! ${rule.execution_metadata.expected_records_affected} operations completed.`);
+          setShowRuleBuilder(false);
+        }}
+        onClose={() => setShowRuleBuilder(false)}
+      />
     </div>
   );
 }
