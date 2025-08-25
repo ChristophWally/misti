@@ -558,28 +558,42 @@ export default function RuleBuilder({
                       {operations.metadataOps.length > 0 && (
                         <div className="mb-4">
                           <div className="text-sm font-medium mb-2 text-blue-700">📋 Core Tags</div>
-                          {operations.metadataOps.map(([metadataKey, config]) => {
-                            // Look up the actual value from the record data
-                            let displayText = metadataKey // fallback to just key
-                            for (const hierarchy of Object.values(wordHierarchies)) {
-                              let record = null
-                              if (hierarchy.word.id === recordId) record = hierarchy.word
-                              else record = [...hierarchy.forms, ...hierarchy.translations, ...hierarchy.formTranslations]
-                                .find(r => r.id === recordId)
-                              
-                              if (record && record.metadata && record.metadata[metadataKey]) {
-                                displayText = `${metadataKey}: ${record.metadata[metadataKey]}`
-                                break
-                              }
-                            }
-                            
+                          {operations.metadataOps.map(([metadataKey, config]) => {                            
                             return (
-                            <div key={metadataKey} className="flex items-center space-x-3 mb-2 ml-4">
-                              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs min-w-[120px]">
-                                {displayText}
-                              </span>
+                            <div key={metadataKey} className="flex items-center space-x-2 mb-2 ml-4">
+                              {/* Column 1: Grouping/Attribute */}
+                              <div className="text-xs">
+                                <div className="text-gray-500 text-[10px] mb-1">Grouping</div>
+                                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                                  {metadataKey}
+                                </span>
+                              </div>
                               
-                              <select
+                              {/* Column 2: Current Value */}
+                              <div className="text-xs">
+                                <div className="text-gray-500 text-[10px] mb-1">Current</div>
+                                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                                {(() => {
+                                  // Extract just the current value from the record data
+                                  for (const hierarchy of Object.values(wordHierarchies)) {
+                                    let record = null
+                                    if (hierarchy.word.id === recordId) record = hierarchy.word
+                                    else record = [...hierarchy.forms, ...hierarchy.translations, ...hierarchy.formTranslations]
+                                      .find(r => r.id === recordId)
+                                    
+                                    if (record && record.metadata && record.metadata[metadataKey]) {
+                                      return record.metadata[metadataKey]
+                                    }
+                                  }
+                                  return 'unknown'
+                                })()}
+                                </span>
+                              </div>
+                              
+                              {/* Column 3: Action */}
+                              <div className="text-xs">
+                                <div className="text-gray-500 text-[10px] mb-1">Action</div>
+                                <select
                                 value={config.action}
                                 onChange={(e) => updateMetadataOperation(recordId, metadataKey, { action: e.target.value as any })}
                                 className="border rounded px-2 py-1 text-xs"
@@ -588,9 +602,13 @@ export default function RuleBuilder({
                                 <option value="update">Update</option>
                                 <option value="remove">Remove</option>
                                 <option value="conditional">Conditional</option>
-                              </select>
+                                </select>
+                              </div>
                               
+                              {/* Column 4: New Value (when updating) */}
                               {config.action === 'update' && (
+                                <div className="text-xs">
+                                  <div className="text-gray-500 text-[10px] mb-1">New Value</div>
                                 <select
                                   value={config.newValue || ''}
                                   onChange={(e) => updateMetadataOperation(recordId, metadataKey, { newValue: e.target.value })}
@@ -616,10 +634,14 @@ export default function RuleBuilder({
                                       )
                                     }
                                   })()}
-                                </select>
+                                  </select>
+                                </div>
                               )}
                               
-                              <select
+                              {/* Column 5: Apply To */}
+                              <div className="text-xs">
+                                <div className="text-gray-500 text-[10px] mb-1">Apply To</div>
+                                <select
                                 value={config.applyTo}
                                 onChange={(e) => updateMetadataOperation(recordId, metadataKey, { applyTo: e.target.value as any })}
                                 className="border rounded px-2 py-1 text-xs"
@@ -627,7 +649,8 @@ export default function RuleBuilder({
                                 <option value="selected">Selected Only</option>
                                 <option value="all_with_tag">All with Tag</option>
                                 <option value="hierarchy">Whole Hierarchy</option>
-                              </select>
+                                </select>
+                              </div>
                             </div>
                             )
                           })}
