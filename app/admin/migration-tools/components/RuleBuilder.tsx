@@ -479,131 +479,170 @@ export default function RuleBuilder({
                 </div>
               </div>
 
-              {/* Per-Tag Operations */}
+              {/* Operations Grouped By Record */}
               <div className="space-y-4">
-                <h4 className="font-medium">Per-Tag Operations</h4>
+                <h4 className="font-medium">Operations by Record</h4>
                 
-                {/* Metadata Operations */}
-                {Object.entries(ruleState.metadataOperations).map(([recordId, operations]) => {
-                  const { displayName, recordTypeName } = getRecordDisplayName(recordId, sourceSelections[recordId]?.recordType || 'unknown')
-                  return (
-                  <div key={recordId} className="border rounded p-3">
-                    <div className="text-sm font-medium mb-1">
-                      📋 {displayName} - Core Tags
-                    </div>
-                    <div className="text-xs text-gray-500 mb-2">
-                      {recordTypeName} #{recordId.slice(-8)}
-                    </div>
-                    
-                    {Object.entries(operations).map(([metadataKey, config]) => {
-                      // Look up the actual value from the record data
-                      let displayText = metadataKey // fallback to just key
-                      for (const hierarchy of Object.values(wordHierarchies)) {
-                        let record = null
-                        if (hierarchy.word.id === recordId) record = hierarchy.word
-                        else record = [...hierarchy.forms, ...hierarchy.translations, ...hierarchy.formTranslations]
-                          .find(r => r.id === recordId)
-                        
-                        if (record && record.metadata && record.metadata[metadataKey]) {
-                          displayText = `${metadataKey}: ${record.metadata[metadataKey]}`
-                          break
-                        }
-                      }
-                      
-                      return (
-                      <div key={metadataKey} className="flex items-center space-x-3 mb-2">
-                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs min-w-[120px]">
-                          {displayText}
-                        </span>
-                        
-                        <select
-                          value={config.action}
-                          onChange={(e) => updateMetadataOperation(recordId, metadataKey, { action: e.target.value as any })}
-                          className="border rounded px-2 py-1 text-xs"
-                        >
-                          <option value="keep">Keep</option>
-                          <option value="update">Update</option>
-                          <option value="remove">Remove</option>
-                          <option value="conditional">Conditional</option>
-                        </select>
-                        
-                        {config.action === 'update' && (
-                          <input
-                            type="text"
-                            value={config.newValue || ''}
-                            onChange={(e) => updateMetadataOperation(recordId, metadataKey, { newValue: e.target.value })}
-                            className="border rounded px-2 py-1 text-xs flex-1"
-                            placeholder="New value"
-                          />
-                        )}
-                        
-                        <select
-                          value={config.applyTo}
-                          onChange={(e) => updateMetadataOperation(recordId, metadataKey, { applyTo: e.target.value as any })}
-                          className="border rounded px-2 py-1 text-xs"
-                        >
-                          <option value="selected">Selected Only</option>
-                          <option value="all_with_tag">All with Tag</option>
-                          <option value="hierarchy">Whole Hierarchy</option>
-                        </select>
-                      </div>
-                      )
-                    })}
-                  </div>
-                  )
-                })}
-
-                {/* Optional Tag Operations */}
-                {Object.entries(ruleState.optionalTagOperations).map(([tagKey, config]) => {
-                  // Extract recordId from tagKey format: recordId_tagValue
-                  const recordId = tagKey.split('_')[0]
-                  const tagValue = tagKey.split('_').slice(1).join('_')
-                  const { displayName, recordTypeName } = getRecordDisplayName(recordId, sourceSelections[recordId]?.recordType || 'unknown')
+                {/* Group operations by record */}
+                {(() => {
+                  // Create a map to group all operations by recordId
+                  const recordOperationsMap: Record<string, {
+                    metadataOps: Array<[string, OperationConfig]>
+                    optionalOps: Array<[string, OperationConfig]>
+                  }> = {}
                   
-                  return (
-                  <div key={tagKey} className="border rounded p-3">
-                    <div className="text-sm font-medium mb-1">
-                      🏷️ {displayName} - Optional Tags
-                    </div>
-                    <div className="text-xs text-gray-500 mb-2">
-                      {recordTypeName} #{recordId.slice(-8)} - Tag: "{tagValue}"
-                    </div>
+                  // Group metadata operations by record
+                  Object.entries(ruleState.metadataOperations).forEach(([recordId, operations]) => {
+                    if (!recordOperationsMap[recordId]) {
+                      recordOperationsMap[recordId] = { metadataOps: [], optionalOps: [] }
+                    }
+                    recordOperationsMap[recordId].metadataOps = Object.entries(operations)
+                  })
+                  
+                  // Group optional tag operations by record
+                  Object.entries(ruleState.optionalTagOperations).forEach(([tagKey, config]) => {
+                    const recordId = tagKey.split('_')[0] // Extract recordId from tagKey format
+                    if (!recordOperationsMap[recordId]) {
+                      recordOperationsMap[recordId] = { metadataOps: [], optionalOps: [] }
+                    }
+                    recordOperationsMap[recordId].optionalOps.push([tagKey, config])
+                  })
+                  
+                  // Render grouped operations
+                  return Object.entries(recordOperationsMap).map(([recordId, operations]) => {
+                    const { displayName, recordTypeName } = getRecordDisplayName(recordId, sourceSelections[recordId]?.recordType || 'unknown')
+                    const totalOps = operations.metadataOps.length + operations.optionalOps.length
                     
-                    <div className="flex items-center space-x-3">
-                      <select
-                        value={config.action}
-                        onChange={(e) => updateOptionalTagOperation(tagKey, { action: e.target.value as any })}
-                        className="border rounded px-2 py-1 text-xs"
-                      >
-                        <option value="keep">Keep</option>
-                        <option value="remove">Remove</option>
-                        <option value="update">Replace</option>
-                        <option value="conditional">Conditional</option>
-                      </select>
+                    return (
+                    <div key={recordId} className="border rounded-lg p-4 bg-white shadow-sm">
+                      {/* Record Header */}
+                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+                        <div>
+                          <div className="text-base font-semibold text-gray-800">
+                            {displayName}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {recordTypeName} #{recordId.slice(-8)}
+                          </div>
+                        </div>
+                        <div className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                          {totalOps} operations
+                        </div>
+                      </div>
                       
-                      {config.action === 'update' && (
-                        <input
-                          type="text"
-                          value={config.newValue || ''}
-                          onChange={(e) => updateOptionalTagOperation(tagKey, { newValue: e.target.value })}
-                          className="border rounded px-2 py-1 text-xs flex-1"
-                          placeholder="Replacement value"
-                        />
+                      {/* Metadata Operations for this record */}
+                      {operations.metadataOps.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-sm font-medium mb-2 text-blue-700">📋 Core Tags</div>
+                          {operations.metadataOps.map(([metadataKey, config]) => {
+                            // Look up the actual value from the record data
+                            let displayText = metadataKey // fallback to just key
+                            for (const hierarchy of Object.values(wordHierarchies)) {
+                              let record = null
+                              if (hierarchy.word.id === recordId) record = hierarchy.word
+                              else record = [...hierarchy.forms, ...hierarchy.translations, ...hierarchy.formTranslations]
+                                .find(r => r.id === recordId)
+                              
+                              if (record && record.metadata && record.metadata[metadataKey]) {
+                                displayText = `${metadataKey}: ${record.metadata[metadataKey]}`
+                                break
+                              }
+                            }
+                            
+                            return (
+                            <div key={metadataKey} className="flex items-center space-x-3 mb-2 ml-4">
+                              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs min-w-[120px]">
+                                {displayText}
+                              </span>
+                              
+                              <select
+                                value={config.action}
+                                onChange={(e) => updateMetadataOperation(recordId, metadataKey, { action: e.target.value as any })}
+                                className="border rounded px-2 py-1 text-xs"
+                              >
+                                <option value="keep">Keep</option>
+                                <option value="update">Update</option>
+                                <option value="remove">Remove</option>
+                                <option value="conditional">Conditional</option>
+                              </select>
+                              
+                              {config.action === 'update' && (
+                                <input
+                                  type="text"
+                                  value={config.newValue || ''}
+                                  onChange={(e) => updateMetadataOperation(recordId, metadataKey, { newValue: e.target.value })}
+                                  className="border rounded px-2 py-1 text-xs flex-1"
+                                  placeholder="New value"
+                                />
+                              )}
+                              
+                              <select
+                                value={config.applyTo}
+                                onChange={(e) => updateMetadataOperation(recordId, metadataKey, { applyTo: e.target.value as any })}
+                                className="border rounded px-2 py-1 text-xs"
+                              >
+                                <option value="selected">Selected Only</option>
+                                <option value="all_with_tag">All with Tag</option>
+                                <option value="hierarchy">Whole Hierarchy</option>
+                              </select>
+                            </div>
+                            )
+                          })}
+                        </div>
                       )}
                       
-                      <select
-                        value={config.applyTo}
-                        onChange={(e) => updateOptionalTagOperation(tagKey, { applyTo: e.target.value as any })}
-                        className="border rounded px-2 py-1 text-xs"
-                      >
-                        <option value="selected">Selected Only</option>
-                        <option value="all_with_tag">All with Tag</option>
-                        <option value="hierarchy">Whole Hierarchy</option>
-                      </select>
+                      {/* Optional Tag Operations for this record */}
+                      {operations.optionalOps.length > 0 && (
+                        <div>
+                          <div className="text-sm font-medium mb-2 text-green-700">🏷️ Optional Tags</div>
+                          {operations.optionalOps.map(([tagKey, config]) => {
+                            const tagValue = tagKey.split('_').slice(1).join('_')
+                            
+                            return (
+                            <div key={tagKey} className="flex items-center space-x-3 mb-2 ml-4">
+                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs min-w-[120px]">
+                                {tagValue}
+                              </span>
+                              
+                              <select
+                                value={config.action}
+                                onChange={(e) => updateOptionalTagOperation(tagKey, { action: e.target.value as any })}
+                                className="border rounded px-2 py-1 text-xs"
+                              >
+                                <option value="keep">Keep</option>
+                                <option value="remove">Remove</option>
+                                <option value="update">Replace</option>
+                                <option value="conditional">Conditional</option>
+                              </select>
+                              
+                              {config.action === 'update' && (
+                                <input
+                                  type="text"
+                                  value={config.newValue || ''}
+                                  onChange={(e) => updateOptionalTagOperation(tagKey, { newValue: e.target.value })}
+                                  className="border rounded px-2 py-1 text-xs flex-1"
+                                  placeholder="Replacement value"
+                                />
+                              )}
+                              
+                              <select
+                                value={config.applyTo}
+                                onChange={(e) => updateOptionalTagOperation(tagKey, { applyTo: e.target.value as any })}
+                                className="border rounded px-2 py-1 text-xs"
+                              >
+                                <option value="selected">Selected Only</option>
+                                <option value="all_with_tag">All with Tag</option>
+                                <option value="hierarchy">Whole Hierarchy</option>
+                              </select>
+                            </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  )
-                })}
+                    )
+                  })
+                })()}
               </div>
 
               {/* Quick Operation Shortcuts */}
