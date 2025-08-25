@@ -590,38 +590,34 @@ export default function RuleBuilder({
                                 <option value="conditional">Conditional</option>
                               </select>
                               
-                              {config.action === 'update' && (() => {
-                                const validOptions = getCoreTagOptions(metadataKey)
-                                
-                                // If we have predefined options for this metadata key, show dropdown
-                                if (validOptions.length > 0) {
-                                  return (
-                                    <select
-                                      value={config.newValue || ''}
-                                      onChange={(e) => updateMetadataOperation(recordId, metadataKey, { newValue: e.target.value })}
-                                      className="border rounded px-2 py-1 text-xs w-32 max-w-32"
-                                    >
-                                      <option value="">Select new value...</option>
-                                      {validOptions.map(option => (
+                              {config.action === 'update' && (
+                                <select
+                                  value={config.newValue || ''}
+                                  onChange={(e) => updateMetadataOperation(recordId, metadataKey, { newValue: e.target.value })}
+                                  className="border rounded px-2 py-1 text-xs w-32 max-w-32"
+                                >
+                                  <option value="">Select new value...</option>
+                                  {(() => {
+                                    const validOptions = getCoreTagOptions(metadataKey)
+                                    if (validOptions.length > 0) {
+                                      return validOptions.map(option => (
                                         <option key={option} value={option}>
                                           {option}
                                         </option>
-                                      ))}
-                                    </select>
-                                  )
-                                } else {
-                                  // Fallback to text input for unknown metadata keys
-                                  return (
-                                    <input
-                                      type="text"
-                                      value={config.newValue || ''}
-                                      onChange={(e) => updateMetadataOperation(recordId, metadataKey, { newValue: e.target.value })}
-                                      className="border rounded px-2 py-1 text-xs w-32 max-w-32"
-                                      placeholder="New value"
-                                    />
-                                  )
-                                }
-                              })()}
+                                      ))
+                                    } else {
+                                      // Placeholder options for unknown core tags - Issue #11 will replace with DB values
+                                      return (
+                                        <>
+                                          <option value="placeholder1">Option 1 (placeholder)</option>
+                                          <option value="placeholder2">Option 2 (placeholder)</option>
+                                          <option value="custom">Enter custom value...</option>
+                                        </>
+                                      )
+                                    }
+                                  })()}
+                                </select>
+                              )}
                               
                               <select
                                 value={config.applyTo}
