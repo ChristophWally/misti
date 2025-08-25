@@ -1,6 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { ModernDatabaseService } from '../services/ModernDatabaseService'
+
+// Initialize database service
+const databaseService = new ModernDatabaseService()
 
 // ============================================================================
 // ULTRA-DESIGNED RULE BUILDER INTERFACE
