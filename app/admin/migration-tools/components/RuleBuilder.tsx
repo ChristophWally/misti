@@ -222,7 +222,11 @@ export default function RuleBuilder({
       return []
     }
 
-    setLoadingOptions(prev => new Set([...prev, metadataKey]))
+    setLoadingOptions(prev => {
+      const newSet = new Set(prev)
+      newSet.add(metadataKey)
+      return newSet
+    })
 
     try {
       const options = await databaseService.getMetadataAttributeOptions(metadataKey)
