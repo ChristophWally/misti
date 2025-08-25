@@ -358,7 +358,9 @@ export default function RuleBuilder({
   if (!isOpen) return null
 
   // ========================================================================
-  // ULTRA-DESIGNED THREE-PANEL INTERFACE
+  // ULTRA-DESIGNED TWO-PANEL + BOTTOM INTERFACE
+  // Left: Source Context (25%) | Right: Operations Builder (75%)
+  // Bottom: Preview & Validation + Action Buttons
   // ========================================================================
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -378,13 +380,16 @@ export default function RuleBuilder({
           </button>
         </div>
 
-        {/* Three-Panel Interface */}
-        <div className="flex-1 flex overflow-hidden">
+        {/* Two-Panel Interface + Bottom Section */}
+        <div className="flex-1 flex flex-col overflow-hidden">
           
-          {/* ================================================= */}
-          {/* PANEL 1: SOURCE CONTEXT (Left - 25%) */}
-          {/* ================================================= */}
-          <div className="w-1/4 border-r bg-gray-50 overflow-y-auto">
+          {/* Top Section: Two-Panel Layout */}
+          <div className="flex-1 flex overflow-hidden">
+          
+            {/* ================================================= */}
+            {/* PANEL 1: SOURCE CONTEXT (Left - 25%) */}
+            {/* ================================================= */}
+            <div className="w-1/4 border-r bg-gray-50 overflow-y-auto">
             <div className="p-4">
               <h3 className="font-semibold mb-3 flex items-center">
                 📋 Source Context
@@ -455,10 +460,10 @@ export default function RuleBuilder({
             </div>
           </div>
 
-          {/* ================================================= */}
-          {/* PANEL 2: OPERATIONS BUILDER (Center - 50%) */}
-          {/* ================================================= */}
-          <div className="w-1/2 overflow-y-auto">
+            {/* ================================================= */}
+            {/* PANEL 2: OPERATIONS BUILDER (Right - 75%) */}
+            {/* ================================================= */}
+            <div className="w-3/4 overflow-y-auto">
             <div className="p-4">
               <h3 className="font-semibold mb-4 flex items-center">
                 ⚙️ Operations Builder
@@ -727,81 +732,69 @@ export default function RuleBuilder({
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* ================================================= */}
-          {/* PANEL 3: PREVIEW & VALIDATION (Right - 25%) */}
-          {/* ================================================= */}
-          <div className="w-1/4 border-l bg-gray-50 overflow-y-auto">
-            <div className="p-4">
-              <h3 className="font-semibold mb-3">🔍 Preview & Validation</h3>
-              
-              {/* Summary Stats */}
-              <div className="bg-white p-3 rounded border mb-4">
-                <div className="text-lg font-bold text-center">
-                  {previewState.expectedChanges}
-                </div>
-                <div className="text-sm text-gray-600 text-center">
-                  Records Affected
-                </div>
-              </div>
-
-              {/* Risk Assessment */}
-              <div className="mb-4">
-                <div className="flex items-center mb-2">
-                  <span className="text-sm font-medium">Risk Level:</span>
-                  <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                    previewState.riskLevel === 'low' ? 'bg-green-100 text-green-800' :
-                    previewState.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {previewState.riskLevel.toUpperCase()}
-                  </span>
-                </div>
-                
-                {/* Affected Tables */}
-                <div className="text-xs text-gray-600 mb-2">
-                  Tables: {previewState.affectedTables.join(', ')}
-                </div>
-              </div>
-
-              {/* Warnings & Conflicts */}
-              {previewState.warnings.length > 0 && (
-                <div className="mb-4">
-                  <div className="text-sm font-medium mb-2 text-yellow-700">⚠️ Warnings:</div>
-                  <div className="space-y-1">
-                    {previewState.warnings.map((warning, idx) => (
-                      <div key={idx} className="text-xs bg-yellow-50 p-2 rounded border">
-                        {warning}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Context-Aware Suggestions */}
-              <div className="mb-4">
-                <div className="text-sm font-medium mb-2">💡 Suggestions:</div>
-                <div className="space-y-1">
-                  <div className="text-xs bg-blue-50 p-2 rounded border">
-                    Consider using conditional operations for complex changes
-                  </div>
-                  <div className="text-xs bg-blue-50 p-2 rounded border">
-                    Test on a subset first for high-risk operations
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
-        </div>
-
-        {/* Action Bar */}
-        <div className="border-t p-4 flex justify-between items-center bg-white">
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <span>Ready to affect {previewState.expectedChanges} records</span>
-          </div>
           
-          <div className="flex space-x-3">
+          {/* Bottom Section: Preview & Validation + Action Buttons */}
+          <div className="border-t bg-gray-50 p-4 flex justify-between items-start">
+            
+            {/* Left: Preview & Validation */}
+            <div className="flex-1 mr-6">
+              <h3 className="font-semibold mb-3 text-sm">🔍 Preview & Validation</h3>
+              
+              <div className="flex items-center space-x-6">
+                {/* Summary Stats */}
+                <div className="bg-white p-3 rounded border">
+                  <div className="text-lg font-bold text-center">
+                    {previewState.expectedChanges}
+                  </div>
+                  <div className="text-xs text-gray-600 text-center">
+                    Records Affected
+                  </div>
+                </div>
+
+                {/* Risk Assessment */}
+                <div>
+                  <div className="flex items-center mb-2">
+                    <span className="text-sm font-medium">Risk Level:</span>
+                    <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                      previewState.riskLevel === 'low' ? 'bg-green-100 text-green-800' :
+                      previewState.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {previewState.riskLevel.toUpperCase()}
+                    </span>
+                  </div>
+                  
+                  {/* Affected Tables */}
+                  <div className="text-xs text-gray-600">
+                    Tables: {previewState.affectedTables.join(', ')}
+                  </div>
+                </div>
+
+                {/* Warnings & Conflicts */}
+                {previewState.warnings.length > 0 && (
+                  <div className="max-w-md">
+                    <div className="text-sm font-medium mb-1 text-yellow-700">⚠️ Warnings:</div>
+                    <div className="space-y-1">
+                      {previewState.warnings.slice(0, 2).map((warning, idx) => (
+                        <div key={idx} className="text-xs bg-yellow-50 p-2 rounded border">
+                          {warning}
+                        </div>
+                      ))}
+                      {previewState.warnings.length > 2 && (
+                        <div className="text-xs text-gray-500">
+                          +{previewState.warnings.length - 2} more warnings
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Right: Action Buttons */}
+            <div className="flex space-x-3">
             <button 
               onClick={onClose}
               className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50"
@@ -826,6 +819,7 @@ export default function RuleBuilder({
             >
               ⚡ Execute Now
             </button>
+            </div>
           </div>
         </div>
       </div>
