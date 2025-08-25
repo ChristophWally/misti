@@ -157,7 +157,7 @@ The dictionary serves as the authoritative source for base word properties that 
   "reflexive": true/false,
   
   // ADJECTIVE-SPECIFIC (word_type = 'adjective')
-  "form_pattern": "form-4|form-2|irregular",
+  "form_pattern": "form-4|form-2",  // Note: irregular patterns handled by form_irregular attribute
   "gradable": true/false,
   
   // ADVERB-SPECIFIC (word_type = 'adverb')
@@ -173,14 +173,36 @@ The dictionary serves as the authoritative source for base word properties that 
 - **System Impact**: Determines which other metadata fields are required/valid
 
 **cefr_level** (Universal - Required) 
-- **Purpose**: Learning progression and curriculum sequencing
-- **Extended Values**: Added `native`, `academic`, `literary`, `specialized` for beyond-C2 content
+- **Purpose**: Learning progression and curriculum sequencing for all Italian vocabulary
+- **Source Level**: word (inherent difficulty of learning the Italian word)
+- **Display Level**: word (no propagation needed - difficulty is fixed property)
+- **Propagation Rule**: ADMIN_ONLY (learning difficulty doesn't combine or propagate)
+- **Standard CEFR Values**: A1, A2, B1, B2, C1, C2 (official European framework levels)
+- **Beyond-CEFR Values**: native, academic, literary, specialized (vocabulary outside standard classification)
+- **Complete Coverage Logic**: 
+  - A1-C2 covers all learner-targeted vocabulary
+  - native = colloquial terms used by natives but not taught formally
+  - academic = scholarly terminology beyond C2 complexity
+  - literary = classical/poetic language from literature
+  - specialized = technical jargon for specific domains
+- **Word Type Applicability**: All 4 core word types (noun, verb, adjective, adverb) - content words have learning difficulty
+- **Mandatory Requirement**: Every content word needs explicit difficulty level for curriculum sequencing
 - **System Impact**: Affects difficulty weighting in SRS and content recommendation
 
 **frequency_tier** (Universal - Optional)
-- **Purpose**: Priority ranking for learning focus
-- **Optionality**: Only set when frequency data available
-- **System Impact**: Influences study prioritization and difficulty assessment
+- **Purpose**: Priority ranking for learning focus based on corpus frequency analysis
+- **Source Level**: word (inherent lexical property from Italian corpus statistics)
+- **Display Level**: word (no propagation needed - frequency is word-specific)
+- **Propagation Rule**: ADMIN_ONLY (frequency rankings don't combine or propagate)
+- **Research-Validated Tiers**: 
+  - `top100`: Essential core vocabulary (~250 words) - most critical for communication
+  - `top500`: CEFR A1 level vocabulary - functional beginner threshold  
+  - `top1000`: CEFR A2 level vocabulary - everyday conversation capability
+  - `top5000`: Active vocabulary of native speakers without higher education
+- **Linguistic Foundation**: Based on Italian corpus analysis (CORIS/CODIS) and established frequency research
+- **Word Type Applicability**: All 4 word types (frequency applies to all lexical categories)
+- **Optionality Rationale**: Only set when empirical frequency data is available from corpus studies
+- **System Impact**: Influences study prioritization, difficulty assessment, and vocabulary sequencing aligned with 80/20 learning principle
 
 **irregular** (Universal - Required)
 - **Purpose**: Flags deviation from standard patterns
@@ -214,12 +236,17 @@ The dictionary serves as the authoritative source for base word properties that 
 - **System Impact**: Affects pronoun placement and agreement patterns
 
 **form_pattern** (Adjectives Only - Required)
-- **Purpose**: Determines agreement form variations
-- **Values**: 
-  - `form-4`: Full agreement (rosso/rossa/rossi/rosse)
-  - `form-2`: Limited agreement (grande/grandi)  
-  - `irregular`: Special patterns (bello → bel ragazzo)
-- **System Impact**: Drives agreement generation and display
+- **Purpose**: Determines agreement form variations for morphological pattern classification
+- **Source Level**: word (inherent morphological property of Italian adjective)
+- **Display Level**: word (no propagation needed - fixed morphological characteristic)
+- **Propagation Rule**: ADMIN_ONLY (agreement patterns don't combine or propagate)
+- **Research-Validated Values**: 
+  - `form-4`: Full agreement pattern (rosso/rossa/rossi/rosse) - most common Italian adjectives
+  - `form-2`: Limited agreement pattern (intelligente/intelligenti, grande/grandi) - invariant for gender
+- **Irregular Pattern Handling**: Positional variants like "bel ragazzo" are stored as individual forms with form_irregular=true
+- **Word Type Applicability**: Adjectives only (nouns have gender, verbs have conjugation_type)
+- **Mandatory Requirement**: Every adjective needs pattern specification for form generation and agreement rules
+- **System Impact**: Foundation for adjective form generation and agreement rules
 
 **gradable** (Adjectives Only - Required)
 - **Purpose**: Determines whether comparative/superlative forms are logical
@@ -254,7 +281,7 @@ Word forms represent individual conjugated instances and must contain complete g
   
   // Morphological Properties (Required)
   "irregular": true/false,
-  "form_type": "simple|compound|progressive",
+  "verb_form_type": "simple|compound|progressive",  // Renamed from form_type - verb-specific
   "morphological_type": "regular|irregular|suppletive",
   
   // Agreement Properties (Required for applicable forms)
@@ -354,8 +381,12 @@ Our database analysis revealed that existing data uses `passato-progressivo` whi
 - **Purpose**: Flags forms that deviate from standard conjugation patterns
 - **System Impact**: Affects pattern recognition and learning difficulty assessment
 
-**form_type** (Required)
-- **Purpose**: Construction method classification
+**verb_form_type** (Verb Forms Only - Required)
+- **Purpose**: Construction method classification for verb morphological analysis
+- **Source Level**: form (each verb form has specific morphological construction type)
+- **Display Level**: form (no propagation needed - individual form property)
+- **Propagation Rule**: ADMIN_ONLY (morphological construction types don't combine)
+- **Renamed From**: form_type (specialized for verb-specific morphology)
 - **Values**:
   - `simple`: Single-word forms (parlo, parlavo)
   - `compound`: Auxiliary + participle (ho parlato, sono andato)
@@ -550,7 +581,7 @@ ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_transitivity_verbs_only
 
 ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_form_pattern_adjectives_only
   CHECK ((metadata->>'word_type' != 'adjective') OR
-         (metadata->>'form_pattern' IN ('form-4','form-2','irregular')));
+         (metadata->>'form_pattern' IN ('form-4','form-2')));
 
 ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_gradable_adjectives_only  
   CHECK ((metadata->>'word_type' != 'adjective') OR
@@ -691,7 +722,6 @@ CASE word_type
     'form_pattern', CASE
       WHEN 'form-4' = ANY(tags) THEN 'form-4'
       WHEN 'form-2' = ANY(tags) THEN 'form-2'
-      WHEN 'form-irregular' = ANY(tags) THEN 'irregular'
       ELSE NULL END,
     'gradable', CASE
       WHEN 'type-gradable' = ANY(tags) THEN true
@@ -779,7 +809,7 @@ UPDATE word_forms SET metadata = jsonb_build_object(
     WHEN 'loro' = ANY(tags) THEN 'loro'
     ELSE NULL END,
   'irregular', CASE WHEN 'irregular' = ANY(tags) THEN true ELSE false END,
-  'form_type', CASE
+  'verb_form_type', CASE
     WHEN 'simple' = ANY(tags) THEN 'simple'
     WHEN 'compound' = ANY(tags) THEN 'compound'
     WHEN 'progressive' = ANY(tags) THEN 'progressive'
