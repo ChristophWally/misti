@@ -579,4 +579,126 @@ export class ModernDatabaseService {
       throw error;
     }
   }
+
+  // ========================================================================
+  // METAVAL SYSTEM INTEGRATION - Issue #11
+  // ========================================================================
+
+  /**
+   * Get valid options for a metadata attribute from metaval system
+   * @param attributeName - The metadata attribute name (e.g., 'auxiliary', 'mood', 'tense')
+   * @returns Array of valid options with descriptions, sorted by sort_order
+   */
+  async getMetadataAttributeOptions(attributeName: string): Promise<Array<{value: string, description?: string}>> {
+    try {
+      const { data, error } = await supabase
+        .from('meta_values')
+        .select(`
+          value,
+          description,
+          sort_order,
+          meta_attributes!inner(name)
+        `)
+        .eq('meta_attributes.name', attributeName)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (error) {
+        console.error(`Error loading options for ${attributeName}:`, error);
+        return [];
+      }
+
+      return data?.map(item => ({
+        value: item.value,
+        description: item.description
+      })) || [];
+    } catch (error) {
+      console.error(`Failed to load metadata options for ${attributeName}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all attributes applicable to a specific word type
+   * @param wordType - The word type ('noun', 'verb', 'adjective', 'adverb')  
+   * @returns Array of applicable attributes with their properties
+   */
+  async getApplicableAttributes(wordType: string): Promise<Array<{
+    name: string;
+    description?: string;
+    is_mandatory: boolean;
+    display_template?: string;
+    combined_value_name?: string;
+  }>> {
+    try {
+      const { data, error } = await supabase
+        .from('meta_word_type_rules')
+        .select(`
+          is_mandatory,
+          meta_attributes!inner(
+            name,
+            description, 
+            display_template,
+            combined_value_name
+          )
+        `)
+        .eq('word_type', wordType);
+
+      if (error) {
+        console.error(`Error loading attributes for ${wordType}:`, error);
+        return [];
+      }
+
+      return data?.map(item => ({
+        name: item.meta_attributes.name,
+        description: item.meta_attributes.description,
+        is_mandatory: item.is_mandatory,
+        display_template: item.meta_attributes.display_template,
+        combined_value_name: item.meta_attributes.combined_value_name
+      })) || [];
+    } catch (error) {
+      console.error(`Failed to load applicable attributes for ${wordType}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get implied attribute values when a source attribute is selected
+   * @param attributeName - Source attribute name (e.g., 'tense')
+   * @param value - Selected value (e.g., 'congiuntivo-presente')
+   * @returns Array of implied attribute-value pairs
+   */
+  async getImpliedValues(attributeName: string, value: string): Promise<Array<{
+    attribute: string;
+    value: string;
+    relationship_type: string;
+  }>> {
+    try {
+      const { data, error } = await supabase
+        .from('meta_attribute_relationships')
+        .select(`
+          relationship_type,
+          source_attributes:meta_attributes!source_attribute_id(name),
+          source_values:meta_values!source_value_id(value),
+          target_attributes:meta_attributes!target_attribute_id(name),  
+          target_values:meta_values!target_value_id(value)
+        `)
+        .eq('source_attributes.name', attributeName)
+        .eq('source_values.value', value);
+
+      if (error) {
+        console.error(`Error loading implications for ${attributeName}=${value}:`, error);
+        return [];
+      }
+
+      return data?.map(item => ({
+        attribute: item.target_attributes.name,
+        value: item.target_values.value,
+        relationship_type: item.relationship_type
+      })) || [];
+    } catch (error) {
+      console.error(`Failed to load implied values for ${attributeName}=${value}:`, error);
+      return [];
+    }
+  }
 }

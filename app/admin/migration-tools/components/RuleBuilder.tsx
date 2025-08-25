@@ -54,6 +54,69 @@ interface OperationConfig {
   applyTo: 'selected' | 'all_with_tag' | 'hierarchy'
 }
 
+// ========================================================================
+// METAVAL OPTIONS COMPONENT - Issue #11
+// ========================================================================
+interface MetadataAttributeOptionsProps {
+  metadataKey: string;
+  getMetavalOptions: (key: string) => Promise<Array<{value: string, description?: string}>>;
+}
+
+const MetadataAttributeOptions: React.FC<MetadataAttributeOptionsProps> = ({ 
+  metadataKey, 
+  getMetavalOptions 
+}) => {
+  const [options, setOptions] = useState<Array<{value: string, description?: string}>>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      setLoading(true)
+      try {
+        const opts = await getMetavalOptions(metadataKey)
+        setOptions(opts)
+      } catch (error) {
+        console.error(`Failed to load options for ${metadataKey}:`, error)
+        // Fallback to empty array
+        setOptions([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadOptions()
+  }, [metadataKey, getMetavalOptions])
+
+  if (loading) {
+    return <option value="">Loading options...</option>
+  }
+
+  if (options.length === 0) {
+    return (
+      <>
+        <option value="no-options-available" disabled>
+          No valid options available for {metadataKey}
+        </option>
+        <option value="custom">Enter custom value...</option>
+      </>
+    )
+  }
+
+  return (
+    <>
+      {options.map(option => (
+        <option 
+          key={option.value} 
+          value={option.value}
+          title={option.description || ''}
+        >
+          {option.value} {option.description && `(${option.description.slice(0, 30)}...)`}
+        </option>
+      ))}
+    </>
+  )
+}
+
 export default function RuleBuilder({ 
   isOpen, 
   sourceSelections, 
@@ -139,27 +202,54 @@ export default function RuleBuilder({
   }, [sourceSelections])
 
   // ========================================================================
-  // UTILITY FUNCTIONS - Core Tag Value Validation
+  // METAVAL SYSTEM INTEGRATION - Issue #11
   // ========================================================================
-  const getCoreTagOptions = (metadataKey: string): string[] => {
-    // Predefined valid values for common metadata keys
-    const coreTagOptions: Record<string, string[]> = {
-      verb_type: ['regular', 'irregular', 'auxiliary', 'modal', 'reflexive'],
-      person: ['1st', '2nd', '3rd', 'impersonal'],
-      number: ['singular', 'plural'],
-      tense: ['present', 'imperfect', 'perfect', 'pluperfect', 'future', 'conditional'],
-      mood: ['indicative', 'subjunctive', 'conditional', 'imperative', 'infinitive', 'gerund', 'participle'],
-      voice: ['active', 'passive'],
-      gender: ['masculine', 'feminine', 'neuter'],
-      case: ['nominative', 'accusative', 'genitive', 'dative', 'ablative'],
-      article_type: ['definite', 'indefinite', 'partitive'],
-      adjective_type: ['descriptive', 'possessive', 'demonstrative', 'interrogative', 'indefinite'],
-      adverb_type: ['manner', 'time', 'place', 'frequency', 'intensity'],
-      preposition_type: ['simple', 'articulated', 'compound'],
-      formality: ['formal', 'informal', 'neutral']
+  const [metavalOptions, setMetavalOptions] = useState<Record<string, Array<{value: string, description?: string}>>>({})
+  const [loadingOptions, setLoadingOptions] = useState<Set<string>>(new Set())
+
+  /**
+   * Fetch valid options for a metadata attribute from metaval database
+   * Caches results to avoid repeated database calls
+   */
+  const getMetavalOptions = async (metadataKey: string): Promise<Array<{value: string, description?: string}>> => {
+    // Return cached options if available
+    if (metavalOptions[metadataKey]) {
+      return metavalOptions[metadataKey]
     }
-    
-    return coreTagOptions[metadataKey] || []
+
+    // Avoid duplicate requests
+    if (loadingOptions.has(metadataKey)) {
+      return []
+    }
+
+    setLoadingOptions(prev => new Set([...prev, metadataKey]))
+
+    try {
+      const options = await databaseService.getMetadataAttributeOptions(metadataKey)
+      setMetavalOptions(prev => ({
+        ...prev,
+        [metadataKey]: options
+      }))
+      return options
+    } catch (error) {
+      console.error(`Failed to load options for ${metadataKey}:`, error)
+      return []
+    } finally {
+      setLoadingOptions(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(metadataKey)
+        return newSet
+      })
+    }
+  }
+
+  /**
+   * Legacy function maintained for compatibility
+   * Now uses database-driven metaval system
+   */
+  const getCoreTagOptions = (metadataKey: string): string[] => {
+    const options = metavalOptions[metadataKey] || []
+    return options.map(opt => opt.value)
   }
 
   // ========================================================================
@@ -620,25 +710,10 @@ export default function RuleBuilder({
                                   className="border rounded px-2 py-1 text-xs w-full"
                                 >
                                   <option value="">Select new value...</option>
-                                  {(() => {
-                                    const validOptions = getCoreTagOptions(metadataKey)
-                                    if (validOptions.length > 0) {
-                                      return validOptions.map(option => (
-                                        <option key={option} value={option}>
-                                          {option}
-                                        </option>
-                                      ))
-                                    } else {
-                                      // Placeholder options for unknown core tags - Issue #11 will replace with DB values
-                                      return (
-                                        <>
-                                          <option value="placeholder1">Option 1 (placeholder)</option>
-                                          <option value="placeholder2">Option 2 (placeholder)</option>
-                                          <option value="custom">Enter custom value...</option>
-                                        </>
-                                      )
-                                    }
-                                  })()}
+                                  <MetadataAttributeOptions 
+                                    metadataKey={metadataKey}
+                                    getMetavalOptions={getMetavalOptions}
+                                  />
                                   </select>
                                 </div>
                               )}
