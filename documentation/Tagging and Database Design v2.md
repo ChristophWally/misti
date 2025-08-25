@@ -152,7 +152,7 @@ The dictionary serves as the authoritative source for base word properties that 
   
   // VERB-SPECIFIC (word_type = 'verb') 
   "conjugation_type": "are|ere|ire|ire-isc",
-  "auxiliary": "avere|essere|both",
+  "auxiliary": "avere|essere",  // Note: "both" only appears at word level via COMBINE propagation
   "transitivity": "transitive|intransitive|both", 
   "reflexive": true/false,
   
@@ -161,7 +161,7 @@ The dictionary serves as the authoritative source for base word properties that 
   "gradable": true/false,
   
   // ADVERB-SPECIFIC (word_type = 'adverb')
-  "adverb_type": "manner|time|place|quantity|frequency|affirmation|doubt|interrogative"
+  "adverb_type": "manner|time|place|quantity|frequency|affirmation|doubt|interrogative|negation|evaluation|emphasis"
 }
 ```
 
@@ -198,7 +198,10 @@ The dictionary serves as the authoritative source for base word properties that 
 
 **auxiliary** (Verbs Only - Required)
 - **Purpose**: Specifies which auxiliary verb(s) can form compound tenses
-- **Both Option**: Some verbs can use either auxiliary depending on meaning
+- **Source Level**: translation (varies by translation context/meaning)
+- **Display Level**: word (propagated via COMBINE - shows "both" when translations differ)
+- **Propagation Logic**: COMBINE creates "avere & essere" → displays as "both" at word level
+- **Translation Values**: avere OR essere (specific to each translation's meaning)
 - **System Impact**: Critical for compound tense formation and agreement rules
 
 **transitivity** (Verbs Only - Required)
@@ -224,10 +227,13 @@ The dictionary serves as the authoritative source for base word properties that 
 - **Examples**: `più alto` (gradable) vs `*più morto` (non-gradable)
 
 **adverb_type** (Adverbs Only - Required)
-- **Purpose**: Semantic and syntactic categorization
-- **Extended Categories**: Added frequency, affirmation, doubt, interrogative for functional distinction
+- **Purpose**: Semantic and syntactic categorization for context-specific usage
+- **Source Level**: translation (varies by translation context)
+- **Display Level**: word (propagated via FIRST_WINS based on translation priority)
+- **Extended Categories**: Added frequency, affirmation, doubt, interrogative, negation, evaluation, emphasis for complete functional distinction
 - **Original Categories**: manner, time, place, quantity from existing documentation
 - **System Impact**: Affects search categorization and syntactic behavior modeling
+- **Propagation Logic**: Word-level type determined by highest-priority translation's type
 
 ### Word Forms Metadata
 
@@ -386,7 +392,7 @@ Translation metadata determines how forms are displayed and filtered based on me
   "gender_usage": "male-only|female-only|both|neutral",
   
   // Verb-Specific Fields (Required for verbs)
-  "auxiliary": "avere|essere",
+  "auxiliary": "avere|essere",  // Specific to this translation's meaning
   "transitivity": "transitive|intransitive",
   
   // Usage Constraint Fields (Required for specific cases)
@@ -412,11 +418,13 @@ Translation metadata determines how forms are displayed and filtered based on me
 - **Example**: "handsome" translation of "bello" is male-only
 
 **auxiliary** (Verbs Only - Required)
-- **Purpose**: Specifies which auxiliary this translation uses for compound tenses
+- **Purpose**: Specifies which auxiliary this specific translation uses for compound tenses
+- **Translation Level**: Each translation has specific auxiliary (avere OR essere)
+- **Word Level**: COMBINE propagation creates "both" when translations differ
 - **Critical Importance**: Verbs like "finire" require different auxiliaries based on meaning
-  - "finire" (to finish) → avere auxiliary → "ho finito"
-  - "finire" (to end) → essere auxiliary → "sono finito"
-- **System Impact**: Determines which compound forms are displayed
+  - "finire" (to finish/complete) → avere auxiliary → "ho finito il lavoro"
+  - "finire" (to end/conclude) → essere auxiliary → "il film è finito"
+- **System Impact**: Determines which compound forms are displayed and linked to each translation
 
 **transitivity** (Verbs Only - Required)
 - **Purpose**: Specifies argument structure for this specific meaning
@@ -531,9 +539,10 @@ ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_conjugation_verbs_only
   CHECK ((metadata->>'word_type' != 'verb') OR
          (metadata->>'conjugation_type' IN ('are','ere','ire','ire-isc')));
 
-ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_auxiliary_verbs_only
-  CHECK ((metadata->>'word_type' != 'verb') OR
-         (metadata->>'auxiliary' IN ('avere','essere','both')));
+-- Note: auxiliary now validated at translation level, not dictionary level
+-- ALTER TABLE word_translations ADD CONSTRAINT chk_wt_meta_auxiliary_verbs_only
+--   CHECK ((parent_word.metadata->>'word_type' != 'verb') OR
+--          (metadata->>'auxiliary' IN ('avere','essere')));
 
 ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_transitivity_verbs_only
   CHECK ((metadata->>'word_type' != 'verb') OR
@@ -549,7 +558,7 @@ ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_gradable_adjectives_only
 
 ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_adverb_type_adverbs_only
   CHECK ((metadata->>'word_type' != 'adverb') OR
-         (metadata->>'adverb_type' IN ('manner','time','place','quantity','frequency','affirmation','doubt','interrogative')));
+         (metadata->>'adverb_type' IN ('manner','time','place','quantity','frequency','affirmation','doubt','interrogative','negation','evaluation','emphasis')));
 ```
 
 **Constraint Naming Strategy:**
@@ -1170,7 +1179,7 @@ const customValidationRules = [
       }
       return true;
     },
-    message: 'All verb translations must specify auxiliary (avere|essere)'
+    message: 'All verb translations must specify auxiliary (avere|essere) - no "both" at translation level'
   }
 ];
 ```

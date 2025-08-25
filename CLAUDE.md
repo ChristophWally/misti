@@ -156,3 +156,41 @@ This ensures:
    ```
 
 **Rationale**: Backup files are critical safety nets for complex refactoring work. Premature cleanup can cause irreversible loss of working implementations and historical context needed for debugging or rollback scenarios.
+
+## Surgical Implementation Protocol
+
+**CRITICAL**: For complex multi-issue fixes requiring systematic implementation:
+
+### 🔧 Surgical Implementation Approach
+
+**Implementation Protocol**:
+1. **One Issue at a Time**: Fix, test, commit each issue individually
+2. **Incremental Testing**: Verify each fix works before moving to next
+3. **Dependency Respect**: Never start dependent issue until prerequisite done
+4. **State Management Focus**: Fix the core sync issue first - it unlocks everything
+
+**Testing Protocol for Each Fix**:
+```javascript
+// After each fix:
+1. Verify fix works in isolation
+2. Verify no regressions in working functionality  
+3. Test edge cases specific to that issue
+4. Commit with descriptive message including issue number
+5. Deploy to git for Vercel testing
+6. Continue to next issue only after validation
+```
+
+**Commit Message Format**:
+```
+Fix Issue #X: [Brief Description]
+
+- [Technical change 1]
+- [Technical change 2]
+- [Impact/benefit]
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+This ensures systematic, dependency-aware implementation with full traceability and no regressions.
