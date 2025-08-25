@@ -592,9 +592,11 @@ export default function RuleBuilder({
                               
                               {config.action === 'update' && (() => {
                                 const validOptions = getCoreTagOptions(metadataKey)
+                                console.log('DEBUG Issue #9:', { metadataKey, validOptions, hasOptions: validOptions.length > 0 })
                                 
-                                // If we have predefined options for this metadata key, show dropdown
-                                if (validOptions.length > 0) {
+                                // TEMP: Always show dropdown for debugging
+                                // if (validOptions.length > 0) {
+                                if (true) {
                                   return (
                                     <select
                                       value={config.newValue || ''}
@@ -602,11 +604,15 @@ export default function RuleBuilder({
                                       className="border rounded px-2 py-1 text-xs flex-1"
                                     >
                                       <option value="">Select new value...</option>
-                                      {validOptions.map(option => (
-                                        <option key={option} value={option}>
-                                          {option}
-                                        </option>
-                                      ))}
+                                      {validOptions.length > 0 ? (
+                                        validOptions.map(option => (
+                                          <option key={option} value={option}>
+                                            {option}
+                                          </option>
+                                        ))
+                                      ) : (
+                                        <option value="debug">DEBUG: No options for {metadataKey}</option>
+                                      )}
                                     </select>
                                   )
                                 } else {
