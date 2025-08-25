@@ -649,7 +649,7 @@ export class ModernDatabaseService {
         return [];
       }
 
-      return data?.map(item => ({
+      return data?.map((item: any) => ({
         name: item.meta_attributes.name,
         description: item.meta_attributes.description,
         is_mandatory: item.is_mandatory,
@@ -691,7 +691,7 @@ export class ModernDatabaseService {
         return [];
       }
 
-      return data?.map(item => ({
+      return data?.map((item: any) => ({
         attribute: item.target_attributes.name,
         value: item.target_values.value,
         relationship_type: item.relationship_type
