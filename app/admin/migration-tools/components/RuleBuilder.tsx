@@ -139,6 +139,30 @@ export default function RuleBuilder({
   }, [sourceSelections])
 
   // ========================================================================
+  // UTILITY FUNCTIONS - Core Tag Value Validation
+  // ========================================================================
+  const getCoreTagOptions = (metadataKey: string): string[] => {
+    // Predefined valid values for common metadata keys
+    const coreTagOptions: Record<string, string[]> = {
+      verb_type: ['regular', 'irregular', 'auxiliary', 'modal', 'reflexive'],
+      person: ['1st', '2nd', '3rd', 'impersonal'],
+      number: ['singular', 'plural'],
+      tense: ['present', 'imperfect', 'perfect', 'pluperfect', 'future', 'conditional'],
+      mood: ['indicative', 'subjunctive', 'conditional', 'imperative', 'infinitive', 'gerund', 'participle'],
+      voice: ['active', 'passive'],
+      gender: ['masculine', 'feminine', 'neuter'],
+      case: ['nominative', 'accusative', 'genitive', 'dative', 'ablative'],
+      article_type: ['definite', 'indefinite', 'partitive'],
+      adjective_type: ['descriptive', 'possessive', 'demonstrative', 'interrogative', 'indefinite'],
+      adverb_type: ['manner', 'time', 'place', 'frequency', 'intensity'],
+      preposition_type: ['simple', 'articulated', 'compound'],
+      formality: ['formal', 'informal', 'neutral']
+    }
+    
+    return coreTagOptions[metadataKey] || []
+  }
+
+  // ========================================================================
   // UTILITY FUNCTIONS - Record Display Names
   // ========================================================================
   const getRecordDisplayName = (recordId: string, recordType: string): { displayName: string, recordTypeName: string } => {
@@ -566,15 +590,38 @@ export default function RuleBuilder({
                                 <option value="conditional">Conditional</option>
                               </select>
                               
-                              {config.action === 'update' && (
-                                <input
-                                  type="text"
-                                  value={config.newValue || ''}
-                                  onChange={(e) => updateMetadataOperation(recordId, metadataKey, { newValue: e.target.value })}
-                                  className="border rounded px-2 py-1 text-xs flex-1"
-                                  placeholder="New value"
-                                />
-                              )}
+                              {config.action === 'update' && (() => {
+                                const validOptions = getCoreTagOptions(metadataKey)
+                                
+                                // If we have predefined options for this metadata key, show dropdown
+                                if (validOptions.length > 0) {
+                                  return (
+                                    <select
+                                      value={config.newValue || ''}
+                                      onChange={(e) => updateMetadataOperation(recordId, metadataKey, { newValue: e.target.value })}
+                                      className="border rounded px-2 py-1 text-xs flex-1"
+                                    >
+                                      <option value="">Select new value...</option>
+                                      {validOptions.map(option => (
+                                        <option key={option} value={option}>
+                                          {option}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  )
+                                } else {
+                                  // Fallback to text input for unknown metadata keys
+                                  return (
+                                    <input
+                                      type="text"
+                                      value={config.newValue || ''}
+                                      onChange={(e) => updateMetadataOperation(recordId, metadataKey, { newValue: e.target.value })}
+                                      className="border rounded px-2 py-1 text-xs flex-1"
+                                      placeholder="New value"
+                                    />
+                                  )
+                                }
+                              })()}
                               
                               <select
                                 value={config.applyTo}
