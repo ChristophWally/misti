@@ -376,13 +376,46 @@ Our database analysis revealed that existing data uses `passato-progressivo` whi
 
 **Field-by-Field Design Rationale:**
 
-**mood** (Required)
-- **Purpose**: Primary grammatical categorization for form grouping
+**mood** (Verbs Only - Auto-Populated from Tense)
+- **Source Level**: form (mood is expressed in each verb form)
+- **Display Level**: form (direct display, no propagation needed)
+- **Purpose**: Primary grammatical categorization for form grouping 
 - **System Impact**: Drives UI organization and pedagogical sequencing
+- **Auto-Derivation**: Automatically computed from tense using linguistic rules
+- **Values**: indicativo, congiuntivo, condizionale, imperativo, infinito, participio, gerundio
+- **Linguistic Foundation**: Complete Italian 7-mood system (4 finite + 3 indefinite moods)
 
 **tense** (Required) 
 - **Purpose**: Specific temporal/aspectual identification within mood
 - **Uniqueness**: Each tense value belongs to exactly one mood, eliminating ambiguity
+
+**Tense→Mood Automatic Derivation Rules (27→7 mapping):**
+
+**INDICATIVO** (11 tenses): Reality and factual statements
+- presente, imperfetto, passato-remoto, futuro-semplice → indicativo
+- passato-prossimo, trapassato-prossimo, futuro-anteriore, trapassato-remoto → indicativo  
+- presente-progressivo, imperfetto-progressivo, futuro-progressivo → indicativo
+
+**CONGIUNTIVO** (5 tenses): Subjectivity, uncertainty, hypotheticals
+- congiuntivo-presente, congiuntivo-imperfetto → congiuntivo
+- congiuntivo-passato, congiuntivo-trapassato → congiuntivo
+- congiuntivo-presente-progressivo → congiuntivo
+
+**CONDIZIONALE** (3 tenses): Conditional situations
+- condizionale-presente, condizionale-passato → condizionale
+- condizionale-presente-progressivo → condizionale
+
+**IMPERATIVO** (2 tenses): Commands and requests  
+- imperativo-presente, imperativo-passato → imperativo
+
+**INFINITO** (2 tenses): Nominal verb forms
+- infinito-presente, infinito-passato → infinito
+
+**PARTICIPIO** (2 tenses): Adjectival verb forms
+- participio-presente, participio-passato → participio
+
+**GERUNDIO** (2 tenses): Adverbial verb forms
+- gerundio-presente, gerundio-passato → gerundio
 - **System Impact**: Enables single-field validation and simplified constraint logic
 
 **person** (Required for finite forms)
