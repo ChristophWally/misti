@@ -204,10 +204,18 @@ The dictionary serves as the authoritative source for base word properties that 
 - **Optionality Rationale**: Only set when empirical frequency data is available from corpus studies
 - **System Impact**: Influences study prioritization, difficulty assessment, and vocabulary sequencing aligned with 80/20 learning principle
 
-**gender** (Nouns Only - Required)
-- **Purpose**: Determines article agreement and pronoun reference
-- **Constraint Logic**: Only nouns have inherent gender; adjective gender comes from agreement
-- **System Impact**: Drives UI display and grammatical correctness validation
+**noun_gender** (Nouns Only - Required - Perfect Configuration)
+- **Source Level**: word (gender is inherent property of Italian nouns)
+- **Display Level**: word (direct display, no propagation needed)
+- **Purpose**: Determines article agreement and pronoun reference for Italian grammatical constructions
+- **Values**: masculine, feminine, common-gender
+- **Linguistic Foundation**: Complete Italian noun gender system validation
+  - **masculine**: il gatto, il problema (grammatically masculine constructions)
+  - **feminine**: la casa, la vittima (grammatically feminine constructions)  
+  - **common-gender**: il/la turista, il/la artista (variable gender based on referent)
+- **Research Validation**: 3-value system captures complete Italian gender patterns including variable-gender nouns
+- **Architecture**: word→word ADMIN_ONLY perfect for inherent noun property with admin-controlled values
+- **System Impact**: Foundation for grammatical correctness validation and article/adjective agreement
 
 **conjugation_type** (Verbs Only - Required)  
 - **Purpose**: Determines basic conjugation pattern family
@@ -618,9 +626,9 @@ ALTER TABLE word_translations ADD CONSTRAINT chk_trans_meta_gender_usage
 **Conditional Constraints for Word-Type Specific Fields:**
 ```sql
 -- Dictionary conditional constraints
-ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_gender_nouns_only
+ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_noun_gender_nouns_only
   CHECK ((metadata->>'word_type' != 'noun') OR 
-         (metadata->>'gender' IN ('masculine','feminine','common-gender')));
+         (metadata->>'noun_gender' IN ('masculine','feminine','common-gender')));
 
 ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_conjugation_verbs_only  
   CHECK ((metadata->>'word_type' != 'verb') OR
