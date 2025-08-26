@@ -303,7 +303,7 @@ Word forms represent individual conjugated instances and must contain complete g
   
   // Morphological Properties (Required)
   "verb_form_type": "simple|compound|progressive",  // Renamed from form_type - verb-specific
-  "morphological_type": "regular|irregular|suppletive",
+  // NOTE: morphological_type ELIMINATED - complete redundancy with form_irregular
   
   // Agreement Properties (Required for applicable forms)
   "gender": "masculine|feminine",     // For compound tenses with essere
@@ -443,13 +443,15 @@ Our database analysis revealed that existing data uses `passato-progressivo` whi
   - `progressive`: Stare + gerund (sto parlando)
 - **System Impact**: Determines display formatting and pronunciation rules
 
-**morphological_type** (Required)
-- **Purpose**: Pattern classification for linguistic analysis
-- **Values**:
-  - `regular`: Follows standard conjugation patterns
-  - `irregular`: Deviates from patterns but systematic (essere, andare)
-  - `suppletive`: Uses different roots (andare → vado)
-- **System Impact**: Affects learning strategy and difficulty classification
+**morphological_type** *(ELIMINATED - Complete Redundancy)*
+- **Elimination Rationale**: Comprehensive analysis revealed complete redundancy with existing form_irregular attribute
+- **Redundancy Analysis**:
+  - "regular" ↔ form_irregular=false (exact duplication)
+  - "irregular" ↔ form_irregular=true (exact duplication)
+  - "suppletive" ↔ form_irregular=true + rare/nonexistent in Italian inflection
+- **Research Finding**: Suppletive patterns in Italian are primarily word relationships (comparatives), not inflectional morphology
+- **Superior Alternative**: form_irregular boolean + word relationships handle all use cases
+- **System Impact**: Elimination simplifies system without functional loss
 
 **gender** (Conditional - for compound forms with essere)
 - **Purpose**: Past participle agreement in compound tenses
@@ -872,11 +874,7 @@ UPDATE word_forms SET metadata = jsonb_build_object(
     WHEN 'compound' = ANY(tags) THEN 'compound'
     WHEN 'progressive' = ANY(tags) THEN 'progressive'
     ELSE NULL END,
-  'morphological_type', CASE
-    WHEN 'regular' = ANY(tags) THEN 'regular'
-    WHEN 'irregular' = ANY(tags) THEN 'irregular'
-    WHEN 'suppletive' = ANY(tags) THEN 'suppletive'
-    ELSE 'regular' END,
+  -- NOTE: morphological_type ELIMINATED - redundant with form_irregular
   'gender', CASE
     WHEN 'masculine' = ANY(tags) THEN 'masculine'
     WHEN 'feminine' = ANY(tags) THEN 'feminine'
