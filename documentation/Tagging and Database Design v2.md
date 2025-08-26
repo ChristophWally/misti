@@ -158,7 +158,8 @@ The dictionary serves as the authoritative source for base word properties that 
   
   // ADJECTIVE-SPECIFIC (word_type = 'adjective')
   "form_pattern": "form-4|form-2",  // Note: irregular patterns handled by form_irregular attribute
-  "gradable": true/false,
+  "gradable": "analytical|both|false",
+  "position": "before|after|both",
   
   // ADVERB-SPECIFIC (word_type = 'adverb')
   "adverb_type": "manner|time|place|quantity|frequency|affirmation|doubt|interrogative|negation|evaluation|emphasis"
@@ -249,9 +250,35 @@ The dictionary serves as the authoritative source for base word properties that 
 - **System Impact**: Foundation for adjective form generation and agreement rules
 
 **gradable** (Adjectives Only - Required)
-- **Purpose**: Determines whether comparative/superlative forms are logical
-- **System Impact**: Controls availability of comparison features
-- **Examples**: `più alto` (gradable) vs `*più morto` (non-gradable)
+- **Source Level**: word (gradability is inherent property of adjective)
+- **Display Level**: word (no propagation needed - word-level characteristic)
+- **Purpose**: Determines superlative formation capabilities and UI behavior
+- **Research Foundation**: Italian adjectives have three distinct gradability patterns based on morphological constraints
+- **Values**: analytical, both, false
+- **Tristate System**:
+  - `"analytical"` = Only analytical superlatives ("più blu" ✓, *"bluissimo" ✗) - invariable adjectives
+  - `"both"` = All superlative forms ("più bello" ✓, "bellissimo" ✓) - standard gradable adjectives  
+  - `"false"` = No gradation possible (*"più italiano" ✗, *"italianissimo" ✗) - absolute states/identities
+- **Linguistic Examples**:
+  - **Analytical-only**: blu, rosa, viola (invariable colors can intensify but never take -issimo)
+  - **Both patterns**: bello, grande, nuovo (standard morphological + analytical patterns)
+  - **Non-gradable**: italiano, sposato, morto (absolute categories/states cannot be graded)
+- **System Impact**: Controls which superlative forms appear in UI and morphological generation
+- **Ultra-minimal Design**: Eliminates need for separate invariable attribute through perfect correlation
+
+**position** (Adjectives Only - Optional)
+- **Source Level**: translation (position affects meaning by translation context)
+- **Display Level**: translation (no propagation needed - translation-specific placement)
+- **Purpose**: Specifies adjective placement relative to noun for meaning-dependent positioning
+- **Research Foundation**: Italian position-sensitive adjectives change meaning based on pre/post-nominal placement
+- **Values**: before, after, both
+- **Dependency**: Implies gradable ≠ "false" (position-sensitive adjectives are always gradable)
+- **Linguistic Examples**:
+  - "grande uomo" (great man) vs "uomo grande" (big man) - figurative vs literal meanings
+  - "vecchio amico" (old friend - long relationship) vs "amico vecchio" (old friend - aged person)
+  - "buon libro" (good book - quality) vs "libro buono" (good book - moral content)
+- **System Impact**: Controls UI placement suggestions and semantic disambiguation
+- **Ultra-minimal Integration**: Works with gradable tristate to capture all adjective behavioral patterns
 
 **adverb_type** (Adverbs Only - Required)
 - **Purpose**: Semantic and syntactic categorization for context-specific usage
@@ -588,8 +615,12 @@ ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_form_pattern_adjectives_only
          (metadata->>'form_pattern' IN ('form-4','form-2')));
 
 ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_gradable_adjectives_only  
-  CHECK ((metadata->>'word_type' != 'adjective') OR
-         (metadata ? 'gradable'));
+  CHECK ((word_type != 'ADJECTIVE') OR
+         (metadata->>'gradable' IN ('analytical','both','false')));
+
+ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_position_adjectives_only  
+  CHECK ((word_type != 'ADJECTIVE') OR
+         (metadata->>'position' IS NULL OR metadata->>'position' IN ('before','after','both')));
 
 ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_adverb_type_adverbs_only
   CHECK ((metadata->>'word_type' != 'adverb') OR
