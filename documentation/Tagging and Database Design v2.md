@@ -420,7 +420,7 @@ Translation metadata determines how forms are displayed and filtered based on me
 {
   // Core Functionality Fields (Required)
   "register": "formal|informal|neutral",
-  "gender_usage": "male-only|female-only|both|neutral",
+  "gender_usage": "male-only|female-only",
   
   // Verb-Specific Fields (Required for verbs)
   "auxiliary": "avere|essere",  // Specific to this translation's meaning
@@ -439,14 +439,18 @@ Translation metadata determines how forms are displayed and filtered based on me
 - **System Impact**: Affects translation selection in formal vs casual contexts
 - **Values**: Covers all major register distinctions in Italian
 
-**gender_usage** (Required)
-- **Purpose**: Controls UI symbol display and usage appropriateness
-- **System Impact**: 
-  - `male-only`: Shows ♂ symbol (e.g., "handsome" for bello)
-  - `female-only`: Shows ♀ symbol (rare but possible)
-  - `both`: No gender restriction
-  - `neutral`: Not person-specific
-- **Example**: "handsome" translation of "bello" is male-only
+**gender_usage** (Adjectives Only - Optional)
+- **Source Level**: translation (gender usage varies by translation context)
+- **Display Level**: translation (no propagation needed - usage is translation-specific)
+- **Purpose**: Specifies which gender form an adjective translation should use
+- **Research Foundation**: Italian adjectives must agree with noun gender, but translation meanings can be gender-specific
+- **Values**: male-only, female-only
+- **Linguistic Examples**:
+  - "bello" (masculine) → "handsome" (male-only usage for people)
+  - "bella" (feminine) → "beautiful" (female-only usage for people)
+  - Context dependency: same root word, different translation gender restrictions
+- **System Impact**: Controls which gender forms are appropriate for specific adjective translations
+- **Word Type Restriction**: Only applicable to adjectives (nouns have inherent gender, verbs/adverbs don't require this)
 
 **auxiliary** (Verbs Only - Required)
 - **Purpose**: Specifies which auxiliary this specific translation uses for compound tenses
@@ -556,7 +560,7 @@ ALTER TABLE word_translations ADD CONSTRAINT chk_trans_meta_register
   CHECK (metadata->>'register' IN ('formal','informal','neutral'));
 
 ALTER TABLE word_translations ADD CONSTRAINT chk_trans_meta_gender_usage  
-  CHECK (metadata->>'gender_usage' IN ('male-only','female-only','both','neutral'));
+  CHECK (metadata->>'gender_usage' IN ('male-only','female-only'));
 ```
 
 **Conditional Constraints for Word-Type Specific Fields:**
