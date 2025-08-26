@@ -431,9 +431,15 @@ Our database analysis revealed that existing data uses `passato-progressivo` whi
 - **Invariable Option**: Handles non-finite forms (infinitives, participles, gerunds)
 - **System Impact**: Drives pronoun association and agreement validation
 
-**number** (Required for finite forms)
-- **Purpose**: Singular/plural distinction
-- **System Impact**: Affects agreement patterns and form filtering
+**number** (Verbs Only - Required - Enhanced Configuration)
+- **Source Level**: form (number expressed in each verb form)
+- **Display Level**: form (direct display, no propagation needed)
+- **Purpose**: Singular/plural distinction essential for pronoun agreement
+- **Values**: singolare, plurale (complete Italian number system)
+- **Critical Function**: Indicates pronoun number (io/noi, tu/voi, lui-lei/loro)
+- **Word Type Enhancement**: Added verb-only mandatory restriction (essential for conjugation)
+- **Architecture**: form→form ADMIN_ONLY perfect for form-level number marking
+- **System Impact**: Foundation for verb-pronoun agreement and conjugation validation
 
 **specific_person** (Required for finite forms)
 - **Purpose**: Granular pronoun identification beyond general person categories
