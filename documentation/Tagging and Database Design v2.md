@@ -305,7 +305,7 @@ Word forms represent individual conjugated instances and must contain complete g
   "tense": "[one of 27 unique values - see specification below]",
   
   // Person/Number Classification (Required for finite forms)
-  "person": "prima-persona|seconda-persona|terza-persona|invariable",
+  "person": "prima-persona|seconda-persona|terza-persona",
   "number": "singolare|plurale", 
   "specific_person": "io|tu|lui|lei|noi|voi|loro",
   
@@ -426,10 +426,15 @@ Our database analysis revealed that existing data uses `passato-progressivo` whi
 - gerundio-presente, gerundio-passato → gerundio
 - **System Impact**: Enables single-field validation and simplified constraint logic
 
-**person** (Required for finite forms)
-- **Purpose**: Subject person classification
-- **Invariable Option**: Handles non-finite forms (infinitives, participles, gerunds)
-- **System Impact**: Drives pronoun association and agreement validation
+**person** (Verb Forms Only - Required)
+- **Source Level**: form (person expressed in individual verb conjugated forms)
+- **Display Level**: form (direct display, no propagation needed)
+- **Purpose**: Grammatical person classification (1st/2nd/3rd person conjugation)
+- **Values**: prima-persona, seconda-persona, terza-persona (complete Italian person system)
+- **Critical Function**: Works with number attribute to create complete 6-person conjugation matrix
+- **Word Type Restriction**: Mandatory for verb forms only (person is verb-specific grammatical category)
+- **Architecture**: form→form ADMIN_ONLY perfect for manual form-level person specification
+- **System Impact**: Foundation for verb conjugation system and pronoun-verb agreement validation
 
 **number** (Verbs Only - Required - Enhanced Configuration)
 - **Source Level**: form (number expressed in each verb form)
@@ -619,7 +624,7 @@ ALTER TABLE word_forms ADD CONSTRAINT chk_forms_meta_tense_27_system
 
 ALTER TABLE word_forms ADD CONSTRAINT chk_forms_meta_person
   CHECK (metadata->>'person' IS NULL OR 
-         metadata->>'person' IN ('prima-persona','seconda-persona','terza-persona','invariable'));
+         metadata->>'person' IN ('prima-persona','seconda-persona','terza-persona'));
 
 -- Translation universal constraints
 ALTER TABLE word_translations ADD CONSTRAINT chk_trans_meta_register
