@@ -143,7 +143,6 @@ The dictionary serves as the authoritative source for base word properties that 
   "word_type": "noun|verb|adjective|adverb",
   "cefr_level": "A1|A2|B1|B2|C1|C2|native|academic|literary|specialized", 
   "frequency_tier": "top100|top500|top1000|top5000",  // Optional - only when available
-  "irregular": true/false,
   
   // Conditional Fields (Required based on word_type)
   
@@ -204,10 +203,6 @@ The dictionary serves as the authoritative source for base word properties that 
 - **Word Type Applicability**: All 4 word types (frequency applies to all lexical categories)
 - **Optionality Rationale**: Only set when empirical frequency data is available from corpus studies
 - **System Impact**: Influences study prioritization, difficulty assessment, and vocabulary sequencing aligned with 80/20 learning principle
-
-**irregular** (Universal - Required)
-- **Purpose**: Flags deviation from standard patterns
-- **System Impact**: Affects form generation logic and learning difficulty
 
 **gender** (Nouns Only - Required)
 - **Purpose**: Determines article agreement and pronoun reference
@@ -307,7 +302,6 @@ Word forms represent individual conjugated instances and must contain complete g
   "specific_person": "io|tu|lui|lei|noi|voi|loro",
   
   // Morphological Properties (Required)
-  "irregular": true/false,
   "verb_form_type": "simple|compound|progressive",  // Renamed from form_type - verb-specific
   "morphological_type": "regular|irregular|suppletive",
   
@@ -403,10 +397,6 @@ Our database analysis revealed that existing data uses `passato-progressivo` whi
 **specific_person** (Required for finite forms)
 - **Purpose**: Granular pronoun identification beyond general person categories
 - **System Impact**: Enables precise form-to-pronoun mapping for UI display
-
-**irregular** (Required)
-- **Purpose**: Flags forms that deviate from standard conjugation patterns
-- **System Impact**: Affects pattern recognition and learning difficulty assessment
 
 **verb_form_type** (Verb Forms Only - Required)
 - **Purpose**: Construction method classification for verb morphological analysis
@@ -723,7 +713,7 @@ UPDATE dictionary SET metadata = jsonb_build_object(
     WHEN 'freq-top1000' = ANY(tags) THEN 'top1000'  
     WHEN 'freq-top5000' = ANY(tags) THEN 'top5000'
     ELSE NULL END,
-  'irregular', CASE WHEN 'irregular-pattern' = ANY(tags) THEN true ELSE false END
+  -- NOTE: 'irregular' attribute eliminated - redundant with form_irregular propagation
 ) || 
 -- Add conditional fields based on word_type
 CASE word_type
@@ -788,7 +778,7 @@ optional_tags = ARRAY(
     'avere-auxiliary','essere-auxiliary','transitive-verb','intransitive-verb','reflexive-verb',
     'form-4','form-2','form-irregular','type-gradable','type-absolute',
     'type-manner','type-time','type-place','type-quantity','type-frequency','type-affirmation','type-doubt','type-interrogative',
-    'irregular-pattern'
+    -- 'irregular-pattern' eliminated - use form_irregular instead
   )
 );
 ```
@@ -843,7 +833,7 @@ UPDATE word_forms SET metadata = jsonb_build_object(
     WHEN 'voi' = ANY(tags) THEN 'voi'
     WHEN 'loro' = ANY(tags) THEN 'loro'
     ELSE NULL END,
-  'irregular', CASE WHEN 'irregular' = ANY(tags) THEN true ELSE false END,
+  -- NOTE: 'irregular' eliminated - handled by form_irregular propagation
   'verb_form_type', CASE
     WHEN 'simple' = ANY(tags) THEN 'simple'
     WHEN 'compound' = ANY(tags) THEN 'compound'
@@ -957,7 +947,7 @@ const getAdvancedNouns = () => {
     .select('*')
     .eq('metadata->>word_type', 'noun')
     .in('metadata->>cefr_level', ['C1', 'C2', 'native'])
-    .eq('metadata->>irregular', 'true');
+    // NOTE: irregular queries now use form_irregular propagation
 };
 
 const getProgressiveForms = (mood: string) => {
