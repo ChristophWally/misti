@@ -170,9 +170,16 @@ The dictionary serves as the authoritative source for base word properties that 
 **Field-by-Field Design Rationale:**
 
 **word_type** (Universal - Required)
-- **Purpose**: Drives conditional validation logic throughout the system
-- **Values**: Limited to core part-of-speech categories with clear grammatical behavior
-- **System Impact**: Determines which other metadata fields are required/valid
+- **Source Level**: word (fundamental grammatical classification)
+- **Display Level**: word (no propagation needed - inherent word property)
+- **Propagation Rule**: ADMIN_ONLY (grammatical categories don't combine)
+- **Purpose**: Foundational part-of-speech classification that drives all conditional validation
+- **Research Foundation**: Core grammatical categories with distinct morphological and syntactic behavior
+- **Values**: noun, verb, adjective, adverb (4 core Italian POS categories)
+- **Universal Mandatory**: Required for every word - foundational classification
+- **System Impact**: Determines which conditional attributes apply to each word
+- **Architectural Role**: Foundation layer - other attributes build conditional rules ON word_type
+- **Data Quality**: 16 dictionary entries validated, case inconsistencies standardized
 
 **cefr_level** (Universal - Required) 
 - **Purpose**: Learning progression and curriculum sequencing for all Italian vocabulary
