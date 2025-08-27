@@ -1652,6 +1652,51 @@ INSERT INTO meta_word_type_rules (attribute_id, word_type, is_mandatory) VALUES 
 
 **Current Development Phase:** Systematic metaval attribute validation for Issue #11: Centralized Metaval Table System
 
+# Misti Development Log - Usage Attribute Validation & Data Quality Fix
+
+**Date:** August 27, 2025
+**Duration:** Focused validation with reflexive verb system analysis
+**Status:** ✅ Completed
+**Branch:** fix/refactor-migration-tools
+
+### What I Accomplished Today
+- **Usage Attribute Analysis**: Validated reflexive verb usage pattern classification system
+- **Verb-Only Rule Implementation**: Added optional verb restriction to metaval system
+- **Data Quality Cleanup**: Removed 2 erroneous usage keys from "bene" (adverb) translations
+- **Documentation Enhancement**: Updated Tagging v2 with complete reflexive usage specification
+- **Translation-Level Logic**: Confirmed correct architecture for reflexive usage patterns
+
+### Technical Validation Results
+- **Reflexive Usage Patterns**: ✅ PERFECT - Complete Italian reflexive verb categorization
+- **Translation-Level Logic**: ✅ CORRECT - Usage varies by specific translation meaning
+- **ADMIN_ONLY Propagation**: ✅ OPTIMAL - Usage patterns don't combine (translation-specific)
+- **Data Quality**: ✅ CLEANED - Removed linguistic errors, only VERBs retain usage
+
+### Database Changes Made
+```sql
+-- Added verb-only optional rule
+INSERT INTO meta_word_type_rules (attribute_id, word_type, is_mandatory) 
+VALUES ((SELECT id FROM meta_attributes WHERE name = 'usage'), 'verb', false);
+
+-- Cleaned data quality issues
+UPDATE word_translations SET metadata = metadata - 'usage' 
+WHERE metadata ? 'usage' AND word_id IN (SELECT id FROM dictionary WHERE word_type != 'VERB');
+```
+
+### Final Configuration
+- **Values**: direct-reflexive, reciprocal, intransitive (complete reflexive pattern system)
+- **Word Type Restriction**: Optional for verbs only (reflexive patterns are verb-specific)
+- **Clean Data**: 2 VERB translations with valid usage, 0 non-verb usage keys
+- **Perfect Examples**: "lavarsi" → "to wash oneself" (direct-reflexive) vs "to wash each other" (reciprocal)
+
+### Reflexive Usage System
+- **direct-reflexive**: Action on oneself ("mi lavo" = I wash myself)
+- **reciprocal**: Mutual action ("ci laviamo" = we wash each other)  
+- **intransitive**: General reflexive action (passive-like usage)
+- **Translation-Specific**: Same verb can have different usage patterns across translations
+
+**Current Development Phase:** Systematic metaval attribute validation for Issue #11: Centralized Metaval Table System
+
 ---
 
 *This log captures real-time development progress, maintaining historical context while documenting the iterative process of building a sophisticated language learning platform from concept through commercial viability.*

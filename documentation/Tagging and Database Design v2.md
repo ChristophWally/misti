@@ -601,13 +601,19 @@ Translation metadata determines how forms are displayed and filtered based on me
     - "casa" (`number_restriction: null`) → regular noun with both forms
 - **System Impact**: Conditional form filtering and morphological paradigm constraints
 
-**usage** (Conditional - for reflexive verbs)
-- **Purpose**: Distinguishes reflexive semantic types
-- **Values**:
-  - `direct-reflexive`: Action on oneself (mi lavo = I wash myself)
-  - `reciprocal`: Mutual action (ci laviamo = we wash each other)  
-  - `intransitive`: General action (si lava = gets washed)
-- **System Impact**: Combined with plurality constraint to filter appropriate forms
+**usage** (Verbs Only - Optional for reflexive verbs)
+- **Source Level**: translation (reflexive usage varies by translation meaning)
+- **Display Level**: translation (no propagation needed - usage is translation-specific)
+- **Propagation Rule**: ADMIN_ONLY (reflexive usage patterns don't combine)
+- **Purpose**: Distinguishes reflexive semantic patterns for specific translations
+- **Research Foundation**: Italian reflexive verb system with distinct semantic categories
+- **Values**: direct-reflexive, reciprocal, intransitive
+  - **direct-reflexive**: Action on oneself ("lavarsi" → "to wash oneself")
+  - **reciprocal**: Mutual action ("lavarsi" → "to wash each other")
+  - **intransitive**: General reflexive action (passive-like usage)
+- **Word Type Restriction**: Optional for verbs only (reflexive patterns are verb-specific)
+- **System Impact**: Enables precise reflexive form filtering and usage guidance
+- **Data Quality**: 4 records validated, 2 erroneous non-verb entries cleaned
 
 ### Form Translations Metadata
 
