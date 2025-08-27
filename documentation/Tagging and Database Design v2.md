@@ -148,6 +148,8 @@ The dictionary serves as the authoritative source for base word properties that 
   
   // NOUN-SPECIFIC (word_type = 'noun')
   "gender": "masculine|feminine|common-gender",
+  "number": "singolare|plurale",  // Inherent number concept (casa=singular, forbici=plural)
+  "number_restriction": "solo-singolare|solo-plurale|null",  // Morphological defectiveness
   
   // VERB-SPECIFIC (word_type = 'verb') 
   "conjugation_type": "are|ere|ire|ire-isc",
@@ -306,7 +308,7 @@ Word forms represent individual conjugated instances and must contain complete g
   
   // Person/Number Classification (Required for finite forms)
   "person": "prima-persona|seconda-persona|terza-persona",
-  "number": "singolare|plurale", 
+  "number": "singolare|plurale",  // Verbs: conjugation agreement; Nouns: also at word-level for inherent concept
   "specific_person": "io|tu|lui|lei|noi|voi|loro",
   
   // Morphological Properties (Required)
@@ -508,8 +510,8 @@ Translation metadata determines how forms are displayed and filtered based on me
   "auxiliary": "avere|essere",  // Specific to this translation's meaning
   "transitivity": "transitive|intransitive",
   
-  // Usage Constraint Fields (Required for specific cases)
-  "number_restriction": "solo-plurale|null",
+  // Usage Constraint Fields (Conditional by word_type)
+  "number_restriction": "solo-plurale|null",  // Verbs: reciprocal restrictions; Nouns: at word-level instead
   "usage": "direct-reflexive|reciprocal|intransitive"
 }
 ```
