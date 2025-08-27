@@ -1319,6 +1319,247 @@ const customValidationRules = [
 
 ---
 
+## Conditional Framework Architecture
+
+### Complete Conditional System Design
+
+**Architectural Foundation:**
+The metaval system supports four types of conditional behavior that enable sophisticated linguistic modeling while maintaining database simplicity. Each conditional type solves specific linguistic challenges encountered in Italian morphology and semantics.
+
+### Conditional Type 1: Word-Type Behavioral Differences
+
+**Implementation Pattern:**
+Same attribute name, different semantics/behavior based on `word_type`.
+
+**Prototype Example: `number_restriction`**
+```sql
+-- VERBS (translation-level): Semantic restrictions
+"number_restriction": "solo-plurale"  -- Reciprocal verbs (abbracciarsi)
+"number_restriction": "solo-singolare" -- Semantic singular-only (bastare)
+
+-- NOUNS (word-level): Morphological defectiveness  
+"number_restriction": "solo-plurale"  -- Pluralia tantum (occhiali)
+"number_restriction": "solo-singolare" -- Singularia tantum (latte)
+```
+
+**Database Configuration:**
+```sql
+-- Different word_type rules for same attribute
+INSERT INTO meta_word_type_rules (attribute_id, word_type, is_mandatory)
+VALUES 
+  ((SELECT id FROM meta_attributes WHERE name = 'number_restriction'), 'verb', false),
+  ((SELECT id FROM meta_attributes WHERE name = 'number_restriction'), 'noun', false);
+```
+
+**Other Conditional Behavioral Examples:**
+- `number`: Verbs (form-level conjugation), Nouns (word+form inherent+inflectional)
+- `form_irregular`: Different propagation logic per word_type
+- `auxiliary`: Verbs require selection, other word_types excluded entirely
+
+### Conditional Type 2: Auto-Derivation Dependencies
+
+**Implementation Pattern:**
+Target attribute values automatically computed from source attribute values.
+
+**Prototype Example: `mood` ← `tense`**
+```typescript
+// 27 unique tenses → 7 moods automatic derivation
+const TENSE_TO_MOOD: Record<string, string> = {
+  'presente': 'indicativo',
+  'imperfetto': 'indicativo', 
+  'passato-remoto': 'indicativo',
+  'congiuntivo-presente': 'congiuntivo',
+  'condizionale-presente': 'condizionale',
+  'imperativo-presente': 'imperativo',
+  'infinito-presente': 'infinito'
+  // ... 27 total mappings
+};
+```
+
+**Database Configuration:**
+```sql
+-- Auto-derivation relationships
+CREATE TABLE meta_derivation_rules (
+  id SERIAL PRIMARY KEY,
+  source_attribute_id INTEGER REFERENCES meta_attributes(id),
+  target_attribute_id INTEGER REFERENCES meta_attributes(id), 
+  derivation_mapping JSONB,
+  word_type TEXT,
+  is_active BOOLEAN DEFAULT true
+);
+
+-- Example auto-derivation rule
+INSERT INTO meta_derivation_rules (source_attribute_id, target_attribute_id, derivation_mapping, word_type)
+VALUES (
+  (SELECT id FROM meta_attributes WHERE name = 'tense'),
+  (SELECT id FROM meta_attributes WHERE name = 'mood'),
+  '{"presente": "indicativo", "congiuntivo-presente": "congiuntivo", ...}',
+  'verb'
+);
+```
+
+**Other Auto-Derivation Examples:**
+- `verb_form_type` ← `tense` (regular/irregular pattern detection)
+- `gender` ← `auxiliary` + `tense` (compound tense agreement)
+
+### Conditional Type 3: Hierarchical Level Shifting
+
+**Implementation Pattern:**  
+Same attribute appears at different hierarchical levels based on `word_type`.
+
+**Prototype Example: `number`**
+```sql
+-- VERBS: Form-level only (conjugation agreement)
+word_forms.metadata: {"number": "singolare|plurale"}
+
+-- NOUNS: Both word-level and form-level (inherent + inflectional)
+dictionary.metadata: {"number": "singolare|plurale"}    -- Inherent concept
+word_forms.metadata: {"number": "singolare|plurale"}    -- Inflectional form
+```
+
+**Database Configuration:**
+```sql  
+-- Conditional source/display level logic
+SELECT 
+  CASE 
+    WHEN word_type = 'verb' THEN 'form'
+    WHEN word_type = 'noun' THEN 'word'
+    ELSE 'word'
+  END as conditional_source_level
+FROM meta_attributes 
+WHERE name = 'number';
+```
+
+### Conditional Type 4: Value-Context Dependencies
+
+**Implementation Pattern:**
+Attribute behavior changes based on combinations with other attribute values.
+
+**Prototype Example: `auxiliary` + `gender`**
+```sql
+-- Context-dependent validation
+WHEN auxiliary = 'essere' AND tense IN ('passato-prossimo', 'trapassato-prossimo') 
+THEN gender IS NOT NULL  -- Agreement required with essere compounds
+WHEN auxiliary = 'avere' 
+THEN gender IS NULL      -- No agreement with avere
+```
+
+**Implementation via Constraints:**
+```sql
+-- Value-context conditional constraints  
+ALTER TABLE word_forms ADD CONSTRAINT chk_gender_agreement_context
+CHECK (
+  (metadata->>'auxiliary' != 'essere') OR 
+  (metadata->>'tense' NOT IN ('passato-prossimo', 'trapassato-prossimo')) OR
+  (metadata->>'gender' IN ('masculine', 'feminine'))
+);
+```
+
+### Framework Implementation Architecture
+
+**1. Database Schema Extensions:**
+```sql
+-- Enhanced conditional metadata
+ALTER TABLE meta_attributes ADD COLUMN conditional_config JSONB;
+
+-- Conditional rule definitions  
+CREATE TABLE meta_conditional_rules (
+  id SERIAL PRIMARY KEY,
+  rule_type TEXT CHECK (rule_type IN ('behavioral', 'auto_derivation', 'hierarchical', 'value_context')),
+  attribute_id INTEGER REFERENCES meta_attributes(id),
+  condition_logic JSONB,
+  target_config JSONB,
+  word_type TEXT,
+  is_active BOOLEAN DEFAULT true
+);
+```
+
+**2. Application Logic Patterns:**
+```typescript
+interface ConditionalAttribute {
+  name: string;
+  baseConfig: AttributeConfig;
+  conditionalRules: ConditionalRule[];
+}
+
+interface ConditionalRule {
+  type: 'behavioral' | 'auto_derivation' | 'hierarchical' | 'value_context';
+  condition: (word: Word, context: ValidationContext) => boolean;
+  modification: AttributeModification;
+  wordTypes: WordType[];
+}
+
+// Runtime conditional resolution
+function resolveAttributeConfig(attribute: ConditionalAttribute, word: Word): AttributeConfig {
+  const applicableRules = attribute.conditionalRules.filter(rule => 
+    rule.condition(word, { wordType: word.metadata.word_type })
+  );
+  
+  return applicableRules.reduce((config, rule) => 
+    applyConditionalModification(config, rule.modification), 
+    attribute.baseConfig
+  );
+}
+```
+
+**3. Frontend Integration:**
+```typescript
+// Dynamic form generation based on conditional rules
+function generateFormFields(wordType: WordType): FormField[] {
+  return metaAttributes
+    .filter(attr => isApplicableToWordType(attr, wordType))
+    .map(attr => resolveConditionalPresentation(attr, wordType))
+    .map(config => createFormField(config));
+}
+
+// Conditional validation
+function validateConditionalRules(word: Word): ValidationResult[] {
+  return conditionalRules
+    .filter(rule => rule.wordTypes.includes(word.metadata.word_type))
+    .map(rule => rule.validator(word))
+    .filter(result => !result.isValid);
+}
+```
+
+### Conditional Framework Benefits
+
+**1. Linguistic Accuracy:**
+- Captures real Italian morphological and semantic patterns
+- Eliminates artificial constraints that don't match linguistic reality
+- Enables precise modeling of complex grammatical phenomena
+
+**2. Database Efficiency:**  
+- Single attribute names reduce schema complexity
+- Word-type restrictions prevent invalid data combinations
+- Auto-derivation reduces redundant data storage
+
+**3. Developer Experience:**
+- Consistent attribute naming across word types
+- Clear conditional logic documented in database schema
+- Systematic patterns reduce cognitive overhead
+
+**4. Maintainability:**
+- New conditional rules can be added without schema changes
+- Conditional behavior centralized in configuration
+- Clear separation between base attribute definition and conditional modifications
+
+**5. System Flexibility:**
+- Framework supports all identified Italian linguistic patterns
+- Extensible to additional languages with different conditional requirements
+- Runtime conditional resolution enables dynamic UI generation
+
+### Future Conditional Extensions
+
+**Planned Conditional Patterns:**
+- **Multi-attribute Dependencies**: Attributes that interact with multiple other attributes
+- **Language-Specific Conditionals**: Framework extensible to other Romance languages  
+- **User-Level Conditionals**: Different attribute presentations based on user proficiency
+- **Temporal Conditionals**: Attribute behavior that changes based on historical periods
+
+The conditional framework architecture provides a systematic foundation for handling all complex linguistic patterns while maintaining database simplicity and ensuring data integrity through comprehensive validation.
+
+---
+
 ## Implementation Success Criteria
 
 ### Technical Validation Checkpoints
