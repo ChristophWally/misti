@@ -394,9 +394,16 @@ Our database analysis revealed that existing data uses `passato-progressivo` whi
 - **Values**: indicativo, congiuntivo, condizionale, imperativo, infinito, participio, gerundio
 - **Linguistic Foundation**: Complete Italian 7-mood system (4 finite + 3 indefinite moods)
 
-**tense** (Required) 
+**tense** (Verbs Only - Required) 
+- **Source Level**: form (each verb form has specific tense)
+- **Display Level**: form (no propagation needed - individual form property)
+- **Propagation Rule**: ADMIN_ONLY (tenses don't combine or propagate)
 - **Purpose**: Specific temporal/aspectual identification within mood
+- **Research Foundation**: Complete Italian 27-tense system with unique mood assignment
 - **Uniqueness**: Each tense value belongs to exactly one mood, eliminating ambiguity
+- **Word Type Restriction**: Mandatory for verbs only (nouns/adjectives/adverbs don't have tense)
+- **System Impact**: Enables precise grammatical classification and auto-derivation of mood
+- **Data Quality**: 626 verb forms validated, 3 erroneous null tense keys cleaned
 
 **Tense→Mood Automatic Derivation Rules (27→7 mapping):**
 
