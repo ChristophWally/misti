@@ -154,7 +154,7 @@ The dictionary serves as the authoritative source for base word properties that 
   // VERB-SPECIFIC (word_type = 'verb') 
   "conjugation_type": "are|ere|ire|ire-isc",
   "auxiliary": "avere|essere",  // Note: "both" only appears at word level via COMBINE propagation
-  "transitivity": "transitive|intransitive|both", 
+  "transitivity": "transitive|intransitive|ambitransitive", 
   "reflexive": true/false,
   
   // ADJECTIVE-SPECIFIC (word_type = 'adjective')
@@ -519,7 +519,7 @@ Translation metadata determines how forms are displayed and filtered based on me
   
   // Verb-Specific Fields (Required for verbs)
   "auxiliary": "avere|essere",  // Specific to this translation's meaning
-  "transitivity": "transitive|intransitive",
+  "transitivity": "transitive|intransitive|ambitransitive",
   
   // Usage Constraint Fields (Conditional by word_type)
   "number_restriction": "solo-plurale|null",  // Verbs: reciprocal restrictions; Nouns: at word-level instead
@@ -566,8 +566,18 @@ Translation metadata determines how forms are displayed and filtered based on me
 - **System Impact**: Determines which compound forms are displayed and linked to each translation
 
 **transitivity** (Verbs Only - Required)
-- **Purpose**: Specifies argument structure for this specific meaning
-- **System Impact**: Affects form filtering and sentence construction validation
+- **Source Level**: translation (transitivity varies by translation meaning)
+- **Display Level**: word (COMBINE propagation shows complete usage spectrum)
+- **Propagation Rule**: COMBINE (displays full transitivity range across translations)
+- **Purpose**: Specifies argument structure requirements for this specific translation meaning
+- **Research Foundation**: Cognitive linguistics unified approach - ambitransitive as single flexible concept
+- **Values**: transitive, intransitive, ambitransitive
+  - **transitive**: requires direct object ("suonare il piano" → "play the piano")
+  - **intransitive**: no direct object ("il telefono suona" → "the phone rings") 
+  - **ambitransitive**: flexible usage both ways ("correre" → "run" - with/without object)
+- **Pedagogical Approach**: Single concept rather than artificial translation splits
+- **System Impact**: Enables argument structure validation and usage guidance
+- **Display Optimization**: Shorthand notation needed for COMBINE results (trans/intrans/ambi)
 
 **number_restriction** (Conditional Word-Type Behavior - Enhanced)
 - **Purpose**: Unified morphological defectiveness and semantic restrictions
@@ -700,7 +710,7 @@ ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_conjugation_verbs_only
 
 ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_transitivity_verbs_only
   CHECK ((metadata->>'word_type' != 'verb') OR
-         (metadata->>'transitivity' IN ('transitive','intransitive','both')));
+         (metadata->>'transitivity' IN ('transitive','intransitive','ambitransitive')));
 
 ALTER TABLE dictionary ADD CONSTRAINT chk_dict_meta_form_pattern_adjectives_only
   CHECK ((metadata->>'word_type' != 'adjective') OR

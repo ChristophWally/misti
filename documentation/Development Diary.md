@@ -1602,6 +1602,56 @@ UPDATE dictionary SET word_type = 'VERB' WHERE word_type = 'verb';
 
 **Current Development Phase:** Systematic metaval attribute validation for Issue #11: Centralized Metaval Table System
 
+# Misti Development Log - Transitivity Attribute Validation & Pedagogical Enhancement
+
+**Date:** August 27, 2025
+**Duration:** Research-based validation with cognitive linguistics integration
+**Status:** ✅ Completed
+**Branch:** fix/refactor-migration-tools
+
+### What I Accomplished Today
+- **Transitivity Pedagogical Research**: Validated ambitransitive approach with cognitive linguistics literature
+- **Value System Enhancement**: Updated "both" → "ambitransitive" for precise linguistic terminology
+- **Database Cleanup**: Removed duplicate word type rules, established single verb-only restriction
+- **Documentation Update**: Enhanced Tagging v2 with cognitive linguistics foundation and pedagogy rationale
+- **Display Optimization Planning**: Identified need for shorthand notation system for COMBINE propagation
+
+### Research Validation Results
+- **Cognitive Linguistics Support**: ✅ "Unified vs fragmented approaches" validates single ambitransitive concept
+- **Discovery-Based Learning**: ✅ Research supports ambitransitive label over artificial translation splits
+- **ESL Teaching Best Practices**: ✅ Systematic relationships preferred over separate lexical items
+- **Pedagogical Approach**: ✅ Single flexible concept aligns with modern language learning methodology
+
+### Technical Implementation
+- **Values**: transitive, intransitive, ambitransitive (precise linguistic terms)
+- **Propagation**: translation→word COMBINE (shows complete usage spectrum)
+- **Word Type Rules**: Single verb-only mandatory rule (cleaned duplicates)
+- **Zero Usage**: No existing data to migrate (unused attribute ready for implementation)
+
+### Database Changes Made
+```sql
+-- Enhanced value system
+UPDATE meta_values SET value = 'ambitransitive' WHERE [...] AND value = 'both';
+
+-- Cleaned duplicate rules
+DELETE FROM meta_word_type_rules WHERE attribute_id = [...];
+INSERT INTO meta_word_type_rules (attribute_id, word_type, is_mandatory) VALUES [...];
+```
+
+### Key Pedagogical Insights
+- **Systematic vs Random Properties**: Transitivity is random (unlike reciprocal patterns), doesn't warrant translation splits
+- **Ambitransitive as Learning Tool**: Single concept teaches flexibility rather than artificial separation
+- **COMBINE Display Challenge**: Need shorthand notation for "transitive & intransitive & ambitransitive"
+- **Italian Reality**: Verbs like "suonare" genuinely have different transitivity across English translations
+
+### Final Configuration
+- **Perfect Linguistic Logic**: ✅ translation→word with verb-only restrictions
+- **Research-Based Values**: ✅ Cognitive linguistics validated approach
+- **Clean Database**: ✅ Single word type rule, zero duplicate configurations
+- **Ready for Implementation**: ✅ Awaits shorthand display system for optimal UX
+
+**Current Development Phase:** Systematic metaval attribute validation for Issue #11: Centralized Metaval Table System
+
 ---
 
 *This log captures real-time development progress, maintaining historical context while documenting the iterative process of building a sophisticated language learning platform from concept through commercial viability.*
