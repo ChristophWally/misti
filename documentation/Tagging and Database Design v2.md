@@ -309,7 +309,6 @@ Word forms represent individual conjugated instances and must contain complete g
   // Person/Number Classification (Required for finite forms)
   "person": "prima-persona|seconda-persona|terza-persona",
   "number": "singolare|plurale",  // Verbs: conjugation agreement; Nouns: also at word-level for inherent concept
-  "specific_person": "io|tu|lui|lei|noi|voi|loro",
   
   // Morphological Properties (Required)
   "verb_form_type": "simple|compound|progressive",  // Renamed from form_type - verb-specific
@@ -459,9 +458,14 @@ Our database analysis revealed that existing data uses `passato-progressivo` whi
     - Form-level: "casa" (singolare), "case" (plurale)
 - **System Impact**: Complete grammatical number system across all word types
 
-**specific_person** (Required for finite forms)
-- **Purpose**: Granular pronoun identification beyond general person categories
-- **System Impact**: Enables precise form-to-pronoun mapping for UI display
+**~~specific_person~~ (ELIMINATED - REDUNDANT)**
+- **Redundancy Analysis**: Complete auto-derivation possible from person+number+gender combination
+- **Elimination Rationale**: 
+  - **Auto-derivable**: prima-persona+singolare → io, seconda-persona+plurale → voi, etc.
+  - **Zero Usage**: No existing data uses this attribute (0 records)
+  - **Computational Logic**: person(3) × number(2) × gender(2) = 12 possible combinations → 7 specific pronouns
+  - **Implementation Approach**: Frontend can compute specific pronouns from existing attributes
+- **Migration Impact**: No data migration required (unused attribute)
 
 **verb_form_type** (Verb Forms Only - Required)
 - **Purpose**: Construction method classification for verb morphological analysis
@@ -915,15 +919,7 @@ UPDATE word_forms SET metadata = jsonb_build_object(
     WHEN 'singolare' = ANY(tags) THEN 'singolare'
     WHEN 'plurale' = ANY(tags) THEN 'plurale'
     ELSE NULL END,
-  'specific_person', CASE
-    WHEN 'io' = ANY(tags) THEN 'io'
-    WHEN 'tu' = ANY(tags) THEN 'tu'
-    WHEN 'lui' = ANY(tags) THEN 'lui'
-    WHEN 'lei' = ANY(tags) THEN 'lei'
-    WHEN 'noi' = ANY(tags) THEN 'noi'
-    WHEN 'voi' = ANY(tags) THEN 'voi'
-    WHEN 'loro' = ANY(tags) THEN 'loro'
-    ELSE NULL END,
+  -- NOTE: 'specific_person' eliminated - auto-derivable from person+number+gender
   -- NOTE: 'irregular' eliminated - handled by form_irregular propagation
   'verb_form_type', CASE
     WHEN 'simple' = ANY(tags) THEN 'simple'

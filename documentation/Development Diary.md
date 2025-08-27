@@ -1521,6 +1521,45 @@ WHERE metadata->>'register' = 'informal';
 
 **Current Development Phase:** Systematic metaval attribute validation for Issue #11: Centralized Metaval Table System
 
+# Misti Development Log - Specific_Person Attribute Elimination
+
+**Date:** August 27, 2025
+**Duration:** Quick validation and elimination
+**Status:** ✅ Completed
+**Branch:** fix/refactor-migration-tools
+
+### What I Accomplished Today
+- **Specific_Person Redundancy Analysis**: Confirmed complete auto-derivation possible from person+number+gender
+- **Zero Impact Elimination**: Removed unused attribute with no data dependencies
+- **Documentation Update**: Added comprehensive elimination rationale to Tagging v2
+- **Database Cleanup**: Deactivated metaval configuration cleanly
+
+### Technical Analysis
+- **Redundancy Confirmation**: person+number+gender → specific pronouns (computational derivation)
+- **Usage Validation**: 0 records in word_forms.metadata using specific_person
+- **Derivation Logic**: 
+  - prima-persona+singolare → io
+  - seconda-persona+plurale → voi  
+  - terza-persona+singolare+masculine → lui
+  - terza-persona+singolare+feminine → lei
+- **Implementation Approach**: Frontend computation eliminates storage need
+
+### Database Changes Made
+```sql
+-- Clean elimination - no data impact
+UPDATE meta_attributes SET is_active = false WHERE name = 'specific_person';
+UPDATE meta_values SET is_active = false WHERE attribute_id = [...];
+DELETE FROM meta_word_type_rules WHERE attribute_id = [...];
+```
+
+### Validation Results
+- **Redundancy Status**: ✅ CONFIRMED - Complete auto-derivation from existing attributes
+- **Data Impact**: ✅ ZERO - No existing usage to migrate
+- **System Simplification**: ✅ ACHIEVED - Removed unnecessary computational overhead
+- **Implementation**: ✅ FRONTEND - Can derive specific pronouns on-demand
+
+**Current Development Phase:** Systematic metaval attribute validation for Issue #11: Centralized Metaval Table System
+
 ---
 
 *This log captures real-time development progress, maintaining historical context while documenting the iterative process of building a sophisticated language learning platform from concept through commercial viability.*
