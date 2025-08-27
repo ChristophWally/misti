@@ -436,15 +436,26 @@ Our database analysis revealed that existing data uses `passato-progressivo` whi
 - **Architecture**: form→form ADMIN_ONLY perfect for manual form-level person specification
 - **System Impact**: Foundation for verb conjugation system and pronoun-verb agreement validation
 
-**number** (Verbs Only - Required - Enhanced Configuration)
-- **Source Level**: form (number expressed in each verb form)
-- **Display Level**: form (direct display, no propagation needed)
-- **Purpose**: Singular/plural distinction essential for pronoun agreement
-- **Values**: singolare, plurale (complete Italian number system)
-- **Critical Function**: Indicates pronoun number (io/noi, tu/voi, lui-lei/loro)
-- **Word Type Enhancement**: Added verb-only mandatory restriction (essential for conjugation)
-- **Architecture**: form→form ADMIN_ONLY perfect for form-level number marking
-- **System Impact**: Foundation for verb-pronoun agreement and conjugation validation
+**number** (Conditional Word-Type Behavior - Enhanced Configuration)
+- **Purpose**: Grammatical number at appropriate hierarchical levels
+- **Conditional Behavior Based on word_type**:
+  
+  **For VERBS (form-level only)**:
+  - **Source/Display**: form→form (conjugation number per form)
+  - **Values**: singolare, plurale
+  - **Mandatory**: Yes (essential for verb conjugation)
+  - **Use Case**: Pronoun-verb agreement in conjugation system
+  - **Examples**: "amo" (singolare), "amiamo" (plurale)
+  
+  **For NOUNS (word + form levels)**:
+  - **Source**: word→form (inherent concept + inflectional forms)
+  - **Values**: singolare, plurale
+  - **Mandatory**: Word-level (inherent), form-level (inflectional)
+  - **Use Case**: Noun morphology and article/adjective agreement
+  - **Examples**:
+    - Word-level: "casa" (inherent singolare concept)
+    - Form-level: "casa" (singolare), "case" (plurale)
+- **System Impact**: Complete grammatical number system across all word types
 
 **specific_person** (Required for finite forms)
 - **Purpose**: Granular pronoun identification beyond general person categories
@@ -498,7 +509,7 @@ Translation metadata determines how forms are displayed and filtered based on me
   "transitivity": "transitive|intransitive",
   
   // Usage Constraint Fields (Required for specific cases)
-  "plural_only": true/false,
+  "number_restriction": "solo-plurale|null",
   "usage": "direct-reflexive|reciprocal|intransitive"
 }
 ```
@@ -536,12 +547,27 @@ Translation metadata determines how forms are displayed and filtered based on me
 - **Purpose**: Specifies argument structure for this specific meaning
 - **System Impact**: Affects form filtering and sentence construction validation
 
-**plural_only** (Conditional - boolean flag)
-- **Purpose**: Constrains form availability based on semantic requirements  
-- **Critical Use Case**: Reciprocal verbs require plural subjects
-  - "wash each other" → `plural_only: true` → hides singular forms
-  - "wash oneself" → `plural_only: false` → shows all forms
-- **System Impact**: Simple boolean drives form filtering in UI - cleaner than tri-state values
+**number_restriction** (Conditional Word-Type Behavior - Enhanced)
+- **Purpose**: Unified morphological defectiveness and semantic restrictions
+- **Conditional Behavior Based on word_type**:
+  
+  **For VERBS (translation-level)**:
+  - **Source/Display**: translation→translation (semantic restriction per translation)
+  - **Values**: solo-plurale, null
+  - **Use Case**: Reciprocal vs reflexive verb translations
+  - **Examples**:
+    - "capirsi" → "understand each other" (`number_restriction: "solo-plurale"`)
+    - "capirsi" → "understand oneself" (`number_restriction: null`)
+  
+  **For NOUNS (word-level)**: 
+  - **Source/Display**: word→word (inherent morphological property)
+  - **Values**: solo-singolare, solo-plurale, null  
+  - **Use Case**: Italian singularia tantum and pluralia tantum
+  - **Examples**:
+    - "forbici" (`number_restriction: "solo-plurale"`) → all translations inherit
+    - "gente" (`number_restriction: "solo-singolare"`) → collective noun restriction
+    - "casa" (`number_restriction: null`) → regular noun with both forms
+- **System Impact**: Conditional form filtering and morphological paradigm constraints
 
 **usage** (Conditional - for reflexive verbs)
 - **Purpose**: Distinguishes reflexive semantic types
@@ -1268,11 +1294,11 @@ const customValidationRules = [
     name: 'ReciprocalPluralityCheck',
     check: (translation: any) => {
       if (translation.metadata?.usage === 'reciprocal') {
-        return translation.metadata?.plural_only === true;
+        return translation.metadata?.number_restriction === 'solo-plurale';
       }
       return true;
     },
-    message: 'Reciprocal translations must have plural_only: true constraint'
+    message: 'Reciprocal translations must have number_restriction: "solo-plurale" constraint'
   },
   {
     name: 'AuxiliaryConsistencyCheck', 
