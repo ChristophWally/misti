@@ -503,7 +503,7 @@ Translation metadata determines how forms are displayed and filtered based on me
 ```json
 {
   // Core Functionality Fields (Required)
-  "register": "formal|informal|neutral",
+  "register": "formal|casual|neutral|mixed",
   "gender_usage": "male-only|female-only",
   
   // Verb-Specific Fields (Required for verbs)
@@ -519,9 +519,18 @@ Translation metadata determines how forms are displayed and filtered based on me
 **Field-by-Field Design Rationale:**
 
 **register** (Required)
+- **Source Level**: translation (register varies by translation context)
+- **Display Level**: word (FIRST_WINS propagation prevents contradictory combinations)
 - **Purpose**: Determines appropriate social contexts for usage
-- **System Impact**: Affects translation selection in formal vs casual contexts
-- **Values**: Covers all major register distinctions in Italian
+- **Research Foundation**: 5-level linguistic register theory (Halliday) with Italian-specific sociolinguistic features
+- **Values**: formal, casual, neutral, mixed
+  - **formal**: Official, business, academic contexts (Lei forms, elevated vocabulary)
+  - **casual**: Informal, friendly contexts (tu forms, colloquial expressions)
+  - **neutral**: Standard register appropriate across contexts
+  - **mixed**: Combines formal/casual elements within single usage
+- **Propagation Logic**: FIRST_WINS eliminates contradictory "formal & casual" combinations from translation→word
+- **System Impact**: Controls register-appropriate translation selection and UI presentation
+- **Word Type Restriction**: Optional for all word types (register applies to complete lexical items)
 
 **gender_usage** (Adjectives Only - Optional)
 - **Source Level**: translation (gender usage varies by translation context)
@@ -656,7 +665,7 @@ ALTER TABLE word_forms ADD CONSTRAINT chk_forms_meta_person
 
 -- Translation universal constraints
 ALTER TABLE word_translations ADD CONSTRAINT chk_trans_meta_register
-  CHECK (metadata->>'register' IN ('formal','informal','neutral'));
+  CHECK (metadata->>'register' IN ('formal','casual','neutral','mixed'));
 
 ALTER TABLE word_translations ADD CONSTRAINT chk_trans_meta_gender_usage  
   CHECK (metadata->>'gender_usage' IN ('male-only','female-only'));

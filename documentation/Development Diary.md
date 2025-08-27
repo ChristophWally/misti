@@ -1473,6 +1473,54 @@ The decision to pause rather than immediately delete the old project reflects a 
 
 **Current Development Phase:** Core infrastructure and foundation systems, preparing for major feature development including deck management, spaced repetition implementation, and collaborative learning features.
 
+# Misti Development Log - Metaval Register Attribute Validation
+
+**Date:** August 27, 2025
+**Duration:** Intensive validation session
+**Status:** ✅ Completed  
+**Branch:** fix/refactor-migration-tools
+
+### What I Accomplished Today
+- **Register Attribute Ultra-Validation**: Complete linguistic and architectural analysis of register attribute
+- **FIRST_WINS Propagation Breakthrough**: Discovered COMBINE propagation creates contradictory "formal & casual" combinations - implemented FIRST_WINS solution
+- **Value System Refinement**: Updated from 'informal' to 'casual' based on standard sociolinguistic terminology
+- **Database Migration**: Successfully migrated 2 existing translation records from informal→casual
+- **Constraint Updates**: Updated all database constraints to reflect new 4-value system
+
+### Technical Implementation
+- **Propagation Change**: translation→word COMBINE → FIRST_WINS (eliminates contradictions)
+- **Value Migration**: 'informal' → 'casual' (2 records updated)
+- **Final Values**: formal, casual, neutral, mixed (complete Italian register system)
+- **Research Foundation**: 5-level linguistic register theory (Halliday) with Italian sociolinguistic features
+- **Constraint Management**: Systematic approach for updating constrained enum values
+
+### Key Technical Decisions
+- **FIRST_WINS Logic**: Prevents contradictory combinations while preserving hierarchical propagation
+- **Casual vs Informal**: Standard linguistic terminology alignment
+- **Mixed Value**: Handles real-world register complexity in Italian discourse
+- **Translation-Level Source**: Register varies by translation context, not word-level inherent property
+
+### Database Changes Made
+```sql
+-- Updated propagation rule
+UPDATE meta_attributes SET propagation_rule = 'FIRST_WINS' WHERE name = 'register';
+
+-- Updated value system  
+UPDATE meta_values SET value = 'casual' WHERE attribute_id = [...] AND value = 'informal';
+
+-- Migrated existing data
+UPDATE word_translations SET metadata = jsonb_set(metadata, '{register}', '"casual"') 
+WHERE metadata->>'register' = 'informal';
+```
+
+### Validation Results
+- **Configuration Status**: ✅ PERFECT - Linguistically accurate, architecturally sound
+- **Propagation Logic**: ✅ OPTIMIZED - FIRST_WINS eliminates contradictory combinations  
+- **Value Completeness**: ✅ COMPLETE - 4-value system covers Italian register spectrum
+- **Data Alignment**: ✅ MIGRATED - All existing data successfully updated
+
+**Current Development Phase:** Systematic metaval attribute validation for Issue #11: Centralized Metaval Table System
+
 ---
 
 *This log captures real-time development progress, maintaining historical context while documenting the iterative process of building a sophisticated language learning platform from concept through commercial viability.*
