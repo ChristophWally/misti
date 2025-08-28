@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ValidationService } from '../services/ValidationService';
 import AuditTab from './tabs/AuditTab';
 import MigrationTab from './tabs/MigrationTab';

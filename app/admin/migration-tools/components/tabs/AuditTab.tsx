@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DatabaseService } from '../../services/DatabaseService';
 
 interface AuditTabProps {
