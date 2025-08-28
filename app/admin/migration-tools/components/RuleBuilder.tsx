@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ModernDatabaseService } from '../services/ModernDatabaseService'
 import { MetavalService, MetaAttribute, ValidationResult } from '../services/MetavalService'
 
