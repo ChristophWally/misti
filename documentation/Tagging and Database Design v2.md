@@ -256,7 +256,7 @@ The dictionary serves as the authoritative source for base word properties that 
 - **Research-Validated Values**: 
   - `form-4`: Full agreement pattern (rosso/rossa/rossi/rosse) - most common Italian adjectives
   - `form-2`: Limited agreement pattern (intelligente/intelligenti, grande/grandi) - invariant for gender
-- **Irregular Pattern Handling**: Positional variants like "bel ragazzo" are stored as individual forms with form_irregular=true
+- **Irregular Pattern Handling**: Irregular patterns like "bel ragazzo" handled via form-level `form_irregular` attribute, not form_pattern values
 - **Word Type Applicability**: Adjectives only (nouns have gender, verbs have conjugation_type)
 - **Mandatory Requirement**: Every adjective needs pattern specification for form generation and agreement rules
 - **System Impact**: Foundation for adjective form generation and agreement rules
@@ -450,6 +450,21 @@ Our database analysis revealed that existing data uses `passato-progressivo` whi
 - **Word Type Restriction**: Mandatory for verb forms only (person is verb-specific grammatical category)
 - **Architecture**: form→form ADMIN_ONLY perfect for manual form-level person specification
 - **System Impact**: Foundation for verb conjugation system and pronoun-verb agreement validation
+
+**plural_formation** (Noun-Specific - Optional)
+- **Source Level**: word AND form (dual-level plural pattern specification)
+- **Display Level**: word/form respectively (no cross-level propagation needed)
+- **Purpose**: Italian noun pluralization pattern classification for standard formations
+- **Conditional**: noun word-type only (plural formation is noun-specific grammatical feature)
+- **Values**: standard_e, standard_i
+  - **standard_e**: Feminine -a ending nouns → -e plural formation (casa → case)
+  - **standard_i**: Masculine -o ending nouns → -i plural formation (libro → libri)
+- **Optional Design**: NULL value indicates invariable or irregular plural (no standard pattern)
+- **Research Foundation**: Italian grammar standard plural formations with spelling rule preservation
+- **Propagation Rule**: ADMIN_ONLY (plural patterns don't combine across levels)
+- **Migration Strategy**: Replaces existing optional_tags: plural-e → standard_e, plural-i → standard_i, plural-invariable → NULL
+- **System Impact**: Enables systematic plural form generation and linguistic validation for standard patterns
+- **Dual-Level Usage**: Word-level for plural-only dictionary entries, form-level for specific plural behaviors
 
 **number** (Conditional Word-Type Behavior - Enhanced Configuration)
 - **Purpose**: Grammatical number at appropriate hierarchical levels
@@ -1592,6 +1607,113 @@ function validateConditionalRules(word: Word): ValidationResult[] {
 - **Temporal Conditionals**: Attribute behavior that changes based on historical periods
 
 The conditional framework architecture provides a systematic foundation for handling all complex linguistic patterns while maintaining database simplicity and ensuring data integrity through comprehensive validation.
+
+---
+
+## Stable ID System Architecture
+
+### Frontend-Safe Identifier Design
+
+**Problem Addressed:** UUID-based references break frontend integration when attributes are renamed, and long UUIDs create poor developer experience in APIs and debugging.
+
+**Solution:** Dual-identifier system with stable sequential IDs for frontend consumption and UUID fallback for database integrity.
+
+### Stable ID Format Specification
+
+**Attributes:**
+```
+Format: metaattr001, metaattr002, metaattr003...
+Range: metaattr001-999 (supports up to 999 attributes)
+Generation: Supabase sequence-based auto-generation
+Ordering: Alphabetical by attribute name for consistency
+```
+
+**Values (Hierarchical):**
+```
+Format: metaattr002val001, metaattr002val002...
+Structure: {parent_attribute_stable_id}val{sequence_number}
+Benefits: Immediate parent relationship visibility
+Generation: Automatic trigger-based assignment
+```
+
+### Database Implementation
+
+**Enhanced Schema:**
+```sql
+-- Attributes with auto-generated stable IDs
+ALTER TABLE meta_attributes ADD COLUMN stable_id TEXT UNIQUE;
+ALTER TABLE meta_attributes ALTER COLUMN stable_id 
+  SET DEFAULT ('metaattr' || LPAD(nextval('meta_attributes_stable_id_seq')::text, 3, '0'));
+
+-- Values with hierarchical stable IDs  
+ALTER TABLE meta_values ADD COLUMN stable_id TEXT UNIQUE;
+
+-- Auto-generation function for hierarchical value IDs
+CREATE OR REPLACE FUNCTION generate_meta_value_stable_id(attr_id UUID)
+RETURNS TEXT AS $$
+DECLARE
+    attr_stable_id TEXT;
+    next_val_num INTEGER;
+BEGIN
+    SELECT stable_id INTO attr_stable_id FROM meta_attributes WHERE id = attr_id;
+    SELECT COALESCE(MAX(CAST(RIGHT(stable_id, 3) AS INTEGER)), 0) + 1
+    INTO next_val_num FROM meta_values 
+    WHERE attribute_id = attr_id AND stable_id IS NOT NULL;
+    
+    RETURN attr_stable_id || 'val' || LPAD(next_val_num::text, 3, '0');
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger for automatic value stable_id generation
+CREATE TRIGGER trigger_set_meta_value_stable_id
+    BEFORE INSERT ON meta_values FOR EACH ROW
+    EXECUTE FUNCTION set_meta_value_stable_id();
+```
+
+### Frontend Integration Benefits
+
+**API Usage Examples:**
+```javascript
+// Before: Long UUIDs difficult to work with
+const attributeId = "4478177c-a43a-49aa-926c-278bc546e035";
+const valueId = "8f1e234a-5b67-8c90-d123-456e789f0abc";
+
+// After: Short, memorable, meaningful IDs
+const attributeId = "metaattr002";  // auxiliary
+const valueId = "metaattr002val014"; // avere (clearly belongs to auxiliary)
+```
+
+**Rename Safety:**
+```sql
+-- Safe renaming: frontend unaffected
+UPDATE meta_attributes 
+SET name = 'auxiliary_verb' 
+WHERE stable_id = 'metaattr002';
+-- Frontend continues using metaattr002 - no breakage
+```
+
+### Stable ID Assignment Results
+
+**Current System State (23 Attributes, 108 Values):**
+- **metaattr001**: adverb_type → metaattr001val001 (manner), metaattr001val002 (time)...
+- **metaattr002**: auxiliary → metaattr002val014 (avere), metaattr002val015 (essere)...
+- **metaattr003**: cefr_level → metaattr003val016 (A1), metaattr003val017 (A2)...
+
+### Developer Experience Enhancement
+
+**Benefits Achieved:**
+1. **Short IDs**: `metaattr002` vs `4478177c-a43a-49aa-926c-278bc546e035`
+2. **Hierarchical Clarity**: `metaattr002val014` immediately shows attribute relationship
+3. **Rename Immunity**: Attribute names can evolve without breaking integrations
+4. **API Friendliness**: Easy to type, remember, and debug
+5. **Zero Cost**: Trigger functions included in all Supabase plans at no charge
+
+**Migration Strategy:**
+- **Backward Compatibility**: Both `name` and `stable_id` available during transition
+- **Gradual Migration**: Frontend can migrate from names to stable IDs incrementally  
+- **UUID Preservation**: Original UUID `id` columns maintained for database relationships
+
+The stable ID system enables safe evolution of the metaval attribute schema while providing superior developer experience and frontend integration reliability.
 
 ---
 
