@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ModernDatabaseService, ModernSelectionCriteria } from '../services/ModernDatabaseService';
+import { MetavalService, MetaAttribute, MetaValue } from '../services/MetavalService';
 import RuleBuilder from './RuleBuilder';
 
 interface SearchInterfaceProps {
@@ -26,6 +27,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   const { uiState, dataState, formState } = state;
   const { updateUIState, updateDataState, updateFormState } = actions;
   const { handleError, handleSuccess } = handlers;
+
+  // METAVAL: Initialize service
+  const metavalService = new MetavalService();
 
   const [availableTags, setAvailableTags] = useState<{
     coreTags: { tag: string; count: number; tables: string[] }[];
@@ -96,6 +100,15 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   // Selected records for bulk operations
   const [selectedRecords, setSelectedRecords] = useState<Record<string, Set<string>>>({});
 
+  // METAVAL: Enhanced search state
+  const [metavalMode, setMetavalMode] = useState(false);
+  const [selectedWordTypes, setSelectedWordTypes] = useState<string[]>(['noun', 'verb', 'adjective', 'adverb']);
+  const [availableAttributes, setAvailableAttributes] = useState<MetaAttribute[]>([]);
+  const [selectedAttribute, setSelectedAttribute] = useState<string>('');
+  const [availableValues, setAvailableValues] = useState<MetaValue[]>([]);
+  const [selectedValue, setSelectedValue] = useState<string>('');
+  const [metavalSearchResults, setMetavalSearchResults] = useState<Record<string, any[]>>({});
+
   // Load all available tags on mount
   const loadAvailableTags = async () => {
     try {
@@ -125,6 +138,83 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     loadAvailableTags();
     loadAvailableWords();
   }, []);
+
+  // METAVAL: Load attributes when word types change
+  useEffect(() => {
+    if (metavalMode && selectedWordTypes.length > 0) {
+      loadMetavalAttributes();
+    }
+  }, [metavalMode, selectedWordTypes]);
+
+  // METAVAL: Load values when attribute changes
+  useEffect(() => {
+    if (metavalMode && selectedAttribute) {
+      loadMetavalValues();
+    }
+  }, [metavalMode, selectedAttribute]);
+
+  const loadMetavalAttributes = async () => {
+    try {
+      const allAttributes = await Promise.all(
+        selectedWordTypes.map(wordType => metavalService.getAttributesForWordType(wordType))
+      );
+      
+      // Merge and deduplicate attributes
+      const uniqueAttributes = new Map<string, MetaAttribute>();
+      allAttributes.flat().forEach(attr => {
+        uniqueAttributes.set(attr.stable_id, attr);
+      });
+      
+      const attributes = Array.from(uniqueAttributes.values())
+        .sort((a, b) => a.display_name.localeCompare(b.display_name));
+      
+      setAvailableAttributes(attributes);
+    } catch (error) {
+      handleError(error, 'Failed to load metaval attributes');
+    }
+  };
+
+  const loadMetavalValues = async () => {
+    try {
+      const attribute = availableAttributes.find(attr => attr.stable_id === selectedAttribute);
+      if (!attribute) return;
+
+      const values = await metavalService.getValuesForAttribute(attribute.id);
+      setAvailableValues(values);
+    } catch (error) {
+      handleError(error, 'Failed to load metaval values');
+    }
+  };
+
+  // METAVAL: Perform metaval search
+  const performMetavalSearch = async () => {
+    if (!selectedAttribute || !selectedValue) {
+      handleError(new Error('Please select both an attribute and value to search'), 'Metaval search validation');
+      return;
+    }
+
+    try {
+      updateUIState({ isLoading: true, error: null });
+
+      const tables = selectedContentTypes.map(contentType => {
+        switch (contentType) {
+          case 'Dictionary Words': return 'dictionary';
+          case 'Conjugated Forms': return 'word_forms';
+          case 'English Translations': return 'word_translations';
+          case 'Form Translations': return 'form_translations';
+          default: return '';
+        }
+      }).filter(Boolean);
+
+      const searchResult = await metavalService.searchByAttribute(selectedAttribute, selectedValue, tables);
+      setMetavalSearchResults(searchResult.results);
+
+      updateUIState({ isLoading: false });
+      handleSuccess(`Found records using metaval attribute: ${searchResult.attributeInfo.display_name}`);
+    } catch (error) {
+      handleError(error, 'Metaval search failed');
+    }
+  };
 
   // Perform unified tag search
   const performUnifiedSearch = async () => {
@@ -568,9 +658,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       <div className="border-b border-gray-200">
         <nav className="flex space-x-8">
           <button
-            onClick={() => setSearchMode('tag')}
+            onClick={() => { setSearchMode('tag'); setMetavalMode(false); }}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              searchMode === 'tag'
+              searchMode === 'tag' && !metavalMode
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
@@ -578,14 +668,24 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
             🏷️ Search by Tag
           </button>
           <button
-            onClick={() => setSearchMode('word')}
+            onClick={() => { setSearchMode('word'); setMetavalMode(false); }}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              searchMode === 'word'
+              searchMode === 'word' && !metavalMode
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
             📖 Search by Word
+          </button>
+          <button
+            onClick={() => { setMetavalMode(true); setSearchMode('tag'); }}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              metavalMode
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            ✨ Metaval Search
           </button>
         </nav>
       </div>
@@ -781,6 +881,171 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
             🔄 Refresh Tags
           </button>
         </div>
+        </div>
+      )}
+
+      {/* Metaval Search Interface */}
+      {metavalMode && (
+        <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="font-medium text-gray-900 flex items-center">
+                ✨ Metaval Search
+                <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
+                  Enhanced with Stable IDs
+                </span>
+              </h3>
+              <p className="text-sm text-gray-600">Search using metaval attributes with display names and word-type filtering</p>
+            </div>
+            <button
+              onClick={clearAll}
+              className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition-colors"
+            >
+              Clear All
+            </button>
+          </div>
+
+          {/* Word Type Selection */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Word Types to Include:</h4>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              {['noun', 'verb', 'adjective', 'adverb'].map((wordType) => (
+                <label key={wordType} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedWordTypes.includes(wordType)}
+                    onChange={() => {
+                      setSelectedWordTypes(prev => 
+                        prev.includes(wordType)
+                          ? prev.filter(wt => wt !== wordType)
+                          : [...prev, wordType]
+                      );
+                    }}
+                    className="mr-2"
+                  />
+                  <span className="text-sm capitalize">{wordType}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Attribute Selection */}
+          {availableAttributes.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-2">
+                Select Metaval Attribute ({availableAttributes.length} available):
+              </h4>
+              <select
+                value={selectedAttribute}
+                onChange={(e) => setSelectedAttribute(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">Choose an attribute...</option>
+                {availableAttributes.map((attr) => (
+                  <option key={attr.stable_id} value={attr.stable_id}>
+                    {attr.display_name}
+                    {attr.is_mandatory && ' (Mandatory)'}
+                    {' - '}
+                    <span className="text-gray-500">{attr.name}</span>
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Value Selection */}
+          {selectedAttribute && availableValues.length > 0 && (
+            <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-2">
+                Select Value ({availableValues.length} available):
+              </h4>
+              <select
+                value={selectedValue}
+                onChange={(e) => setSelectedValue(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">Choose a value...</option>
+                {availableValues.map((value) => (
+                  <option key={value.id} value={value.value}>
+                    {value.value}
+                    {value.shorthand && ` (${value.shorthand})`}
+                    {value.is_default && ' (Default)'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Content Type Selection */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Content Types to Search:</h4>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              {contentTypes.map((contentType) => (
+                <label key={contentType} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedContentTypes.includes(contentType)}
+                    onChange={() => toggleContentType(contentType)}
+                    className="mr-2"
+                  />
+                  <span className="text-sm">{contentType}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Search Actions */}
+          <div className="flex space-x-2 pt-2">
+            <button
+              onClick={performMetavalSearch}
+              disabled={uiState.isLoading || !selectedAttribute || !selectedValue}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-300 transition-colors"
+            >
+              {uiState.isLoading ? '🔄 Searching...' : '✨ Search by Metaval Attribute'}
+            </button>
+            <button
+              onClick={() => {
+                setSelectedAttribute('');
+                setSelectedValue('');
+                setAvailableValues([]);
+                setMetavalSearchResults({});
+              }}
+              disabled={uiState.isLoading}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 disabled:bg-gray-100 transition-colors"
+            >
+              🔄 Reset Search
+            </button>
+          </div>
+
+          {/* Selected Configuration Display */}
+          {(selectedWordTypes.length > 0 || selectedAttribute || selectedValue) && (
+            <div className="bg-white border border-gray-200 rounded-lg p-3">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Current Configuration:</h4>
+              <div className="space-y-1 text-sm">
+                <div>
+                  <span className="text-gray-600">Word Types:</span>{' '}
+                  <span className="font-medium">{selectedWordTypes.join(', ') || 'None selected'}</span>
+                </div>
+                {selectedAttribute && (
+                  <div>
+                    <span className="text-gray-600">Attribute:</span>{' '}
+                    <span className="font-medium">
+                      {availableAttributes.find(a => a.stable_id === selectedAttribute)?.display_name || selectedAttribute}
+                    </span>
+                    <span className="text-gray-500 ml-1">
+                      ({availableAttributes.find(a => a.stable_id === selectedAttribute)?.name})
+                    </span>
+                  </div>
+                )}
+                {selectedValue && (
+                  <div>
+                    <span className="text-gray-600">Value:</span>{' '}
+                    <span className="font-medium">{selectedValue}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1433,6 +1698,171 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
             >
               Configure Transformation (Phase 2)
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Metaval Search Results */}
+      {metavalMode && Object.keys(metavalSearchResults).length > 0 && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium text-gray-900 flex items-center">
+              ✨ Metaval Search Results
+              <span className="ml-2 text-sm text-gray-500">
+                ({Object.values(metavalSearchResults).reduce((sum, records) => sum + records.length, 0)} total records)
+              </span>
+            </h3>
+            <div className="text-sm text-gray-500">
+              Attribute: {availableAttributes.find(a => a.stable_id === selectedAttribute)?.display_name}
+            </div>
+          </div>
+
+          {/* Results by Content Type */}
+          {Object.entries(metavalSearchResults).map(([table, records]) => {
+            const contentTypeName = table === 'dictionary' ? 'Dictionary Words' : 
+                                   table === 'word_forms' ? 'Conjugated Forms' :
+                                   table === 'word_translations' ? 'English Translations' : 
+                                   table === 'form_translations' ? 'Form Translations' : table;
+                                   
+            return (
+              <div key={table} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-green-50 px-4 py-3 border-b border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium text-gray-900">
+                      {contentTypeName} ({records.length} records)
+                    </h4>
+                    {records.length > 0 && (
+                      <div className="flex space-x-2">
+                        {selectedRecords[contentTypeName]?.size > 0 && (
+                          <button 
+                            onClick={() => clearSelectedRecords(contentTypeName)}
+                            className="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition-colors"
+                          >
+                            Clear ({selectedRecords[contentTypeName]?.size})
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => selectAllRecords(contentTypeName, records)}
+                          className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors"
+                        >
+                          Select All ({records.length})
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {records.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    No matching records found in {contentTypeName}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {records.slice(0, 10).map((record, index) => (
+                      <div key={index} className="p-4 hover:bg-gray-50">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                {/* Primary Content */}
+                                <div className="font-medium text-gray-900 mb-1 flex items-center">
+                                  <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded mr-2">
+                                    Metaval Match
+                                  </span>
+                                  {record.italian || record.form_text || record.translation || record.english || `Record ${record.id}`}
+                                </div>
+                                
+                                {/* Secondary Content */}
+                                {record.english && record.italian !== record.english && (
+                                  <div className="text-sm text-gray-600 mb-1">
+                                    English: {record.english}
+                                  </div>
+                                )}
+                                
+                                {/* Metaval Attribute Match Highlight */}
+                                <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded">
+                                  <span className="text-xs font-medium text-green-700">
+                                    ✨ Matched Attribute: 
+                                  </span>
+                                  <span className="text-sm font-medium text-green-800">
+                                    {availableAttributes.find(a => a.stable_id === selectedAttribute)?.display_name}
+                                  </span>
+                                  <span className="text-xs text-green-600 ml-2">
+                                    = {selectedValue}
+                                  </span>
+                                </div>
+                                
+                                {/* Core Tags Display */}
+                                {record.metadata && Object.keys(record.metadata).length > 0 && (
+                                  <div className="mb-2">
+                                    <span className="text-xs font-medium text-blue-700">📋 Core Tags: </span>
+                                    <div className="inline-flex flex-wrap gap-1">
+                                      {Object.entries(record.metadata).map(([key, value]) => (
+                                        <span key={key} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                                          {key}: {value as string}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Optional Tags Display */}
+                                {record.optional_tags && record.optional_tags.length > 0 && (
+                                  <div className="mb-2">
+                                    <span className="text-xs font-medium text-green-700">🏷️ Optional Tags: </span>
+                                    <div className="inline-flex flex-wrap gap-1">
+                                      {record.optional_tags.map((tag: string) => (
+                                        <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center space-x-2 ml-4">
+                                <button
+                                  onClick={() => openRecordEditor(record, contentTypeName)}
+                                  className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition-colors"
+                                  title="Edit tags for this record"
+                                >
+                                  Edit Tags
+                                </button>
+                                <input 
+                                  type="checkbox" 
+                                  className="mt-1"
+                                  checked={selectedRecords[contentTypeName]?.has(record.id) || false}
+                                  onChange={() => toggleRecordSelection(record.id, contentTypeName)}
+                                  title={`Select ${record.italian || record.form_text || record.translation || record.english}`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {records.length > 10 && (
+                      <div className="p-4 bg-gray-50 text-center text-sm text-gray-600">
+                        ... and {records.length - 10} more records
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Metaval Enhancement Information */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <h4 className="font-medium text-green-800 mb-2">✨ Metaval Enhancement Benefits</h4>
+            <div className="text-sm text-green-700 space-y-1">
+              <div>• <strong>Stable ID Backend</strong>: Search uses stable identifiers resistant to name changes</div>
+              <div>• <strong>Display Name Frontend</strong>: User sees friendly names like "Grammatical Person" instead of "person"</div>
+              <div>• <strong>Word-Type Filtering</strong>: Results respect word-type constraints (only valid attributes shown)</div>
+              <div>• <strong>COMBINE Optimization</strong>: Values support shorthand display (57% character savings)</div>
+              <div>• <strong>Validation Ready</strong>: Search results can be validated against metaval rules</div>
+            </div>
           </div>
         </div>
       )}

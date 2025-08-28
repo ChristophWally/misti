@@ -632,9 +632,9 @@ export class ModernDatabaseService {
   }>> {
     try {
       const { data, error } = await supabase
-        .from('meta_word_type_rules')
+        .from('metaval_rules')
         .select(`
-          is_mandatory,
+          rule_config,
           meta_attributes!inner(
             name,
             description, 
@@ -642,7 +642,9 @@ export class ModernDatabaseService {
             combined_value_name
           )
         `)
-        .eq('word_type', wordType);
+        .eq('rule_type', 'word_type')
+        .eq('word_type', wordType)
+        .eq('is_active', true);
 
       if (error) {
         console.error(`Error loading attributes for ${wordType}:`, error);
@@ -699,6 +701,337 @@ export class ModernDatabaseService {
     } catch (error) {
       console.error(`Failed to load implied values for ${attributeName}=${value}:`, error);
       return [];
+    }
+  }
+
+  // ========================================================================
+  // ENHANCED METAVAL METHODS FOR MIGRATION TOOLS
+  // ========================================================================
+
+  /**
+   * Get meta attributes for a specific word type with display names and stable IDs
+   */
+  async getMetaAttributesForWordType(wordType: string): Promise<Array<{
+    id: string;
+    stable_id: string;
+    name: string;
+    display_name: string;
+    description?: string;
+    is_mandatory: boolean;
+    source_level: string;
+    display_level: string;
+    conditional_source_level?: string;
+    conditional_display_level?: string;
+  }>> {
+    try {
+      const { data, error } = await supabase
+        .from('metaval_rules')
+        .select(`
+          rule_config,
+          meta_attributes!inner(
+            id,
+            stable_id,
+            name,
+            display_name,
+            description,
+            source_level,
+            display_level
+          )
+        `)
+        .eq('rule_type', 'word_type')
+        .eq('word_type', wordType)
+        .eq('is_active', true)
+        .eq('meta_attributes.is_active', true);
+
+      if (error) {
+        console.error(`Error loading metaval attributes for ${wordType}:`, error);
+        return [];
+      }
+
+      return data?.map((item: any) => ({
+        id: item.meta_attributes.id,
+        stable_id: item.meta_attributes.stable_id,
+        name: item.meta_attributes.name,
+        display_name: item.meta_attributes.display_name,
+        description: item.meta_attributes.description,
+        is_mandatory: item.rule_config.is_mandatory || false,
+        source_level: item.rule_config.conditional_source_level || item.meta_attributes.source_level,
+        display_level: item.rule_config.conditional_display_level || item.meta_attributes.display_level,
+        conditional_source_level: item.rule_config.conditional_source_level,
+        conditional_display_level: item.rule_config.conditional_display_level
+      })) || [];
+    } catch (error) {
+      console.error(`Failed to load metaval attributes for ${wordType}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get meta values for a specific attribute with shorthand optimization
+   */
+  async getMetaValuesByAttribute(attributeId: string): Promise<Array<{
+    id: string;
+    stable_id: string;
+    value: string;
+    shorthand?: string;
+    description?: string;
+    is_default: boolean;
+    sort_order: number;
+  }>> {
+    try {
+      const { data, error } = await supabase
+        .from('meta_values')
+        .select('id, stable_id, value, shorthand, description, is_default, sort_order')
+        .eq('attribute_id', attributeId)
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (error) {
+        console.error(`Error loading meta values for attribute ${attributeId}:`, error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error(`Failed to load meta values for attribute ${attributeId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get display name for an attribute by stable ID
+   */
+  async getDisplayNameForAttribute(stableId: string): Promise<string> {
+    try {
+      const { data, error } = await supabase
+        .from('meta_attributes')
+        .select('display_name, name')
+        .eq('stable_id', stableId)
+        .single();
+
+      if (error) {
+        console.error(`Error loading display name for ${stableId}:`, error);
+        return stableId; // Fallback to stable ID
+      }
+
+      return data?.display_name || data?.name || stableId;
+    } catch (error) {
+      console.error(`Failed to load display name for ${stableId}:`, error);
+      return stableId;
+    }
+  }
+
+  /**
+   * Get attribute by stable ID with full details
+   */
+  async getAttributeByStableId(stableId: string): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .from('meta_attributes')
+        .select('*')
+        .eq('stable_id', stableId)
+        .single();
+
+      if (error) {
+        console.error(`Error loading attribute ${stableId}:`, error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`Failed to load attribute ${stableId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Validate metadata against word type rules
+   */
+  async validateAgainstWordTypeRules(wordType: string, metadata: Record<string, any>): Promise<{
+    isValid: boolean;
+    errors: string[];
+    warnings: string[];
+    missingMandatory: string[];
+  }> {
+    try {
+      const errors: string[] = [];
+      const warnings: string[] = [];
+      const missingMandatory: string[] = [];
+
+      // Get mandatory attributes for this word type
+      const { data: rules, error } = await supabase
+        .from('metaval_rules')
+        .select(`
+          rule_config,
+          meta_attributes!inner(
+            name,
+            display_name,
+            stable_id
+          )
+        `)
+        .eq('rule_type', 'word_type')
+        .eq('word_type', wordType)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error(`Error loading validation rules for ${wordType}:`, error);
+        return { isValid: false, errors: [`Failed to load validation rules: ${error.message}`], warnings, missingMandatory };
+      }
+
+      // Check for missing mandatory attributes
+      for (const rule of rules || []) {
+        const isMandatory = rule.rule_config?.is_mandatory || false;
+        if (!isMandatory) continue;
+        
+        const attrName = rule.meta_attributes.name;
+        const displayName = rule.meta_attributes.display_name;
+        
+        if (!metadata[attrName] || metadata[attrName] === null || metadata[attrName] === '') {
+          missingMandatory.push(displayName || attrName);
+          errors.push(`Missing mandatory attribute: ${displayName || attrName}`);
+        }
+      }
+
+      // Additional validations can be added here
+      // - Check for invalid values against meta_values
+      // - Check conditional patterns
+      // - Check relationship constraints
+
+      return {
+        isValid: errors.length === 0,
+        errors,
+        warnings,
+        missingMandatory
+      };
+    } catch (error) {
+      console.error(`Failed to validate metadata for ${wordType}:`, error);
+      return {
+        isValid: false,
+        errors: [`Validation failed: ${error}`],
+        warnings,
+        missingMandatory: []
+      };
+    }
+  }
+
+  /**
+   * Search records by metaval stable ID
+   */
+  async searchByMetavalStableId(stableId: string, value: string, tables: string[]): Promise<Record<string, DatabaseRecord[]>> {
+    try {
+      const results: Record<string, DatabaseRecord[]> = {};
+
+      // First get the attribute name from stable ID
+      const attribute = await this.getAttributeByStableId(stableId);
+      if (!attribute) {
+        console.error(`Attribute not found for stable ID: ${stableId}`);
+        return results;
+      }
+
+      // Search each table
+      for (const table of tables) {
+        try {
+          const { data, error } = await supabase
+            .from(table)
+            .select('*')
+            .eq(`metadata->>${attribute.name}`, value);
+
+          if (error) {
+            console.error(`Error searching ${table} by metaval:`, error);
+            results[table] = [];
+          } else {
+            results[table] = data || [];
+          }
+        } catch (tableError) {
+          console.error(`Error processing table ${table}:`, tableError);
+          results[table] = [];
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error(`Failed to search by metaval stable ID ${stableId}:`, error);
+      return {};
+    }
+  }
+
+  /**
+   * Get conditional levels for an attribute and word type
+   */
+  async getConditionalLevels(attributeId: string, wordType: string): Promise<{
+    source_level: string;
+    display_level: string;
+    is_conditional: boolean;
+  }> {
+    try {
+      const { data, error } = await supabase
+        .from('metaval_rules')
+        .select(`
+          rule_config,
+          meta_attributes!inner(
+            source_level,
+            display_level
+          )
+        `)
+        .eq('rule_type', 'word_type')
+        .eq('attribute_id', attributeId)
+        .eq('word_type', wordType)
+        .eq('is_active', true)
+        .single();
+
+      if (error) {
+        // If no specific rule, get default from attribute
+        const { data: attrData, error: attrError } = await supabase
+          .from('meta_attributes')
+          .select('source_level, display_level')
+          .eq('id', attributeId)
+          .single();
+
+        if (attrError) {
+          console.error(`Error loading levels for attribute ${attributeId}:`, attrError);
+          return { source_level: 'word', display_level: 'word', is_conditional: false };
+        }
+
+        return {
+          source_level: attrData.source_level,
+          display_level: attrData.display_level,
+          is_conditional: false
+        };
+      }
+
+      return {
+        source_level: data.rule_config.conditional_source_level || data.meta_attributes.source_level,
+        display_level: data.rule_config.conditional_display_level || data.meta_attributes.display_level,
+        is_conditional: !!(data.rule_config.conditional_source_level || data.rule_config.conditional_display_level)
+      };
+    } catch (error) {
+      console.error(`Failed to get conditional levels for ${attributeId}, ${wordType}:`, error);
+      return { source_level: 'word', display_level: 'word', is_conditional: false };
+    }
+  }
+
+  /**
+   * Format COMBINE display with shorthand optimization
+   */
+  async formatCombineDisplay(attributeId: string, values: string[]): Promise<string> {
+    try {
+      // Get shorthand values for the attribute
+      const metaValues = await this.getMetaValuesByAttribute(attributeId);
+      const shorthandMap = new Map(metaValues.map(v => [v.value, v.shorthand || v.value]));
+
+      // Check if all values have shorthand
+      const hasShorthand = values.every(v => shorthandMap.has(v) && shorthandMap.get(v) !== v);
+
+      if (hasShorthand) {
+        // Use shorthand with "/" separator (57% character savings)
+        return values.map(v => shorthandMap.get(v)).join('/');
+      } else {
+        // Use full values with " & " separator
+        return values.join(' & ');
+      }
+    } catch (error) {
+      console.error(`Failed to format COMBINE display for attribute ${attributeId}:`, error);
+      return values.join(' & ');
     }
   }
 }

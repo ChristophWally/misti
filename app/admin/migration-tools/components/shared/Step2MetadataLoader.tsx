@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { DatabaseService, UnifiedMetadata } from '../../services/DatabaseService';
+import { MetavalService, MetaAttribute, ValidationResult } from '../../services/MetavalService';
 
 interface Step2MetadataLoaderProps {
   tableName: string;
@@ -11,6 +12,10 @@ interface Step2MetadataLoaderProps {
   onLoadingStateChange?: (isLoading: boolean) => void;
   autoLoad?: boolean; // NEW: Automatic loading decision (collaborative decision)
   debugLog?: (message: string) => void;
+  // METAVAL ENHANCEMENT: Optional word type filtering
+  selectedWordTypes?: string[];
+  enableMetavalIntegration?: boolean; // Toggle for metaval features
+  onValidationChange?: (validation: ValidationResult[]) => void;
 }
 
 export default function Step2MetadataLoader({
@@ -20,17 +25,23 @@ export default function Step2MetadataLoader({
   onMetadataChange,
   onLoadingStateChange,
   autoLoad = true, // Default to automatic loading
-  debugLog
+  debugLog,
+  selectedWordTypes = [],
+  enableMetavalIntegration = true,
+  onValidationChange
 }: Step2MetadataLoaderProps) {
   const [availableMetadata, setAvailableMetadata] = useState<UnifiedMetadata | null>(null);
+  const [metavalAttributes, setMetavalAttributes] = useState<MetaAttribute[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationResults, setValidationResults] = useState<ValidationResult[]>([]);
 
   const log = useCallback((message: string) => {
     debugLog?.(message);
   }, [debugLog]);
 
   const databaseService = new DatabaseService(log);
+  const metavalService = new MetavalService();
 
   // AUTO-LOAD: Trigger when selectedRecordIds changes (collaborative decision)
   useEffect(() => {
@@ -38,6 +49,46 @@ export default function Step2MetadataLoader({
       loadMetadata();
     }
   }, [selectedRecordIds, autoLoad]);
+
+  // METAVAL: Load applicable attributes when word types change
+  useEffect(() => {
+    if (enableMetavalIntegration && selectedWordTypes.length > 0) {
+      loadMetavalAttributes();
+    }
+  }, [selectedWordTypes, enableMetavalIntegration]);
+
+  const loadMetavalAttributes = useCallback(async () => {
+    if (!enableMetavalIntegration || selectedWordTypes.length === 0) return;
+
+    try {
+      log(`🔄 Loading metaval attributes for word types: ${selectedWordTypes.join(', ')}`);
+      
+      const allAttributes = await Promise.all(
+        selectedWordTypes.map(wordType => metavalService.getAttributesForWordType(wordType))
+      );
+      
+      // Merge and deduplicate attributes
+      const uniqueAttributes = new Map<string, MetaAttribute>();
+      allAttributes.flat().forEach(attr => {
+        uniqueAttributes.set(attr.stable_id, attr);
+      });
+      
+      const attributes = Array.from(uniqueAttributes.values())
+        .sort((a, b) => {
+          // Sort: mandatory first, then by display name
+          if (a.is_mandatory !== b.is_mandatory) {
+            return a.is_mandatory ? -1 : 1;
+          }
+          return a.display_name.localeCompare(b.display_name);
+        });
+
+      setMetavalAttributes(attributes);
+      log(`✅ Loaded ${attributes.length} metaval attributes (${attributes.filter(a => a.is_mandatory).length} mandatory)`);
+    } catch (error) {
+      console.error('Failed to load metaval attributes:', error);
+      log(`❌ Failed to load metaval attributes: ${error}`);
+    }
+  }, [selectedWordTypes, enableMetavalIntegration, log]);
 
   const loadMetadata = useCallback(async () => {
     if (selectedRecordIds.length === 0) {
@@ -96,6 +147,28 @@ export default function Step2MetadataLoader({
     return 'unknown';
   };
 
+  // METAVAL: Get display name for metadata attribute
+  const getMetavalDisplayInfo = (value: string): { displayName: string; isMandatory: boolean; stableId?: string } => {
+    if (!enableMetavalIntegration || metavalAttributes.length === 0) {
+      return { displayName: value, isMandatory: false };
+    }
+
+    // Check if this is a structured metadata value (attribute: value)
+    if (value.includes(': ')) {
+      const [attrName] = value.split(': ', 2);
+      const attribute = metavalAttributes.find(attr => attr.name === attrName);
+      if (attribute) {
+        return {
+          displayName: value.replace(attrName, attribute.display_name),
+          isMandatory: attribute.is_mandatory,
+          stableId: attribute.stable_id
+        };
+      }
+    }
+
+    return { displayName: value, isMandatory: false };
+  };
+
   const renderMetadataSource = () => {
     if (!availableMetadata) return null;
 
@@ -103,7 +176,12 @@ export default function Step2MetadataLoader({
     
     return (
       <div className="text-xs text-gray-600 mb-3 p-2 bg-gray-50 rounded">
-        <div className="font-medium mb-1">Metadata Sources Found (Story 2.3.1 Integration):</div>
+        <div className="font-medium mb-1">
+          Metadata Sources Found 
+          {enableMetavalIntegration && (
+            <span className="text-green-600 ml-1">✨ Metaval Enhanced</span>
+          )}:
+        </div>
         <div className="space-y-1">
           {fromMetadata.length > 0 && (
             <div>📋 <span className="font-mono">Mandatory Tags (metadata)</span>: {fromMetadata.length} keys</div>
@@ -113,6 +191,12 @@ export default function Step2MetadataLoader({
           )}
           {fromLegacyTags.length > 0 && (
             <div className="text-yellow-600">⚠️ <span className="font-mono">Legacy Tags (transition)</span>: {fromLegacyTags.length} items</div>
+          )}
+          {enableMetavalIntegration && metavalAttributes.length > 0 && (
+            <div className="text-green-600">
+              ✨ <span className="font-mono">Metaval Attributes</span>: {metavalAttributes.length} available 
+              ({metavalAttributes.filter(a => a.is_mandatory).length} mandatory)
+            </div>
           )}
         </div>
       </div>
@@ -167,23 +251,53 @@ export default function Step2MetadataLoader({
               </div>
               
               <div className="max-h-40 overflow-y-auto space-y-1">
-                {availableMetadata.combined.map((value, index) => (
-                  <label key={`${value}-${index}`} className="flex items-center space-x-2 cursor-pointer hover:bg-blue-100 p-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={selectedMetadata.includes(value)}
-                      onChange={() => handleMetadataToggle(value)}
-                      className="rounded text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-xs font-mono flex-grow">{value}</span>
-                    <span 
-                      className="text-xs px-1 py-0.5 rounded text-gray-600"
-                      title={`Source: ${getSourceLabel(value)}`}
+                {availableMetadata.combined.map((value, index) => {
+                  const displayInfo = getMetavalDisplayInfo(value);
+                  return (
+                    <label 
+                      key={`${value}-${index}`} 
+                      className={`flex items-center space-x-2 cursor-pointer hover:bg-blue-100 p-1 rounded ${
+                        displayInfo.isMandatory ? 'border-l-2 border-red-400 bg-red-50' : ''
+                      }`}
                     >
-                      {getSourceIcon(value)}
-                    </span>
-                  </label>
-                ))}
+                      <input
+                        type="checkbox"
+                        checked={selectedMetadata.includes(value)}
+                        onChange={() => handleMetadataToggle(value)}
+                        className="rounded text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="flex-grow min-w-0">
+                        {enableMetavalIntegration && displayInfo.displayName !== value ? (
+                          <div>
+                            <div className="text-xs font-medium text-gray-900">{displayInfo.displayName}</div>
+                            <div className="text-xs font-mono text-gray-500">{value}</div>
+                          </div>
+                        ) : (
+                          <span className="text-xs font-mono">{value}</span>
+                        )}
+                        {displayInfo.isMandatory && (
+                          <span className="text-xs text-red-600 font-medium ml-1">MANDATORY</span>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        {displayInfo.stableId && (
+                          <span 
+                            className="text-xs px-1 py-0.5 rounded bg-green-100 text-green-700"
+                            title={`Metaval Stable ID: ${displayInfo.stableId}`}
+                          >
+                            ✨
+                          </span>
+                        )}
+                        <span 
+                          className="text-xs px-1 py-0.5 rounded text-gray-600"
+                          title={`Source: ${getSourceLabel(value)}`}
+                        >
+                          {getSourceIcon(value)}
+                        </span>
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
 
               <div className="mt-3 flex items-center justify-between text-xs">

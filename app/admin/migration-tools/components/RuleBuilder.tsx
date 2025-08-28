@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { ModernDatabaseService } from '../services/ModernDatabaseService'
+import { MetavalService, MetaAttribute, ValidationResult } from '../services/MetavalService'
 
-// Initialize database service
+// Initialize services
 const databaseService = new ModernDatabaseService()
+const metavalService = new MetavalService()
 
 // ============================================================================
 // ULTRA-DESIGNED RULE BUILDER INTERFACE
@@ -166,6 +168,19 @@ export default function RuleBuilder({
     conflicts: []
   })
 
+  // METAVAL: Enhanced validation state
+  const [metavalState, setMetavalState] = useState<{
+    attributeDisplayNames: Record<string, string>
+    wordTypeValidation: Record<string, ValidationResult>
+    loadingValidation: Set<string>
+    constraintErrors: Record<string, string[]>
+  }>({
+    attributeDisplayNames: {},
+    wordTypeValidation: {},
+    loadingValidation: new Set(),
+    constraintErrors: {}
+  })
+
   // ========================================================================
   // INITIALIZATION - Auto-populate operations from source selections
   // ========================================================================
@@ -204,6 +219,120 @@ export default function RuleBuilder({
       setTimeout(() => calculatePreview(), 0)
     }
   }, [sourceSelections])
+
+  // ========================================================================
+  // METAVAL ENHANCED FUNCTIONALITY
+  // ========================================================================
+  
+  // METAVAL: Load display names for metadata attributes
+  useEffect(() => {
+    const loadDisplayNames = async () => {
+      const uniqueAttributes = new Set<string>()
+      
+      // Collect all metadata attributes from operations
+      Object.values(ruleState.metadataOperations).forEach(operations => {
+        Object.keys(operations).forEach(attr => uniqueAttributes.add(attr))
+      })
+      
+      // Load display names for each attribute
+      const displayNamePromises = Array.from(uniqueAttributes).map(async (attr) => {
+        const displayName = await metavalService.getAttributeDisplayName(attr)
+        return { attr, displayName }
+      })
+      
+      const results = await Promise.all(displayNamePromises)
+      const displayNames = results.reduce((acc, { attr, displayName }) => {
+        acc[attr] = displayName
+        return acc
+      }, {} as Record<string, string>)
+      
+      setMetavalState(prev => ({
+        ...prev,
+        attributeDisplayNames: { ...prev.attributeDisplayNames, ...displayNames }
+      }))
+    }
+    
+    if (Object.keys(ruleState.metadataOperations).length > 0) {
+      loadDisplayNames()
+    }
+  }, [ruleState.metadataOperations])
+
+  // METAVAL: Validate operations against word-type constraints
+  const validateMetavalConstraints = async (recordId: string, metadataKey: string, newValue?: string) => {
+    const validationKey = `${recordId}_${metadataKey}`
+    
+    setMetavalState(prev => ({
+      ...prev,
+      loadingValidation: new Set([...prev.loadingValidation, validationKey])
+    }))
+    
+    try {
+      // Get word type for the record
+      const selection = sourceSelections[recordId]
+      if (!selection) return
+      
+      // Determine word type based on record type (simplified logic)
+      let wordType = 'noun' // default
+      for (const hierarchy of Object.values(wordHierarchies)) {
+        if (hierarchy.word.id === recordId && hierarchy.word.word_type) {
+          wordType = hierarchy.word.word_type
+          break
+        }
+      }
+      
+      // Check word-type restrictions
+      const restrictions = await metavalService.checkWordTypeRestrictions(metadataKey, wordType)
+      
+      const errors: string[] = []
+      if (!restrictions.isAllowed) {
+        errors.push(restrictions.reason || `${metadataKey} not allowed for ${wordType}`)
+      }
+      
+      // Additional validation for new values
+      if (newValue && restrictions.isAllowed) {
+        const attribute = await metavalService.getAttributeByStableId(metadataKey)
+        if (attribute) {
+          const values = await metavalService.getValuesForAttribute(attribute.id)
+          if (values.length > 0 && !values.some(v => v.value === newValue)) {
+            errors.push(`"${newValue}" is not a valid value for ${attribute.display_name}`)
+          }
+        }
+      }
+      
+      setMetavalState(prev => ({
+        ...prev,
+        constraintErrors: {
+          ...prev.constraintErrors,
+          [validationKey]: errors
+        }
+      }))
+      
+    } catch (error) {
+      console.error('Metaval validation error:', error)
+    } finally {
+      setMetavalState(prev => ({
+        ...prev,
+        loadingValidation: new Set([...prev.loadingValidation].filter(k => k !== validationKey))
+      }))
+    }
+  }
+
+  // METAVAL: Get display name for attribute with fallback
+  const getAttributeDisplayName = (attr: string): string => {
+    return metavalState.attributeDisplayNames[attr] || attr
+  }
+
+  // METAVAL: Check if attribute has validation errors
+  const getValidationErrors = (recordId: string, metadataKey: string): string[] => {
+    const validationKey = `${recordId}_${metadataKey}`
+    return metavalState.constraintErrors[validationKey] || []
+  }
+
+  // METAVAL: Check if attribute is being validated
+  const isValidating = (recordId: string, metadataKey: string): boolean => {
+    const validationKey = `${recordId}_${metadataKey}`
+    return metavalState.loadingValidation.has(validationKey)
+  }
 
   // ========================================================================
   // METAVAL SYSTEM INTEGRATION - Issue #11
@@ -318,6 +447,13 @@ export default function RuleBuilder({
         }
       }
     }))
+    
+    // METAVAL: Trigger validation when operation changes
+    if (config.action === 'update' && config.newValue) {
+      validateMetavalConstraints(recordId, metadataKey, config.newValue)
+    } else {
+      validateMetavalConstraints(recordId, metadataKey)
+    }
   }
 
   const updateOptionalTagOperation = (tagKey: string, config: Partial<OperationConfig>) => {
@@ -666,10 +802,21 @@ export default function RuleBuilder({
                             <div key={metadataKey} className="flex items-center space-x-3 mb-2 ml-4">
                               {/* Column 1: Grouping/Attribute - Fixed Width */}
                               <div className="text-xs w-24">
-                                <div className="text-gray-500 text-[10px] mb-1">Grouping</div>
-                                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs block w-full truncate">
-                                  {metadataKey}
-                                </span>
+                                <div className="text-gray-500 text-[10px] mb-1">Attribute</div>
+                                <div className="relative">
+                                  <span className={`px-2 py-1 rounded text-xs block w-full truncate ${
+                                    getValidationErrors(recordId, metadataKey).length > 0 
+                                      ? 'bg-red-100 text-red-700 border border-red-300' 
+                                      : 'bg-gray-100 text-gray-700'
+                                  }`} title={getAttributeDisplayName(metadataKey)}>
+                                    {getAttributeDisplayName(metadataKey)}
+                                  </span>
+                                  {isValidating(recordId, metadataKey) && (
+                                    <div className="absolute -top-1 -right-1 w-3 h-3">
+                                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                               
                               {/* Column 2: Current Value - Fixed Width */}
@@ -740,6 +887,20 @@ export default function RuleBuilder({
                                 </select>
                               </div>
                             </div>
+                            
+                            {/* METAVAL: Validation Errors */}
+                            {getValidationErrors(recordId, metadataKey).length > 0 && (
+                              <div className="ml-4 mt-1">
+                                <div className="bg-red-50 border border-red-200 rounded p-2">
+                                  <div className="text-xs font-medium text-red-700 mb-1">⚠️ Validation Errors:</div>
+                                  {getValidationErrors(recordId, metadataKey).map((error, idx) => (
+                                    <div key={idx} className="text-xs text-red-600">
+                                      • {error}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                             )
                           })}
                         </div>
@@ -823,7 +984,12 @@ export default function RuleBuilder({
             
             {/* Left: Preview & Validation */}
             <div className="flex-1 mr-6">
-              <h3 className="font-semibold mb-3 text-sm">🔍 Preview & Validation</h3>
+              <h3 className="font-semibold mb-3 text-sm flex items-center">
+                🔍 Preview & Validation
+                <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
+                  ✨ Metaval Enhanced
+                </span>
+              </h3>
               
               <div className="flex items-center space-x-6">
                 {/* Summary Stats */}
@@ -854,6 +1020,35 @@ export default function RuleBuilder({
                     Tables: {previewState.affectedTables.join(', ')}
                   </div>
                 </div>
+
+                {/* METAVAL: Validation Summary */}
+                {(() => {
+                  const totalErrors = Object.values(metavalState.constraintErrors).flat().length
+                  const validatingCount = metavalState.loadingValidation.size
+                  return (totalErrors > 0 || validatingCount > 0) && (
+                    <div>
+                      <div className="text-sm font-medium mb-1 text-green-700">✨ Metaval Status:</div>
+                      <div className="space-y-1">
+                        {validatingCount > 0 && (
+                          <div className="text-xs bg-blue-50 p-2 rounded border flex items-center">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-2"></div>
+                            Validating {validatingCount} attributes...
+                          </div>
+                        )}
+                        {totalErrors > 0 && (
+                          <div className="text-xs bg-red-50 p-2 rounded border">
+                            {totalErrors} constraint violation(s) detected
+                          </div>
+                        )}
+                        {totalErrors === 0 && validatingCount === 0 && (
+                          <div className="text-xs bg-green-50 p-2 rounded border">
+                            All constraints validated ✓
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Warnings & Conflicts */}
                 {previewState.warnings.length > 0 && (
@@ -894,11 +1089,17 @@ export default function RuleBuilder({
             
             <button 
               onClick={() => onExecute(buildSerializedRule())}
+              disabled={Object.values(metavalState.constraintErrors).flat().length > 0}
               className={`px-4 py-2 rounded text-white ${
-                previewState.riskLevel === 'high' 
-                  ? 'bg-red-600 hover:bg-red-700' 
-                  : 'bg-green-600 hover:bg-green-700'
+                Object.values(metavalState.constraintErrors).flat().length > 0
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : previewState.riskLevel === 'high' 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-green-600 hover:bg-green-700'
               }`}
+              title={Object.values(metavalState.constraintErrors).flat().length > 0 
+                ? 'Fix constraint violations before executing' 
+                : ''}
             >
               ⚡ Execute Now
             </button>
