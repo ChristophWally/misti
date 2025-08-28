@@ -903,7 +903,6 @@ export default function RuleBuilder({
                                 </div>
                               </div>
                             )}
-                            )
                           })}
                         </div>
                       )}
