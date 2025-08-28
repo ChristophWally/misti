@@ -568,28 +568,30 @@ export default function RuleBuilder({
   // ========================================================================
   // RULE SERIALIZATION & EXECUTION
   // ========================================================================
-  const buildSerializedRule = (): SerializedRule => ({
-    id: `rule_${Date.now()}`,
-    name: ruleState.name || `Rule for ${Object.keys(sourceSelections).length} selections`,
-    description: ruleState.description || 'Generated from hierarchical search selections',
-    target_field: ruleState.target_field,
-    target_tables: ruleState.target_tables,
-    source_selections: sourceSelections,
-    operations: {
-      metadata_operations: ruleState.metadataOperations,
-      optional_tag_operations: ruleState.optionalTagOperations,
-      bulk_operations: ruleState.bulkOperations,
-      hierarchical_operations: ruleState.hierarchicalOperations
-    },
-    execution_metadata: {
-      expected_records_affected: previewState.expectedChanges,
-      risk_level: previewState.riskLevel,
-      requires_confirmation: previewState.riskLevel !== 'low',
-      has_revert_data: true
-    }
-  });
+  const buildSerializedRule = (): SerializedRule => {
+    return {
+      id: `rule_${Date.now()}`,
+      name: ruleState.name || `Rule for ${Object.keys(sourceSelections).length} selections`,
+      description: ruleState.description || 'Generated from hierarchical search selections',
+      target_field: ruleState.target_field,
+      target_tables: ruleState.target_tables,
+      source_selections: sourceSelections,
+      operations: {
+        metadata_operations: ruleState.metadataOperations,
+        optional_tag_operations: ruleState.optionalTagOperations,
+        bulk_operations: ruleState.bulkOperations,
+        hierarchical_operations: ruleState.hierarchicalOperations
+      },
+      execution_metadata: {
+        expected_records_affected: previewState.expectedChanges,
+        risk_level: previewState.riskLevel,
+        requires_confirmation: previewState.riskLevel !== 'low',
+        has_revert_data: true
+      }
+    };
+  };
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   // ========================================================================
   // ULTRA-DESIGNED TWO-PANEL + BOTTOM INTERFACE
