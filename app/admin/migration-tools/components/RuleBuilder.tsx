@@ -587,7 +587,7 @@ export default function RuleBuilder({
       requires_confirmation: previewState.riskLevel !== 'low',
       has_revert_data: true
     }
-  })
+  });
 
   if (!isOpen) return null
 
