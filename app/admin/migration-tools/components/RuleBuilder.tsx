@@ -553,7 +553,7 @@ export default function RuleBuilder({
     }
 
     setPreviewState(newPreviewState)
-  }
+  };
 
   // Calculate preview when any operation settings change
   useEffect(() => {
