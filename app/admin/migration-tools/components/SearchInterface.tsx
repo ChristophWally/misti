@@ -1484,13 +1484,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                               {record.metadata && Object.keys(record.metadata).length > 0 && (
                                 <div className="mb-2">
                                   <span className="text-xs font-medium text-blue-700">📋 Core Tags: </span>
-                                  <BatchTagDisplay 
-                                    tags={Object.entries(record.metadata).map(([key, value]) => ({
-                                      key: `${key}-${value}`,
-                                      attributeName: key,
-                                      value: value as string
-                                    }))}
-                                  />
+                                  <div className="inline-flex flex-wrap gap-1">
+                                    {Object.entries(record.metadata).map(([key, value]) => (
+                                      <CoreTagDisplay key={key} attributeName={key} value={value as string} />
+                                    ))}
+                                  </div>
                                   {record._enhancedWithMetaval && (
                                     <div className="mt-1">
                                       <span className="inline-flex items-center px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">

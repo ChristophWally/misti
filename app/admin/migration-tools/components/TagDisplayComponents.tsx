@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useDisplayNames } from '../utils/DisplayNameUtils';
+import { DisplayNameService, useDisplayNames } from '../utils/DisplayNameUtils';
 
 /**
  * Optimized CoreTagDisplay component that uses centralized DisplayNameService
@@ -13,20 +13,22 @@ export function CoreTagDisplay({ attributeName, value }: {
 }) {
   const [displayText, setDisplayText] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const { getAttributeDisplayName, getValueDisplayName, getFormattedTagDisplay } = useDisplayNames();
 
   useEffect(() => {
     const loadDisplayNames = async () => {
       setIsLoading(true);
       try {
+        const displayService = DisplayNameService.getInstance();
+        
         // Check if value looks like a stable ID (metaattrXXXvalYYY)
         if (value.match(/^metaattr\d+val\d+$/)) {
           // Both attribute and value are stable IDs
-          const formattedDisplay = await getFormattedTagDisplay(attributeName, value);
-          setDisplayText(formattedDisplay);
+          const attrDisplayName = await displayService.getAttributeDisplayName(attributeName);
+          const valueDisplayName = await displayService.getValueDisplayName(value);
+          setDisplayText(`${attrDisplayName}: ${valueDisplayName}`);
         } else if (attributeName.startsWith('metaattr')) {
           // Only attribute is stable ID, value is plain text
-          const attrDisplayName = await getAttributeDisplayName(attributeName);
+          const attrDisplayName = await displayService.getAttributeDisplayName(attributeName);
           setDisplayText(`${attrDisplayName}: ${value}`);
         } else {
           // Neither are stable IDs, format the attribute name and use value as-is
@@ -71,13 +73,13 @@ export function CoreTagDisplay({ attributeName, value }: {
 export function ValueTagDisplay({ valueStableId }: { valueStableId: string }) {
   const [displayName, setDisplayName] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const { getValueDisplayName } = useDisplayNames();
+  const displayService = DisplayNameService.getInstance();
 
   useEffect(() => {
     const loadValueDisplayName = async () => {
       setIsLoading(true);
       try {
-        const name = await getValueDisplayName(valueStableId);
+        const name = await displayService.getValueDisplayName(valueStableId);
         setDisplayName(name);
       } catch (error) {
         console.warn('ValueTagDisplay: Failed to load value display name:', error);
@@ -110,7 +112,7 @@ export function ValueTagDisplay({ valueStableId }: { valueStableId: string }) {
 export function OptionalTagDisplay({ tag }: { tag: string }) {
   const [displayName, setDisplayName] = useState<string>(tag);
   const [isLoading, setIsLoading] = useState(false);
-  const { getValueDisplayName } = useDisplayNames();
+  const displayService = DisplayNameService.getInstance();
 
   useEffect(() => {
     // Only try to enhance if it looks like a value stable ID
@@ -118,7 +120,7 @@ export function OptionalTagDisplay({ tag }: { tag: string }) {
       setIsLoading(true);
       const loadDisplayName = async () => {
         try {
-          const name = await getValueDisplayName(tag);
+          const name = await displayService.getValueDisplayName(tag);
           setDisplayName(name);
         } catch (error) {
           console.warn('OptionalTagDisplay: Failed to enhance tag name:', error);
@@ -168,7 +170,7 @@ export function AttributeNameDisplay({
     };
 
     loadDisplayName();
-  }, [stableId]);
+  }, [stableId, getAttributeDisplayName]);
 
   return (
     <span className={className}>
@@ -247,7 +249,7 @@ export function BatchTagDisplay({
       setDisplayTags([]);
       setIsLoading(false);
     }
-  }, [tags]);
+  }, [tags, batchGetAttributeDisplayNames, batchGetValueDisplayNames]);
 
   if (isLoading) {
     return (
