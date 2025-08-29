@@ -191,9 +191,10 @@ export class DisplayNameService {
    * Format technical name to display name as fallback
    */
   private formatTechnicalName(technicalName: string): string {
-    // Handle metaval stable IDs
+    // Handle metaval stable IDs with better formatting
     if (technicalName.startsWith('metaattr')) {
-      return technicalName; // Keep as-is for stable IDs without metadata
+      // Convert metaattr008 -> Metaattr008 for readability
+      return technicalName.charAt(0).toUpperCase() + technicalName.slice(1);
     }
     
     // Format underscore-separated names

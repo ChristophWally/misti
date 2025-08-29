@@ -39,11 +39,25 @@ export function CoreTagDisplay({ attributeName, value }: {
         }
       } catch (error) {
         console.warn('CoreTagDisplay: Failed to load display names:', error);
-        // Fallback to formatted display
-        const formattedAttrName = attributeName.split('_').map(word => 
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
-        setDisplayText(`${formattedAttrName}: ${value}`);
+        // Better fallback formatting
+        let formattedAttrName = attributeName;
+        let formattedValue = value;
+        
+        // Format attribute name: metaattr008 -> Metaattr008, underscore_name -> Underscore Name
+        if (attributeName.startsWith('metaattr')) {
+          formattedAttrName = attributeName.charAt(0).toUpperCase() + attributeName.slice(1);
+        } else {
+          formattedAttrName = attributeName.split('_').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ');
+        }
+        
+        // Format value: metaattr008val038 -> Metaattr008val038
+        if (value.match(/^metaattr\d+val\d+$/)) {
+          formattedValue = value.charAt(0).toUpperCase() + value.slice(1);
+        }
+        
+        setDisplayText(`${formattedAttrName}: ${formattedValue}`);
       }
       setIsLoading(false);
     };

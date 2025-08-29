@@ -135,37 +135,35 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       let attributeDisplayName = attributeName;
       try {
         const attribute = await metavalService.getAttributeByStableId(attributeName);
-        if (attribute) {
+        if (attribute && attribute.display_name) {
           attributeDisplayName = attribute.display_name;
+        } else {
+          // Fallback to formatted name if metaval lookup fails or returns no display_name
+          if (attributeName.startsWith('metaattr')) {
+            attributeDisplayName = attributeName.charAt(0).toUpperCase() + attributeName.slice(1);
+          } else {
+            attributeDisplayName = attributeName.split('_').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+          }
         }
       } catch (error) {
         // Fallback to formatted name if metaval lookup fails
-        attributeDisplayName = attributeName.split('_').map(word => 
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
+        if (attributeName.startsWith('metaattr')) {
+          attributeDisplayName = attributeName.charAt(0).toUpperCase() + attributeName.slice(1);
+        } else {
+          attributeDisplayName = attributeName.split('_').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1)
+          ).join(' ');
+        }
       }
       
-      // Enhance values with display names for stable IDs
-      const enhancedValues = await Promise.all(values.map(async (value) => {
-        let displayName = value.value;
-        
-        // Check if value looks like a stable ID and enhance it
-        if (value.value.match(/^metaattr\d+val\d+$/)) {
-          try {
-            const valueDisplayName = await metavalService.getValueDisplayName(value.value);
-            if (valueDisplayName) {
-              displayName = valueDisplayName;
-            }
-          } catch (error) {
-            console.warn(`Failed to get display name for value ${value.value}:`, error);
-          }
-        }
-        
-        return {
-          ...value,
-          attributeDisplayName,
-          displayName
-        };
+      // Don't pre-enhance display names here - let CoreTagDisplay handle them properly
+      // This avoids interference with the proper display name lookup chain
+      const enhancedValues = values.map((value) => ({
+        ...value,
+        attributeDisplayName,
+        // Don't set displayName here - let CoreTagDisplay component handle it
       }));
       
       enhanced[attributeName] = enhancedValues;
@@ -782,12 +780,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                 className="mr-2"
                               />
                               <span className="text-sm flex-1 truncate">
-                                {valueData.value.match(/^metaattr\d+val\d+$/) ? (
-                                  <span className="inline-flex items-center">
-                                    <span className="sr-only">Value: </span>
-                                    {/* This will be enhanced by CoreTagDisplay when used in results */}
-                                    {valueData.displayName || valueData.value}
-                                  </span>
+                                {/* Always use CoreTagDisplay for stable IDs - it handles proper display name lookup */}
+                                {(valueData.value.match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
+                                  <CoreTagDisplay attributeName={key} value={valueData.value} />
                                 ) : (
                                   valueData.displayName || valueData.value
                                 )}
@@ -841,7 +836,15 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                     className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200"
                     onClick={() => toggleTag(tag, 'core')}
                   >
-                    {tag} ×
+                    {/* Always use CoreTagDisplay for stable IDs */}
+                    {tag.includes(': ') && (tag.split(': ')[1].match(/^metaattr\d+val\d+$/) || tag.split(': ')[0].startsWith('metaattr')) ? (
+                      <CoreTagDisplay 
+                        attributeName={tag.split(': ')[0]} 
+                        value={tag.split(': ')[1]} 
+                      />
+                    ) : (
+                      tag
+                    )} ×
                   </span>
                 ))}
               </div>
@@ -1013,7 +1016,12 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                             className="w-3 h-3"
                                           />
                                           <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
-                                            {key}: {value as string}
+                                            {/* Always use CoreTagDisplay for stable IDs */}
+                                            {((value as string).match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
+                                              <CoreTagDisplay attributeName={key} value={value as string} />
+                                            ) : (
+                                              `${key}: ${value as string}`
+                                            )}
                                           </span>
                                         </label>
                                       );
@@ -1097,7 +1105,12 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                                     className="w-3 h-3"
                                                   />
                                                   <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
-                                                    {key}: {value as string}
+                                                    {/* Always use CoreTagDisplay for stable IDs */}
+                                                    {((value as string).match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
+                                                      <CoreTagDisplay attributeName={key} value={value as string} />
+                                                    ) : (
+                                                      `${key}: ${value as string}`
+                                                    )}
                                                   </span>
                                                 </label>
                                               );
@@ -1186,7 +1199,12 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                                     className="w-3 h-3"
                                                   />
                                                   <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
-                                                    {key}: {value as string}
+                                                    {/* Always use CoreTagDisplay for stable IDs */}
+                                                    {((value as string).match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
+                                                      <CoreTagDisplay attributeName={key} value={value as string} />
+                                                    ) : (
+                                                      `${key}: ${value as string}`
+                                                    )}
                                                   </span>
                                                 </label>
                                               );
@@ -1275,7 +1293,12 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                                     className="w-3 h-3"
                                                   />
                                                   <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
-                                                    {key}: {value as string}
+                                                    {/* Always use CoreTagDisplay for stable IDs */}
+                                                    {((value as string).match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
+                                                      <CoreTagDisplay attributeName={key} value={value as string} />
+                                                    ) : (
+                                                      `${key}: ${value as string}`
+                                                    )}
                                                   </span>
                                                 </label>
                                               );
