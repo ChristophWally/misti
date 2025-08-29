@@ -9,13 +9,13 @@ export class DisplayNameService {
   private metavalService: MetavalService;
   
   // Caches
-  private attributeDisplayNames: Map<string, string> = new Map();
-  private valueDisplayNames: Map<string, string> = new Map();
+  private attributeDisplayNames: Map<string, { displayName: string; resolved: boolean }> = new Map();
+  private valueDisplayNames: Map<string, { displayName: string; resolved: boolean }> = new Map();
   private attributeToValues: Map<string, MetaValue[]> = new Map();
   
   // Pending requests to avoid duplicate calls
-  private pendingAttributeRequests: Map<string, Promise<string>> = new Map();
-  private pendingValueRequests: Map<string, Promise<string>> = new Map();
+  private pendingAttributeRequests: Map<string, Promise<{ displayName: string; resolved: boolean }>> = new Map();
+  private pendingValueRequests: Map<string, Promise<{ displayName: string; resolved: boolean }>> = new Map();
   
   private constructor() {
     this.metavalService = new MetavalService();
@@ -31,111 +31,99 @@ export class DisplayNameService {
   /**
    * Get display name for attribute stable ID (e.g., "metaattr008" -> "Gender")
    */
-  async getAttributeDisplayName(stableId: string): Promise<string> {
-    // Return cached result
+  async getAttributeDisplayName(stableId: string): Promise<{ displayName: string; resolved: boolean }> {
     if (this.attributeDisplayNames.has(stableId)) {
       return this.attributeDisplayNames.get(stableId)!;
     }
-    
-    // Return pending request if already in progress
+
     if (this.pendingAttributeRequests.has(stableId)) {
       return this.pendingAttributeRequests.get(stableId)!;
     }
-    
-    // Create new request
+
     const request = this.fetchAttributeDisplayName(stableId);
     this.pendingAttributeRequests.set(stableId, request);
-    
+
     const result = await request;
-    
-    // Clean up pending request
     this.pendingAttributeRequests.delete(stableId);
-    
+
     return result;
   }
-  
-  private async fetchAttributeDisplayName(stableId: string): Promise<string> {
+
+  private async fetchAttributeDisplayName(stableId: string): Promise<{ displayName: string; resolved: boolean }> {
     try {
       const attribute = await this.metavalService.getAttributeByStableId(stableId);
       let displayName: string;
-      
+      let resolved = true;
+
       if (attribute && attribute.display_name) {
         displayName = attribute.display_name;
       } else {
-        // Fallback to formatted technical name
         displayName = this.formatTechnicalName(stableId);
+        resolved = false;
+        console.warn(`DisplayNameService: Falling back to technical name for attribute ${stableId}`);
       }
-      
-      // Cache the result
-      this.attributeDisplayNames.set(stableId, displayName);
-      return displayName;
+
+      const result = { displayName, resolved };
+      this.attributeDisplayNames.set(stableId, result);
+      return result;
     } catch (error) {
       console.warn(`DisplayNameService: Failed to get attribute display name for ${stableId}:`, error);
       const fallback = this.formatTechnicalName(stableId);
-      this.attributeDisplayNames.set(stableId, fallback);
-      return fallback;
+      const result = { displayName: fallback, resolved: false };
+      this.attributeDisplayNames.set(stableId, result);
+      return result;
     }
   }
   
   /**
    * Get display name for value stable ID (e.g., "metaattr008val038" -> "Feminine")
    */
-  async getValueDisplayName(valueStableId: string): Promise<string> {
-    // Return cached result
+  async getValueDisplayName(valueStableId: string): Promise<{ displayName: string; resolved: boolean }> {
     if (this.valueDisplayNames.has(valueStableId)) {
       return this.valueDisplayNames.get(valueStableId)!;
     }
-    
-    // Return pending request if already in progress
+
     if (this.pendingValueRequests.has(valueStableId)) {
       return this.pendingValueRequests.get(valueStableId)!;
     }
-    
-    // Create new request
+
     const request = this.fetchValueDisplayName(valueStableId);
     this.pendingValueRequests.set(valueStableId, request);
-    
+
     const result = await request;
-    
-    // Clean up pending request
     this.pendingValueRequests.delete(valueStableId);
-    
+
     return result;
   }
-  
-  private async fetchValueDisplayName(valueStableId: string): Promise<string> {
+
+  private async fetchValueDisplayName(valueStableId: string): Promise<{ displayName: string; resolved: boolean }> {
     try {
-      // Try to find the value by searching through attributes
-      // Value stable IDs typically follow pattern: attributeStableId + "val" + number
-      // e.g., "metaattr008val038" where "metaattr008" is the attribute stable ID
-      
       const attributeStableId = this.extractAttributeStableId(valueStableId);
-      
+
       if (attributeStableId) {
-        // Get values for this attribute
         let values = this.attributeToValues.get(attributeStableId);
-        
+
         if (!values) {
           values = await this.metavalService.getValuesByStableId(attributeStableId);
           this.attributeToValues.set(attributeStableId, values);
         }
-        
-        // Find the specific value
+
         const value = values.find(v => v.stable_id === valueStableId);
         if (value) {
           const displayName = value.shorthand || value.value;
-          this.valueDisplayNames.set(valueStableId, displayName);
-          return displayName;
+          const result = { displayName, resolved: true };
+          this.valueDisplayNames.set(valueStableId, result);
+          return result;
         }
       }
-      
-      // Fallback to the stable ID itself
-      const fallback = valueStableId;
+
+      console.warn(`DisplayNameService: Falling back to stable ID for value ${valueStableId}`);
+      const fallback = { displayName: valueStableId, resolved: false };
       this.valueDisplayNames.set(valueStableId, fallback);
       return fallback;
     } catch (error) {
       console.warn(`DisplayNameService: Failed to get value display name for ${valueStableId}:`, error);
-      const fallback = valueStableId;
+      const fallback = { displayName: valueStableId, resolved: false };
       this.valueDisplayNames.set(valueStableId, fallback);
       return fallback;
     }
@@ -159,8 +147,8 @@ export class DisplayNameService {
       this.getAttributeDisplayName(attributeStableId),
       this.getValueDisplayName(valueStableId)
     ]);
-    
-    return `${attributeName}: ${valueName}`;
+
+    return `${attributeName.displayName}: ${valueName.displayName}`;
   }
   
   /**
@@ -168,7 +156,7 @@ export class DisplayNameService {
    */
   async batchGetAttributeDisplayNames(stableIds: string[]): Promise<Map<string, string>> {
     const promises = stableIds.map(id => 
-      this.getAttributeDisplayName(id).then(name => [id, name] as [string, string])
+      this.getAttributeDisplayName(id).then(res => [id, res.displayName] as [string, string])
     );
     
     const results = await Promise.all(promises);
@@ -180,7 +168,7 @@ export class DisplayNameService {
    */
   async batchGetValueDisplayNames(stableIds: string[]): Promise<Map<string, string>> {
     const promises = stableIds.map(id => 
-      this.getValueDisplayName(id).then(name => [id, name] as [string, string])
+      this.getValueDisplayName(id).then(res => [id, res.displayName] as [string, string])
     );
     
     const results = await Promise.all(promises);

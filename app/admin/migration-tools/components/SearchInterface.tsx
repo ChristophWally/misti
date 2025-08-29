@@ -6,6 +6,7 @@ import { MetavalService, MetaAttribute, MetaValue } from '../services/MetavalSer
 import RuleBuilder from './RuleBuilder';
 import { useState as useInternalState, useEffect as useInternalEffect } from 'react';
 import { CoreTagDisplay, OptionalTagDisplay, AttributeNameDisplay, BatchTagDisplay } from './TagDisplayComponents';
+import { DisplayNameService } from '../utils/DisplayNameUtils';
 
 // Note: CoreTagDisplay and OptionalTagDisplay components are now imported from TagDisplayComponents.tsx
 // This provides optimized display with centralized caching and proper value stable ID support
@@ -176,10 +177,24 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
 
   // Enhance optional tags with metaval display names if applicable
   const enhanceOptionalTagsWithDisplayNames = async (optionalTags: { tag: string; count: number; tables: string[] }[]) => {
-    return optionalTags.map(tagData => ({
-      ...tagData,
-      displayName: tagData.tag // Optional tags typically show as-is
-    }));
+    const displayService = DisplayNameService.getInstance();
+    return Promise.all(
+      optionalTags.map(async tagData => {
+        let displayName = tagData.tag;
+        if (tagData.tag.match(/^metaattr\d+val\d+$/)) {
+          try {
+            const result = await displayService.getValueDisplayName(tagData.tag);
+            displayName = result.resolved ? result.displayName : `${result.displayName} (ID)`;
+            if (!result.resolved) {
+              console.warn(`SearchInterface: Falling back to stable ID for optional tag ${tagData.tag}`);
+            }
+          } catch (error) {
+            console.warn(`SearchInterface: Failed to get display name for optional tag ${tagData.tag}:`, error);
+          }
+        }
+        return { ...tagData, displayName };
+      })
+    );
   };
 
   // Load available words

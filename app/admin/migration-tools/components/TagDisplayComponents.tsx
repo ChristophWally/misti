@@ -22,14 +22,18 @@ export function CoreTagDisplay({ attributeName, value }: {
         
         // Check if value looks like a stable ID (metaattrXXXvalYYY)
         if (value.match(/^metaattr\d+val\d+$/)) {
-          // Both attribute and value are stable IDs
-          const attrDisplayName = await displayService.getAttributeDisplayName(attributeName);
-          const valueDisplayName = await displayService.getValueDisplayName(value);
-          setDisplayText(`${attrDisplayName}: ${valueDisplayName}`);
+          const attrRes = await displayService.getAttributeDisplayName(attributeName);
+          const valRes = await displayService.getValueDisplayName(value);
+          setDisplayText(`${attrRes.resolved ? attrRes.displayName : `${attrRes.displayName} (ID)`}: ${valRes.resolved ? valRes.displayName : `${valRes.displayName} (ID)`}`);
+          if (!attrRes.resolved || !valRes.resolved) {
+            console.warn('CoreTagDisplay: Falling back to stable IDs', attributeName, value);
+          }
         } else if (attributeName.startsWith('metaattr')) {
-          // Only attribute is stable ID, value is plain text
-          const attrDisplayName = await displayService.getAttributeDisplayName(attributeName);
-          setDisplayText(`${attrDisplayName}: ${value}`);
+          const attrRes = await displayService.getAttributeDisplayName(attributeName);
+          setDisplayText(`${attrRes.resolved ? attrRes.displayName : `${attrRes.displayName} (ID)`}: ${value}`);
+          if (!attrRes.resolved) {
+            console.warn('CoreTagDisplay: Falling back to attribute ID', attributeName);
+          }
         } else {
           // Neither are stable IDs, format the attribute name and use value as-is
           const formattedAttrName = attributeName.split('_').map(word => 
@@ -79,8 +83,11 @@ export function ValueTagDisplay({ valueStableId }: { valueStableId: string }) {
     const loadValueDisplayName = async () => {
       setIsLoading(true);
       try {
-        const name = await displayService.getValueDisplayName(valueStableId);
-        setDisplayName(name);
+        const res = await displayService.getValueDisplayName(valueStableId);
+        setDisplayName(res.resolved ? res.displayName : `${res.displayName} (ID)`);
+        if (!res.resolved) {
+          console.warn('ValueTagDisplay: Falling back to stable ID', valueStableId);
+        }
       } catch (error) {
         console.warn('ValueTagDisplay: Failed to load value display name:', error);
         setDisplayName(valueStableId); // Fallback to stable ID
@@ -120,8 +127,11 @@ export function OptionalTagDisplay({ tag }: { tag: string }) {
       setIsLoading(true);
       const loadDisplayName = async () => {
         try {
-          const name = await displayService.getValueDisplayName(tag);
-          setDisplayName(name);
+          const res = await displayService.getValueDisplayName(tag);
+          setDisplayName(res.resolved ? res.displayName : `${res.displayName} (ID)`);
+          if (!res.resolved) {
+            console.warn('OptionalTagDisplay: Falling back to stable ID', tag);
+          }
         } catch (error) {
           console.warn('OptionalTagDisplay: Failed to enhance tag name:', error);
           // Keep original tag name
@@ -160,8 +170,11 @@ export function AttributeNameDisplay({
     const loadDisplayName = async () => {
       setIsLoading(true);
       try {
-        const name = await getAttributeDisplayName(stableId);
-        setDisplayName(name);
+        const res = await getAttributeDisplayName(stableId);
+        setDisplayName(res.resolved ? res.displayName : `${res.displayName} (ID)`);
+        if (!res.resolved) {
+          console.warn('AttributeNameDisplay: Falling back to stable ID', stableId);
+        }
       } catch (error) {
         console.warn('AttributeNameDisplay: Failed to load display name:', error);
         // Keep fallback or stable ID

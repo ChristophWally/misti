@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { MetavalService, ValidationResult } from '../services/MetavalService'
 import { DatabaseService } from '../services/DatabaseService'
+import { DisplayNameService } from '../utils/DisplayNameUtils'
 
 // ============================================================================
 // ULTRA-DESIGNED RULE BUILDER INTERFACE
@@ -320,6 +321,56 @@ export default function RuleBuilder({
   // METAVAL: Get display name for attribute with fallback
   const getAttributeDisplayName = (attr: string): string => {
     return metavalState.attributeDisplayNames[attr] || attr
+  }
+
+  const displayService = DisplayNameService.getInstance()
+  const [currentValueDisplayNames, setCurrentValueDisplayNames] = useState<Record<string, string>>({})
+
+  const getCurrentValueDisplayName = (recordId: string, metadataKey: string): string => {
+    const cacheKey = `${recordId}_${metadataKey}`
+    if (currentValueDisplayNames[cacheKey]) {
+      return currentValueDisplayNames[cacheKey]
+    }
+
+    let value: string | null = null
+    for (const hierarchy of Object.values(wordHierarchies)) {
+      let record = null
+      if (hierarchy.word.id === recordId) record = hierarchy.word
+      else record = [...hierarchy.forms, ...hierarchy.translations, ...hierarchy.formTranslations].find(r => r.id === recordId)
+
+      if (record && 'metadata' in record && (record as any).metadata && (record as any).metadata[metadataKey]) {
+        value = (record as any).metadata[metadataKey]
+        break
+      }
+    }
+
+    if (!value) {
+      setCurrentValueDisplayNames(prev => ({ ...prev, [cacheKey]: 'unknown' }))
+      return 'unknown'
+    }
+
+    if (!value.match(/^metaattr\d+val\d+$/)) {
+      setCurrentValueDisplayNames(prev => ({ ...prev, [cacheKey]: value! }))
+      return value
+    }
+
+    displayService
+      .getValueDisplayName(value)
+      .then(res => {
+        setCurrentValueDisplayNames(prev => ({
+          ...prev,
+          [cacheKey]: res.resolved ? res.displayName : `${res.displayName} (ID)`
+        }))
+        if (!res.resolved) {
+          console.warn(`RuleBuilder: Falling back to stable ID for value ${value}`)
+        }
+      })
+      .catch(error => {
+        console.warn(`RuleBuilder: Failed to resolve value ${value}:`, error)
+        setCurrentValueDisplayNames(prev => ({ ...prev, [cacheKey]: value! }))
+      })
+
+    return '…'
   }
 
   // METAVAL: Check if attribute has validation errors
@@ -828,20 +879,7 @@ export default function RuleBuilder({
                               <div className="text-xs w-20">
                                 <div className="text-gray-500 text-[10px] mb-1">Current</div>
                                 <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs block w-full truncate">
-                                {(() => {
-                                  // Extract just the current value from the record data
-                                  for (const hierarchy of Object.values(wordHierarchies)) {
-                                    let record = null
-                                    if (hierarchy.word.id === recordId) record = hierarchy.word
-                                    else record = [...hierarchy.forms, ...hierarchy.translations, ...hierarchy.formTranslations]
-                                      .find(r => r.id === recordId)
-                                    
-                                    if (record && 'metadata' in record && (record as any).metadata && (record as any).metadata[metadataKey]) {
-                                      return (record as any).metadata[metadataKey]
-                                    }
-                                  }
-                                  return 'unknown'
-                                })()}
+                                  {getCurrentValueDisplayName(recordId, metadataKey)}
                                 </span>
                               </div>
                               
