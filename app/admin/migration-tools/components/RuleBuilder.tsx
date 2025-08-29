@@ -319,13 +319,45 @@ export default function RuleBuilder({
     }
   }
 
-  // METAVAL: Get display name for attribute with fallback
-  const getAttributeDisplayName = (attr: string): string => {
-    return metavalState.attributeDisplayNames[attr] || attr
-  }
-
   const displayService = DisplayNameService.getInstance()
+  const [attributeDisplayNameCache, setAttributeDisplayNameCache] = useState<Record<string, string>>({})
   const [currentValueDisplayNames, setCurrentValueDisplayNames] = useState<Record<string, string>>({})
+
+  // METAVAL: Get display name for attribute with fallback and caching
+  const getAttributeDisplayName = (attr: string): string => {
+    if (attributeDisplayNameCache[attr]) {
+      return attributeDisplayNameCache[attr]
+    }
+
+    if (metavalState.attributeDisplayNames[attr]) {
+      const name = metavalState.attributeDisplayNames[attr]
+      setAttributeDisplayNameCache(prev => ({ ...prev, [attr]: name }))
+      return name
+    }
+
+    if (attr.startsWith('metaattr')) {
+      displayService
+        .getAttributeDisplayName(attr)
+        .then(res => {
+          setAttributeDisplayNameCache(prev => ({
+            ...prev,
+            [attr]: res.resolved ? res.displayName : `${res.displayName} (ID)`
+          }))
+          if (!res.resolved) {
+            console.warn(`RuleBuilder: Falling back to attribute ID ${attr}`)
+          }
+        })
+        .catch(error => console.warn(`RuleBuilder: Failed to resolve attribute ${attr}:`, error))
+      return attr
+    }
+
+    const formatted = attr
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+    setAttributeDisplayNameCache(prev => ({ ...prev, [attr]: formatted }))
+    return formatted
+  }
 
   const getCurrentValueDisplayName = (recordId: string, metadataKey: string): string => {
     const cacheKey = `${recordId}_${metadataKey}`

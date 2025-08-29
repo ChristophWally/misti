@@ -46,6 +46,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     coreTags: string[];
     optionalTags: string[];
   }>({ coreTags: [], optionalTags: [] });
+  const [selectedTagDisplayNames, setSelectedTagDisplayNames] = useState<Record<string, string>>({});
   
   const [contentTypes] = useState(['Dictionary Words', 'Conjugated Forms', 'English Translations', 'Form Translations']);
   const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>(['Dictionary Words', 'Conjugated Forms', 'English Translations', 'Form Translations']);
@@ -273,6 +274,72 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       }));
     }
   };
+
+  // Resolve display names for selected tags
+  useEffect(() => {
+    const loadSelectedDisplayNames = async () => {
+      const service = DisplayNameService.getInstance();
+      const names: Record<string, string> = {};
+
+      await Promise.all(selectedTags.coreTags.map(async (tag) => {
+        const [attr, value] = tag.split(': ');
+        let attrName = attr;
+        let valueName = value;
+
+        if (attr.startsWith('metaattr')) {
+          try {
+            const res = await service.getAttributeDisplayName(attr);
+            attrName = res.resolved ? res.displayName : `${res.displayName} (ID)`;
+            if (!res.resolved) {
+              console.warn(`SearchInterface: Falling back to attribute ID for selected tag ${attr}`);
+            }
+          } catch (error) {
+            console.warn(`SearchInterface: Failed to resolve attribute ${attr}:`, error);
+          }
+        } else {
+          attrName = attr
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+        }
+
+        if (value.match(/^metaattr\d+val\d+$/)) {
+          try {
+            const res = await service.getValueDisplayName(value);
+            valueName = res.resolved ? res.displayName : `${res.displayName} (ID)`;
+            if (!res.resolved) {
+              console.warn(`SearchInterface: Falling back to value ID for selected tag ${value}`);
+            }
+          } catch (error) {
+            console.warn(`SearchInterface: Failed to resolve value ${value}:`, error);
+          }
+        }
+
+        names[tag] = `${attrName}: ${valueName}`;
+      }));
+
+      await Promise.all(selectedTags.optionalTags.map(async (tag) => {
+        if (tag.match(/^metaattr\d+val\d+$/)) {
+          try {
+            const res = await service.getValueDisplayName(tag);
+            names[tag] = res.resolved ? res.displayName : `${res.displayName} (ID)`;
+            if (!res.resolved) {
+              console.warn(`SearchInterface: Falling back to optional tag ID ${tag}`);
+            }
+          } catch (error) {
+            console.warn(`SearchInterface: Failed to resolve optional tag ${tag}:`, error);
+            names[tag] = tag;
+          }
+        } else {
+          names[tag] = tag;
+        }
+      }));
+
+      setSelectedTagDisplayNames(names);
+    };
+
+    loadSelectedDisplayNames();
+  }, [selectedTags]);
 
   // Toggle content type selection
   const toggleContentType = (contentType: string) => {
@@ -855,13 +922,13 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                     className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200"
                     onClick={() => toggleTag(tag, 'core')}
                   >
-                    {tag} ×
+                    {selectedTagDisplayNames[tag] || tag} ×
                   </span>
                 ))}
               </div>
             </div>
           )}
-          
+
           {selectedTags.optionalTags.length > 0 && (
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-1">🏷️ Selected Optional Tags:</h4>
@@ -872,7 +939,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                     className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 cursor-pointer hover:bg-green-200"
                     onClick={() => toggleTag(tag, 'optional')}
                   >
-                    {tag} ×
+                    {selectedTagDisplayNames[tag] || tag} ×
                   </span>
                 ))}
               </div>
