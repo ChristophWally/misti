@@ -13,6 +13,17 @@ export interface ValidationResults {
   };
 }
 
+export interface Step2TestResult {
+  table: string;
+  description: string;
+  sampleCount: number;
+  mandatoryTags: number;
+  optionalTags: number;
+  legacyTags: number;
+  totalUnique: number;
+  primarySource: "metadata" | "optional_tags" | "legacy_tags";
+}
+
 export interface SystemValidationResults {
   connectionTest: {
     status: 'success' | 'error';
@@ -22,7 +33,7 @@ export interface SystemValidationResults {
   step2Test: {
     status: 'success' | 'error';
     message: string;
-    details?: any;
+    details?: Step2TestResult[];
   };
   timestamp: string;
 }
@@ -96,7 +107,7 @@ export class ValidationService {
         { table: 'form_translations', description: 'Form translations metadata + optional_tags' }
       ];
 
-      const results = [];
+      const results: Step2TestResult[] = [];
 
       for (const testCase of testCases) {
         const sampleIds = await this.databaseService.getSampleRecordIds(testCase.table, 2);
