@@ -161,6 +161,34 @@ export class MetavalService {
   }
 
   /**
+   * Get value display name by stable ID (e.g., "metaattr008val038" -> "Feminine")
+   */
+  async getValueDisplayName(valueStableId: string): Promise<string | null> {
+    try {
+      const value = await this.dbService.getMetaValueByStableId(valueStableId);
+      if (value) {
+        return value.shorthand || value.value;
+      }
+      return null;
+    } catch (error) {
+      console.error(`MetavalService: Failed to get value display name for ${valueStableId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get value details by stable ID
+   */
+  async getValueByStableId(stableId: string): Promise<MetaValue | null> {
+    try {
+      return await this.dbService.getMetaValueByStableId(stableId);
+    } catch (error) {
+      console.error(`MetavalService: Failed to get value by stable ID ${stableId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Format COMBINE display with shorthand optimization
    */
   async formatCombineDisplay(attributeId: string, values: string[]): Promise<string> {

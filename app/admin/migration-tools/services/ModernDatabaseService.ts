@@ -850,6 +850,29 @@ export class ModernDatabaseService {
   }
 
   /**
+   * Get meta value by stable ID with full details
+   */
+  async getMetaValueByStableId(stableId: string): Promise<any> {
+    try {
+      const { data, error } = await supabase
+        .from('meta_values')
+        .select('id, stable_id, value, shorthand, description, is_default, sort_order')
+        .eq('stable_id', stableId)
+        .single();
+
+      if (error) {
+        console.error(`Error loading meta value ${stableId}:`, error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`Failed to load meta value ${stableId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Validate metadata against word type rules
    */
   async validateAgainstWordTypeRules(wordType: string, metadata: Record<string, any>): Promise<{

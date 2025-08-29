@@ -5,49 +5,10 @@ import { ModernDatabaseService, ModernSelectionCriteria } from '../services/Mode
 import { MetavalService, MetaAttribute, MetaValue } from '../services/MetavalService';
 import RuleBuilder from './RuleBuilder';
 import { useState as useInternalState, useEffect as useInternalEffect } from 'react';
+import { CoreTagDisplay, OptionalTagDisplay, AttributeNameDisplay, BatchTagDisplay } from './TagDisplayComponents';
 
-// Helper component for displaying core tags with enhanced names
-function CoreTagDisplay({ attributeName, value }: { attributeName: string; value: string }) {
-  const [displayName, setDisplayName] = useInternalState<string>('');
-  const metavalService = new MetavalService();
-  
-  useInternalEffect(() => {
-    const loadDisplayName = async () => {
-      try {
-        const attribute = await metavalService.getAttributeByStableId(attributeName);
-        if (attribute) {
-          setDisplayName(attribute.display_name);
-        } else {
-          // Format technical name to display name
-          setDisplayName(attributeName.split('_').map(word => 
-            word.charAt(0).toUpperCase() + word.slice(1)
-          ).join(' '));
-        }
-      } catch {
-        setDisplayName(attributeName.split('_').map(word => 
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' '));
-      }
-    };
-    
-    loadDisplayName();
-  }, [attributeName]);
-  
-  return (
-    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
-      {displayName || attributeName}: {value}
-    </span>
-  );
-}
-
-// Helper component for displaying optional tags (for future enhancement)
-function OptionalTagDisplay({ tag }: { tag: string }) {
-  return (
-    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
-      {tag}
-    </span>
-  );
-}
+// Note: CoreTagDisplay and OptionalTagDisplay components are now imported from TagDisplayComponents.tsx
+// This provides optimized display with centralized caching and proper value stable ID support
 
 interface SearchInterfaceProps {
   state: {
@@ -165,12 +126,12 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     }
   };
 
-  // Enhance grouped core tags with metaval display names
+  // Enhance grouped core tags with metaval display names using optimized service
   const enhanceGroupedTagsWithDisplayNames = async (groupedTags: Record<string, { value: string; count: number; tables: string[] }[]>) => {
     const enhanced: Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]> = {};
     
     for (const [attributeName, values] of Object.entries(groupedTags)) {
-      // Try to get metaval attribute display name
+      // Try to get metaval attribute display name using optimized service
       let attributeDisplayName = attributeName;
       try {
         const attribute = await metavalService.getAttributeByStableId(attributeName);
@@ -184,11 +145,30 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         ).join(' ');
       }
       
-      enhanced[attributeName] = values.map(value => ({
-        ...value,
-        attributeDisplayName,
-        displayName: value.value // For now, values show as-is; could enhance further
+      // Enhance values with display names for stable IDs
+      const enhancedValues = await Promise.all(values.map(async (value) => {
+        let displayName = value.value;
+        
+        // Check if value looks like a stable ID and enhance it
+        if (value.value.match(/^metaattr\d+val\d+$/)) {
+          try {
+            const valueDisplayName = await metavalService.getValueDisplayName(value.value);
+            if (valueDisplayName) {
+              displayName = valueDisplayName;
+            }
+          } catch (error) {
+            console.warn(`Failed to get display name for value ${value.value}:`, error);
+          }
+        }
+        
+        return {
+          ...value,
+          attributeDisplayName,
+          displayName
+        };
       }));
+      
+      enhanced[attributeName] = enhancedValues;
     }
     
     return enhanced;
@@ -783,11 +763,12 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                 <div className="space-y-2">
                   {Object.entries(filteredGroupedCoreTags).map(([key, values]) => (
                     <div key={key} className="border-l-2 border-blue-200 pl-2">
-                      <div className="text-xs font-medium text-blue-700 mb-1">
-                        {values[0]?.attributeDisplayName || key}
-                        {values[0]?.attributeDisplayName && values[0]?.attributeDisplayName !== key && (
-                          <span className="text-gray-500 ml-1 font-normal">({key})</span>
-                        )}
+                      <div className="text-xs mb-1">
+                        <AttributeNameDisplay 
+                          stableId={key} 
+                          fallback={values[0]?.attributeDisplayName}
+                          className="font-medium text-blue-700"
+                        />
                       </div>
                       <div className="space-y-1">
                         {values.map((valueData) => {
@@ -801,7 +782,15 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                 className="mr-2"
                               />
                               <span className="text-sm flex-1 truncate">
-                                {valueData.displayName || valueData.value}
+                                {valueData.value.match(/^metaattr\d+val\d+$/) ? (
+                                  <span className="inline-flex items-center">
+                                    <span className="sr-only">Value: </span>
+                                    {/* This will be enhanced by CoreTagDisplay when used in results */}
+                                    {valueData.displayName || valueData.value}
+                                  </span>
+                                ) : (
+                                  valueData.displayName || valueData.value
+                                )}
                               </span>
                               <span className="text-xs text-gray-500 ml-2">({valueData.count})</span>
                             </label>
@@ -1495,11 +1484,13 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                               {record.metadata && Object.keys(record.metadata).length > 0 && (
                                 <div className="mb-2">
                                   <span className="text-xs font-medium text-blue-700">📋 Core Tags: </span>
-                                  <div className="inline-flex flex-wrap gap-1">
-                                    {Object.entries(record.metadata).map(([key, value]) => (
-                                      <CoreTagDisplay key={key} attributeName={key} value={value as string} />
-                                    ))}
-                                  </div>
+                                  <BatchTagDisplay 
+                                    tags={Object.entries(record.metadata).map(([key, value]) => ({
+                                      key: `${key}-${value}`,
+                                      attributeName: key,
+                                      value: value as string
+                                    }))}
+                                  />
                                   {record._enhancedWithMetaval && (
                                     <div className="mt-1">
                                       <span className="inline-flex items-center px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">
