@@ -68,7 +68,7 @@ export class DatabaseService {
           .eq('column_name', columnName)
           .limit(1);
           
-        return schemaData && schemaData.length > 0;
+        return !!(schemaData && schemaData.length > 0);
       }
       
       return data;

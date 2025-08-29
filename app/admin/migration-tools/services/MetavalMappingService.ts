@@ -223,7 +223,12 @@ export class MetavalMappingService {
         .not('metadata', 'is', null)
         .neq('metadata', '{}');
 
-      const sampleMigrations = [];
+      const sampleMigrations: Array<{
+        recordId: any;
+        original: any;
+        migrated: Record<string, any>;
+        sizeReduction: number;
+      }> = [];
       let totalOriginalSize = 0;
       let totalMigratedSize = 0;
       const allWarnings = new Set<string>();
@@ -278,7 +283,7 @@ export class MetavalMappingService {
     let attributesWithValues = 0;
     let attributesWithShorthand = 0;
 
-    for (const [attrName, mapping] of this.attributeMappings) {
+    for (const [attrName, mapping] of Array.from(this.attributeMappings.entries())) {
       if (mapping.values.length > 0) {
         attributesWithValues++;
         totalValues += mapping.values.length;

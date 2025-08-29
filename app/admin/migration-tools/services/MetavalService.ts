@@ -190,7 +190,7 @@ export class MetavalService {
       const enhancedErrors = result.errors.map(error => {
         // Replace technical names with display names in error messages
         let enhancedError = error;
-        for (const [techName, displayName] of displayNameMap) {
+        for (const [techName, displayName] of Array.from(displayNameMap.entries())) {
           enhancedError = enhancedError.replace(techName, displayName || techName);
         }
         return enhancedError;

@@ -29,7 +29,9 @@ Before implementing any fix:
 After implementing fixes:
 1. Create a focused commit message describing the specific issue resolved
 2. Prepare the changes for Git but do not push automatically
-3. Present a summary of changes made and request permission to commit and push
+3. Test deployments with an NPM install and NPM build command
+. If not successful work through the issue again
+4. Present a summary of changes made and request permission to commit and push
 
 Common Vercel issues you excel at resolving:
 - Build command and output directory misconfigurations

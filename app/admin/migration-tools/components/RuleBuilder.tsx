@@ -2,12 +2,8 @@
 
 import * as React from 'react'
 import { useState, useEffect } from 'react'
-import { ModernDatabaseService } from '../services/ModernDatabaseService'
-import { MetavalService, MetaAttribute, ValidationResult } from '../services/MetavalService'
-
-// Initialize services
-const databaseService = new ModernDatabaseService()
-const metavalService = new MetavalService()
+import { MetavalService, ValidationResult } from '../services/MetavalService'
+import { DatabaseService } from '../services/DatabaseService'
 
 // ============================================================================
 // ULTRA-DESIGNED RULE BUILDER INTERFACE
@@ -132,6 +128,9 @@ export default function RuleBuilder({
   onExecute, 
   onClose 
 }: RuleBuilderProps) {
+  // Initialize services
+  const [metavalService] = useState(() => new MetavalService())
+  const [databaseService] = useState(() => new DatabaseService())
   // ========================================================================
   // STATE MANAGEMENT - Ultra-Sophisticated Rule Building
   // ========================================================================
@@ -264,7 +263,7 @@ export default function RuleBuilder({
     
     setMetavalState(prev => ({
       ...prev,
-      loadingValidation: new Set([...prev.loadingValidation, validationKey])
+      loadingValidation: new Set([...Array.from(prev.loadingValidation), validationKey])
     }))
     
     try {
@@ -313,7 +312,7 @@ export default function RuleBuilder({
     } finally {
       setMetavalState(prev => ({
         ...prev,
-        loadingValidation: new Set([...prev.loadingValidation].filter(k => k !== validationKey))
+        loadingValidation: new Set(Array.from(prev.loadingValidation).filter(k => k !== validationKey))
       }))
     }
   }
@@ -363,7 +362,11 @@ export default function RuleBuilder({
     })
 
     try {
-      const options = await databaseService.getMetadataAttributeOptions(metadataKey)
+      const values = await metavalService.getValuesByStableId(metadataKey)
+      const options = values.map(value => ({
+        value: value.value,
+        description: value.description
+      }))
       setMetavalOptions(prev => ({
         ...prev,
         [metadataKey]: options

@@ -148,7 +148,12 @@ export class ModernDatabaseService {
   async executeModernTransformation(rule: ModernMigrationRule, selectedRecords: Record<string, DatabaseRecord[]>): Promise<any> {
     try {
       const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const changes = [];
+      const changes: Array<{
+        table: string;
+        record_id: string;
+        before: DatabaseRecord;
+        after: DatabaseRecord;
+      }> = [];
 
       for (const [table, records] of Object.entries(selectedRecords)) {
         for (const record of records) {
@@ -883,8 +888,9 @@ export class ModernDatabaseService {
         const isMandatory = rule.rule_config?.is_mandatory || false;
         if (!isMandatory) continue;
         
-        const attrName = rule.meta_attributes.name;
-        const displayName = rule.meta_attributes.display_name;
+        const metaAttributes = Array.isArray(rule.meta_attributes) ? rule.meta_attributes[0] : rule.meta_attributes;
+        const attrName = (metaAttributes as any)?.name;
+        const displayName = (metaAttributes as any)?.display_name;
         
         if (!metadata[attrName] || metadata[attrName] === null || metadata[attrName] === '') {
           missingMandatory.push(displayName || attrName);
@@ -908,7 +914,7 @@ export class ModernDatabaseService {
       return {
         isValid: false,
         errors: [`Validation failed: ${error}`],
-        warnings,
+        warnings: [],
         missingMandatory: []
       };
     }
@@ -999,9 +1005,10 @@ export class ModernDatabaseService {
         };
       }
 
+      const metaAttributes = Array.isArray(data.meta_attributes) ? data.meta_attributes[0] : data.meta_attributes;
       return {
-        source_level: data.rule_config.conditional_source_level || data.meta_attributes.source_level,
-        display_level: data.rule_config.conditional_display_level || data.meta_attributes.display_level,
+        source_level: data.rule_config.conditional_source_level || (metaAttributes as any)?.source_level,
+        display_level: data.rule_config.conditional_display_level || (metaAttributes as any)?.display_level,
         is_conditional: !!(data.rule_config.conditional_source_level || data.rule_config.conditional_display_level)
       };
     } catch (error) {

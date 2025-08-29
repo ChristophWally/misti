@@ -132,7 +132,7 @@ export default function AuditTab({ debugState, updateDebugState }: AuditTabProps
               {Object.entries(auditResults.totalRecords).map(([table, count]) => (
                 <div key={table} className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">{table.replace('_', ' ')}</span>
-                  <span className="font-mono text-sm font-medium">{count.toLocaleString()}</span>
+                  <span className="font-mono text-sm font-medium">{(count as number).toLocaleString()}</span>
                 </div>
               ))}
             </div>
