@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { ModernDatabaseService, ModernSelectionCriteria } from '../services/ModernDatabaseService';
 import { MetavalService, MetaAttribute, MetaValue } from '../services/MetavalService';
 import RuleBuilder from './RuleBuilder';
-import { useState as useInternalState, useEffect as useInternalEffect } from 'react';
 import { CoreTagDisplay, OptionalTagDisplay, AttributeNameDisplay, BatchTagDisplay } from './TagDisplayComponents';
 import { DisplayNameService } from '../utils/DisplayNameUtils';
 

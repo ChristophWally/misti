@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { MetavalService, ValidationResult } from '../services/MetavalService'
 import { DatabaseService } from '../services/DatabaseService'
 import { DisplayNameService } from '../utils/DisplayNameUtils'
+import { OptionalTagDisplay } from './TagDisplayComponents'
 
 // ============================================================================
 // ULTRA-DESIGNED RULE BUILDER INTERFACE
@@ -959,9 +960,9 @@ export default function RuleBuilder({
                             
                             return (
                             <div key={tagKey} className="flex items-center space-x-3 mb-2 ml-4">
-                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs min-w-[120px]">
-                                {tagValue}
-                              </span>
+                              <div className="min-w-[120px]">
+                                <OptionalTagDisplay tag={tagValue} />
+                              </div>
                               
                               <select
                                 value={config.action}
