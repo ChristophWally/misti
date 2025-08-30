@@ -365,8 +365,10 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       // Within each group, sort values alphabetically
       for (const key of sortedKeys) {
         result[key] = [...groupedTags[key]].sort((a, b) => {
-          const displayA = a.displayName || a.value;
-          const displayB = b.displayName || b.value;
+          // Use the raw value for sorting - this should be the actual text like "COMP", "PROG", "SIMP"
+          const displayA = a.value;
+          const displayB = b.value;
+          
           return displayA.localeCompare(displayB);
         });
       }
