@@ -859,7 +859,7 @@ export default function RuleBuilder({
                               {/* Column 2: Current Value - Fixed Width */}
                               <div className="text-xs w-24">
                                 <div className="text-gray-500 text-[10px] mb-1">Current</div>
-                                <div className="bg-blue-50 px-2 py-1 rounded text-xs block w-full truncate">
+                                <div className="px-0 py-0 text-xs block w-full truncate">
                                 {(() => {
                                   // Extract current value from record data
                                   for (const hierarchy of Object.values(wordHierarchies)) {
@@ -879,7 +879,7 @@ export default function RuleBuilder({
                                         )
                                       }
                                       return (
-                                        <span className="text-blue-800">{value}</span>
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">{value}</span>
                                       )
                                     }
                                   }
@@ -1040,7 +1040,7 @@ export default function RuleBuilder({
             <div className="flex-1 mr-6">
               <h3 className="font-semibold mb-3 text-sm flex items-center">
                 🔍 Preview & Validation
-                <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-700 rounded">
+                <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
                   ✨ Metaval Enhanced
                 </span>
               </h3>
