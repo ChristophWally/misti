@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ModernDatabaseService, ModernSelectionCriteria } from '../services/ModernDatabaseService';
 import { MetavalService, MetaAttribute, MetaValue } from '../services/MetavalService';
 import RuleBuilder from './RuleBuilder';
@@ -62,6 +62,18 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   // Tag sorting state
   const [tagSortMode, setTagSortMode] = useState<'frequency' | 'alphabetical'>('frequency');
   const [isSorting, setIsSorting] = useState(false);
+  
+  // Add debug logging for state changes
+  useEffect(() => {
+    console.log('[DEBUG] tagSortMode state changed to:', tagSortMode);
+  }, [tagSortMode]);
+  
+  useEffect(() => {
+    console.log('[DEBUG] isSorting state changed to:', isSorting);
+  }, [isSorting]);
+  
+  // Track when sorting was last applied to avoid redundant operations
+  const [lastSortSignature, setLastSortSignature] = useState<string>('');
   
   // Table filtering for tags
   const [availableTables] = useState([
@@ -267,15 +279,22 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
 
   // Apply filtering and sorting when tags, search, sort mode, or table selection changes
   useEffect(() => {
-    applyTagFilteringAndSorting();
-  }, [availableTags, tagSearch, tagSortMode, selectedTagTables]);
-  
-  // Also apply sorting when sort mode changes specifically
-  useEffect(() => {
+    console.log('[DEBUG] useEffect triggered - applying tag filtering and sorting');
+    console.log('[DEBUG] useEffect dependencies:', {
+      availableTagsCount: availableTags.optionalTags.length + Object.keys(availableTags.groupedCoreTags).length,
+      tagSearch,
+      tagSortMode,
+      selectedTablesCount: selectedTagTables.length
+    });
+    
+    // Only apply sorting if we have data
     if (availableTags.optionalTags.length > 0 || Object.keys(availableTags.groupedCoreTags).length > 0) {
+      console.log('[DEBUG] useEffect - has data, applying sorting');
       applyTagFilteringAndSorting();
+    } else {
+      console.log('[DEBUG] useEffect - no data available, skipping');
     }
-  }, [tagSortMode]);
+  }, [availableTags, tagSearch, tagSortMode, selectedTagTables]);
 
 
 
@@ -357,7 +376,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
 
   // Sorting functions for tags - now async to handle display name resolution
   const sortOptionalTags = async (tags: typeof availableTags.optionalTags): Promise<typeof availableTags.optionalTags> => {
+    console.log(`[DEBUG] sortOptionalTags: mode=${tagSortMode}, input count=${tags.length}`);
+    
     if (tagSortMode === 'alphabetical') {
+      console.log('[DEBUG] sortOptionalTags: Starting alphabetical sort');
+      
       // Resolve display names for all tags before sorting
       const tagsWithDisplayNames = await Promise.all(
         tags.map(async (tag) => {
@@ -366,7 +389,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
           // For stable IDs, try to resolve the actual display name
           if (tag.tag.match(/^metaattr\d+val\d+$/)) {
             try {
+              console.log(`[DEBUG] Resolving display name for stable ID: ${tag.tag}`);
               displayName = await displayNameService.getValueDisplayName(tag.tag);
+              console.log(`[DEBUG] Resolved ${tag.tag} -> ${displayName}`);
             } catch (error) {
               console.warn(`Failed to resolve display name for optional tag ${tag.tag}:`, error);
               displayName = tag.displayName || tag.tag;
@@ -380,42 +405,82 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         })
       );
       
+      console.log('[DEBUG] sortOptionalTags: Display names resolved, sorting...');
+      console.log('[DEBUG] sortOptionalTags: Sample resolved names:', tagsWithDisplayNames.slice(0, 3).map(t => `${t.tag} -> ${t.resolvedDisplayName}`));
+      console.log('[DEBUG] sortOptionalTags: All resolved names:', tagsWithDisplayNames.map(t => t.resolvedDisplayName).sort());
+      
       // Sort by resolved display names
-      return tagsWithDisplayNames
-        .sort((a, b) => a.resolvedDisplayName.localeCompare(b.resolvedDisplayName))
+      const sorted = tagsWithDisplayNames
+        .sort((a, b) => {
+          const comparison = a.resolvedDisplayName.localeCompare(b.resolvedDisplayName);
+          if (a.resolvedDisplayName !== b.resolvedDisplayName) {
+            console.log(`[DEBUG] Comparison: "${a.resolvedDisplayName}" vs "${b.resolvedDisplayName}" = ${comparison}`);
+          }
+          return comparison;
+        })
         .map(({ resolvedDisplayName, ...tag }) => tag); // Remove the temporary field
+      
+      console.log('[DEBUG] sortOptionalTags: Alphabetical sort complete, result count:', sorted.length);
+      console.log('[DEBUG] sortOptionalTags: First 3 sorted:', sorted.slice(0, 3).map(t => t.tag));
+      
+      // Check if sorting actually changed the order
+      const originalOrder = tags.map(t => t.tag).join(',');
+      const sortedOrder = sorted.map(t => t.tag).join(',');
+      if (originalOrder !== sortedOrder) {
+        console.log('[DEBUG] sortOptionalTags: ✅ Order changed - sorting is working!');
+      } else {
+        console.log('[DEBUG] sortOptionalTags: ⚠️ Order unchanged - tags may already be sorted or all identical');
+      }
+      return sorted;
     }
+    
+    console.log('[DEBUG] sortOptionalTags: Using frequency mode (no sorting needed)');
     return tags; // Keep original frequency-based sorting
   };
 
   const sortGroupedCoreTags = async (groupedTags: typeof availableTags.groupedCoreTags): Promise<typeof availableTags.groupedCoreTags> => {
     const result: typeof groupedTags = {};
     
+    console.log(`[DEBUG] sortGroupedCoreTags: mode=${tagSortMode}, input groups=${Object.keys(groupedTags).length}`);
+    
     if (tagSortMode === 'alphabetical') {
+      console.log('[DEBUG] sortGroupedCoreTags: Starting alphabetical sort');
+      
       // First, resolve attribute display names for sorting the groups
       const attributeIds = Object.keys(groupedTags);
+      console.log('[DEBUG] sortGroupedCoreTags: Resolving attribute display names for:', attributeIds);
+      
       const attributeDisplayNameMap = await displayNameService.batchGetAttributeDisplayNames(attributeIds);
+      console.log('[DEBUG] sortGroupedCoreTags: Resolved attribute names:', Array.from(attributeDisplayNameMap.entries()));
       
       // Sort attribute keys alphabetically by their resolved display names
       const sortedKeys = attributeIds.sort((a, b) => {
         const displayA = attributeDisplayNameMap.get(a) || groupedTags[a][0]?.attributeDisplayName || a;
         const displayB = attributeDisplayNameMap.get(b) || groupedTags[b][0]?.attributeDisplayName || b;
+        console.log(`[DEBUG] Attribute comparison: "${displayA}" (${a}) vs "${displayB}" (${b})`);
         return displayA.localeCompare(displayB);
       });
+      
+      console.log('[DEBUG] sortGroupedCoreTags: Sorted attribute keys:', sortedKeys);
       
       // Within each group, sort values alphabetically by their resolved display names
       for (const key of sortedKeys) {
         const values = groupedTags[key];
+        console.log(`[DEBUG] sortGroupedCoreTags: Processing group "${key}" with ${values.length} values`);
         
         // Collect all value stable IDs for batch resolution
         const valueStableIds = values
           .filter(v => v.value.match(/^metaattr\d+val\d+$/))
           .map(v => v.value);
         
+        console.log(`[DEBUG] sortGroupedCoreTags: Found ${valueStableIds.length} stable IDs in group "${key}":`, valueStableIds);
+        
         // Batch resolve value display names
         const valueDisplayNameMap = valueStableIds.length > 0 
           ? await displayNameService.batchGetValueDisplayNames(valueStableIds)
           : new Map<string, string>();
+        
+        console.log(`[DEBUG] sortGroupedCoreTags: Resolved value names for group "${key}":`, Array.from(valueDisplayNameMap.entries()));
         
         // Sort values by resolved display names
         const sortedValues = [...values].sort((a, b) => {
@@ -435,12 +500,31 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
             displayB = b.displayName || b.value;
           }
           
-          return displayA.localeCompare(displayB);
+          const comparison = displayA.localeCompare(displayB);
+          if (displayA !== displayB) {
+            console.log(`[DEBUG] Value comparison in group "${key}": "${displayA}" (${a.value}) vs "${displayB}" (${b.value}) = ${comparison}`);
+          }
+          return comparison;
         });
+        
+        console.log(`[DEBUG] sortGroupedCoreTags: Sorted values for group "${key}":`, sortedValues.slice(0, 3).map(v => `${v.value} (${v.displayName || 'no display name'})`));
+        
+        // Check if sorting changed the order for this group
+        const originalOrder = values.map(v => v.value).join(',');
+        const sortedOrder = sortedValues.map(v => v.value).join(',');
+        if (originalOrder !== sortedOrder) {
+          console.log(`[DEBUG] sortGroupedCoreTags: ✅ Group "${key}" order changed - sorting is working!`);
+        } else {
+          console.log(`[DEBUG] sortGroupedCoreTags: ⚠️ Group "${key}" order unchanged - values may already be sorted`);
+        }
         
         result[key] = sortedValues;
       }
+      
+      console.log('[DEBUG] sortGroupedCoreTags: Alphabetical sort complete, result groups:', Object.keys(result).length);
     } else {
+      console.log('[DEBUG] sortGroupedCoreTags: Using frequency mode');
+      
       // Keep frequency-based sorting - sort groups by highest count in group, values by count
       const sortedEntries = Object.entries(groupedTags)
         .map(([key, values]) => ({
@@ -453,6 +537,8 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       for (const { key, values } of sortedEntries) {
         result[key] = values; // Values are already sorted by count from database
       }
+      
+      console.log('[DEBUG] sortGroupedCoreTags: Frequency sort complete, result groups:', Object.keys(result).length);
     }
     
     return result;
@@ -464,18 +550,36 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   const [filteredGroupedCoreTags, setFilteredGroupedCoreTags] = useState<typeof availableTags.groupedCoreTags>({});
 
   // Apply filtering and sorting asynchronously
-  const applyTagFilteringAndSorting = async () => {
+  const applyTagFilteringAndSorting = useCallback(async () => {
+    console.log(`[DEBUG] applyTagFilteringAndSorting: Starting with mode=${tagSortMode}, search="${tagSearch}", tables=[${selectedTagTables.join(',')}]`);
+    
+    // Create signature to avoid redundant sorting operations
+    const currentSignature = `${tagSortMode}|${tagSearch}|${selectedTagTables.join(',')}|${availableTags.optionalTags.length}|${Object.keys(availableTags.groupedCoreTags).length}`;
+    
+    if (currentSignature === lastSortSignature) {
+      console.log('[DEBUG] applyTagFilteringAndSorting: Signature unchanged, skipping operation');
+      return;
+    }
+    
+    console.log('[DEBUG] applyTagFilteringAndSorting: New signature, proceeding with operation');
+    setLastSortSignature(currentSignature);
+    
     if (tagSortMode === 'alphabetical') {
+      console.log('[DEBUG] applyTagFilteringAndSorting: Setting sorting state to true');
       setIsSorting(true);
     }
     
     try {
+      console.log(`[DEBUG] applyTagFilteringAndSorting: Input data - optional tags: ${availableTags.optionalTags.length}, grouped core tags: ${Object.keys(availableTags.groupedCoreTags).length}`);
+      
       // Filter optional tags
       const filteredOptional = availableTags.optionalTags.filter(tag => {
         const matchesSearch = tag.tag.toLowerCase().includes(tagSearch.toLowerCase());
         const matchesTables = tag.tables.some(table => selectedTagTables.includes(table));
         return matchesSearch && matchesTables;
       });
+      
+      console.log(`[DEBUG] applyTagFilteringAndSorting: Filtered optional tags: ${filteredOptional.length}`);
 
       // Filter grouped core tags
       const filteredGrouped = Object.fromEntries(
@@ -493,24 +597,34 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
           ])
           .filter(([_, values]) => values.length > 0)
       ) as Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]>;
+      
+      console.log(`[DEBUG] applyTagFilteringAndSorting: Filtered grouped core tags: ${Object.keys(filteredGrouped).length} groups`);
 
+      console.log('[DEBUG] applyTagFilteringAndSorting: Starting async sorting operations...');
+      
       // Apply sorting (async operations)
       const [sortedOptionalTags, sortedGroupedCoreTags] = await Promise.all([
         sortOptionalTags(filteredOptional),
         sortGroupedCoreTags(filteredGrouped)
       ]);
+      
+      console.log('[DEBUG] applyTagFilteringAndSorting: Sorting operations complete, updating state...');
+      console.log(`[DEBUG] applyTagFilteringAndSorting: Final results - optional: ${sortedOptionalTags.length}, grouped: ${Object.keys(sortedGroupedCoreTags).length}`);
 
       setFilteredOptionalTags(sortedOptionalTags);
       setFilteredGroupedCoreTags(sortedGroupedCoreTags);
+      
+      console.log('[DEBUG] applyTagFilteringAndSorting: State update complete');
     } catch (error) {
-      console.error('Error applying tag filtering and sorting:', error);
+      console.error('[DEBUG] Error applying tag filtering and sorting:', error);
       // Fallback to unsorted results
       setFilteredOptionalTags(availableTags.optionalTags);
       setFilteredGroupedCoreTags(availableTags.groupedCoreTags);
     } finally {
+      console.log('[DEBUG] applyTagFilteringAndSorting: Setting sorting state to false');
       setIsSorting(false);
     }
-  };
+  }, [availableTags, tagSearch, tagSortMode, selectedTagTables, displayNameService]);
 
   // Auto-load hierarchies for all visible words
   const autoLoadHierarchies = async (words: any[]) => {
@@ -956,7 +1070,10 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                   <h5 className="text-xs font-medium text-gray-700 mb-2">Sort Tags By:</h5>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => setTagSortMode('frequency')}
+                      onClick={() => {
+                        console.log('[DEBUG] Frequency sort button clicked');
+                        setTagSortMode('frequency');
+                      }}
                       disabled={isSorting}
                       className={`px-3 py-1 rounded text-xs transition-colors ${
                         tagSortMode === 'frequency'
@@ -965,9 +1082,15 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                       }`}
                     >
                       📊 Frequency
+                      {tagSortMode === 'frequency' && (
+                        <span className="ml-1 text-green-600">✓</span>
+                      )}
                     </button>
                     <button
-                      onClick={() => setTagSortMode('alphabetical')}
+                      onClick={() => {
+                        console.log('[DEBUG] Alphabetical sort button clicked');
+                        setTagSortMode('alphabetical');
+                      }}
                       disabled={isSorting}
                       className={`px-3 py-1 rounded text-xs transition-colors ${
                         tagSortMode === 'alphabetical'
@@ -976,6 +1099,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                       }`}
                     >
                       {isSorting && tagSortMode === 'alphabetical' ? '🔄 Sorting...' : '🔤 Alphabetical'}
+                      {tagSortMode === 'alphabetical' && !isSorting && (
+                        <span className="ml-1 text-green-600">✓</span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1004,7 +1130,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
               {/* Core Tags - Grouped */}
               <div>
                 <div className="space-y-2">
-                  {Object.entries(filteredGroupedCoreTags).map(([key, values]) => (
+                  {(() => {
+                    console.log('[DEBUG] Rendering core tags. Current mode:', tagSortMode);
+                    console.log('[DEBUG] Filtered grouped core tags keys:', Object.keys(filteredGroupedCoreTags));
+                    return Object.entries(filteredGroupedCoreTags);
+                  })().map(([key, values]) => (
                     <div key={key} className="border-l-2 border-blue-200 pl-2">
                       <div className="text-xs mb-1">
                         <AttributeNameDisplay 
@@ -1027,7 +1157,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                               <span className="text-sm flex-1 truncate">
                                 {/* Always use CoreTagDisplay for stable IDs - it handles proper display name lookup */}
                                 {(valueData.value.match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
-                                  <CoreTagDisplay attributeName={key} value={valueData.value} />
+                                  <CoreTagDisplay attributeName={key} value={valueData.value} valueOnly={true} />
                                 ) : (
                                   valueData.displayName || valueData.value
                                 )}
@@ -1046,7 +1176,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
               {/* Optional Tags */}
               <div>
                 <div className="space-y-1">
-                  {filteredOptionalTags.map((tagData) => (
+                  {(() => {
+                    console.log('[DEBUG] Rendering optional tags. Current mode:', tagSortMode);
+                    console.log('[DEBUG] First 5 filtered optional tags:', filteredOptionalTags.slice(0, 5).map(t => t.tag));
+                    return filteredOptionalTags;
+                  })().map((tagData) => (
                     <div key={tagData.tag}>
                       <label className="flex items-center cursor-pointer">
                         <input
@@ -1086,6 +1220,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                       <CoreTagDisplay 
                         attributeName={tag.split(': ')[0]} 
                         value={tag.split(': ')[1]} 
+                        valueOnly={true}
                       />
                     ) : (
                       tag

@@ -7,9 +7,10 @@ import { DisplayNameService, useDisplayNames } from '../utils/DisplayNameUtils';
  * Optimized CoreTagDisplay component that uses centralized DisplayNameService
  * Handles both attribute names and value names for complete tag display
  */
-export function CoreTagDisplay({ attributeName, value }: { 
+export function CoreTagDisplay({ attributeName, value, valueOnly = false }: { 
   attributeName: string; 
-  value: string; 
+  value: string;
+  valueOnly?: boolean;
 }) {
   const [displayText, setDisplayText] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -23,47 +24,65 @@ export function CoreTagDisplay({ attributeName, value }: {
         // Check if value looks like a stable ID (metaattrXXXvalYYY)
         if (value.match(/^metaattr\d+val\d+$/)) {
           // Both attribute and value are stable IDs
-          const attrDisplayName = await displayService.getAttributeDisplayName(attributeName);
           const valueDisplayName = await displayService.getValueDisplayName(value);
-          setDisplayText(`${attrDisplayName}: ${valueDisplayName}`);
+          
+          if (valueOnly) {
+            setDisplayText(valueDisplayName);
+          } else {
+            const attrDisplayName = await displayService.getAttributeDisplayName(attributeName);
+            setDisplayText(`${attrDisplayName}: ${valueDisplayName}`);
+          }
         } else if (attributeName.startsWith('metaattr')) {
           // Only attribute is stable ID, value is plain text
-          const attrDisplayName = await displayService.getAttributeDisplayName(attributeName);
-          setDisplayText(`${attrDisplayName}: ${value}`);
+          if (valueOnly) {
+            setDisplayText(value);
+          } else {
+            const attrDisplayName = await displayService.getAttributeDisplayName(attributeName);
+            setDisplayText(`${attrDisplayName}: ${value}`);
+          }
         } else {
           // Neither are stable IDs, format the attribute name and use value as-is
-          const formattedAttrName = attributeName.split('_').map(word => 
-            word.charAt(0).toUpperCase() + word.slice(1)
-          ).join(' ');
-          setDisplayText(`${formattedAttrName}: ${value}`);
+          if (valueOnly) {
+            setDisplayText(value);
+          } else {
+            const formattedAttrName = attributeName.split('_').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+            setDisplayText(`${formattedAttrName}: ${value}`);
+          }
         }
       } catch (error) {
         console.warn('CoreTagDisplay: Failed to load display names:', error);
         // Better fallback formatting
-        let formattedAttrName = attributeName;
         let formattedValue = value;
-        
-        // Format attribute name: metaattr008 -> Metaattr008, underscore_name -> Underscore Name
-        if (attributeName.startsWith('metaattr')) {
-          formattedAttrName = attributeName.charAt(0).toUpperCase() + attributeName.slice(1);
-        } else {
-          formattedAttrName = attributeName.split('_').map(word => 
-            word.charAt(0).toUpperCase() + word.slice(1)
-          ).join(' ');
-        }
         
         // Format value: metaattr008val038 -> Metaattr008val038
         if (value.match(/^metaattr\d+val\d+$/)) {
           formattedValue = value.charAt(0).toUpperCase() + value.slice(1);
         }
         
-        setDisplayText(`${formattedAttrName}: ${formattedValue}`);
+        if (valueOnly) {
+          setDisplayText(formattedValue);
+        } else {
+          let formattedAttrName = attributeName;
+          
+          // Format attribute name: metaattr008 -> Metaattr008, underscore_name -> Underscore Name
+          if (attributeName.startsWith('metaattr')) {
+            formattedAttrName = attributeName.charAt(0).toUpperCase() + attributeName.slice(1);
+          } else {
+            formattedAttrName = attributeName.split('_').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+          }
+          
+          setDisplayText(`${formattedAttrName}: ${formattedValue}`);
+        }
       }
       setIsLoading(false);
     };
 
     loadDisplayNames();
-  }, [attributeName, value]);
+  }, [attributeName, value, valueOnly]);
 
   if (isLoading) {
     return (
