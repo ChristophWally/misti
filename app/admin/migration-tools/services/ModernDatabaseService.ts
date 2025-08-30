@@ -250,6 +250,12 @@ export class ModernDatabaseService {
     return ['dictionary', 'word_forms', 'word_translations', 'form_translations'];
   }
 
+  // Clear tag cache to force fresh data retrieval
+  clearTagCache(): void {
+    this.tagCache = { data: null, timestamp: null };
+    console.log('ModernDatabaseService: Tag cache cleared');
+  }
+
   // Unified tag discovery - get ALL tags from metadata and optional_tags
   // Now uses optimized get_all_available_tags() database function with caching
   async getAllAvailableTags(): Promise<{

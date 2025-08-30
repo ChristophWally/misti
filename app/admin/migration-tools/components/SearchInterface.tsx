@@ -110,6 +110,10 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   const loadAvailableTags = async () => {
     try {
       updateUIState({ isLoading: true, error: null });
+      
+      // Clear the database cache to ensure fresh data with corrected format
+      dbService.clearTagCache();
+      
       const tags = await dbService.getAllAvailableTags();
       
       // Enhance tags with metaval display names
