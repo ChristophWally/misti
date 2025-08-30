@@ -1105,7 +1105,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                 onChange={() => toggleTag(fullTag, 'core')}
                                 className="mr-2"
                               />
-                              <span className="text-sm flex-1 truncate">{valueData.displayName || valueData.value}</span>
+                              <span className="text-sm flex-1 truncate">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                                  {valueData.displayName || valueData.value}
+                                </span>
+                              </span>
                               <span className="text-xs text-gray-500 ml-2">({valueData.count})</span>
                             </label>
                           );
@@ -1125,11 +1129,15 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                   })().map(([key, values]) => (
                     <div key={key} className="border-l-2 border-green-200 pl-2">
                       <div className="text-xs mb-1">
-                        <AttributeNameDisplay 
-                          stableId={key} 
-                          fallback={values[0]?.attributeDisplayName}
-                          className="font-medium text-green-700"
-                        />
+                        {key === 'misc' ? (
+                          <span className="font-medium text-green-700">Optional Tags</span>
+                        ) : (
+                          <AttributeNameDisplay 
+                            stableId={key} 
+                            fallback={values[0]?.attributeDisplayName}
+                            className="font-medium text-green-700"
+                          />
+                        )}
                       </div>
                       <div className="space-y-1">
                         {values.map((valueData) => {
@@ -1143,7 +1151,11 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                 onChange={() => toggleTag(originalTag, 'optional')}
                                 className="mr-2"
                               />
-                              <span className="text-sm flex-1 truncate">{valueData.displayName || originalTag}</span>
+                              <span className="text-sm flex-1 truncate">
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
+                                  {valueData.displayName || originalTag}
+                                </span>
+                              </span>
                               <span className="text-xs text-gray-500 ml-2">({valueData.count})</span>
                             </label>
                           );
@@ -1380,7 +1392,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                             onChange={() => toggleOptionalTag(wordId, tag, 'word', word)}
                                             className="w-3 h-3"
                                           />
-                                          <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-700'}`}>
+                                          <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-green-100 text-green-800'}`}>
                                             {tag}
                                           </span>
                                         </label>
@@ -1469,7 +1481,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                                     onChange={() => toggleOptionalTag(form.id, tag, 'form', form)}
                                                     className="w-3 h-3"
                                                   />
-                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-green-100 text-green-800'}`}>
                                                     {tag}
                                                   </span>
                                                 </label>
@@ -1563,7 +1575,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                                     onChange={() => toggleOptionalTag(translation.id, tag, 'word_translation', translation)}
                                                     className="w-3 h-3"
                                                   />
-                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-green-100 text-green-800'}`}>
                                                     {tag}
                                                   </span>
                                                 </label>
@@ -1657,7 +1669,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                                     onChange={() => toggleOptionalTag(formTranslation.id, tag, 'form_translation', formTranslation)}
                                                     className="w-3 h-3"
                                                   />
-                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                  <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-green-200 text-green-800' : 'bg-green-100 text-green-800'}`}>
                                                     {tag}
                                                   </span>
                                                 </label>
