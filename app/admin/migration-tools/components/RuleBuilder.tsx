@@ -655,29 +655,52 @@ export default function RuleBuilder({
                       <div className="mb-2">
                         <div className="text-xs text-gray-600 mb-1">📋 Metadata:</div>
                         <div className="flex flex-wrap gap-1">
-                          {Array.from(selection.selectedMetadataPaths).map(key => {
-                            // Look up the actual value from the record data
-                            let value = key // fallback to just key
-                            for (const hierarchy of Object.values(wordHierarchies)) {
-                              let record = null
-                              if (hierarchy.word.id === recordId) record = hierarchy.word
-                              else record = [...hierarchy.forms, ...hierarchy.translations, ...hierarchy.formTranslations]
-                                .find(r => r.id === recordId)
-                              
-                              if (record && 'metadata' in record && (record as any).metadata && (record as any).metadata[key]) {
-                                value = `${key}: ${(record as any).metadata[key]}`
-                                break
-                              }
-                            }
+                          {(() => {
+                            // Group metadata by attribute for clean display
+                            const groupedMetadata: { [key: string]: string[] } = {}
                             
-                            return (
-                              <CoreTagDisplay 
-                                key={key} 
-                                attributeName={key} 
-                                value={typeof value === 'string' ? value : String(value)}
-                              />
-                            )
-                          })}
+                            Array.from(selection.selectedMetadataPaths).forEach(key => {
+                              // Look up the actual value from the record data
+                              let actualValue = key // fallback to key
+                              for (const hierarchy of Object.values(wordHierarchies)) {
+                                let record = null
+                                if (hierarchy.word.id === recordId) record = hierarchy.word
+                                else record = [...hierarchy.forms, ...hierarchy.translations, ...hierarchy.formTranslations]
+                                  .find(r => r.id === recordId)
+                                
+                                if (record && 'metadata' in record && (record as any).metadata && (record as any).metadata[key]) {
+                                  actualValue = (record as any).metadata[key]
+                                  break
+                                }
+                              }
+                              
+                              if (!groupedMetadata[key]) {
+                                groupedMetadata[key] = []
+                              }
+                              groupedMetadata[key].push(actualValue)
+                            })
+                            
+                            return Object.entries(groupedMetadata).map(([attributeKey, values]) => (
+                              <div key={attributeKey} className="border-l-2 border-blue-200 pl-2">
+                                <div className="text-xs mb-1">
+                                  <AttributeNameDisplay 
+                                    stableId={attributeKey}
+                                    className="font-medium text-blue-700"
+                                  />
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  {values.map((value, index) => (
+                                    <CoreTagDisplay 
+                                      key={`${attributeKey}-${index}`}
+                                      attributeName={attributeKey} 
+                                      value={typeof value === 'string' ? value : String(value)}
+                                      valueOnly={true}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          })()}
                         </div>
                       </div>
                     )}

@@ -1543,7 +1543,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                           <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-700'}`}>
                                             {/* Always use CoreTagDisplay for stable IDs */}
                                             {((value as string).match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
-                                              <CoreTagDisplay attributeName={key} value={value as string} />
+                                              <CoreTagDisplay attributeName={key} value={value as string} valueOnly={true} />
                                             ) : (
                                               `${key}: ${value as string}`
                                             )}
@@ -1632,7 +1632,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                                   <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
                                                     {/* Always use CoreTagDisplay for stable IDs */}
                                                     {((value as string).match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
-                                                      <CoreTagDisplay attributeName={key} value={value as string} />
+                                                      <CoreTagDisplay attributeName={key} value={value as string} valueOnly={true} />
                                                     ) : (
                                                       `${key}: ${value as string}`
                                                     )}
@@ -1726,7 +1726,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                                   <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
                                                     {/* Always use CoreTagDisplay for stable IDs */}
                                                     {((value as string).match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
-                                                      <CoreTagDisplay attributeName={key} value={value as string} />
+                                                      <CoreTagDisplay attributeName={key} value={value as string} valueOnly={true} />
                                                     ) : (
                                                       `${key}: ${value as string}`
                                                     )}
@@ -1820,7 +1820,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                                   <span className={`px-1 py-0.5 text-xs rounded ${isSelected ? 'bg-blue-200 text-blue-800' : 'bg-gray-100 text-gray-600'}`}>
                                                     {/* Always use CoreTagDisplay for stable IDs */}
                                                     {((value as string).match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
-                                                      <CoreTagDisplay attributeName={key} value={value as string} />
+                                                      <CoreTagDisplay attributeName={key} value={value as string} valueOnly={true} />
                                                     ) : (
                                                       `${key}: ${value as string}`
                                                     )}
@@ -2034,7 +2034,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                                   <span className="text-xs font-medium text-blue-700">📋 Core Tags: </span>
                                   <div className="inline-flex flex-wrap gap-1">
                                     {Object.entries(record.metadata).map(([key, value]) => (
-                                      <CoreTagDisplay key={key} attributeName={key} value={value as string} />
+                                      <CoreTagDisplay key={key} attributeName={key} value={value as string} valueOnly={true} />
                                     ))}
                                   </div>
                                   {record._enhancedWithMetaval && (
