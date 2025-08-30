@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect, useMemo, useRef } from 'react';
 import { DatabaseService, DatabaseStats, TableMetadataInfo } from '../services/DatabaseService';
 
 export interface DatabaseState {
@@ -63,20 +63,34 @@ const DatabaseContext = createContext<{
   databaseService: DatabaseService;
 } | null>(null);
 
-export function DatabaseProvider({ 
-  children, 
-  debugLog 
-}: { 
+export function DatabaseProvider({
+  children,
+  debugLog
+}: {
   children: ReactNode;
   debugLog?: (message: string) => void;
 }) {
   const [state, dispatch] = useReducer(databaseReducer, initialState);
-  const databaseService = new DatabaseService(debugLog);
 
-  // Initialize database connection and load schemas
+  // Hold a stable DatabaseService instance (avoid recreating each render)
+  const databaseService = useMemo(() => new DatabaseService(debugLog), []);
+
+  // Keep latest debugLog in a ref to log from effects without re-running them
+  const debugLogRef = useRef(debugLog);
   useEffect(() => {
+    debugLogRef.current = debugLog;
+  }, [debugLog]);
+
+  // Guard against React StrictMode double‑invocation in dev and re-runs
+  const didInitRef = useRef(false);
+
+  // Initialize database connection and load schemas (run once)
+  useEffect(() => {
+    if (didInitRef.current) return;
+    didInitRef.current = true;
+
     async function initializeDatabase() {
-      debugLog?.('🔗 Initializing database connection...');
+      debugLogRef.current?.('🔗 Initializing database connection...');
       dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'loading' });
       dispatch({ type: 'SET_ERROR', payload: null });
 
@@ -84,13 +98,13 @@ export function DatabaseProvider({
         // Load table schemas
         const tableNames = ['dictionary', 'word_forms', 'word_translations', 'form_translations'];
         const schemas: Record<string, TableMetadataInfo> = {};
-        
+
         for (const tableName of tableNames) {
           try {
             schemas[tableName] = await databaseService.getTableMetadata(tableName);
-            debugLog?.(`✅ Schema loaded for ${tableName}`);
+            debugLogRef.current?.(`✅ Schema loaded for ${tableName}`);
           } catch (error) {
-            debugLog?.(`❌ Failed to load schema for ${tableName}: ${error}`);
+            debugLogRef.current?.(`❌ Failed to load schema for ${tableName}: ${error}`);
           }
         }
 
@@ -102,19 +116,18 @@ export function DatabaseProvider({
 
         dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'connected' });
         dispatch({ type: 'SET_INITIALIZED', payload: true });
-        
-        debugLog?.(`✅ Database initialized: ${Object.keys(schemas).length} tables loaded`);
-        
+
+        debugLogRef.current?.(`✅ Database initialized: ${Object.keys(schemas).length} tables loaded`);
       } catch (error: any) {
         const errorMsg = `Database initialization failed: ${error.message}`;
         dispatch({ type: 'SET_ERROR', payload: errorMsg });
         dispatch({ type: 'SET_CONNECTION_STATUS', payload: 'error' });
-        debugLog?.(`❌ ${errorMsg}`);
+        debugLogRef.current?.(`❌ ${errorMsg}`);
       }
     }
 
-    initializeDatabase();
-  }, [debugLog, databaseService]);
+    void initializeDatabase();
+  }, [databaseService]);
 
   return (
     <DatabaseContext.Provider value={{ state, dispatch, databaseService }}>

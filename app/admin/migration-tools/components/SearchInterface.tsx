@@ -544,10 +544,109 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     return result;
   };
 
+  // Create grouped optional tags from flat optional tags array
+  const createGroupedOptionalTags = (optionalTags: typeof availableTags.optionalTags) => {
+    const grouped: Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]> = {};
+    
+    optionalTags.forEach(tagData => {
+      // Parse the tag to extract attribute and value
+      // Format is typically "attributeName: value" or just "value" for non-attribute tags
+      const colonIndex = tagData.tag.indexOf(': ');
+      let attributeKey: string;
+      let value: string;
+      
+      if (colonIndex !== -1) {
+        // Tag has attribute: value format
+        attributeKey = tagData.tag.substring(0, colonIndex);
+        value = tagData.tag.substring(colonIndex + 2);
+      } else {
+        // Tag is just a value, use stableId as key if available, otherwise use the tag itself as both key and value
+        if (tagData.stableId) {
+          attributeKey = tagData.stableId;
+          value = tagData.tag;
+        } else {
+          // For tags without stableId, group them under 'misc' or create individual groups
+          attributeKey = 'misc';
+          value = tagData.tag;
+        }
+      }
+      
+      if (!grouped[attributeKey]) {
+        grouped[attributeKey] = [];
+      }
+      
+      grouped[attributeKey].push({
+        value: tagData.tag, // Store the original tag for proper toggle functionality
+        count: tagData.count,
+        tables: tagData.tables,
+        displayName: tagData.displayName,
+        stableId: tagData.stableId,
+        // We'll enhance this with attributeDisplayName later if needed
+      });
+    });
+    
+    return grouped;
+  };
+
+  // Sort grouped optional tags (similar to sortGroupedCoreTags)
+  const sortGroupedOptionalTags = async (groupedTags: Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]>) => {
+    const result: typeof groupedTags = {};
+    
+    console.log(`[DEBUG] sortGroupedOptionalTags: mode=${tagSortMode}, input groups=${Object.keys(groupedTags).length}`);
+    
+    if (tagSortMode === 'alphabetical') {
+      console.log('[DEBUG] sortGroupedOptionalTags: Starting alphabetical sort');
+      
+      // Sort attribute keys alphabetically
+      const sortedKeys = Object.keys(groupedTags).sort((a, b) => a.localeCompare(b));
+      
+      for (const key of sortedKeys) {
+        const values = groupedTags[key];
+        
+        // Sort values within each group using display names
+        const sortedValues = [...values];
+        await Promise.all(
+          sortedValues.map(async (valueData) => {
+            if (!valueData.displayName && (valueData.value.match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr'))) {
+              try {
+                valueData.displayName = await displayNameService.getValueDisplayName(valueData.value) || valueData.value;
+              } catch (error) {
+                console.warn(`[DEBUG] sortGroupedOptionalTags: Failed to get display name for ${valueData.value}:`, error);
+                valueData.displayName = valueData.value;
+              }
+            }
+          })
+        );
+        
+        sortedValues.sort((a, b) => {
+          const aDisplay = a.displayName || a.value;
+          const bDisplay = b.displayName || b.value;
+          return aDisplay.localeCompare(bDisplay);
+        });
+        
+        result[key] = sortedValues;
+      }
+      
+      console.log('[DEBUG] sortGroupedOptionalTags: Alphabetical sort complete, result groups:', Object.keys(result).length);
+    } else {
+      // Frequency mode - keep original order
+      console.log('[DEBUG] sortGroupedOptionalTags: Using frequency mode (no sorting needed)');
+      
+      for (const [key, values] of Object.entries(groupedTags)) {
+        result[key] = values; // Values are already sorted by count from database
+      }
+      
+      console.log('[DEBUG] sortGroupedOptionalTags: Frequency sort complete, result groups:', Object.keys(result).length);
+    }
+    
+    return result;
+  };
+
   // Filter and sort tags based on search and selected tables
   // These will be managed by state since sorting is now async
   const [filteredOptionalTags, setFilteredOptionalTags] = useState<typeof availableTags.optionalTags>([]);
   const [filteredGroupedCoreTags, setFilteredGroupedCoreTags] = useState<typeof availableTags.groupedCoreTags>({});
+  const [filteredGroupedOptionalTags, setFilteredGroupedOptionalTags] = useState<Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]>>({});
 
   // Apply filtering and sorting asynchronously
   const applyTagFilteringAndSorting = useCallback(async () => {
@@ -600,19 +699,44 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       
       console.log(`[DEBUG] applyTagFilteringAndSorting: Filtered grouped core tags: ${Object.keys(filteredGrouped).length} groups`);
 
+      // Create grouped optional tags
+      const groupedOptional = createGroupedOptionalTags(filteredOptional);
+      console.log(`[DEBUG] applyTagFilteringAndSorting: Created grouped optional tags: ${Object.keys(groupedOptional).length} groups`);
+      
+      // Filter grouped optional tags (apply same filtering logic as core tags)
+      const filteredGroupedOptional = Object.fromEntries(
+        Object.entries(groupedOptional)
+          .map(([key, values]) => [
+            key,
+            values.filter(valueData => {
+              const matchesSearch = tagSearch === '' || 
+                key.toLowerCase().includes(tagSearch.toLowerCase()) ||
+                valueData.value.toLowerCase().includes(tagSearch.toLowerCase()) ||
+                (valueData.attributeDisplayName && valueData.attributeDisplayName.toLowerCase().includes(tagSearch.toLowerCase()));
+              const matchesTables = valueData.tables.some(table => selectedTagTables.includes(table));
+              return matchesSearch && matchesTables;
+            })
+          ])
+          .filter(([_, values]) => values.length > 0)
+      );
+      
+      console.log(`[DEBUG] applyTagFilteringAndSorting: Filtered grouped optional tags: ${Object.keys(filteredGroupedOptional).length} groups`);
+
       console.log('[DEBUG] applyTagFilteringAndSorting: Starting async sorting operations...');
       
       // Apply sorting (async operations)
-      const [sortedOptionalTags, sortedGroupedCoreTags] = await Promise.all([
+      const [sortedOptionalTags, sortedGroupedCoreTags, sortedGroupedOptionalTags] = await Promise.all([
         sortOptionalTags(filteredOptional),
-        sortGroupedCoreTags(filteredGrouped)
+        sortGroupedCoreTags(filteredGrouped),
+        sortGroupedOptionalTags(filteredGroupedOptional)
       ]);
       
       console.log('[DEBUG] applyTagFilteringAndSorting: Sorting operations complete, updating state...');
-      console.log(`[DEBUG] applyTagFilteringAndSorting: Final results - optional: ${sortedOptionalTags.length}, grouped: ${Object.keys(sortedGroupedCoreTags).length}`);
+      console.log(`[DEBUG] applyTagFilteringAndSorting: Final results - optional: ${sortedOptionalTags.length}, grouped core: ${Object.keys(sortedGroupedCoreTags).length}, grouped optional: ${Object.keys(sortedGroupedOptionalTags).length}`);
 
       setFilteredOptionalTags(sortedOptionalTags);
       setFilteredGroupedCoreTags(sortedGroupedCoreTags);
+      setFilteredGroupedOptionalTags(sortedGroupedOptionalTags);
       
       console.log('[DEBUG] applyTagFilteringAndSorting: State update complete');
     } catch (error) {
@@ -620,6 +744,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       // Fallback to unsorted results
       setFilteredOptionalTags(availableTags.optionalTags);
       setFilteredGroupedCoreTags(availableTags.groupedCoreTags);
+      setFilteredGroupedOptionalTags(createGroupedOptionalTags(availableTags.optionalTags));
     } finally {
       console.log('[DEBUG] applyTagFilteringAndSorting: Setting sorting state to false');
       setIsSorting(false);
@@ -1173,28 +1298,48 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                 </div>
               </div>
 
-              {/* Optional Tags */}
+              {/* Optional Tags - Grouped */}
               <div>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {(() => {
                     console.log('[DEBUG] Rendering optional tags. Current mode:', tagSortMode);
-                    console.log('[DEBUG] First 5 filtered optional tags:', filteredOptionalTags.slice(0, 5).map(t => t.tag));
-                    return filteredOptionalTags;
-                  })().map((tagData) => (
-                    <div key={tagData.tag}>
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedTags.optionalTags.includes(tagData.tag)}
-                          onChange={() => toggleTag(tagData.tag, 'optional')}
-                          className="mr-2"
+                    console.log('[DEBUG] Filtered grouped optional tags keys:', Object.keys(filteredGroupedOptionalTags));
+                    return Object.entries(filteredGroupedOptionalTags);
+                  })().map(([key, values]) => (
+                    <div key={key} className="border-l-2 border-green-200 pl-2">
+                      <div className="text-xs mb-1">
+                        <AttributeNameDisplay 
+                          stableId={key} 
+                          fallback={values[0]?.attributeDisplayName}
+                          className="font-medium text-green-700"
                         />
-                        <span className="text-sm flex-1 truncate">
-                          {tagData.displayName || tagData.tag}
-                        </span>
-                        <span className="text-xs text-gray-500 ml-2">({tagData.count})</span>
-                      </label>
-                      <div className="border-b border-gray-100 my-1 opacity-30 last:hidden"></div>
+                      </div>
+                      <div className="space-y-1">
+                        {values.map((valueData) => {
+                          // Use the original tag value for proper toggle functionality
+                          const originalTag = valueData.value;
+                          return (
+                            <label key={originalTag} className="flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedTags.optionalTags.includes(originalTag)}
+                                onChange={() => toggleTag(originalTag, 'optional')}
+                                className="mr-2"
+                              />
+                              <span className="text-sm flex-1 truncate">
+                                {/* Always use CoreTagDisplay for stable IDs - it handles proper display name lookup */}
+                                {(originalTag.match(/^metaattr\d+val\d+$/) || key.startsWith('metaattr')) ? (
+                                  <CoreTagDisplay attributeName={key} value={originalTag} valueOnly={true} />
+                                ) : (
+                                  valueData.displayName || originalTag
+                                )}
+                              </span>
+                              <span className="text-xs text-gray-500 ml-2">({valueData.count})</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <div className="border-b border-gray-200 my-2 opacity-50"></div>
                     </div>
                   ))}
                 </div>
@@ -2123,10 +2268,23 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
         isOpen={showRuleBuilder}
         sourceSelections={hierarchicalSelection.selectedTags}
         wordHierarchies={hierarchicalSelection.wordHierarchies}
-        onSave={(rule) => {
-          console.log('Saving rule:', rule);
-          handleSuccess('Rule saved successfully! (Phase 2.2 - Persistence coming soon)');
-          setShowRuleBuilder(false);
+        onSave={async (rule) => {
+          try {
+            console.log('Saving rule:', rule);
+            updateUIState({ isLoading: true });
+            
+            // Use the database service to persist the rule
+            const savedRule = await dbService.saveSerializedRule(rule);
+            console.log('Rule saved successfully:', savedRule);
+            
+            handleSuccess(`Rule "${rule.name}" saved successfully! You can view it in the Migration Rules tab.`);
+            setShowRuleBuilder(false);
+          } catch (error) {
+            console.error('Failed to save rule:', error);
+            handleError(error, 'Failed to save rule');
+          } finally {
+            updateUIState({ isLoading: false });
+          }
         }}
         onExecute={(rule) => {
           console.log('Executing rule:', rule);

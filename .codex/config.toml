@@ -4,3 +4,8 @@ approval_mode   = "on-request"      # fallback key used by some builds
 approval        = "on-request"      # legacy fallback (ignored by others)
 
 sandbox_mode    = "workspace-write" # already working
+
+[mcp_servers.supabase]
+command = "npx"
+args = ["-y", "mcp-supabase"]
+transport = "stdio"

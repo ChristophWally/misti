@@ -133,6 +133,70 @@ export class ModernDatabaseService {
     }
   }
 
+  // Save rule from RuleBuilder SerializedRule format
+  async saveSerializedRule(rule: {
+    id: string;
+    name: string;
+    description: string;
+    target_field: 'metadata' | 'optional_tags' | 'both';
+    target_tables: string[];
+    source_selections: Record<string, any>;
+    operations: {
+      metadata_operations: Record<string, Record<string, any>>;
+      optional_tag_operations: Record<string, any>;
+      bulk_operations: any[];
+      hierarchical_operations: any[];
+    };
+    execution_metadata: {
+      expected_records_affected: number;
+      risk_level: 'low' | 'medium' | 'high';
+      requires_confirmation: boolean;
+      has_revert_data: boolean;
+    };
+  }): Promise<any> {
+    try {
+      // Convert SerializedRule to database format
+      const ruleData = {
+        rule_id: rule.id,
+        name: rule.name,
+        description: rule.description,
+        category: 'custom',
+        priority: rule.execution_metadata.risk_level === 'high' ? 'high' : 
+                 rule.execution_metadata.risk_level === 'medium' ? 'medium' : 'low',
+        pattern: {
+          target_field: rule.target_field,
+          target_tables: rule.target_tables,
+          source_selections: rule.source_selections
+        },
+        transformation: {
+          metadata_operations: rule.operations.metadata_operations,
+          optional_tag_operations: rule.operations.optional_tag_operations,
+          bulk_operations: rule.operations.bulk_operations,
+          hierarchical_operations: rule.operations.hierarchical_operations
+        },
+        estimated_affected_rows: rule.execution_metadata.expected_records_affected,
+        requires_manual_input: rule.execution_metadata.requires_confirmation,
+        status: 'active',
+        created_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('custom_migration_rules')
+        .insert(ruleData)
+        .select();
+      
+      if (error) {
+        console.error('Error saving serialized rule:', error);
+        throw error;
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Failed to save serialized rule:', error);
+      throw error;
+    }
+  }
+
   async loadModernRules(): Promise<any[]> {
     try {
       const { data, error } = await supabase

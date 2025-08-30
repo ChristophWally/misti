@@ -4,6 +4,8 @@ import * as React from 'react'
 import { useState, useEffect } from 'react'
 import { MetavalService, ValidationResult } from '../services/MetavalService'
 import { DatabaseService } from '../services/DatabaseService'
+import { CoreTagDisplay, AttributeNameDisplay, ValueTagDisplay } from './TagDisplayComponents'
+import { DisplayNameService } from '../utils/DisplayNameUtils'
 
 // ============================================================================
 // ULTRA-DESIGNED RULE BUILDER INTERFACE
@@ -98,7 +100,7 @@ const MetadataAttributeOptions: React.FC<MetadataAttributeOptionsProps> = ({
     return (
       <>
         <option value="no-options-available" disabled>
-          No valid options available for {metadataKey}
+          No valid options available for this attribute
         </option>
         <option value="custom">Enter custom value...</option>
       </>
@@ -113,7 +115,7 @@ const MetadataAttributeOptions: React.FC<MetadataAttributeOptionsProps> = ({
           value={option.value}
           title={option.description || ''}
         >
-          {option.value} {option.description && `(${option.description.slice(0, 30)}...)`}
+          {option.value}
         </option>
       ))}
     </>
@@ -501,11 +503,11 @@ export default function RuleBuilder({
           riskLevel = riskLevel === 'low' ? 'medium' : riskLevel
           if (config.applyTo === 'all_with_tag') {
             riskLevel = 'high'
-            warnings.push(`High-risk: Removing ${metadataKey} from ALL records with this tag`)
+            warnings.push(`High-risk: Removing ${getAttributeDisplayName(metadataKey)} from ALL records with this tag`)
             estimatedRecords += 50 // Estimate for "all with tag" operations
           } else if (config.applyTo === 'hierarchy') {
             riskLevel = 'high'
-            warnings.push(`High-risk: Removing ${metadataKey} from entire hierarchy`)
+            warnings.push(`High-risk: Removing ${getAttributeDisplayName(metadataKey)} from entire hierarchy`)
             estimatedRecords += 10 // Estimate for hierarchy operations
           } else {
             estimatedRecords += 1 // Single record
@@ -513,7 +515,7 @@ export default function RuleBuilder({
         } else if (config.action === 'update') {
           if (config.applyTo === 'all_with_tag') {
             riskLevel = riskLevel === 'low' ? 'medium' : 'high'
-            warnings.push(`Medium-risk: Updating ${metadataKey} across multiple records`)
+            warnings.push(`Medium-risk: Updating ${getAttributeDisplayName(metadataKey)} across multiple records`)
             estimatedRecords += 25
           } else {
             estimatedRecords += 1
@@ -669,9 +671,11 @@ export default function RuleBuilder({
                             }
                             
                             return (
-                              <span key={key} className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-xs">
-                                {value}
-                              </span>
+                              <CoreTagDisplay 
+                                key={key} 
+                                attributeName={key} 
+                                value={typeof value === 'string' ? value : String(value)}
+                              />
                             )
                           })}
                         </div>
@@ -684,9 +688,10 @@ export default function RuleBuilder({
                         <div className="text-xs text-gray-600 mb-1">🏷️ Optional Tags:</div>
                         <div className="flex flex-wrap gap-1">
                           {Array.from(selection.selectedOptionalTags).map(tag => (
-                            <span key={tag} className="bg-green-100 text-green-700 px-1 py-0.5 rounded text-xs">
-                              {tag}
-                            </span>
+                            <ValueTagDisplay 
+                              key={tag}
+                              valueStableId={tag}
+                            />
                           ))}
                         </div>
                       </div>
@@ -806,16 +811,20 @@ export default function RuleBuilder({
                             <React.Fragment key={metadataKey}>
                             <div className="flex items-center space-x-3 mb-2 ml-4">
                               {/* Column 1: Grouping/Attribute - Fixed Width */}
-                              <div className="text-xs w-24">
+                              <div className="text-xs w-32">
                                 <div className="text-gray-500 text-[10px] mb-1">Attribute</div>
                                 <div className="relative">
-                                  <span className={`px-2 py-1 rounded text-xs block w-full truncate ${
+                                  <div className={`px-2 py-1 rounded text-xs block w-full truncate ${
                                     getValidationErrors(recordId, metadataKey).length > 0 
                                       ? 'bg-red-100 text-red-700 border border-red-300' 
                                       : 'bg-gray-100 text-gray-700'
-                                  }`} title={getAttributeDisplayName(metadataKey)}>
-                                    {getAttributeDisplayName(metadataKey)}
-                                  </span>
+                                  }`}>
+                                    <AttributeNameDisplay 
+                                      stableId={metadataKey}
+                                      fallback={metadataKey}
+                                      className="text-xs"
+                                    />
+                                  </div>
                                   {isValidating(recordId, metadataKey) && (
                                     <div className="absolute -top-1 -right-1 w-3 h-3">
                                       <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
@@ -825,11 +834,11 @@ export default function RuleBuilder({
                               </div>
                               
                               {/* Column 2: Current Value - Fixed Width */}
-                              <div className="text-xs w-20">
+                              <div className="text-xs w-24">
                                 <div className="text-gray-500 text-[10px] mb-1">Current</div>
-                                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs block w-full truncate">
+                                <div className="bg-blue-50 px-2 py-1 rounded text-xs block w-full truncate">
                                 {(() => {
-                                  // Extract just the current value from the record data
+                                  // Extract current value from record data
                                   for (const hierarchy of Object.values(wordHierarchies)) {
                                     let record = null
                                     if (hierarchy.word.id === recordId) record = hierarchy.word
@@ -837,12 +846,23 @@ export default function RuleBuilder({
                                       .find(r => r.id === recordId)
                                     
                                     if (record && 'metadata' in record && (record as any).metadata && (record as any).metadata[metadataKey]) {
-                                      return (record as any).metadata[metadataKey]
+                                      const value = (record as any).metadata[metadataKey]
+                                      // Use ValueTagDisplay if value looks like stable ID
+                                      if (typeof value === 'string' && value.match(/^metaattr\d+val\d+$/)) {
+                                        return (
+                                          <ValueTagDisplay 
+                                            valueStableId={value}
+                                          />
+                                        )
+                                      }
+                                      return (
+                                        <span className="text-blue-800">{value}</span>
+                                      )
                                     }
                                   }
-                                  return 'unknown'
+                                  return <span className="text-gray-500">unknown</span>
                                 })()}
-                                </span>
+                                </div>
                               </div>
                               
                               {/* Column 3: Action - Fixed Width */}
@@ -921,9 +941,14 @@ export default function RuleBuilder({
                             
                             return (
                             <div key={tagKey} className="flex items-center space-x-3 mb-2 ml-4">
-                              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs min-w-[120px]">
-                                {tagValue}
-                              </span>
+                              <div className="bg-green-50 px-2 py-1 rounded text-xs min-w-[120px] truncate">
+                                {/* Use ValueTagDisplay if tagValue looks like a stable ID */}
+                                {tagValue.match(/^metaattr\d+val\d+$/) ? (
+                                  <ValueTagDisplay valueStableId={tagValue} />
+                                ) : (
+                                  <span className="text-green-700">{tagValue}</span>
+                                )}
+                              </div>
                               
                               <select
                                 value={config.action}

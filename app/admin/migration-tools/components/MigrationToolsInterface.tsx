@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, Suspense } from 'react';
 import { ValidationService } from '../services/ValidationService';
-import AuditTab from './tabs/AuditTab';
-import MigrationTab from './tabs/MigrationTab';
-import ProgressTab from './tabs/ProgressTab';
+// Lazy‑load heavy tabs to speed initial render
+const AuditTab = React.lazy(() => import('./tabs/AuditTab'));
+const MigrationTab = React.lazy(() => import('./tabs/MigrationTab'));
+const ProgressTab = React.lazy(() => import('./tabs/ProgressTab'));
 
 // Types for simplified state management (collaborative decision: 8 grouped useState)
 type StepType = 'config' | 'words' | 'forms' | 'translations' | 'tags' | 'mappings' | 'preview' | 'execute';
@@ -120,9 +121,10 @@ export default function MigrationToolsInterface() {
   // Debug logging
   const addDebugLog = useCallback((message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    updateDebugState({
-      logs: [...debugState.logs, `[${timestamp}] ${message}`]
-    });
+    const nextLogs = [...debugState.logs, `[${timestamp}] ${message}`];
+    // Keep only the last 200 entries to avoid render slowdowns
+    const pruned = nextLogs.length > 200 ? nextLogs.slice(-200) : nextLogs;
+    updateDebugState({ logs: pruned });
   }, [debugState.logs, updateDebugState]);
 
   // Tab state
@@ -203,41 +205,43 @@ export default function MigrationToolsInterface() {
 
       {/* Tab Content */}
       <div className="p-6">
-        {activeTab === 'audit' && (
-          <AuditTab
-            debugState={debugState}
-            updateDebugState={updateDebugState}
-          />
-        )}
+        <Suspense fallback={<div className="text-sm text-gray-500">Loading…</div>}>
+          {activeTab === 'audit' && (
+            <AuditTab
+              debugState={debugState}
+              updateDebugState={updateDebugState}
+            />
+          )}
 
-        {activeTab === 'migration' && (
-          <MigrationTab
-            workflowState={workflowState}
-            tableState={tableState}
-            recordState={recordState}
-            metadataState={metadataState}
-            ruleState={ruleState}
-            executionState={executionState}
-            debugState={debugState}
-            updateWorkflowState={updateWorkflowState}
-            updateTableState={updateTableState}
-            updateRecordState={updateRecordState}
-            updateMetadataState={updateMetadataState}
-            updateRuleState={updateRuleState}
-            updateExecutionState={updateExecutionState}
-            updateDebugState={updateDebugState}
-            getSelectedRecordIds={getSelectedRecordIds}
-          />
-        )}
+          {activeTab === 'migration' && (
+            <MigrationTab
+              workflowState={workflowState}
+              tableState={tableState}
+              recordState={recordState}
+              metadataState={metadataState}
+              ruleState={ruleState}
+              executionState={executionState}
+              debugState={debugState}
+              updateWorkflowState={updateWorkflowState}
+              updateTableState={updateTableState}
+              updateRecordState={updateRecordState}
+              updateMetadataState={updateMetadataState}
+              updateRuleState={updateRuleState}
+              updateExecutionState={updateExecutionState}
+              updateDebugState={updateDebugState}
+              getSelectedRecordIds={getSelectedRecordIds}
+            />
+          )}
 
-        {activeTab === 'progress' && (
-          <ProgressTab
-            executionState={executionState}
-            debugState={debugState}
-            updateExecutionState={updateExecutionState}
-            updateDebugState={updateDebugState}
-          />
-        )}
+          {activeTab === 'progress' && (
+            <ProgressTab
+              executionState={executionState}
+              debugState={debugState}
+              updateExecutionState={updateExecutionState}
+              updateDebugState={updateDebugState}
+            />
+          )}
+        </Suspense>
       </div>
 
       {/* Debug Console */}
