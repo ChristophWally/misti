@@ -55,6 +55,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   const [searchMode, setSearchMode] = useState<'tag' | 'word'>('tag');
   const [showRuleBuilder, setShowRuleBuilder] = useState(false);
   
+  // Tag sorting state
+  const [tagSortMode, setTagSortMode] = useState<'frequency' | 'alphabetical'>('frequency');
+  
   // Table filtering for tags
   const [availableTables] = useState([
     { key: 'dictionary', name: 'Dictionary Words' },
@@ -335,27 +338,82 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     );
   };
 
-  // Filter tags based on search and selected tables
-  const filteredOptionalTags = availableTags.optionalTags.filter(tag => {
-    const matchesSearch = tag.tag.toLowerCase().includes(tagSearch.toLowerCase());
-    const matchesTables = tag.tables.some(table => selectedTagTables.includes(table));
-    return matchesSearch && matchesTables;
-  });
+  // Sorting functions for tags
+  const sortOptionalTags = (tags: typeof availableTags.optionalTags) => {
+    if (tagSortMode === 'alphabetical') {
+      return [...tags].sort((a, b) => {
+        const displayA = a.displayName || a.tag;
+        const displayB = b.displayName || b.tag;
+        return displayA.localeCompare(displayB);
+      });
+    }
+    return tags; // Keep original frequency-based sorting
+  };
 
-  const filteredGroupedCoreTags = Object.fromEntries(
-    Object.entries(availableTags.groupedCoreTags)
-      .map(([key, values]: [string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]]) => [
-        key,
-        values.filter(valueData => {
-          const matchesSearch = tagSearch === '' || 
-            key.toLowerCase().includes(tagSearch.toLowerCase()) ||
-            valueData.value.toLowerCase().includes(tagSearch.toLowerCase());
-          const matchesTables = valueData.tables.some(table => selectedTagTables.includes(table));
-          return matchesSearch && matchesTables;
-        })
-      ])
-      .filter(([_, values]) => values.length > 0)
-  ) as Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]>;
+  const sortGroupedCoreTags = (groupedTags: typeof availableTags.groupedCoreTags) => {
+    const result: typeof groupedTags = {};
+    
+    if (tagSortMode === 'alphabetical') {
+      // Sort attribute keys alphabetically
+      const sortedKeys = Object.keys(groupedTags).sort((a, b) => {
+        // Get display names for attribute keys
+        const displayA = groupedTags[a][0]?.attributeDisplayName || a;
+        const displayB = groupedTags[b][0]?.attributeDisplayName || b;
+        return displayA.localeCompare(displayB);
+      });
+      
+      // Within each group, sort values alphabetically
+      for (const key of sortedKeys) {
+        result[key] = [...groupedTags[key]].sort((a, b) => {
+          const displayA = a.displayName || a.value;
+          const displayB = b.displayName || b.value;
+          return displayA.localeCompare(displayB);
+        });
+      }
+    } else {
+      // Keep frequency-based sorting - sort groups by highest count in group, values by count
+      const sortedEntries = Object.entries(groupedTags)
+        .map(([key, values]) => ({
+          key,
+          values,
+          maxCount: Math.max(...values.map(v => v.count))
+        }))
+        .sort((a, b) => b.maxCount - a.maxCount);
+      
+      for (const { key, values } of sortedEntries) {
+        result[key] = values; // Values are already sorted by count from database
+      }
+    }
+    
+    return result;
+  };
+
+  // Filter and sort tags based on search and selected tables
+  const filteredOptionalTags = sortOptionalTags(
+    availableTags.optionalTags.filter(tag => {
+      const matchesSearch = tag.tag.toLowerCase().includes(tagSearch.toLowerCase());
+      const matchesTables = tag.tables.some(table => selectedTagTables.includes(table));
+      return matchesSearch && matchesTables;
+    })
+  );
+
+  const filteredGroupedCoreTags = sortGroupedCoreTags(
+    Object.fromEntries(
+      Object.entries(availableTags.groupedCoreTags)
+        .map(([key, values]: [string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]]) => [
+          key,
+          values.filter(valueData => {
+            const matchesSearch = tagSearch === '' || 
+              key.toLowerCase().includes(tagSearch.toLowerCase()) ||
+              valueData.value.toLowerCase().includes(tagSearch.toLowerCase()) ||
+              (valueData.attributeDisplayName && valueData.attributeDisplayName.toLowerCase().includes(tagSearch.toLowerCase()));
+            const matchesTables = valueData.tables.some(table => selectedTagTables.includes(table));
+            return matchesSearch && matchesTables;
+          })
+        ])
+        .filter(([_, values]) => values.length > 0)
+    ) as Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]>
+  );
 
   // Auto-load hierarchies for all visible words
   const autoLoadHierarchies = async (words: any[]) => {
@@ -794,6 +852,35 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                 placeholder="Search available tags..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              
+              {/* Sorting Controls */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h5 className="text-xs font-medium text-gray-700 mb-2">Sort Tags By:</h5>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setTagSortMode('frequency')}
+                      className={`px-3 py-1 rounded text-xs transition-colors ${
+                        tagSortMode === 'frequency'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      📊 Frequency
+                    </button>
+                    <button
+                      onClick={() => setTagSortMode('alphabetical')}
+                      className={`px-3 py-1 rounded text-xs transition-colors ${
+                        tagSortMode === 'alphabetical'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      🔤 Alphabetical
+                    </button>
+                  </div>
+                </div>
+              </div>
               
               {/* Table Filter */}
               <div>

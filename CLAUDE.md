@@ -30,6 +30,27 @@ This applies to all database operations including:
 - Data cleanup operations
 - Migration scripts
 
+## Implementation Protocol
+
+**CRITICAL RULE**: Never start implementing features or fixes without explicit user approval:
+
+1. **Always Plan First**
+   - Present a comprehensive plan using ExitPlanMode tool
+   - Detail the approach, files to be changed, and expected outcomes
+   - Wait for explicit user approval before making any changes
+
+2. **No Direct Implementation**
+   - Never jump straight into coding or making changes
+   - Always get plan approval first, regardless of task complexity
+   - Use appropriate agents for analysis and planning, not implementation
+
+3. **User-Driven Development**
+   - Respect the user's need to review and approve all work
+   - Maintain collaborative control over the development process
+   - Ensure alignment before proceeding with any modifications
+
+**This rule applies to ALL work including**: Features, bug fixes, optimizations, refactoring, documentation updates, and any code changes.
+
 ## Rationale
 
 Database changes directly affect production data and can have unintended consequences. Getting confirmation ensures:
