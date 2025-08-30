@@ -126,12 +126,67 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     }
   };
 
-  // Enhance grouped core tags with metaval display names using optimized service
+  // Enhance grouped core tags with metaval display names using optimized bulk lookup service
   const enhanceGroupedTagsWithDisplayNames = async (groupedTags: Record<string, { value: string; count: number; tables: string[] }[]>) => {
     const enhanced: Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]> = {};
     
+    // Collect all unique attribute IDs for bulk lookup
+    const attributeIds = Object.keys(groupedTags);
+    
+    if (attributeIds.length === 0) {
+      return enhanced;
+    }
+
+    try {
+      console.log(`SearchInterface: Bulk lookup for ${attributeIds.length} attribute display names`);
+      
+      // Use the new bulk lookup method from MetavalService
+      const displayNameMap = await metavalService.getAttributeDisplayNamesBulk(attributeIds);
+      
+      // Process each attribute with its resolved display name
+      for (const [attributeName, values] of Object.entries(groupedTags)) {
+        // Get the display name from the bulk lookup result
+        let attributeDisplayName = displayNameMap.get(attributeName);
+        
+        if (!attributeDisplayName) {
+          // Fallback to formatted name if not found in bulk lookup
+          if (attributeName.startsWith('metaattr')) {
+            attributeDisplayName = attributeName.charAt(0).toUpperCase() + attributeName.slice(1);
+          } else {
+            attributeDisplayName = attributeName.split('_').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+          }
+        }
+        
+        // Don't pre-enhance display names here - let CoreTagDisplay handle them properly
+        // This avoids interference with the proper display name lookup chain
+        const enhancedValues = values.map((value) => ({
+          ...value,
+          attributeDisplayName,
+          // Don't set displayName here - let CoreTagDisplay component handle it
+        }));
+        
+        enhanced[attributeName] = enhancedValues;
+      }
+      
+      console.log(`SearchInterface: Enhanced ${Object.keys(enhanced).length} attribute groups with bulk lookup`);
+      return enhanced;
+      
+    } catch (error) {
+      console.error('SearchInterface: Error in bulk display name enhancement, falling back to individual lookups:', error);
+      
+      // Fallback to the original method if bulk lookup fails
+      return await enhanceGroupedTagsWithDisplayNamesFallback(groupedTags);
+    }
+  };
+
+  // Fallback method using individual lookups (kept for compatibility)
+  const enhanceGroupedTagsWithDisplayNamesFallback = async (groupedTags: Record<string, { value: string; count: number; tables: string[] }[]>) => {
+    const enhanced: Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]> = {};
+    
     for (const [attributeName, values] of Object.entries(groupedTags)) {
-      // Try to get metaval attribute display name using optimized service
+      // Try to get metaval attribute display name using individual service calls
       let attributeDisplayName = attributeName;
       try {
         const attribute = await metavalService.getAttributeByStableId(attributeName);

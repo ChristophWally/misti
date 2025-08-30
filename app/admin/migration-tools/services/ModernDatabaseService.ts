@@ -29,6 +29,15 @@ export interface DatabaseRecord {
 
 export class ModernDatabaseService {
   private static instance: ModernDatabaseService;
+  private tagCache: {
+    data: {
+      coreTags: { tag: string; count: number; tables: string[] }[];
+      optionalTags: { tag: string; count: number; tables: string[] }[];
+      groupedCoreTags: Record<string, { value: string; count: number; tables: string[] }[]>;
+    } | null;
+    timestamp: number | null;
+  } = { data: null, timestamp: null };
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
   
   public static getInstance(): ModernDatabaseService {
     if (!ModernDatabaseService.instance) {
@@ -242,11 +251,125 @@ export class ModernDatabaseService {
   }
 
   // Unified tag discovery - get ALL tags from metadata and optional_tags
+  // Now uses optimized get_all_available_tags() database function with caching
   async getAllAvailableTags(): Promise<{
     coreTags: { tag: string; count: number; tables: string[] }[];
     optionalTags: { tag: string; count: number; tables: string[] }[];
     groupedCoreTags: Record<string, { value: string; count: number; tables: string[] }[]>;
   }> {
+    // Check cache first
+    const now = Date.now();
+    if (this.tagCache.data && this.tagCache.timestamp && (now - this.tagCache.timestamp < this.CACHE_DURATION)) {
+      console.log('ModernDatabaseService: Returning cached tag data');
+      return this.tagCache.data;
+    }
+
+    try {
+      console.log('ModernDatabaseService: Fetching fresh tag data using optimized function');
+      
+      // Call the new optimized database function
+      const { data, error } = await supabase.rpc('get_all_available_tags');
+
+      if (error) {
+        console.error('Error calling get_all_available_tags function:', error);
+        // Fallback to the old method if the new function fails
+        return await this.getAllAvailableTagsFallback();
+      }
+
+      if (!data || data.length === 0) {
+        console.warn('No tag data returned from optimized function, using fallback');
+        return await this.getAllAvailableTagsFallback();
+      }
+
+      // Process the optimized function results
+      const coreTags: Map<string, { count: number; tables: Set<string> }> = new Map();
+      const optionalTags: Map<string, { count: number; tables: Set<string> }> = new Map();
+      const coreTagsByKey: Map<string, Map<string, { count: number; tables: Set<string> }>> = new Map();
+
+      // Process each row from the function result
+      for (const row of data) {
+        const { tag_name, tag_count, table_sources } = row;
+        const tables = Array.isArray(table_sources) ? table_sources : [table_sources];
+        
+        // Determine if this is a core tag (contains ': ') or optional tag
+        if (tag_name.includes(': ')) {
+          // Core tag (metadata)
+          const [key, value] = tag_name.split(': ', 2);
+          
+          // Build original structure for backward compatibility
+          if (!coreTags.has(tag_name)) {
+            coreTags.set(tag_name, { count: 0, tables: new Set() });
+          }
+          coreTags.get(tag_name)!.count += tag_count;
+          tables.forEach(table => coreTags.get(tag_name)!.tables.add(table));
+          
+          // Build grouped structure by metadata key
+          if (!coreTagsByKey.has(key)) {
+            coreTagsByKey.set(key, new Map());
+          }
+          const keyGroup = coreTagsByKey.get(key)!;
+          if (!keyGroup.has(value)) {
+            keyGroup.set(value, { count: 0, tables: new Set() });
+          }
+          keyGroup.get(value)!.count += tag_count;
+          tables.forEach(table => keyGroup.get(value)!.tables.add(table));
+        } else {
+          // Optional tag
+          if (!optionalTags.has(tag_name)) {
+            optionalTags.set(tag_name, { count: 0, tables: new Set() });
+          }
+          optionalTags.get(tag_name)!.count += tag_count;
+          tables.forEach(table => optionalTags.get(tag_name)!.tables.add(table));
+        }
+      }
+
+      // Build grouped core tags structure
+      const groupedCoreTags: Record<string, { value: string; count: number; tables: string[] }[]> = {};
+      for (const [key, valueMap] of Array.from(coreTagsByKey.entries()).sort()) {
+        groupedCoreTags[key] = Array.from(valueMap.entries())
+          .map(([value, data]) => ({
+            value,
+            count: data.count,
+            tables: Array.from(data.tables)
+          }))
+          .sort((a, b) => b.count - a.count);
+      }
+
+      const result = {
+        coreTags: Array.from(coreTags.entries()).map(([tag, data]) => ({
+          tag,
+          count: data.count,
+          tables: Array.from(data.tables)
+        })).sort((a, b) => b.count - a.count),
+        optionalTags: Array.from(optionalTags.entries()).map(([tag, data]) => ({
+          tag,
+          count: data.count,
+          tables: Array.from(data.tables)
+        })).sort((a, b) => b.count - a.count),
+        groupedCoreTags
+      };
+
+      // Cache the result
+      this.tagCache.data = result;
+      this.tagCache.timestamp = now;
+
+      console.log(`ModernDatabaseService: Cached ${result.coreTags.length} core tags, ${result.optionalTags.length} optional tags`);
+      return result;
+
+    } catch (error) {
+      console.error('ModernDatabaseService: Error in getAllAvailableTags, using fallback:', error);
+      return await this.getAllAvailableTagsFallback();
+    }
+  }
+
+  // Fallback method using the old approach if the optimized function fails
+  private async getAllAvailableTagsFallback(): Promise<{
+    coreTags: { tag: string; count: number; tables: string[] }[];
+    optionalTags: { tag: string; count: number; tables: string[] }[];
+    groupedCoreTags: Record<string, { value: string; count: number; tables: string[] }[]>;
+  }> {
+    console.log('ModernDatabaseService: Using fallback method for tag discovery');
+    
     const coreTags: Map<string, { count: number; tables: Set<string> }> = new Map();
     const optionalTags: Map<string, { count: number; tables: Set<string> }> = new Map();
     const coreTagsByKey: Map<string, Map<string, { count: number; tables: Set<string> }>> = new Map();

@@ -1,4 +1,5 @@
 import { ModernDatabaseService } from './ModernDatabaseService';
+import { supabase } from '../../../../lib/supabase';
 
 export interface MetaAttribute {
   id: string;
@@ -108,6 +109,87 @@ export class MetavalService {
       console.error(`MetavalService: Failed to get display name for ${stableId}:`, error);
       return stableId;
     }
+  }
+
+  /**
+   * Bulk lookup for attribute display names using optimized database function
+   * Reduces N+1 queries to a single optimized function call
+   */
+  async getAttributeDisplayNamesBulk(attributeIds: string[]): Promise<Map<string, string>> {
+    if (attributeIds.length === 0) {
+      return new Map();
+    }
+
+    try {
+      console.log(`MetavalService: Bulk lookup for ${attributeIds.length} attribute display names`);
+      
+      // Call the new optimized database function
+      const { data, error } = await supabase.rpc('get_attribute_display_names', {
+        attribute_ids: attributeIds
+      });
+
+      if (error) {
+        console.error('Error calling get_attribute_display_names function:', error);
+        // Fallback to individual lookups
+        return await this.getAttributeDisplayNamesBulkFallback(attributeIds);
+      }
+
+      if (!data || data.length === 0) {
+        console.warn('No display names returned from optimized function, using fallback');
+        return await this.getAttributeDisplayNamesBulkFallback(attributeIds);
+      }
+
+      // Process the results into a Map
+      const displayNameMap = new Map<string, string>();
+      
+      for (const row of data) {
+        const { attribute_id, display_name, name } = row;
+        // Use display_name if available, otherwise fallback to name, then to the original ID
+        displayNameMap.set(attribute_id, display_name || name || attribute_id);
+      }
+
+      // For any IDs that weren't found, use the formatted version
+      for (const id of attributeIds) {
+        if (!displayNameMap.has(id)) {
+          displayNameMap.set(id, this.formatDisplayName(id));
+        }
+      }
+
+      console.log(`MetavalService: Bulk lookup resolved ${displayNameMap.size} display names`);
+      return displayNameMap;
+
+    } catch (error) {
+      console.error('MetavalService: Error in bulk display name lookup, using fallback:', error);
+      return await this.getAttributeDisplayNamesBulkFallback(attributeIds);
+    }
+  }
+
+  /**
+   * Fallback method for bulk display name lookup using individual queries
+   */
+  private async getAttributeDisplayNamesBulkFallback(attributeIds: string[]): Promise<Map<string, string>> {
+    console.log('MetavalService: Using fallback method for bulk display name lookup');
+    
+    const displayNameMap = new Map<string, string>();
+    
+    // Process in parallel to reduce latency
+    const lookupPromises = attributeIds.map(async (id) => {
+      try {
+        const displayName = await this.getAttributeDisplayName(id);
+        return { id, displayName };
+      } catch (error) {
+        console.error(`Failed to get display name for ${id}:`, error);
+        return { id, displayName: this.formatDisplayName(id) };
+      }
+    });
+
+    const results = await Promise.all(lookupPromises);
+    
+    for (const { id, displayName } of results) {
+      displayNameMap.set(id, displayName);
+    }
+
+    return displayNameMap;
   }
 
   /**
