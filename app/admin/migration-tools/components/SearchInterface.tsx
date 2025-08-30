@@ -6,6 +6,7 @@ import { MetavalService, MetaAttribute, MetaValue } from '../services/MetavalSer
 import RuleBuilder from './RuleBuilder';
 import { useState as useInternalState, useEffect as useInternalEffect } from 'react';
 import { CoreTagDisplay, OptionalTagDisplay, AttributeNameDisplay, BatchTagDisplay } from './TagDisplayComponents';
+import { DisplayNameService } from '../utils/DisplayNameUtils';
 
 // Note: CoreTagDisplay and OptionalTagDisplay components are now imported from TagDisplayComponents.tsx
 // This provides optimized display with centralized caching and proper value stable ID support
@@ -35,6 +36,9 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
 
   // METAVAL: Initialize service
   const metavalService = new MetavalService();
+  
+  // DISPLAY NAME: Initialize service for alphabetical sorting
+  const displayNameService = DisplayNameService.getInstance();
 
   const [availableTags, setAvailableTags] = useState<{
     coreTags: { tag: string; count: number; tables: string[]; displayName?: string; stableId?: string; }[];
@@ -57,6 +61,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   
   // Tag sorting state
   const [tagSortMode, setTagSortMode] = useState<'frequency' | 'alphabetical'>('frequency');
+  const [isSorting, setIsSorting] = useState(false);
   
   // Table filtering for tags
   const [availableTables] = useState([
@@ -260,6 +265,18 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     loadAvailableWords();
   }, []);
 
+  // Apply filtering and sorting when tags, search, sort mode, or table selection changes
+  useEffect(() => {
+    applyTagFilteringAndSorting();
+  }, [availableTags, tagSearch, tagSortMode, selectedTagTables]);
+  
+  // Also apply sorting when sort mode changes specifically
+  useEffect(() => {
+    if (availableTags.optionalTags.length > 0 || Object.keys(availableTags.groupedCoreTags).length > 0) {
+      applyTagFilteringAndSorting();
+    }
+  }, [tagSortMode]);
+
 
 
   // Perform unified tag search
@@ -338,39 +355,90 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
     );
   };
 
-  // Sorting functions for tags
-  const sortOptionalTags = (tags: typeof availableTags.optionalTags) => {
+  // Sorting functions for tags - now async to handle display name resolution
+  const sortOptionalTags = async (tags: typeof availableTags.optionalTags): Promise<typeof availableTags.optionalTags> => {
     if (tagSortMode === 'alphabetical') {
-      return [...tags].sort((a, b) => {
-        const displayA = a.displayName || a.tag;
-        const displayB = b.displayName || b.tag;
-        return displayA.localeCompare(displayB);
-      });
+      // Resolve display names for all tags before sorting
+      const tagsWithDisplayNames = await Promise.all(
+        tags.map(async (tag) => {
+          let displayName = tag.displayName || tag.tag;
+          
+          // For stable IDs, try to resolve the actual display name
+          if (tag.tag.match(/^metaattr\d+val\d+$/)) {
+            try {
+              displayName = await displayNameService.getValueDisplayName(tag.tag);
+            } catch (error) {
+              console.warn(`Failed to resolve display name for optional tag ${tag.tag}:`, error);
+              displayName = tag.displayName || tag.tag;
+            }
+          }
+          
+          return {
+            ...tag,
+            resolvedDisplayName: displayName
+          };
+        })
+      );
+      
+      // Sort by resolved display names
+      return tagsWithDisplayNames
+        .sort((a, b) => a.resolvedDisplayName.localeCompare(b.resolvedDisplayName))
+        .map(({ resolvedDisplayName, ...tag }) => tag); // Remove the temporary field
     }
     return tags; // Keep original frequency-based sorting
   };
 
-  const sortGroupedCoreTags = (groupedTags: typeof availableTags.groupedCoreTags) => {
+  const sortGroupedCoreTags = async (groupedTags: typeof availableTags.groupedCoreTags): Promise<typeof availableTags.groupedCoreTags> => {
     const result: typeof groupedTags = {};
     
     if (tagSortMode === 'alphabetical') {
-      // Sort attribute keys alphabetically
-      const sortedKeys = Object.keys(groupedTags).sort((a, b) => {
-        // Get display names for attribute keys
-        const displayA = groupedTags[a][0]?.attributeDisplayName || a;
-        const displayB = groupedTags[b][0]?.attributeDisplayName || b;
+      // First, resolve attribute display names for sorting the groups
+      const attributeIds = Object.keys(groupedTags);
+      const attributeDisplayNameMap = await displayNameService.batchGetAttributeDisplayNames(attributeIds);
+      
+      // Sort attribute keys alphabetically by their resolved display names
+      const sortedKeys = attributeIds.sort((a, b) => {
+        const displayA = attributeDisplayNameMap.get(a) || groupedTags[a][0]?.attributeDisplayName || a;
+        const displayB = attributeDisplayNameMap.get(b) || groupedTags[b][0]?.attributeDisplayName || b;
         return displayA.localeCompare(displayB);
       });
       
-      // Within each group, sort values alphabetically
+      // Within each group, sort values alphabetically by their resolved display names
       for (const key of sortedKeys) {
-        result[key] = [...groupedTags[key]].sort((a, b) => {
-          // Use the raw value for sorting - this should be the actual text like "COMP", "PROG", "SIMP"
-          const displayA = a.value;
-          const displayB = b.value;
+        const values = groupedTags[key];
+        
+        // Collect all value stable IDs for batch resolution
+        const valueStableIds = values
+          .filter(v => v.value.match(/^metaattr\d+val\d+$/))
+          .map(v => v.value);
+        
+        // Batch resolve value display names
+        const valueDisplayNameMap = valueStableIds.length > 0 
+          ? await displayNameService.batchGetValueDisplayNames(valueStableIds)
+          : new Map<string, string>();
+        
+        // Sort values by resolved display names
+        const sortedValues = [...values].sort((a, b) => {
+          let displayA: string;
+          let displayB: string;
+          
+          // Use resolved display names for stable IDs, otherwise use raw values
+          if (a.value.match(/^metaattr\d+val\d+$/)) {
+            displayA = valueDisplayNameMap.get(a.value) || a.displayName || a.value;
+          } else {
+            displayA = a.displayName || a.value;
+          }
+          
+          if (b.value.match(/^metaattr\d+val\d+$/)) {
+            displayB = valueDisplayNameMap.get(b.value) || b.displayName || b.value;
+          } else {
+            displayB = b.displayName || b.value;
+          }
           
           return displayA.localeCompare(displayB);
         });
+        
+        result[key] = sortedValues;
       }
     } else {
       // Keep frequency-based sorting - sort groups by highest count in group, values by count
@@ -391,31 +459,58 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   };
 
   // Filter and sort tags based on search and selected tables
-  const filteredOptionalTags = sortOptionalTags(
-    availableTags.optionalTags.filter(tag => {
-      const matchesSearch = tag.tag.toLowerCase().includes(tagSearch.toLowerCase());
-      const matchesTables = tag.tables.some(table => selectedTagTables.includes(table));
-      return matchesSearch && matchesTables;
-    })
-  );
+  // These will be managed by state since sorting is now async
+  const [filteredOptionalTags, setFilteredOptionalTags] = useState<typeof availableTags.optionalTags>([]);
+  const [filteredGroupedCoreTags, setFilteredGroupedCoreTags] = useState<typeof availableTags.groupedCoreTags>({});
 
-  const filteredGroupedCoreTags = sortGroupedCoreTags(
-    Object.fromEntries(
-      Object.entries(availableTags.groupedCoreTags)
-        .map(([key, values]: [string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]]) => [
-          key,
-          values.filter(valueData => {
-            const matchesSearch = tagSearch === '' || 
-              key.toLowerCase().includes(tagSearch.toLowerCase()) ||
-              valueData.value.toLowerCase().includes(tagSearch.toLowerCase()) ||
-              (valueData.attributeDisplayName && valueData.attributeDisplayName.toLowerCase().includes(tagSearch.toLowerCase()));
-            const matchesTables = valueData.tables.some(table => selectedTagTables.includes(table));
-            return matchesSearch && matchesTables;
-          })
-        ])
-        .filter(([_, values]) => values.length > 0)
-    ) as Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]>
-  );
+  // Apply filtering and sorting asynchronously
+  const applyTagFilteringAndSorting = async () => {
+    if (tagSortMode === 'alphabetical') {
+      setIsSorting(true);
+    }
+    
+    try {
+      // Filter optional tags
+      const filteredOptional = availableTags.optionalTags.filter(tag => {
+        const matchesSearch = tag.tag.toLowerCase().includes(tagSearch.toLowerCase());
+        const matchesTables = tag.tables.some(table => selectedTagTables.includes(table));
+        return matchesSearch && matchesTables;
+      });
+
+      // Filter grouped core tags
+      const filteredGrouped = Object.fromEntries(
+        Object.entries(availableTags.groupedCoreTags)
+          .map(([key, values]: [string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]]) => [
+            key,
+            values.filter(valueData => {
+              const matchesSearch = tagSearch === '' || 
+                key.toLowerCase().includes(tagSearch.toLowerCase()) ||
+                valueData.value.toLowerCase().includes(tagSearch.toLowerCase()) ||
+                (valueData.attributeDisplayName && valueData.attributeDisplayName.toLowerCase().includes(tagSearch.toLowerCase()));
+              const matchesTables = valueData.tables.some(table => selectedTagTables.includes(table));
+              return matchesSearch && matchesTables;
+            })
+          ])
+          .filter(([_, values]) => values.length > 0)
+      ) as Record<string, { value: string; count: number; tables: string[]; displayName?: string; stableId?: string; attributeDisplayName?: string; }[]>;
+
+      // Apply sorting (async operations)
+      const [sortedOptionalTags, sortedGroupedCoreTags] = await Promise.all([
+        sortOptionalTags(filteredOptional),
+        sortGroupedCoreTags(filteredGrouped)
+      ]);
+
+      setFilteredOptionalTags(sortedOptionalTags);
+      setFilteredGroupedCoreTags(sortedGroupedCoreTags);
+    } catch (error) {
+      console.error('Error applying tag filtering and sorting:', error);
+      // Fallback to unsorted results
+      setFilteredOptionalTags(availableTags.optionalTags);
+      setFilteredGroupedCoreTags(availableTags.groupedCoreTags);
+    } finally {
+      setIsSorting(false);
+    }
+  };
 
   // Auto-load hierarchies for all visible words
   const autoLoadHierarchies = async (words: any[]) => {
@@ -862,23 +957,25 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
                   <div className="flex space-x-2">
                     <button
                       onClick={() => setTagSortMode('frequency')}
+                      disabled={isSorting}
                       className={`px-3 py-1 rounded text-xs transition-colors ${
                         tagSortMode === 'frequency'
                           ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : isSorting ? 'bg-gray-300 text-gray-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
                       📊 Frequency
                     </button>
                     <button
                       onClick={() => setTagSortMode('alphabetical')}
+                      disabled={isSorting}
                       className={`px-3 py-1 rounded text-xs transition-colors ${
                         tagSortMode === 'alphabetical'
                           ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : isSorting ? 'bg-gray-300 text-gray-500' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      🔤 Alphabetical
+                      {isSorting && tagSortMode === 'alphabetical' ? '🔄 Sorting...' : '🔤 Alphabetical'}
                     </button>
                   </div>
                 </div>

@@ -123,7 +123,7 @@ export class DisplayNameService {
         // Find the specific value
         const value = values.find(v => v.stable_id === valueStableId);
         if (value) {
-          const displayName = value.shorthand || value.value;
+          const displayName = value.value || value.shorthand || valueStableId;
           this.valueDisplayNames.set(valueStableId, displayName);
           return displayName;
         }

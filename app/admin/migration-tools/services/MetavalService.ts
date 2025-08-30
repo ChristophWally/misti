@@ -249,7 +249,7 @@ export class MetavalService {
     try {
       const value = await this.dbService.getMetaValueByStableId(valueStableId);
       if (value) {
-        return value.shorthand || value.value;
+        return value.value || value.shorthand || valueStableId;
       }
       return null;
     } catch (error) {
