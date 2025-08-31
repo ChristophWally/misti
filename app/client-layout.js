@@ -65,7 +65,7 @@ export default function ClientLayout({ children }) {
                     </a>
                     <div className="border-t border-gray-100 my-1"></div>
                     <div className="px-4 py-2 text-xs text-gray-500">
-                      Story 002.003 Implementation
+                      Admin Tools
                     </div>
                   </div>
                 </div>

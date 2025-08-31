@@ -537,6 +537,8 @@ export interface VerbComplianceReport {
         expected: number;
         actual: number;
         coverage: number;
+        isReciprocal: boolean;
+        isDirectReflexive: boolean;
       }>;
     };
     orphanedRecords: {
@@ -548,6 +550,42 @@ export interface VerbComplianceReport {
       };
     };
   };
+}
+
+export interface SystemAnalysisResult {
+  overallStats: {
+    totalVerbs: number;
+    analyzedVerbs: number;
+    averageScore: number;
+    complianceDistribution: {
+      compliant: number;
+      needsWork: number;
+      criticalIssues: number;
+      blocksMigration: number;
+    };
+    topIssues: {
+      ruleId: string;
+      count: number;
+      percentage: number;
+      description: string;
+    }[];
+    formCompleteness: {
+      averageCoverage: number;
+      totalForms: number;
+      expectedForms: number;
+    };
+    verbTypeBreakdown: {
+      reciprocal: number;
+      reflexive: number;
+      normal: number;
+    };
+    priorityBreakdown: {
+      high: number;
+      medium: number;
+      low: number;
+    };
+  };
+  verbSummaries: any[];
 }
 
 export interface SystemComplianceReport {
