@@ -294,14 +294,24 @@ export class ModernDatabaseService {
   private async logExecution(executionId: string, rule: ModernMigrationRule, changes: any[]): Promise<void> {
     try {
       await supabase
-        .from('migration_execution_history')
+        .from('migration_execution_log')
         .insert({
-          execution_id: executionId,
+          rule_id: executionId,
           rule_name: rule.name,
-          rule_config: rule,
-          affected_records: changes.length,
+          operation_type: 'replace', // Default operation type
+          target_table: rule.target.selectedTables[0] || 'unknown', // Use first table as primary target
+          target_column: rule.target.field === 'metadata' ? 'metadata' : 'optional_tags',
+          records_affected: changes.length,
           changes_made: changes,
-          status: 'completed',
+          rule_configuration: rule,
+          status: 'success',
+          execution_context: 'admin-interface',
+          can_rollback: true,
+          rollback_data: changes.map(change => ({
+            table: change.table,
+            record_id: change.record_id,
+            original_value: change.before
+          })),
           executed_at: new Date().toISOString()
         });
     } catch (error) {
@@ -761,7 +771,7 @@ export class ModernDatabaseService {
   async getExecutionHistory(limit: number = 20): Promise<any[]> {
     try {
       const { data, error } = await supabase
-        .from('migration_execution_history')
+        .from('migration_execution_log')
         .select('*')
         .order('executed_at', { ascending: false })
         .limit(limit);
@@ -771,7 +781,22 @@ export class ModernDatabaseService {
         throw error;
       }
       
-      return data || [];
+      // Map database columns to expected UI format
+      return (data || []).map(record => ({
+        execution_id: record.rule_id,
+        rule_name: record.rule_name,
+        status: record.status === 'success' ? 'completed' : record.status,
+        executed_at: record.executed_at,
+        affected_records: record.records_affected,
+        rule_config: record.rule_configuration,
+        changes_made: record.changes_made,
+        duration: record.execution_duration_ms ? `${record.execution_duration_ms}ms` : 'Unknown',
+        can_rollback: record.can_rollback,
+        rollback_data: record.rollback_data,
+        is_reverted: record.is_reverted,
+        operation_type: record.operation_type,
+        target_table: record.target_table
+      }));
     } catch (error) {
       console.error('Failed to load execution history:', error);
       throw error;
