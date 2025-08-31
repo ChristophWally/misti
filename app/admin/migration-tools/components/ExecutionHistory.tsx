@@ -35,6 +35,8 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
       updateDataState({ executionHistory: history });
       updateUIState({ isLoading: false });
     } catch (error) {
+      console.error('Failed to load execution history:', error);
+      updateUIState({ isLoading: false, error: null });
       handleError(error, 'Failed to load execution history');
     }
   };
@@ -42,21 +44,31 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
   // Load history on component mount
   useEffect(() => {
     loadHistory();
-  }, []);
+  }, [dbService]);
 
   // Revert execution using stored rollback data
   const revertExecution = async (execution: any) => {
+    if (!execution) {
+      handleError(new Error('Invalid execution data'), 'Revert failed');
+      return;
+    }
+
     if (!execution.can_rollback) {
       handleError(new Error('This execution cannot be rolled back'), 'Revert not available');
       return;
     }
 
-    if (!execution.rollback_data || execution.rollback_data.length === 0) {
+    if (!execution.rollback_data || !Array.isArray(execution.rollback_data) || execution.rollback_data.length === 0) {
       handleError(new Error('No rollback data available for this execution'), 'Revert failed');
       return;
     }
 
-    if (!confirm(`Revert execution "${execution.rule_name}"? This will restore ${execution.rollback_data.length} records to their previous state.`)) {
+    if (!execution.execution_id) {
+      handleError(new Error('Missing execution ID'), 'Revert failed');
+      return;
+    }
+
+    if (!confirm(`Revert execution "${execution.rule_name || 'Unknown'}"? This will restore ${execution.rollback_data.length} records to their previous state.`)) {
       return;
     }
 
@@ -86,7 +98,7 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
           reverted_by: 'admin-user', // Could be enhanced to track actual user
           revert_notes: `Reverted ${execution.rollback_data.length} records`
         })
-        .eq('rule_id', execution.execution_id);
+        .eq('id', execution.execution_id);
 
       if (updateError) {
         console.warn('Failed to mark execution as reverted:', updateError);
@@ -146,7 +158,7 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
           <div className="flex items-center">
             <div className="text-blue-600 text-2xl mr-3">📊</div>
             <div>
-              <div className="text-2xl font-bold text-blue-900">{dataState.executionHistory.length}</div>
+              <div className="text-2xl font-bold text-blue-900">{(dataState.executionHistory || []).length}</div>
               <div className="text-sm text-blue-600">Total Executions</div>
             </div>
           </div>
@@ -157,7 +169,7 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
             <div className="text-green-600 text-2xl mr-3">✅</div>
             <div>
               <div className="text-2xl font-bold text-green-900">
-                {dataState.executionHistory.filter(h => h.status === 'completed').length}
+                {(dataState.executionHistory || []).filter(h => h && h.status === 'completed').length}
               </div>
               <div className="text-sm text-green-600">Successful</div>
             </div>
@@ -169,7 +181,7 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
             <div className="text-red-600 text-2xl mr-3">❌</div>
             <div>
               <div className="text-2xl font-bold text-red-900">
-                {dataState.executionHistory.filter(h => h.status === 'failed').length}
+                {(dataState.executionHistory || []).filter(h => h && h.status === 'failed').length}
               </div>
               <div className="text-sm text-red-600">Failed</div>
             </div>
@@ -181,7 +193,7 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
             <div className="text-purple-600 text-2xl mr-3">🔄</div>
             <div>
               <div className="text-2xl font-bold text-purple-900">
-                {dataState.executionHistory.reduce((sum, h) => sum + (h.affected_records || 0), 0)}
+                {(dataState.executionHistory || []).reduce((sum, h) => sum + (h?.affected_records || 0), 0)}
               </div>
               <div className="text-sm text-purple-600">Records Changed</div>
             </div>
@@ -190,7 +202,7 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
       </div>
 
       {/* Execution History List */}
-      {dataState.executionHistory.length === 0 ? (
+      {(!dataState.executionHistory || dataState.executionHistory.length === 0) ? (
         <div className="text-center py-12 text-gray-500">
           <div className="text-4xl mb-4">📊</div>
           <h3 className="text-lg font-medium mb-2">No Execution History</h3>
@@ -201,29 +213,29 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
         </div>
       ) : (
         <div className="space-y-4">
-          {dataState.executionHistory.map((execution) => (
+          {(dataState.executionHistory || []).filter(execution => execution && execution.execution_id).map((execution) => (
             <div key={execution.execution_id} className="bg-white border border-gray-200 rounded-lg p-6">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
-                    <h3 className="font-medium text-gray-900">{execution.rule_name}</h3>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${getStatusColor(execution.status)}`}>
-                      {execution.status}
+                    <h3 className="font-medium text-gray-900">{execution.rule_name || 'Unknown Rule'}</h3>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${getStatusColor(execution.status || 'unknown')}`}>
+                      {execution.status || 'unknown'}
                     </span>
                   </div>
                   
                   <div className="mt-2 grid grid-cols-1 md:grid-cols-5 gap-4 text-sm text-gray-600">
                     <div>
                       <span className="font-medium">Execution ID:</span><br />
-                      <code className="text-xs bg-gray-100 px-1 rounded">{execution.execution_id}</code>
+                      <code className="text-xs bg-gray-100 px-1 rounded">{execution.execution_id || 'N/A'}</code>
                     </div>
                     <div>
                       <span className="font-medium">Operation:</span><br />
-                      <span className="capitalize">{execution.operation_type}</span> on {execution.target_table}
+                      <span className="capitalize">{execution.operation_type || 'unknown'}</span> on {execution.target_table || 'unknown'}
                     </div>
                     <div>
                       <span className="font-medium">Executed:</span><br />
-                      {new Date(execution.executed_at).toLocaleString()}
+                      {execution.executed_at ? new Date(execution.executed_at).toLocaleString() : 'Unknown'}
                     </div>
                     <div>
                       <span className="font-medium">Records:</span><br />

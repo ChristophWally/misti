@@ -783,19 +783,20 @@ export class ModernDatabaseService {
       
       // Map database columns to expected UI format
       return (data || []).map(record => ({
-        execution_id: record.rule_id,
-        rule_name: record.rule_name,
+        execution_id: record.id, // Use the actual primary key ID, not rule_id
+        rule_id: record.rule_id, // Keep rule_id for reference
+        rule_name: record.rule_name || 'Unknown Rule',
         status: record.status === 'success' ? 'completed' : record.status,
         executed_at: record.executed_at,
-        affected_records: record.records_affected,
+        affected_records: record.records_affected || 0,
         rule_config: record.rule_configuration,
-        changes_made: record.changes_made,
+        changes_made: record.changes_made || [],
         duration: record.execution_duration_ms ? `${record.execution_duration_ms}ms` : 'Unknown',
-        can_rollback: record.can_rollback,
-        rollback_data: record.rollback_data,
-        is_reverted: record.is_reverted,
-        operation_type: record.operation_type,
-        target_table: record.target_table
+        can_rollback: record.can_rollback || false,
+        rollback_data: record.rollback_data || [],
+        is_reverted: record.is_reverted || false,
+        operation_type: record.operation_type || 'unknown',
+        target_table: record.target_table || 'unknown'
       }));
     } catch (error) {
       console.error('Failed to load execution history:', error);
