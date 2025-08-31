@@ -685,17 +685,19 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
         }
       })()}
 
-      {/* Revert System Status */}
+      {/* Enhanced Revert System Status */}
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-        <h4 className="font-medium text-green-800 mb-2">🔄 Revert System Active</h4>
+        <h4 className="font-medium text-green-800 mb-2">🔄 Enhanced Revert System Active (Phase 4)</h4>
         <p className="text-sm text-green-700">
-          One-click revert functionality is now fully operational using stored rollback data.
+          Advanced rollback functionality with RuleBuilder support and backward compatibility.
         </p>
         <ul className="text-sm text-green-700 list-disc list-inside mt-2 space-y-1">
-          <li>✅ Automatic rollback using stored original data</li>
-          <li>✅ Real-time status tracking (reverted executions are marked)</li>
-          <li>✅ Safe restoration of previous metadata values</li>
-          <li>✅ Detailed execution metrics and timing information</li>
+          <li>✅ Legacy format support: metadata-only reversion</li>
+          <li>✅ RuleBuilder format support: metadata + optional_tags reversion</li>
+          <li>✅ Nested metadata path restoration for targeted updates</li>
+          <li>✅ Mixed execution support: handles both field types in one operation</li>
+          <li>✅ Format validation and error resilience with detailed feedback</li>
+          <li>✅ Real-time status tracking and comprehensive revert logging</li>
         </ul>
         <div className="mt-2 text-xs text-green-600">
           Debug: Component State = {componentState} | Valid Executions = {(() => {
@@ -712,7 +714,7 @@ export default function ExecutionHistory({ state, actions, handlers, dbService }
             } catch {
               return 0;
             }
-          })()}
+          })()} | Multi-Format Rollback Ready
         </div>
       </div>
     </div>
