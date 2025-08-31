@@ -345,20 +345,36 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
 
   // Handle rule save
   const handleRuleSave = async (rule: any) => {
+    console.log('🚀 handleRuleSave() - Function called!')
+    console.log('🚀 handleRuleSave() - Received rule:', rule)
+    console.log('🚀 handleRuleSave() - Rule type:', typeof rule)
+    console.log('🚀 handleRuleSave() - Is rule null/undefined?', rule == null)
+    
     try {
-      console.log('Saving rule:', rule);
+      console.log('🚀 handleRuleSave() - Setting loading state...')
       updateUIState({ isLoading: true });
+      
+      console.log('🚀 handleRuleSave() - About to call dbService.saveSerializedRule()')
+      console.log('🚀 handleRuleSave() - dbService:', dbService)
+      console.log('🚀 handleRuleSave() - dbService.saveSerializedRule:', dbService.saveSerializedRule)
       
       // Use the database service to persist the rule
       const savedRule = await dbService.saveSerializedRule(rule);
-      console.log('Rule saved successfully:', savedRule);
+      console.log('🚀 handleRuleSave() - Rule saved successfully:', savedRule);
       
+      console.log('🚀 handleRuleSave() - Calling handleSuccess...')
       handleSuccess(`Rule "${rule.name}" saved successfully! You can view it in the Migration Rules tab.`);
+      console.log('🚀 handleRuleSave() - Closing rule builder...')
       setShowRuleBuilder(false);
+      console.log('🚀 handleRuleSave() - Save process completed successfully!')
     } catch (error) {
-      console.error('Failed to save rule:', error);
+      console.error('🚀 handleRuleSave() - SAVE ERROR:', error);
+      console.error('🚀 handleRuleSave() - Error type:', typeof error);
+      console.error('🚀 handleRuleSave() - Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('🚀 handleRuleSave() - Error stack:', error instanceof Error ? error.stack : 'No stack available');
       handleError(error, 'Failed to save rule');
     } finally {
+      console.log('🚀 handleRuleSave() - Setting loading to false...')
       updateUIState({ isLoading: false });
     }
   };
@@ -366,34 +382,34 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
   // Handle rule execute
   const handleRuleExecute = async (rule: any) => {
     try {
-      console.log('Executing rule:', rule);
+      console.log('🚀 handleRuleExecute() - Starting rule execution...');
+      console.log('🚀 handleRuleExecute() - Rule data:', rule);
       updateUIState({ isLoading: true });
       
       // First save the rule
+      console.log('🚀 handleRuleExecute() - Saving rule before execution...');
       await dbService.saveSerializedRule(rule);
-      console.log('Rule saved before execution');
+      console.log('🚀 handleRuleExecute() - Rule saved successfully');
       
-      // Execute the rule with comprehensive logging
-      // Note: This is a placeholder - actual execution logic will be implemented in Phase 2
-      // For now, we simulate successful execution and log to migration_execution_log
-      const executionResult = {
-        executionId: `exec_${Date.now()}`,
-        recordsAffected: rule.execution_metadata.expected_records_affected,
-        rollbackData: [] // Placeholder for rollback data
-      };
+      // Execute the rule with comprehensive logging using the actual implementation
+      console.log('🚀 handleRuleExecute() - Calling executeRuleWithLogging...');
+      const executionResult = await dbService.executeRuleWithLogging(rule);
+      console.log('🚀 handleRuleExecute() - Execution completed:', executionResult);
       
-      // Log successful execution
-      console.log('Rule execution completed:', executionResult);
-      
-      // Refresh execution history (this will be implemented when the parent state management is updated)
-      // await refreshExecutionHistory();
-      
-      handleSuccess(`Rule executed successfully! ${rule.execution_metadata.expected_records_affected} operations completed.`);
+      handleSuccess(
+        `Rule "${rule.name}" executed successfully! ` +
+        `${executionResult.totalRecordsAffected || 0} records affected. ` +
+        `View details in Execution History tab.`
+      );
       setShowRuleBuilder(false);
     } catch (error) {
-      console.error('Failed to execute rule:', error);
+      console.error('🚀 handleRuleExecute() - EXECUTION ERROR:', error);
+      console.error('🚀 handleRuleExecute() - Error type:', typeof error);
+      console.error('🚀 handleRuleExecute() - Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('🚀 handleRuleExecute() - Error stack:', error instanceof Error ? error.stack : 'No stack available');
       handleError(error, 'Failed to execute rule');
     } finally {
+      console.log('🚀 handleRuleExecute() - Setting loading to false...');
       updateUIState({ isLoading: false });
     }
   };
