@@ -574,29 +574,47 @@ export default function RuleBuilder({
   // ========================================================================
   // RULE SERIALIZATION & EXECUTION
   // ========================================================================
-  const buildSerializedRule = (): SerializedRule => ({
-    id: `rule_${Date.now()}`,
-    name: ruleState.name || `Rule for ${Object.keys(sourceSelections).length} selections`,
-    description: ruleState.description || 'Generated from hierarchical search selections',
-    target_field: ruleState.target_field,
-    target_tables: ruleState.target_tables,
-    source_selections: sourceSelections,
-    operations: {
-      metadata_operations: ruleState.metadataOperations,
-      optional_tag_operations: ruleState.optionalTagOperations,
-      bulk_operations: ruleState.bulkOperations,
-      hierarchical_operations: ruleState.hierarchicalOperations
-    },
-    execution_metadata: {
-      expected_records_affected: previewState.expectedChanges,
-      risk_level: previewState.riskLevel,
-      requires_confirmation: previewState.riskLevel !== 'low',
-      has_revert_data: true
+  const buildSerializedRule = (): SerializedRule => {
+    console.log('🔧 buildSerializedRule() - Starting rule serialization...')
+    console.log('🔧 Current ruleState:', ruleState)
+    console.log('🔧 Current sourceSelections:', sourceSelections)
+    console.log('🔧 Current previewState:', previewState)
+    
+    try {
+      const rule: SerializedRule = {
+        id: `rule_${Date.now()}`,
+        name: ruleState.name || `Rule for ${Object.keys(sourceSelections).length} selections`,
+        description: ruleState.description || 'Generated from hierarchical search selections',
+        target_field: ruleState.target_field,
+        target_tables: ruleState.target_tables,
+        source_selections: sourceSelections,
+        operations: {
+          metadata_operations: ruleState.metadataOperations,
+          optional_tag_operations: ruleState.optionalTagOperations,
+          bulk_operations: ruleState.bulkOperations,
+          hierarchical_operations: ruleState.hierarchicalOperations
+        },
+        execution_metadata: {
+          expected_records_affected: previewState.expectedChanges,
+          risk_level: previewState.riskLevel,
+          requires_confirmation: previewState.riskLevel !== 'low',
+          has_revert_data: true
+        }
+      }
+      
+      console.log('🔧 buildSerializedRule() - Successfully created rule:', rule)
+      return rule
+    } catch (error) {
+      console.error('🔧 buildSerializedRule() - ERROR creating rule:', error)
+      throw error
     }
-  })
+  }
 
   if (!isOpen) return null
 
+  // Debug logging for render
+  console.log('🎨 RuleBuilder rendering...', { isOpen, sourceSelections, onSave })
+  
   // ========================================================================
   // ULTRA-DESIGNED TWO-PANEL + BOTTOM INTERFACE
   // Left: Source Context (25%) | Right: Operations Builder (75%)
@@ -1135,8 +1153,39 @@ export default function RuleBuilder({
             </button>
             
             <button 
-              onClick={() => onSave(buildSerializedRule())}
+              onClick={(e) => {
+                console.log('💾 Save button clicked! Event:', e)
+                console.log('💾 Event target:', e.target)
+                console.log('💾 Event currentTarget:', e.currentTarget)
+                e.preventDefault()
+                e.stopPropagation()
+                
+                try {
+                  console.log('💾 About to call buildSerializedRule()...')
+                  const rule = buildSerializedRule()
+                  console.log('💾 buildSerializedRule() returned:', rule)
+                  console.log('💾 About to call onSave with rule...')
+                  console.log('💾 onSave function:', onSave)
+                  console.log('💾 onSave type:', typeof onSave)
+                  
+                  if (typeof onSave !== 'function') {
+                    throw new Error('onSave is not a function!')
+                  }
+                  
+                  onSave(rule)
+                  console.log('💾 onSave called successfully!')
+                } catch (error) {
+                  console.error('💾 ERROR in save button onClick handler:', error)
+                  console.error('💾 Error stack:', error instanceof Error ? error.stack : 'No stack available')
+                  alert(`Save failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+                }
+              }}
+              onMouseDown={() => console.log('💾 Save button mouse down!')}
+              onMouseUp={() => console.log('💾 Save button mouse up!')}
+              onMouseEnter={() => console.log('💾 Save button mouse enter!')}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+              type="button"
             >
               💾 Save Rule
             </button>

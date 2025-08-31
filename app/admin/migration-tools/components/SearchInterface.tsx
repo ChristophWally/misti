@@ -398,7 +398,7 @@ export default function SearchInterface({ state, actions, handlers, dbService }:
       
       handleSuccess(
         `Rule "${rule.name}" executed successfully! ` +
-        `${executionResult.totalRecordsAffected || 0} records affected. ` +
+        `${executionResult.recordsAffected || 0} records affected. ` +
         `View details in Execution History tab.`
       );
       setShowRuleBuilder(false);
