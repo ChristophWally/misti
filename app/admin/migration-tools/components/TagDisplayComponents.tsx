@@ -126,14 +126,14 @@ export function ValueTagDisplay({ valueStableId }: { valueStableId: string }) {
 
   if (isLoading) {
     return (
-      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-500">
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-50 text-blue-500">
         Loading...
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 text-green-800">
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
       {displayName}
     </span>
   );
