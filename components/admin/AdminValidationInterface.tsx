@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Search, CheckCircle, AlertTriangle, XCircle, Settings, BarChart3, RefreshCw, Download, Play, Pause } from 'lucide-react';
 import { ConjugationComplianceValidator, ValidationOptions } from '../../lib/conjugationComplianceValidator';
+import { VerbComplianceReport, SystemAnalysisResult } from '../../lib/verbComplianceRules';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
@@ -13,8 +14,8 @@ const supabase = createClient(
 
 const AdminValidationInterface = () => {
   const [selectedVerb, setSelectedVerb] = useState('');
-  const [validationResult, setValidationResult] = useState(null);
-  const [systemAnalysis, setSystemAnalysis] = useState(null);
+  const [validationResult, setValidationResult] = useState<VerbComplianceReport | null>(null);
+  const [systemAnalysis, setSystemAnalysis] = useState<SystemAnalysisResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [validationOptions, setValidationOptions] = useState<ValidationOptions>({
     includeDeprecatedCheck: true,
