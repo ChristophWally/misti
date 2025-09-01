@@ -226,7 +226,8 @@ const loadConjugations = async () => {
           word_translation_id,
           translation,
           assignment_method
-        )
+        ),
+        word_audio_metadata (audio_filename, azure_voice_name)
       `)
       .eq('word_id', word.id)
       .eq('form_type', 'conjugation')

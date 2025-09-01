@@ -62,6 +62,7 @@ export default function AudioButton({
     <button
       onClick={handlePlay}
       disabled={isPlaying}
+      aria-label={buttonTitle}
       className={`
         ${sizeClasses[size]}
         text-white rounded-full
