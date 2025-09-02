@@ -121,7 +121,7 @@ create index if not exists idx_meta_values_attribute on meta_values(attribute_id
 create index if not exists idx_meta_values_stable on meta_values(stable_id);
 ```
 
-### New Table: entity_meta_values
+### New Table: entity_meta_values (Unified Assignment with Propagation)
 
 ```sql
 create table if not exists entity_meta_values (
@@ -130,15 +130,25 @@ create table if not exists entity_meta_values (
   value_id uuid not null references meta_values(id),
   created_at timestamptz not null default now(),
   created_by uuid null,
+  -- Enhanced fields for unified propagation tracking
+  derived_from text null, -- 'form', 'translation', etc. (NULL = direct assignment)
+  propagation_source_id uuid null, -- The specific child entity that caused propagation
+  propagation_method text null, -- 'ANY_IRREGULAR', 'COMBINE', 'FIRST_WINS', etc.
   primary key (entity_type, entity_id, value_id)
 );
 
 create index if not exists idx_emv_entity on entity_meta_values (entity_type, entity_id);
 create index if not exists idx_emv_value  on entity_meta_values (value_id);
 create index if not exists idx_emv_lookup on entity_meta_values (entity_type, value_id);
+create index if not exists idx_emv_propagation on entity_meta_values (entity_type, derived_from) where derived_from is not null;
 ```
 
-**Design Rationale**: The polymorphic design consolidates four potential assignment tables (word, form, word_translation, form_translation) into a single structure. The composite primary key prevents duplicate assignments while enabling efficient lookups via multiple index strategies.
+**Design Rationale**: The unified polymorphic design consolidates both direct assignments AND propagated metadata into a single table, eliminating the need for separate `word_meta_derived` table. The composite primary key prevents duplicate assignments while enabling efficient lookups via multiple index strategies.
+
+**Propagation Enhancement**: The additional fields enable complete traceability of propagated metadata:
+- `derived_from`: Identifies the source level ('form', 'translation') for propagated entries
+- `propagation_source_id`: Points to the specific child entity that triggered the propagation
+- `propagation_method`: Records which propagation rule was applied (from existing meta_attributes.propagation_rule)
 
 **Validation Logic**: Level validation ensures metadata values are only assigned to appropriate entity types based on meta_attribute source_level constraints:
 
@@ -161,24 +171,20 @@ create trigger trg_emv_level before insert on entity_meta_values
 for each row execute function ensure_emv_level();
 ```
 
-### New Table: word_meta_derived
+### ~~Eliminated Table: word_meta_derived~~ ✅ **ARCHITECTURAL IMPROVEMENT**
 
-```sql
-create table if not exists word_meta_derived (
-  word_id  uuid not null references dictionary(id) on delete cascade,
-  value_id uuid not null references meta_values(id) on delete cascade,
-  derived_from text not null default 'forms',
-  updated_at timestamptz not null default now(),
-  primary key (word_id, value_id)
-);
+**Previous Design**: Separate `word_meta_derived` table for propagated metadata
 
-create index if not exists idx_wmd_word  on word_meta_derived (word_id);
-create index if not exists idx_wmd_value on word_meta_derived (value_id);
-```
+**New Unified Design**: All propagated metadata stored directly in `entity_meta_values` with traceability fields
 
-**Purpose**: Materializes propagated metadata from child entities (forms, translations) to word level. Eliminates the need for complex JOIN operations during word-level queries while supporting sophisticated propagation rules.
+**Benefits of Unified Approach**:
+- **Single Lookup**: All metadata (direct + propagated) accessed through one table
+- **Simplified Queries**: No JOINs between assignment tables required
+- **Unified Indexing**: One set of optimized indexes handles all metadata
+- **Better Performance**: Fewer tables to scan, cleaner query plans
+- **Enhanced Traceability**: Full audit trail maintained through propagation fields
 
-**Update Strategy**: Populated through explicit refresh operations rather than write triggers, ensuring predictable write performance and avoiding write amplification effects.
+**Migration Note**: This architectural improvement was identified during implementation planning and represents a significant simplification over the original design.
 
 ---
 
@@ -203,46 +209,104 @@ The architecture exclusively uses btree indexes on UUID and text keys, eliminati
 ### Design Philosophy
 Manual propagation maintains write performance predictability by decoupling metadata updates from propagation computation. This approach prevents write amplification where single form updates trigger cascading word-level recalculations.
 
-### Propagation Function Implementation
+### Unified Propagation Function Implementation
 
 ```sql
 create or replace function refresh_word_propagation(p_word_id uuid default null)
 returns void as $$
 begin
-  delete from word_meta_derived w
-  where p_word_id is null or w.word_id = p_word_id;
+  -- Delete existing propagated entries from unified table
+  delete from entity_meta_values
+  where entity_type = 'word' 
+    and derived_from is not null
+    and (p_word_id is null or entity_id = p_word_id);
 
   -- ANY_IRREGULAR: If any child form has irregular value, propagate to word
-  insert into word_meta_derived (word_id, value_id, derived_from)
-  select distinct wf.word_id, emv.value_id, 'forms'
+  insert into entity_meta_values (
+    entity_type, entity_id, value_id, 
+    derived_from, propagation_source_id, propagation_method
+  )
+  select distinct 
+    'word', wf.word_id, emv.value_id, 
+    'form', emv.entity_id, 'ANY_IRREGULAR'
   from entity_meta_values emv
   join word_forms wf on wf.id = emv.entity_id
   join meta_values mv on mv.id = emv.value_id
   join meta_attributes ma on ma.id = mv.attribute_id
   where emv.entity_type = 'form'
+    and emv.derived_from is null  -- Only propagate from direct assignments
     and (p_word_id is null or wf.word_id = p_word_id)
     and ma.propagation_rule = 'ANY_IRREGULAR'
-    and mv.stable_id = 'metaval_irregular'
   on conflict do nothing;
 
   -- COMBINE: Union all distinct child values for combinable attributes
-  insert into word_meta_derived (word_id, value_id, derived_from)
-  select distinct wf.word_id, emv.value_id, 'forms'
+  insert into entity_meta_values (
+    entity_type, entity_id, value_id, 
+    derived_from, propagation_source_id, propagation_method
+  )
+  select distinct 
+    'word', wf.word_id, emv.value_id, 
+    'form', emv.entity_id, 'COMBINE'
   from entity_meta_values emv
   join word_forms wf on wf.id = emv.entity_id
   join meta_values mv on mv.id = emv.value_id
   join meta_attributes ma on ma.id = mv.attribute_id
   where emv.entity_type = 'form'
+    and emv.derived_from is null  -- Only propagate from direct assignments
     and (p_word_id is null or wf.word_id = p_word_id)
     and ma.propagation_rule = 'COMBINE'
+  on conflict do nothing;
+
+  -- FIRST_WINS: Take first child value encountered for first-wins attributes
+  insert into entity_meta_values (
+    entity_type, entity_id, value_id, 
+    derived_from, propagation_source_id, propagation_method
+  )
+  select distinct on (wf.word_id, ma.id)
+    'word', wf.word_id, emv.value_id,
+    'translation', emv.entity_id, 'FIRST_WINS'
+  from entity_meta_values emv
+  join form_translations ft on ft.id = emv.entity_id
+  join word_forms wf on wf.id = ft.form_id
+  join meta_values mv on mv.id = emv.value_id
+  join meta_attributes ma on ma.id = mv.attribute_id
+  where emv.entity_type = 'form_translation'
+    and emv.derived_from is null
+    and (p_word_id is null or wf.word_id = p_word_id)
+    and ma.propagation_rule = 'FIRST_WINS'
+  order by wf.word_id, ma.id, emv.created_at ASC  -- Earliest wins
+  on conflict do nothing;
+
+  -- LAST_WINS: Take most recent child value encountered for last-wins attributes
+  insert into entity_meta_values (
+    entity_type, entity_id, value_id, 
+    derived_from, propagation_source_id, propagation_method
+  )
+  select distinct on (wf.word_id, ma.id)
+    'word', wf.word_id, emv.value_id,
+    'translation', emv.entity_id, 'LAST_WINS'
+  from entity_meta_values emv
+  join form_translations ft on ft.id = emv.entity_id
+  join word_forms wf on wf.id = ft.form_id
+  join meta_values mv on mv.id = emv.value_id
+  join meta_attributes ma on ma.id = mv.attribute_id
+  where emv.entity_type = 'form_translation'
+    and emv.derived_from is null
+    and (p_word_id is null or wf.word_id = p_word_id)
+    and ma.propagation_rule = 'LAST_WINS'
+  order by wf.word_id, ma.id, emv.created_at DESC  -- Latest wins
   on conflict do nothing;
 end; $$ language plpgsql;
 ```
 
-### Propagation Rules
-**ANY_IRREGULAR**: Binary propagation where any child entity with an irregular attribute causes the parent to inherit that attribute  
-**COMBINE**: Set union propagation where parent inherits all distinct child values for the attribute  
-**MAJORITY**: (Extensible) Most frequent child value becomes parent value
+### Propagation Rules (From Existing meta_attributes.propagation_rule)
+**ANY_IRREGULAR**: Binary propagation where any child entity with an irregular attribute causes the parent to inherit that attribute (e.g., form_irregular → word level)  
+**COMBINE**: Set union propagation where parent inherits all distinct child values for the attribute (e.g., auxiliary: "avere" + "essere" → "both")  
+**FIRST_WINS**: First encountered value wins, prevents contradictory combinations (e.g., register conflicts - earliest created_at)
+**LAST_WINS**: Last encountered value wins, allows updates to override previous values (e.g., priority to most recent assignment - latest created_at)
+**ADMIN_ONLY**: No automatic propagation, manual assignment only
+
+**Enhanced Traceability**: Each propagated entry records the specific source entity and propagation method used, enabling precise audit trails and debugging.
 
 ### Usage Patterns
 - **Bulk Operations**: `select refresh_word_propagation();` after batch metadata changes

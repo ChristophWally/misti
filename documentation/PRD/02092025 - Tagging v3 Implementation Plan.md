@@ -12,9 +12,9 @@ Related Architecture: documentation/architecture/tagging_v3_dda.md
 
 Implement a simplified, free‑tier‑friendly tagging system that:
 - Reuses existing `meta_attributes`, `meta_values`, and `metaval_rules`.
-- Introduces a single polymorphic assignment table `entity_meta_values`.
+- Introduces a single unified polymorphic assignment table `entity_meta_values` with propagation traceability.
 - Models optional tags as `meta_values` under three new optional‑tag attributes (word | form | translation).
-- Adds an optional `word_meta_derived` table with a manual refresh function for propagation.
+- **ARCHITECTURAL IMPROVEMENT**: Eliminates separate `word_meta_derived` table by storing all metadata (direct + propagated) in unified `entity_meta_values`.
 - Migrates legacy `optional_tags` arrays and legacy metadata into normalized assignments.
 - Switches application reads to EXISTS filters; arrays are used only for detail views if desired.
 
@@ -39,7 +39,7 @@ Non‑Goals
 
 In Scope
 - New meta_attributes (3 rows): optional_tag_word, optional_tag_form, optional_tag_translation.
-- New tables: `entity_meta_values` (required), `word_meta_derived` (optional but recommended).
+- New tables: `entity_meta_values` (unified assignment table with propagation traceability).
 - Backfill of legacy arrays from:
   - `form_translations.optional_tags` (largest win),
   - `word_translations.optional_tags`,
@@ -106,8 +106,9 @@ Phase 4 — Cleanup & Reclaim
 - Run `VACUUM FULL` on affected tables to reclaim disk.
 - Re‑measure sizes and log improvements.
 
-Phase 5 — Optional Propagation
-- Implement and run `refresh_word_propagation()` to populate `word_meta_derived` using `propagation_rule` semantics.
+Phase 5 — Unified Propagation System
+- Implement and run `refresh_word_propagation()` to populate propagated metadata directly in `entity_meta_values` using existing `propagation_rule` semantics.
+- Enhanced traceability through `derived_from`, `propagation_source_id`, and `propagation_method` fields.
 - Trigger manually after bulk updates; avoid write‑time triggers on Free tier.
 
 ---
@@ -124,7 +125,7 @@ values
 on conflict do nothing;
 ```
 
-Assignment table
+Unified Assignment Table (with Propagation Traceability)
 ```sql
 create table if not exists entity_meta_values (
   entity_type text not null check (entity_type in ('word','form','word_translation','form_translation')),
@@ -132,12 +133,17 @@ create table if not exists entity_meta_values (
   value_id uuid not null references meta_values(id),
   created_at timestamptz not null default now(),
   created_by uuid null,
+  -- Enhanced fields for unified propagation tracking
+  derived_from text null, -- 'form', 'translation', etc. (NULL = direct assignment)
+  propagation_source_id uuid null, -- The specific child entity that caused propagation
+  propagation_method text null, -- 'ANY_IRREGULAR', 'COMBINE', 'FIRST_WINS', etc.
   primary key (entity_type, entity_id, value_id)
 );
 
 create index if not exists idx_emv_entity on entity_meta_values (entity_type, entity_id);
 create index if not exists idx_emv_value  on entity_meta_values (value_id);
 create index if not exists idx_emv_lookup on entity_meta_values (entity_type, value_id);
+create index if not exists idx_emv_propagation on entity_meta_values (entity_type, derived_from) where derived_from is not null;
 ```
 
 Level‑check trigger (pseudocode)
@@ -163,52 +169,101 @@ for each row execute function ensure_emv_level();
 */
 ```
 
-Derived table (optional)
+~~Eliminated: Separate Derived Table~~ ✅ **ARCHITECTURAL IMPROVEMENT**
 ```sql
-create table if not exists word_meta_derived (
-  word_id  uuid not null references dictionary(id) on delete cascade,
-  value_id uuid not null references meta_values(id) on delete cascade,
-  derived_from text not null default 'forms',
-  updated_at timestamptz not null default now(),
-  primary key (word_id, value_id)
-);
-
-create index if not exists idx_wmd_word  on word_meta_derived (word_id);
-create index if not exists idx_wmd_value on word_meta_derived (value_id);
+-- Previous approach used separate word_meta_derived table
+-- New unified approach stores all metadata in single entity_meta_values table
+-- Benefits: Single lookup, unified indexing, better performance, enhanced traceability
+-- Propagated entries identified by non-null derived_from field
 ```
 
-Propagation refresh (sketch)
+Unified Propagation Refresh (with Traceability)
 ```sql
 /*
 create or replace function refresh_word_propagation(p_word_id uuid default null)
 returns void as $$
 begin
-  delete from word_meta_derived w
-  where p_word_id is null or w.word_id = p_word_id;
+  -- Delete existing propagated entries from unified table
+  delete from entity_meta_values
+  where entity_type = 'word' 
+    and derived_from is not null
+    and (p_word_id is null or entity_id = p_word_id);
 
-  -- ANY_IRREGULAR example
-  insert into word_meta_derived (word_id, value_id, derived_from)
-  select distinct wf.word_id, emv.value_id, 'forms'
+  -- ANY_IRREGULAR: Propagate irregular markers to word level
+  insert into entity_meta_values (
+    entity_type, entity_id, value_id, 
+    derived_from, propagation_source_id, propagation_method
+  )
+  select distinct 
+    'word', wf.word_id, emv.value_id, 
+    'form', emv.entity_id, 'ANY_IRREGULAR'
   from entity_meta_values emv
   join word_forms wf on wf.id = emv.entity_id
   join meta_values mv on mv.id = emv.value_id
   join meta_attributes ma on ma.id = mv.attribute_id
   where emv.entity_type = 'form'
+    and emv.derived_from is null  -- Only propagate from direct assignments
     and (p_word_id is null or wf.word_id = p_word_id)
     and ma.propagation_rule = 'ANY_IRREGULAR'
-    and mv.stable_id = 'metaval_irregular'
   on conflict do nothing;
 
-  -- COMBINE example
-  insert into word_meta_derived (word_id, value_id, derived_from)
-  select distinct wf.word_id, emv.value_id, 'forms'
+  -- COMBINE: Union all child values (e.g., auxiliary: avere + essere = both)
+  insert into entity_meta_values (
+    entity_type, entity_id, value_id, 
+    derived_from, propagation_source_id, propagation_method
+  )
+  select distinct 
+    'word', wf.word_id, emv.value_id, 
+    'translation', emv.entity_id, 'COMBINE'
   from entity_meta_values emv
-  join word_forms wf on wf.id = emv.entity_id
+  join form_translations ft on ft.id = emv.entity_id
+  join word_forms wf on wf.id = ft.form_id
   join meta_values mv on mv.id = emv.value_id
   join meta_attributes ma on ma.id = mv.attribute_id
-  where emv.entity_type = 'form'
+  where emv.entity_type = 'form_translation'
+    and emv.derived_from is null
     and (p_word_id is null or wf.word_id = p_word_id)
     and ma.propagation_rule = 'COMBINE'
+  on conflict do nothing;
+
+  -- FIRST_WINS: Take earliest child value
+  insert into entity_meta_values (
+    entity_type, entity_id, value_id, 
+    derived_from, propagation_source_id, propagation_method
+  )
+  select distinct on (wf.word_id, ma.id)
+    'word', wf.word_id, emv.value_id,
+    'translation', emv.entity_id, 'FIRST_WINS'
+  from entity_meta_values emv
+  join form_translations ft on ft.id = emv.entity_id
+  join word_forms wf on wf.id = ft.form_id
+  join meta_values mv on mv.id = emv.value_id
+  join meta_attributes ma on ma.id = mv.attribute_id
+  where emv.entity_type = 'form_translation'
+    and emv.derived_from is null
+    and (p_word_id is null or wf.word_id = p_word_id)
+    and ma.propagation_rule = 'FIRST_WINS'
+  order by wf.word_id, ma.id, emv.created_at ASC
+  on conflict do nothing;
+
+  -- LAST_WINS: Take most recent child value
+  insert into entity_meta_values (
+    entity_type, entity_id, value_id, 
+    derived_from, propagation_source_id, propagation_method
+  )
+  select distinct on (wf.word_id, ma.id)
+    'word', wf.word_id, emv.value_id,
+    'translation', emv.entity_id, 'LAST_WINS'
+  from entity_meta_values emv
+  join form_translations ft on ft.id = emv.entity_id
+  join word_forms wf on wf.id = ft.form_id
+  join meta_values mv on mv.id = emv.value_id
+  join meta_attributes ma on ma.id = mv.attribute_id
+  where emv.entity_type = 'form_translation'
+    and emv.derived_from is null
+    and (p_word_id is null or wf.word_id = p_word_id)
+    and ma.propagation_rule = 'LAST_WINS'
+  order by wf.word_id, ma.id, emv.created_at DESC
   on conflict do nothing;
 end; $$ language plpgsql;
 */
@@ -278,11 +333,11 @@ After cleanup:
 
 ## 10) Acceptance Criteria
 
-- Assignment table created; level guard operational.
+- Unified assignment table created with propagation traceability; level guard operational.
 - Optional tags from all four tables assigned into `entity_meta_values`.
 - List queries switched to EXISTS and verified for correctness/performance.
 - Legacy arrays/GIN removed after soak; disk usage demonstrably reduced.
-- (If enabled) `word_meta_derived` populated via manual refresh and verified on sample words.
+- Propagation system operational with full traceability via unified table approach.
 
 ---
 
