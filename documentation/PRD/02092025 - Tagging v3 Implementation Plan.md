@@ -189,14 +189,15 @@ begin
     and derived_from is not null
     and (p_word_id is null or entity_id = p_word_id);
 
-  -- ANY_IRREGULAR: Propagate irregular markers to word level
+  -- ANY_MATCH: "Any match" propagation - if ANY child has target value, propagate to parent
+  -- (Pattern works for any attribute value, currently used primarily for "irregular")
   insert into entity_meta_values (
     entity_type, entity_id, value_id, 
     derived_from, propagation_source_id, propagation_method
   )
   select distinct 
     'word', wf.word_id, emv.value_id, 
-    'form', emv.entity_id, 'ANY_IRREGULAR'
+    'form', emv.entity_id, 'ANY_MATCH'
   from entity_meta_values emv
   join word_forms wf on wf.id = emv.entity_id
   join meta_values mv on mv.id = emv.value_id
@@ -204,7 +205,8 @@ begin
   where emv.entity_type = 'form'
     and emv.derived_from is null  -- Only propagate from direct assignments
     and (p_word_id is null or wf.word_id = p_word_id)
-    and ma.propagation_rule = 'ANY_IRREGULAR'
+    and ma.propagation_rule = 'ANY_MATCH'
+    -- The target value is determined by the attribute's configuration
   on conflict do nothing;
 
   -- COMBINE: Union all child values (e.g., auxiliary: avere + essere = both)

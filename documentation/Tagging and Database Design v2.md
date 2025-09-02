@@ -884,7 +884,7 @@ UPDATE dictionary SET metadata = jsonb_build_object(
     WHEN 'freq-top1000' = ANY(tags) THEN 'top1000'  
     WHEN 'freq-top5000' = ANY(tags) THEN 'top5000'
     ELSE NULL END,
-  -- NOTE: 'irregular' attribute eliminated - redundant with form_irregular propagation
+  -- NOTE: 'irregular' attribute eliminated - redundant with form_irregular ANY_MATCH propagation
 ) || 
 -- Add conditional fields based on word_type
 CASE word_type
@@ -996,7 +996,7 @@ UPDATE word_forms SET metadata = jsonb_build_object(
     WHEN 'plurale' = ANY(tags) THEN 'plurale'
     ELSE NULL END,
   -- NOTE: 'specific_person' eliminated - auto-derivable from person+number+gender
-  -- NOTE: 'irregular' eliminated - handled by form_irregular propagation
+  -- NOTE: 'irregular' eliminated - handled by form_irregular ANY_MATCH propagation
   'verb_form_type', CASE
     WHEN 'simple' = ANY(tags) THEN 'simple'
     WHEN 'compound' = ANY(tags) THEN 'compound'
@@ -1106,7 +1106,7 @@ const getAdvancedNouns = () => {
     .select('*')
     .eq('metadata->>word_type', 'noun')
     .in('metadata->>cefr_level', ['C1', 'C2', 'native'])
-    // NOTE: irregular queries now use form_irregular propagation
+    // NOTE: irregular queries now use form_irregular ANY_MATCH propagation
 };
 
 const getProgressiveForms = (mood: string) => {

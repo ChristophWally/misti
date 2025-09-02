@@ -221,14 +221,15 @@ begin
     and derived_from is not null
     and (p_word_id is null or entity_id = p_word_id);
 
-  -- ANY_IRREGULAR: If any child form has irregular value, propagate to word
+  -- ANY_MATCH: "Any match" propagation - if ANY child has target value, propagate it
+  -- (Currently used primarily for form_irregular, but works for any attribute value)
   insert into entity_meta_values (
     entity_type, entity_id, value_id, 
     derived_from, propagation_source_id, propagation_method
   )
   select distinct 
     'word', wf.word_id, emv.value_id, 
-    'form', emv.entity_id, 'ANY_IRREGULAR'
+    'form', emv.entity_id, 'ANY_MATCH'
   from entity_meta_values emv
   join word_forms wf on wf.id = emv.entity_id
   join meta_values mv on mv.id = emv.value_id
@@ -236,7 +237,9 @@ begin
   where emv.entity_type = 'form'
     and emv.derived_from is null  -- Only propagate from direct assignments
     and (p_word_id is null or wf.word_id = p_word_id)
-    and ma.propagation_rule = 'ANY_IRREGULAR'
+    and ma.propagation_rule = 'ANY_MATCH'
+    -- Note: The specific target value would be determined by meta_attributes configuration
+    -- Currently targets 'irregular' value, but pattern works for any target value
   on conflict do nothing;
 
   -- COMBINE: Union all distinct child values for combinable attributes
@@ -300,11 +303,13 @@ end; $$ language plpgsql;
 ```
 
 ### Propagation Rules (From Existing meta_attributes.propagation_rule)
-**ANY_IRREGULAR**: Binary propagation where any child entity with an irregular attribute causes the parent to inherit that attribute (e.g., form_irregular → word level)  
+**ANY_MATCH**: "Any target match" propagation - if ANY child entity has a specific target value for an attribute, propagate that value to the parent. The target value is determined by the attribute's configuration. (e.g., form_irregular: if ANY form has "irregular" value → word inherits "irregular")  
 **COMBINE**: Set union propagation where parent inherits all distinct child values for the attribute (e.g., auxiliary: "avere" + "essere" → "both")  
 **FIRST_WINS**: First encountered value wins, prevents contradictory combinations (e.g., register conflicts - earliest created_at)
 **LAST_WINS**: Last encountered value wins, allows updates to override previous values (e.g., priority to most recent assignment - latest created_at)
 **ADMIN_ONLY**: No automatic propagation, manual assignment only
+
+**Key Insight**: ANY_MATCH is a general "any target match" pattern that works for any attribute with a designated target value that should bubble up from children to parent. Currently used only by form_irregular (target: "irregular"), but the pattern is reusable for other binary marker attributes.
 
 **Enhanced Traceability**: Each propagated entry records the specific source entity and propagation method used, enabling precise audit trails and debugging.
 
