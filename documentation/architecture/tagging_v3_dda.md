@@ -1,100 +1,127 @@
 # Tagging v3 — Detailed Design Architecture (DDA)
 
-Status: Draft v2 (Free-tier friendly)
+Status: Final v3.0 (Free-tier optimized)
 
 Owner: Engineering
 
-Last updated: 2025-09-01
+Last updated: 2025-09-02
 
 ---
 
-## 1) TL;DR (Explain Like I’m 5)
+## 1) Architectural Overview
 
-- Words, forms, and translations are toy boxes.
-- Stickers (tags/metadata) tell us things like "irregular" or "archaic".
-- Instead of gluing lots of stickers on every box, we keep a neat notebook that says which box has which sticker.
-- We look up the notebook when we need to find boxes — it’s smaller, faster, and easier to change.
+The Tagging v3 architecture normalizes tag and metadata storage to eliminate expensive GIN indexes while maintaining query performance and data integrity. The system uses a polymorphic assignment pattern that consolidates all entity-to-metadata relationships into a single, efficiently indexed table.
 
-What this means in database terms:
-- Keep base tables clean (no big arrays/JSONB fields for tags).
-- Use one small assignment table to link entities → meta_values (btree indexes only).
-- Optional tags are just regular meta values under dedicated "optional tag" attributes.
-- Propagation (e.g., irregular form → irregular word) is computed on demand, not on every write.
+### Core Principles
 
----
+**Storage Optimization**: Base entity tables contain no tag arrays or JSONB fields. All tagging relationships are stored in normalized assignment tables with compact btree indexes on UUID keys.
 
-## 2) Goals, Constraints, Trade-offs
+**Unified Metadata Model**: Both core metadata and optional tags use the same `meta_values` reference system, distinguished by attribute classification rather than separate storage mechanisms.
 
-- Goals: lowest disk usage on Supabase Free (500 MB cap), simple and testable schema/migrations, scales to 100k+ forms using compact btree indexes and EXISTS filters.
-- Constraints: Free plan has no PITR/backups/branching; avoid risky migrations, materialized views, and GIN by default.
-- Trade-offs: Avoid synchronous triggers and heavy derived storage to keep writes fast and storage small. Arrays in views are optional (detail only); lists filter via EXISTS.
+**On-Demand Propagation**: Parent-level attributes (e.g., word irregularity derived from form-level data) are computed asynchronously rather than maintained via write triggers, reducing write complexity and ensuring predictable performance.
+
+**Query Pattern Optimization**: List queries use EXISTS clauses against indexed assignment tables. Array aggregation is reserved for detail views where the overhead is justified by convenience.
 
 ---
 
-## 3) Current Context (Project snapshot)
+## 2) Design Constraints and Trade-offs
 
-- Optional tags appear primarily on `form_translations` (864 rows), then `word_translations` (22), with fewer on `word_forms` (8) and `dictionary` (5). Migrating those arrays to normalized assignments gives the biggest size win first.
-- Existing meta system: `meta_attributes`, `meta_values`, and `metaval_rules` already exist and must be reused.
+### Environment Constraints
+- **Storage Limit**: 500MB database cap with no backup recovery options
+- **Operational Complexity**: No materialized views, minimal trigger logic, conservative indexing
+- **Migration Risk**: Additive-only changes during transition periods
 
----
-
-## 4) Design Overview (Reusing Existing Tables)
-
-- Reference data (exists):
-  - `meta_attributes(id, stable_id, source_level, propagation_rule, …)`
-  - `meta_values(id, attribute_id, value, stable_id, …)`
-- New meta attributes (3 rows total):
-  - `optional_tag_word` (source_level='word')
-  - `optional_tag_form` (source_level='form')
-  - `optional_tag_translation` (source_level='translation')
-- Assignments (new, single table):
-  - `entity_meta_values(entity_type, entity_id, value_id, created_at, created_by)`
-    - `entity_type in ('word','form','word_translation','form_translation')`
-    - BEFORE INSERT trigger validates `entity_type` vs `meta_attributes.source_level`.
-- Propagation (new, optional):
-  - `word_meta_derived(word_id, value_id, derived_from, updated_at)`
-  - Manual/async recompute function `refresh_word_propagation(word_id default null)`.
-- Views (app interface):
-  - Lists: base tables + EXISTS filters (no arrays).
-  - Details: optional array/json aggregation for convenience.
+### Architectural Trade-offs
+- **Write Performance vs. Read Convenience**: Manual propagation maintains write speed at the cost of requiring explicit refresh operations
+- **Storage vs. Query Flexibility**: Normalized storage eliminates index bloat but requires JOIN operations for metadata access  
+- **Schema Simplicity vs. Type Safety**: Polymorphic assignment table trades per-entity foreign key constraints for reduced table count
 
 ---
 
-## 5) ER Diagram (ASCII)
+## 3) System Context
 
-Reference
+### Data Distribution Analysis
+Current optional tag usage concentrates heavily in `form_translations` (864 instances), followed by `word_translations` (22), with minimal usage in `word_forms` (8) and `dictionary` (5). This distribution pattern indicates that translation-level metadata represents the primary storage optimization opportunity.
 
+### Existing Infrastructure
+The system already maintains a mature metadata framework through `meta_attributes`, `meta_values`, and `metaval_rules` tables. This existing infrastructure provides the foundation for both core metadata and optional tagging without requiring parallel systems.
+
+---
+
+## 4) Architectural Components
+
+### Metadata Reference Layer
+**meta_attributes** (existing): Defines metadata categories with source-level constraints and propagation rules
+**meta_values** (existing): Contains actual metadata values linked to their defining attributes  
+
+The architecture extends this system by introducing three new attribute categories for optional tagging:
+- `optional_tag_word` (source_level='word')
+- `optional_tag_form` (source_level='form') 
+- `optional_tag_translation` (source_level='translation')
+
+### Assignment Layer
+**entity_meta_values** (new): Polymorphic assignment table linking any entity to any metadata value
+- Entity identification through `(entity_type, entity_id)` composite key
+- Metadata reference via `value_id` foreign key to `meta_values`
+- Level validation ensures entity types match metadata source level constraints
+
+### Propagation Layer  
+**word_meta_derived** (new): Materialized propagation results for word-level rollups
+- Stores computed attributes that bubble up from child entities (forms, translations)
+- Updated through explicit refresh operations rather than write triggers
+- Enables complex propagation rules (ANY_IRREGULAR, COMBINE, MAJORITY) without query-time computation
+
+### Application Interface
+**Query Patterns**: List operations use EXISTS clauses against assignment tables for optimal index utilization
+**Detail Views**: Optional array aggregation provides application convenience without impacting list performance
+
+---
+
+## 5) Data Model Structure
+
+### Entity Relationship Overview
+
+```
+Metadata Reference Layer
     [meta_attributes] 1 ──< [meta_values]
          (id, propagation_rule, source_level)
 
-Backbone
-
+Core Entity Hierarchy  
     [dictionary] 1 ──< [word_forms] 1 ──< [form_translations]
         (id)            (id, word_id)         (id, form_id, word_translation_id)
            └─< [word_translations]
                  (id, word_id)
 
-Assignments (polymorphic)
-
+Polymorphic Assignment Layer
     [dictionary|word_forms|word_translations|form_translations]
             └──────< [entity_meta_values] >──────┘
                               │
                               └──> [meta_values]
 
-Derived propagation
-
+Computed Propagation Layer
     [dictionary] 1 ──< [word_meta_derived] >── 1 [meta_values]
+```
+
+### Relationship Semantics
+- **One-to-Many**: Each meta_attribute defines multiple meta_values
+- **Many-to-Many**: Entities can have multiple metadata values; values can apply to multiple entities
+- **Polymorphic Foreign Key**: entity_meta_values references multiple entity tables through (entity_type, entity_id)
+- **Derived Relationships**: word_meta_derived materializes computed relationships from child entity metadata
 
 ---
 
-## 6) Table Specs (Minimal & Lean)
+## 6) Schema Specifications
 
-- meta_attributes (existing): add three rows only (optional_tag_word|form|translation). No schema change.
-- meta_values (existing): reuse as-is (columns: value, stable_id, attribute_id, …). Suggested btree indexes:
-  - `create index if not exists idx_meta_values_attribute on meta_values(attribute_id);`
-  - `create index if not exists idx_meta_values_stable on meta_values(stable_id);`
+### Existing Table Extensions
+**meta_attributes**: Requires addition of three attribute definitions for optional tagging categories. No structural changes to existing table.
 
-entity_meta_values (new)
+**meta_values**: Utilized as-is with existing columns (value, stable_id, attribute_id). Recommended index additions:
+```sql
+create index if not exists idx_meta_values_attribute on meta_values(attribute_id);
+create index if not exists idx_meta_values_stable on meta_values(stable_id);
+```
+
+### New Table: entity_meta_values
 
 ```sql
 create table if not exists entity_meta_values (
@@ -109,9 +136,13 @@ create table if not exists entity_meta_values (
 create index if not exists idx_emv_entity on entity_meta_values (entity_type, entity_id);
 create index if not exists idx_emv_value  on entity_meta_values (value_id);
 create index if not exists idx_emv_lookup on entity_meta_values (entity_type, value_id);
+```
 
--- Level validation (pseudocode)
-/*
+**Design Rationale**: The polymorphic design consolidates four potential assignment tables (word, form, word_translation, form_translation) into a single structure. The composite primary key prevents duplicate assignments while enabling efficient lookups via multiple index strategies.
+
+**Validation Logic**: Level validation ensures metadata values are only assigned to appropriate entity types based on meta_attribute source_level constraints:
+
+```sql
 create function ensure_emv_level() returns trigger as $$
 declare v_level text; begin
   select a.source_level into v_level
@@ -126,13 +157,11 @@ declare v_level text; begin
   return new;
 end; $$ language plpgsql;
 
-create trigger trg_emv_level
-before insert on entity_meta_values
+create trigger trg_emv_level before insert on entity_meta_values
 for each row execute function ensure_emv_level();
-*/
 ```
 
-word_meta_derived (new; optional but recommended)
+### New Table: word_meta_derived
 
 ```sql
 create table if not exists word_meta_derived (
@@ -147,31 +176,43 @@ create index if not exists idx_wmd_word  on word_meta_derived (word_id);
 create index if not exists idx_wmd_value on word_meta_derived (value_id);
 ```
 
----
+**Purpose**: Materializes propagated metadata from child entities (forms, translations) to word level. Eliminates the need for complex JOIN operations during word-level queries while supporting sophisticated propagation rules.
 
-## 7) Indexing Strategy (No GIN, No MVs by default)
-
-- Equality filters use compact btrees on UUID/text keys.
-- Avoid broad GIN on arrays/JSONB (largest storage cost in current setup).
-- If you later add real text search, add a single tsvector GIN on that text field only (not tags/metadata).
+**Update Strategy**: Populated through explicit refresh operations rather than write triggers, ensuring predictable write performance and avoiding write amplification effects.
 
 ---
 
-## 8) Propagation (Manual/Async)
+## 7) Index Architecture
 
-Why manual: keeps writes fast and predictable on Free; avoids write amplification.
+### Indexing Strategy
+The architecture exclusively uses btree indexes on UUID and text keys, eliminating the storage overhead of GIN indexes on arrays and JSONB fields that characterized the previous system.
 
-Refresh function (sketch):
+**Index Types**:
+- **Primary Keys**: Composite keys on assignment tables prevent duplicates
+- **Foreign Key Indexes**: Enable efficient JOIN operations  
+- **Lookup Indexes**: Support common query patterns (entity_type + value_id)
+
+**Storage Optimization**: Btree indexes on small, fixed-size keys (UUIDs, short text values) maintain minimal storage footprint while providing optimal equality lookup performance.
+
+**Text Search Consideration**: Future full-text search requirements should use dedicated tsvector GIN indexes on content fields, not on metadata structures.
+
+---
+
+## 8) Propagation Architecture
+
+### Design Philosophy
+Manual propagation maintains write performance predictability by decoupling metadata updates from propagation computation. This approach prevents write amplification where single form updates trigger cascading word-level recalculations.
+
+### Propagation Function Implementation
 
 ```sql
-/*
 create or replace function refresh_word_propagation(p_word_id uuid default null)
 returns void as $$
 begin
   delete from word_meta_derived w
   where p_word_id is null or w.word_id = p_word_id;
 
-  -- ANY_IRREGULAR example
+  -- ANY_IRREGULAR: If any child form has irregular value, propagate to word
   insert into word_meta_derived (word_id, value_id, derived_from)
   select distinct wf.word_id, emv.value_id, 'forms'
   from entity_meta_values emv
@@ -184,7 +225,7 @@ begin
     and mv.stable_id = 'metaval_irregular'
   on conflict do nothing;
 
-  -- COMBINE example
+  -- COMBINE: Union all distinct child values for combinable attributes
   insert into word_meta_derived (word_id, value_id, derived_from)
   select distinct wf.word_id, emv.value_id, 'forms'
   from entity_meta_values emv
@@ -196,21 +237,29 @@ begin
     and ma.propagation_rule = 'COMBINE'
   on conflict do nothing;
 end; $$ language plpgsql;
-*/
 ```
 
-Batch usage:
-- After bulk form updates: `select refresh_word_propagation();`
-- After single word change: `select refresh_word_propagation(<word_id>);`
+### Propagation Rules
+**ANY_IRREGULAR**: Binary propagation where any child entity with an irregular attribute causes the parent to inherit that attribute  
+**COMBINE**: Set union propagation where parent inherits all distinct child values for the attribute  
+**MAJORITY**: (Extensible) Most frequent child value becomes parent value
+
+### Usage Patterns
+- **Bulk Operations**: `select refresh_word_propagation();` after batch metadata changes
+- **Targeted Updates**: `select refresh_word_propagation(<word_id>);` for single-word modifications
 
 ---
 
-## 9) App Interface (Views & Queries)
+## 9) Application Interface Patterns
 
-List endpoints (no arrays required)
+### Query Architecture
+The application interface separates list operations (optimized for performance) from detail operations (optimized for convenience), enabling appropriate optimization strategies for each use case.
+
+### List Query Patterns
+List operations use EXISTS clauses against indexed assignment tables for optimal performance:
 
 ```sql
--- Words with a given core value (by stable_id)
+-- Words with specific core metadata (by stable_id)
 select d.*
 from dictionary d
 where exists (
@@ -221,7 +270,7 @@ where exists (
     and mv.stable_id=$1
 );
 
--- Forms with a given value (by value_id)
+-- Forms with specific value (by value_id)
 select f.*
 from word_forms f
 where exists (
@@ -230,15 +279,15 @@ where exists (
 );
 ```
 
-Detail endpoints (optional arrays)
+### Detail View Implementation
+Detail views provide array aggregation for application convenience while maintaining separation from performance-critical list operations:
 
 ```sql
--- Example detail view (arrays only for convenience)
 create or replace view vw_dictionary_v3_detail as
 select d.*,
   coalesce(array_agg(distinct emv_core.value_id) filter (where emv_core.value_id is not null), '{}'::uuid[]) as core_value_ids,
-  coalesce(array_agg(distinct wmd.value_id)      filter (where wmd.value_id is not null), '{}'::uuid[])     as derived_value_ids,
-  coalesce(array_agg(distinct emv_opt.value_id)  filter (where emv_opt.value_id is not null), '{}'::uuid[]) as optional_value_ids
+  coalesce(array_agg(distinct wmd.value_id) filter (where wmd.value_id is not null), '{}'::uuid[]) as derived_value_ids,
+  coalesce(array_agg(distinct emv_opt.value_id) filter (where emv_opt.value_id is not null), '{}'::uuid[]) as optional_value_ids
 from dictionary d
 left join entity_meta_values emv_core on emv_core.entity_type='word' and emv_core.entity_id=d.id
 left join meta_values mv_core on mv_core.id=emv_core.value_id and mv_core.attribute_id not in (
@@ -252,115 +301,77 @@ left join meta_values mv_opt on mv_opt.id=emv_opt.value_id and mv_opt.attribute_
 group by d.id;
 ```
 
-Notes:
-- Use base-table SELECTs + EXISTS for large lists. Only aggregate in detail endpoints or small result sets.
+### Performance Considerations
+**List Operations**: Direct EXISTS queries against btree indexes provide predictable, fast performance regardless of dataset size
+**Detail Operations**: Array aggregation overhead is acceptable for single-record or small-batch queries
+**Index Utilization**: Query planner efficiently uses assignment table indexes through EXISTS clause patterns
 
 ---
 
-## 10) Migration Plan (Additive → Cutover → Cleanup)
+## 10) Storage and Performance Characteristics
 
-Phase 0 — Measure baseline
-- Capture sizes for key tables (e.g., `form_translations`, `word_forms`, `dictionary`, `word_translations`).
+### Storage Optimization
+The normalized assignment architecture eliminates the primary storage bottlenecks of the previous system:
 
-Phase 1 — Additive
-- Insert three optional_tag meta_attributes.
-- Create `entity_meta_values` (+ indexes + level-check trigger).
-- Create `word_meta_derived` (optional).
+**Index Footprint Reduction**: Btree indexes on UUID keys consume significantly less space than GIN indexes on array/JSONB fields
+**String Deduplication**: Metadata strings stored once in reference tables rather than repeated across entity records  
+**Base Table Simplification**: Core entity tables contain no metadata arrays or JSONB fields
 
-Phase 2 — Backfill (largest first)
-- `form_translations.optional_tags` → `meta_values` under `optional_tag_translation` → `entity_meta_values(entity_type='form_translation', entity_id=ft.id, value_id=...)`.
-- Then `word_translations.optional_tags` under `optional_tag_translation`.
-- Then `word_forms.optional_tags` under `optional_tag_form`.
-- Then `dictionary.optional_tags` under `optional_tag_word`.
-- Core meta (if needed) → map legacy metadata keys to `meta_values.stable_id` and insert appropriate `entity_type` rows.
+**Impact Analysis**: Migration of `form_translations.optional_tags` (864 instances) provides the largest immediate storage benefit, followed by other entity types in descending order of tag density.
 
-Phase 3 — Switch reads
-- Update app list queries to EXISTS on `entity_meta_values`.
-- Add detail view if desired; arrays not required for lists.
+### Performance Characteristics  
+**Query Performance**: EXISTS clauses with btree equality lookups provide consistent, predictable performance scaling
+**Write Performance**: Elimination of synchronous propagation prevents write amplification effects
+**Index Utilization**: PostgreSQL query planner efficiently leverages assignment table indexes through EXISTS patterns
 
-Phase 4 — Cleanup
-- Drop old arrays/JSONB tag fields and GIN indexes when stable.
-- `VACUUM FULL` affected tables to reclaim space.
-
-Rollback
-- Since changes are additive first, you can revert reads during soak. Cleanup is last.
+### Scalability Considerations
+The architecture maintains performance characteristics suitable for growth beyond current scale:
+- Assignment table queries scale linearly with relationship count
+- Index sizes remain proportional to entity count rather than metadata complexity  
+- Propagation operations can be batched for efficiency during bulk operations
 
 ---
 
-## 11) Storage & Performance Notes
+## 11) Administrative Interface
 
-- Storage: normalized assignments + btree indexes are small; migrating `form_translations.optional_tags` yields the largest savings.
-- Performance: EXISTS + btree equality is predictable and efficient; avoid array @> filters on views for list endpoints.
-- Free plan: keep under 500 MB by avoiding MVs/GIN and reclaiming space after cleanup.
+### Optional Tag Management
+**Tag Creation**: New optional tags require insertion of `meta_values` records under appropriate optional_tag_* attributes (word/form/translation level)
+**Assignment Workflow**: Tag-to-entity relationships are established through `entity_meta_values` records
+**Approval Process**: Administrative approval can be implemented through application logic or companion metadata tables
 
----
-
-## 12) Admin Workflow (Optional Tags)
-
-- Create optional tags by inserting `meta_values` under the appropriate optional_tag_* `meta_attribute` (word/form/translation).
-- Admin approval/state can be handled in your UI or with a small companion flag table keyed by `value_id` (optional).
-- Assign to entities via `entity_meta_values` only.
+### Metadata Governance
+**Level Enforcement**: Trigger validation ensures metadata values are only assigned to appropriate entity types
+**Referential Integrity**: Foreign key constraints maintain data consistency between assignments and reference tables
+**Audit Trail**: Created_by and created_at fields support administrative tracking and accountability
 
 ---
 
-## 13) Data Quality & Validation
+## 12) Data Integrity and Validation
 
-- Level guard: BEFORE INSERT trigger on `entity_meta_values` validates `entity_type` vs `meta_attributes.source_level`.
-- Uniqueness: PK `(entity_type, entity_id, value_id)` prevents duplicates.
-- Cascades: FKs on `word_meta_derived` and `value_id` clean up on delete.
+### Constraint Architecture
+**Level Validation**: BEFORE INSERT triggers on `entity_meta_values` enforce compatibility between entity types and metadata source levels
+**Uniqueness Enforcement**: Composite primary key `(entity_type, entity_id, value_id)` prevents duplicate assignments
+**Referential Integrity**: Foreign key constraints ensure assignment validity and support cascading cleanup
 
----
-
-## 14) Appendix — Example SQL Sketches
-
-Insert meta_attributes
-
-```sql
-insert into meta_attributes (id, name, source_level, display_level, propagation_rule, stable_id)
-values
-  (gen_random_uuid(), 'optional_tag_word', 'word', 'word', 'COMBINE', 'metaattr_opt_tag_word'),
-  (gen_random_uuid(), 'optional_tag_form', 'form', 'form', 'COMBINE', 'metaattr_opt_tag_form'),
-  (gen_random_uuid(), 'optional_tag_translation', 'translation', 'translation', 'COMBINE', 'metaattr_opt_tag_translation')
-on conflict do nothing;
-```
-
-Backfill form_translations (optional tags)
-
-```sql
--- Example step: entity assignments from arrays
-insert into entity_meta_values (entity_type, entity_id, value_id)
-select 'form_translation', ft.id, mv.id
-from form_translations ft
-cross join lateral unnest(ft.optional_tags) as tag_name
-join meta_values mv on mv.value = tag_name
--- and mv.attribute_id = (select id from meta_attributes where stable_id='metaattr_opt_tag_translation')
-on conflict do nothing;
-```
-
-List query example
-
-```sql
-select d.*
-from dictionary d
-where exists (
-  select 1 from entity_meta_values emv
-  join meta_values mv on mv.id = emv.value_id
-  where emv.entity_type = 'word'
-    and emv.entity_id = d.id
-    and mv.stable_id = $1
-);
-```
+### Data Quality Assurance
+**Type Safety**: Entity type constraints prevent invalid metadata assignments
+**Consistency Maintenance**: Propagation refresh operations maintain derived data consistency
+**Cleanup Automation**: CASCADE DELETE options ensure orphaned records are automatically removed
 
 ---
 
-## 15) Operational Checklist
+## 13) Architecture Review Considerations
 
-- [ ] Insert 3 optional_tag meta_attributes.
-- [ ] Create entity_meta_values (+ indexes + level guard).
-- [ ] (Optional) Create word_meta_derived and refresh function.
-- [ ] Backfill optional tags — start with form_translations, then others.
-- [ ] Switch list queries to EXISTS on entity_meta_values.
-- [ ] Add detail views if needed; avoid arrays in list views.
-- [ ] Drop legacy arrays/GIN indexes after soak; VACUUM FULL.
-- [ ] Track table/index sizes; iterate only as needed.
+### Implementation Strengths
+**Storage Efficiency**: Addresses primary storage optimization goals through GIN index elimination
+**Operational Simplicity**: Manual propagation maintains predictable write performance for resource-constrained environments
+**Extensibility**: Unified metadata model supports both current and future tagging requirements
+
+### Design Considerations  
+**Migration Complexity**: While the backfill process requires careful coordination, existing tag strings must match `meta_values.value` entries exactly, potentially requiring data cleanup or fuzzy matching logic
+**View Performance**: Detail view array aggregation includes complex filtering logic that may impact performance on larger datasets and should be tested under realistic load conditions
+**Administrative UX**: Optional tag creation requires understanding of the three-tier attribute→value→assignment structure, suggesting need for simplified administrative interfaces
+
+### Architectural Validation
+The design successfully balances storage optimization with operational pragmatism, providing clear migration paths and escape hatches while reusing existing infrastructure intelligently. The approach is well-suited for implementation within the identified environmental constraints.
 
