@@ -530,6 +530,29 @@ Summary
 - We document the final contracts and UI rules.
 - We remove temporary scaffolding and reduce schema noise.
 
+Documentation clean‑up plan (exactly what changes)
+
+We will make the v3 documents the single source of truth and retire or amend any material that still prescribes array/GIN patterns or the `optional_tags text[]` model. History is preserved by archiving; current readers see only the normalized approach.
+
+Archive (move to `documentation/backup-archive/2025-09/`)
+- `documentation/tagging and db design.md` (pre‑v3 guidance on arrays/GIN)
+- `documentation/Tagging and Database Design v2.md` (prior iteration superseded by v3)
+- `documentation/EPICS/002: Complete Conjugation System Architectural Rebuild/` (subsections that instruct `optional_tags` arrays or GIN on tags; archive the entire folder if all content is pre‑v3)
+
+Update (retain file, revise content)
+- `documentation/misti_audio_implementation_guide.md`: replace “tags TEXT[]” and array filtering with normalized reads via `entity_meta_values` and optional tag shorthands/description.
+- `documentation/DEV_LOG.md`: add a clear editorial note where it recommends “GIN on arrays for tags,” explaining that v3 replaced arrays/GIN with normalized EMV + btree lookups; keep historic context but link to `tagging_v3_dda.md`.
+- `app/admin/migration-tools/MIGRATION_ARCHITECTURE.md`: ensure examples and flows reference `meta_attributes`/`meta_values`/`entity_meta_values` and not `optional_tags` arrays.
+
+Align and tighten (authoritative docs)
+- `documentation/architecture/tagging_v3_dda.md`: confirm the “Front‑End Tag Display” and “Data Access & RPC Contracts” sections exactly match this PRD, including shorthand/description usage and the future‑proof RPC shape. Mark any view references as “admin convenience (optional)” or remove them if we decide to drop views.
+
+Cross‑references
+- Replace references to separate SQL files with “See PRD: Implementation Plan — SQL” so contracts and runnable statements live together.
+
+Preservation
+- For each archived path, include a short README noting “pre‑v3 tagging (arrays/GIN) — retained for historical reference,” with a link forward to `tagging_v3_dda.md`.
+
 ---
 
 ## 11) Testing Strategy
