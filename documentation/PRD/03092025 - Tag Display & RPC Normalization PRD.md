@@ -148,6 +148,22 @@ What to check (non-technical)
 - Before merging UI changes, back up current `components/WordCard.js`, `lib/enhanced-dictionary-system.js`, and relevant docs to `backup-archive/` with timestamp.
 - Feature-flag the new path to allow quick rollback to legacy rendering.
 
+Break‑glass rollback anchors
+
+For rapid reversion of the word card behavior, restore the repo to the last commits that touched these files:
+
+- WordCard.js: f7e2722b81445b299f9034103a1f36086755cde1 ("refactor: simplify query")
+- DictionaryPanel.js: d9e291ea06475c1bbb083a42d01c418d07a90485 ("Fix dictionary loader")
+
+You can revert just the files:
+
+```bash
+git checkout f7e2722 -- components/WordCard.js
+git checkout d9e291e -- components/DictionaryPanel.js
+```
+
+Or revert the entire repository to a safe point via a branch or reset, depending on circumstance.
+
 Why this matters
 - These updates change how data is fetched and shown. A feature flag and file backups let us quickly revert if a UX or performance issue emerges during testing.
 
