@@ -421,17 +421,12 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                     <span className="text-base text-gray-900 font-medium">
                       {translation.translation}
                     </span>
-                    {/* Optional tags (normalized) rendered as minimalist chips */}
-                    {Array.isArray(translation.rpc_tags) && mapOptionalTagsToChips(translation.rpc_tags).map((chip) => (
-                      <span
-                        key={chip.key}
-                        className={chip.className}
-                        title={chip.title}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {chip.label}
+                    {/* Primary badge for first translation */}
+                    {translation.isPrimary && (
+                      <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-medium ml-2">
+                        Primary
                       </span>
-                    ))}
+                    )}
                     {getRestrictionIndicators(translation).map((indicator) => (
                       <span
                         key={indicator.key}
