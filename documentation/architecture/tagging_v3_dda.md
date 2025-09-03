@@ -444,3 +444,63 @@ The architecture maintains performance characteristics suitable for growth beyon
 ### Architectural Validation
 The design successfully balances storage optimization with operational pragmatism, providing clear migration paths and escape hatches while reusing existing infrastructure intelligently. The approach is well-suited for implementation within the identified environmental constraints.
 
+---
+
+## 14) Front-End Tag Display (Architecture)
+
+This section defines how tags are presented in the UI and how data is sourced from normalized tables.
+
+- Core vs Optional
+  - Core attributes render with emoji/fancy chips for strong visual affordance (e.g., noun_gender, irregularity, conjugation_type, CEFR, frequency_tier, auxiliary, transitivity, reflexive, topics, degree).
+  - Optional tags render as plain, text-only chips using `meta_values.shorthand` (fallback to `value`). No emoji for optional tags.
+
+- Sources & Levels
+  - Word level: core attributes (display-level word) and optional word tags (`optional_tag_word`) may render on the dictionary list.
+  - Translation level: optional translation tags (`optional_tag_translation`) render beside each translation as shorthand chips; “Primary” is derived from `display_priority = 1` (not a tag).
+  - Form level: optional form tags (`optional_tag_form`) render only in the conjugation UI (not on the list view).
+  - Form translations: do not populate/show optional tags.
+
+- De-duplication
+  - Do not render optional tags that duplicate derived UI (e.g., `usage-primary` vs “Primary” pill from display order).
+
+- Restriction Indicators (separate from tags)
+  - Derived from translation `context_metadata` (e.g., gender/number hard restrictions) and rendered as subtle symbols (♂/♀/👥/👤).
+
+## 15) Data Access & RPC Contracts
+
+We use normalized data via `entity_meta_values` (EMV) joins exposed through Postgres functions (RPC calls) to avoid client N+1 patterns.
+
+- app_get_translation_tags(translation_ids uuid[])
+  - Returns: `translation_id uuid, tags text[]` where `tags` are shorthand labels for `optional_tag_translation`.
+  - Source: EMV JOIN meta_values JOIN meta_attributes filtered by `stable_id = 'metaattr_opt_tag_translation'`.
+
+- app_get_dictionary_listing(search text, word_types text[], limit int=20, offset int=0) [optional]
+  - Returns: words (+ translations) with an aggregated optional tags array per translation.
+  - Filtering: optional EXISTS by normalized tag values if needed.
+
+See PRD: “03092025 – Tag Display & RPC Normalization PRD”, Implementation Plan SQL section.
+
+## 16) Core vs Optional Catalog (Authoritative)
+
+- Word-level core (display at word): noun_gender, conjugation_type, cefr_level, frequency_tier, reflexive, form_pattern, plural_formation, word_type, gradable.
+- Translation-level core (display policy): auxiliary (display at word), transitivity (word-level display), register/gender_usage/number_restriction (affect translation context/indicators).
+- Form-level core (display at form): tense, mood, person, number, verb_form_type.
+- Optional (COMBINE): optional_tag_word (word), optional_tag_form (form), optional_tag_translation (translation).
+
+## 17) Shorthand Guidelines (Optional Tags)
+
+- Chips render `COALESCE(mv.shorthand, mv.value)`.
+- Seed common shorthands for clarity (e.g., confidence-high → High, source-original-dictionary → Original).
+- Hide `test_*` optional tags from user UI.
+
+## 18) Level Scoping & Surfaces
+
+- Dictionary list (word): core chips + optional word-level chips.
+- WordCard translation row (translation): optional translation chips + restriction indicators + “Primary” pill (from display order).
+- Conjugation UI (form): optional form chips only.
+
+## 19) Evolution & Cleanup
+
+- Derive “Primary” from display order; remove reliance on a `usage-primary` tag.
+- Over time, represent more legacy array fields as core attributes where appropriate; keep optional tags for ancillary descriptors.
+- Avoid populating optional tags at form-translation level.
