@@ -398,3 +398,102 @@ Guidance
 - EMV: Entity–Metadata Values table that records “this entity has this tag value”.
 - RPC: A small, read-only database function that returns the exact data the UI needs.
 - EXISTS filter: A database pattern that efficiently checks “does a matching row exist?” — fast with our indexes.
+
+---
+
+## 16) Optional Tags Shorthand Reference and Descriptions
+
+This section lists the optional tags we currently use most, the shorthand we will display on chips, and a short human-readable description that can appear in a tooltip or on click. It ensures anyone can understand the visible labels without reading code.
+
+Proposed mapping (initial set)
+
+| Attribute (level) | Value (canonical)               | Shorthand  | Description                                |
+|-------------------|---------------------------------|------------|--------------------------------------------|
+| optional_tag_translation | confidence-high                 | High       | High confidence assignment                  |
+| optional_tag_translation | confidence-medium               | Med        | Medium confidence assignment                |
+| optional_tag_translation | source-original-dictionary      | Original   | Sourced from our original dictionary        |
+| optional_tag_translation | semantic-type-aesthetic-quality | Aesthetic  | Describes an aesthetic quality              |
+| optional_tag_translation | semantic-type-emotional-positive| Positive   | Conveys a positive emotion                  |
+| optional_tag_translation | semantic-type-general-positive  | Positive   | Carries a generally positive connotation    |
+| optional_tag_translation | semantic-type-quality-assessment| Quality    | Evaluates quality or merit                  |
+| optional_tag_translation | semantic-domain-family          | Family     | Vocabulary in the family domain             |
+| optional_tag_translation | semantic-domain-architecture    | Architecture| Vocabulary in the architecture domain      |
+| optional_tag_translation | academic_context                | Academic   | Typically used in academic contexts         |
+| optional_tag_translation | technical_context               | Technical  | Typically used in technical contexts        |
+| optional_tag_translation | alternative_meaning             | Alt        | Alternate or secondary meaning              |
+| optional_tag_translation | verified_quality                | Verified   | Quality has been reviewed and verified      |
+| optional_tag_translation | context-leaving                 | Leaving    | Used in a “leaving” social context          |
+| optional_tag_translation | context-meeting-people          | Meeting    | Used in a “meeting people” context          |
+| optional_tag_translation | simple_case                     | Simple     | Simple or basic usage case                  |
+| optional_tag_word        | topic-place                     | Place      | Topic category: places and locations        |
+| optional_tag_word        | topic-daily-life                | Daily      | Topic category: daily life                  |
+| optional_tag_word        | topic-abstract                  | Abstract   | Topic category: abstract concepts           |
+
+Notes and exclusions
+
+We intentionally exclude “usage-primary” because the UI indicates primary via `display_priority=1`. Values like `test_translation`, `test_form_translation`, `edge_case_testing`, and `test_data` are for internal use and should not be shown to end users. Form-specific signals such as `first_person_form`, `second_person_form`, or `present_active` will be handled in the conjugation UI, not on the dictionary list.
+
+Surfacing descriptions in the UI
+
+Chip tooltips or click popovers will display the description text. On desktop, we prefer hover tooltips; on touch devices, a tap opens a small popover that auto-dismisses. If a description is missing, the chip still shows; we log the gap for curation.
+
+Data source of descriptions
+
+Descriptions live in `meta_values.description`. When we add or refine a shorthand, we also ensure the description is present and clear. This keeps the database the single source of truth and allows localization in the future.
+
+Key points
+- Short, readable labels keep optional chips scannable.
+- Descriptions are shown on hover/tap, sourced from `meta_values.description`.
+- Internal/test values are not shown to end users.
+
+---
+
+## 17) Future‑Proof RPC Output (Labels and Descriptions)
+
+To support tooltips and future UI behaviors, our RPC should return more than a flat list of strings. Returning lightweight objects lets the UI show labels and descriptions today, and grow tomorrow without schema changes.
+
+Plain‑language rationale
+
+Instead of returning only text labels, we return a compact set of fields for each tag (the canonical value, its shorthand label, its readable description, and which attribute it belongs to). This allows the UI to show a tooltip now and, later on, to make layout decisions (“only show some attributes here”) without another database change.
+
+Proposed shape
+
+```sql
+CREATE OR REPLACE FUNCTION public.app_get_translation_tags(
+  p_translation_ids uuid[],
+  p_limit integer DEFAULT 5000
+)
+RETURNS TABLE(
+  translation_id uuid,
+  tags jsonb  -- array of objects: [{ value, shorthand, label, description, attribute }]
+)
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT
+    emv.entity_id AS translation_id,
+    COALESCE(
+      jsonb_agg(DISTINCT jsonb_build_object(
+        'value', mv.value,
+        'shorthand', mv.shorthand,
+        'label', COALESCE(mv.shorthand, mv.value),
+        'description', mv.description,
+        'attribute', ma.stable_id
+      ) ORDER BY mv.value),
+      '[]'::jsonb
+    ) AS tags
+  FROM entity_meta_values emv
+  JOIN meta_values mv ON mv.id = emv.value_id
+  JOIN meta_attributes ma ON ma.id = mv.attribute_id
+  WHERE emv.entity_type = 'word_translation'
+    AND emv.entity_id = ANY(p_translation_ids)
+    AND ma.stable_id = 'metaattr_opt_tag_translation'
+  GROUP BY emv.entity_id
+  LIMIT GREATEST(0, COALESCE(p_limit, 5000));
+$$;
+```
+
+Key points
+- The client receives an array of small objects, not just strings.
+- `label` is what we render on the chip; `description` feeds the tooltip.
+- `attribute` (stable ID) enables future filtering in the UI without another schema change.
