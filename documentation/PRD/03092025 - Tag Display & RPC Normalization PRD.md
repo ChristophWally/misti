@@ -20,6 +20,12 @@ Unify tag display and data access for the dictionary and translations:
 
 Non-goals: Rebuilding the conjugation UI (covered by a separate piece of work), physical removal of legacy code/docs before validation.
 
+Who this is for
+- This document is written so that product, design, and engineering can each understand what is changing and why. It avoids code-heavy terminology and explains the logic behind decisions.
+
+Why this is needed
+- Our tagging has moved to a normalized structure to reduce database size and improve performance. The UI must now read from this structure in a predictable, user-friendly way. This PRD standardizes how we present tags, how we fetch them efficiently, and how we roll out changes safely.
+
 ---
 
 ## 2) Goals & Non-Goals
@@ -33,6 +39,12 @@ Goals
 Non-Goals
 - Conjugation UI rebuild (tracked separately; consumes form-level optional tags).
 - Immediate deprecation of legacy arrays (keep until validation and sign-off).
+
+Why these goals
+- Consistency: Users should see the same tag categories in the same places. This reduces cognitive load.
+- Level-awareness: Some tags only make sense at specific levels (e.g., form-level details should not clutter the main dictionary view). This keeps the UI focused and fast.
+- Normalized reads: The database now stores tags in a compact, reference-driven format. Reading them directly (instead of duplicating arrays) saves space and improves performance.
+- Shorthands: Optional tags can be numerous and verbose. Short labels keep chips readable, especially on mobile.
 
 ---
 
@@ -49,6 +61,10 @@ In scope
 Out of scope
 - Conjugation UI rebuild (will consume `optional_tag_form` in a later change).
 
+Why these choices
+- The conjugation UI deserves its own PRD because it has unique UX and performance needs.
+- We are not removing legacy code immediately to allow an easy rollback during validation.
+
 ---
 
 ## 4) Display Rules
@@ -63,6 +79,11 @@ Out of scope
 - Form (conjugation UI):
   - Only show `optional_tag_form` as shorthand chips; do not show form tags elsewhere.
 - Do not populate or surface optional tags at the form-translation level.
+
+Rationale (plain language)
+- Core vs Optional: Core tags carry primary meaning for learners (e.g., gender, conjugation type). Optional tags convey extra context (e.g., confidence, source). We give core tags strong visuals and keep optional tags light to avoid overwhelming the user.
+- Level scoping: Showing tags at the wrong level is confusing. For example, form-only tags shown on a word list add noise without value. Constraining where we show tags keeps things clear and fast.
+- Deriving “Primary”: We already have an ordering field (`display_priority`). Using it avoids redundant tags and potential disagreements between fields.
 
 ---
 
@@ -82,6 +103,14 @@ Notes
 - Primary (usage) is derived from `display_priority=1` at the client; no tag needed.
 - Shorthand seeding improves chip labels (e.g., High, Med, Original, Aesthetic).
 
+What is an RPC (in this context)?
+- A small, read-only database function that returns exactly the data our UI needs in one call. This keeps the app fast and avoids a “many small queries” pattern.
+
+Why an RPC instead of building SQL in the app?
+- Faster pages: the database can pre-join and aggregate data.
+- Safer & clearer: the contract is documented here; changes are versionable and testable.
+- Consistent performance: lets us add limits and defaults (e.g., `p_limit`) to protect resources.
+
 ---
 
 ## 6) Shorthand Policy
@@ -89,6 +118,12 @@ Notes
 - Optional tags render only their `shorthand` label; if null, fallback to `value`.
 - Propose shorthands for common values (confidence/source/semantic/domain/context); see SQL draft.
 - Hide `test_*` values from user UI.
+
+Why shorthands?
+- Optional tags can be long (e.g., “semantic-type-aesthetic-quality”). Shorthands (“Aesthetic”) fit small chips and are easier to scan. We retain the full value for admin views and analytics.
+
+Governance in practice
+- Propose → Review → Seed. Before seeding, we sanity-check for clarity, brevity, and localization concerns. We avoid insider jargon.
 
 ---
 
@@ -100,12 +135,21 @@ Notes
 - No optional tags shown at form-translation level.
 - Data access via a single listing RPC or listing + batch tags RPC (no N+1).
 
+What to check (non-technical)
+- Pick a few words across categories (nouns, verbs, adjectives). Do the chips look sensible? Do you see only core tags on the list and optional translation tags beside translation texts?
+- Confirm that “Primary” appears for the first translation only, and we don’t show a duplicate optional “primary” tag.
+- When shorthands are missing, we should gracefully show the raw value (still readable) and log it for follow-up.
+- Turn the feature flag off: app returns to the current behavior with no errors.
+
 ---
 
 ## 8) Backups & Rollback
 
 - Before merging UI changes, back up current `components/WordCard.js`, `lib/enhanced-dictionary-system.js`, and relevant docs to `backup-archive/` with timestamp.
 - Feature-flag the new path to allow quick rollback to legacy rendering.
+
+Why this matters
+- These updates change how data is fetched and shown. A feature flag and file backups let us quickly revert if a UX or performance issue emerges during testing.
 
 ---
 
@@ -115,6 +159,10 @@ Notes
 - Missing shorthands produce noisy labels → seed common shorthands first; fall back to `value` safely.
 - Query drift → RPCs encapsulate EXISTS patterns for normalized data.
 
+Plain-language notes
+- Tag noise: Optional tags are useful, but too many can distract. We start with a small, curated set and hide the rest in detail views.
+- Performance: Batch RPCs and default limits protect us from slow pages when many translations are present.
+
 ---
 
 ## 10) Implementation Plan (High-Level)
@@ -122,6 +170,18 @@ Notes
 Phase 1 – Data APIs
 - Implement `app_get_translation_tags` and (optionally) `app_get_dictionary_listing`.
 - Seed shorthands for key optional tags.
+
+Why this phase
+- It gives us a single, reliable way to fetch normalized tags in one go. Shorthands ensure chips are readable on small screens.
+
+What will change
+- The app can ask the database for “all translation tags for these items” in one call. Chips will show short labels instead of long raw values.
+
+Success signals
+- RPCs return expected data for a sample set; no timeouts; logs show no errors. Chips render with short labels.
+
+Rollback
+- Do not use the RPC in the app yet (or disable the feature flag). No schema changes are destructive in this phase.
 
 SQL (to be executed post-approval)
 
@@ -257,12 +317,30 @@ Phase 2 – UI Mapping (non-breaking)
 - Wire WordCard to use optional translation tags (shorthand) on rows; keep core chips as is.
 - Allow optional word-level chips on the bottom row.
 
+Why this phase
+- Centralizing mapping avoids scattered logic. It also makes future adjustments (e.g., style changes) easier.
+
+What will change
+- Word list looks the same or better for core tags. Translation rows show small, readable optional chips where applicable.
+
+Success signals
+- Pilot users can explain what each chip means without reading documentation. No visual regressions.
+
+Rollback
+- Toggle off the feature flag to use the legacy path. Keep the mapping module in code for future use.
+
 Phase 3 – Conjugation UI (separate)
 - Rebuild using `optional_tag_form` shorthand chips.
+
+Why separate
+- Conjugation has different UX goals (depth over breadth) and requires independent testing and acceptance.
 
 Phase 4 – Docs & Cleanup
 - Update architecture doc sections.
 - After validation/sign-off, remove obsolete docs and legacy code paths.
+
+Why this phase
+- Documentation is the shared memory of the team. Cleanup prevents confusion for future contributors.
 
 ---
 
@@ -272,6 +350,12 @@ Phase 4 – Docs & Cleanup
 - Display logic: snapshot/DOM tests for core chips and optional chips placement; verify de-duplication of “Primary”.
 - Error cases: simulate RPC failure and missing shorthands; UI falls back to legacy behavior or raw `value` text.
 
+Manual QA checklist (non-technical)
+- Search for a word with multiple translations: confirm “Primary” shows only for the first one.
+- Inspect a translation row with optional tags (e.g., “confidence-high”): chip label is “High”.
+- Confirm that word-level optional tags (topics) appear as simple chips at the bottom of the word card.
+- Temporarily break the RPC (simulate): the dictionary still loads (legacy path), and we see a console/log message.
+
 ---
 
 ## 12) Performance & Resilience Considerations
@@ -280,6 +364,10 @@ Phase 4 – Docs & Cleanup
 - Feature flags: server or client flag allowing per-user/per-session rollout of the new path.
 - Error handling: graceful degradation to current behavior on RPC failure; log and surface minimal UI impact.
 
+Why these controls
+- Limits and chunking prevent memory blow-ups when many items are requested.
+- Per-user flags let us test with a small audience first.
+
 ---
 
 ## 13) Shorthand Governance
@@ -287,9 +375,26 @@ Phase 4 – Docs & Cleanup
 - Validation pass on shorthands to ensure readability and consistency across languages/locales.
 - Process: propose → review → seed; lint rules to prevent overly cryptic labels.
 
+Why governance matters
+- Without light process, chips can become inconsistent (e.g., “Med” vs “Medium”). Governance keeps labels readable and familiar.
+
 ---
 
 ## 14) Migration Communication
 
 - Document any optional tags that cannot cleanly map to shorthands and define a remediation (rename, merge, or hide).
 - Communicate UI changes and rollout plan to stakeholders; confirm acceptance before removing legacy code/docs.
+
+Guidance
+- Share before/after screenshots of 3–5 representative words. Explain where optional tags moved and why. Include timelines and rollback plan.
+
+---
+
+## 15) Glossary
+
+- Core tag: A high-importance attribute (e.g., noun gender) that gets a strong visual chip.
+- Optional tag: An additional descriptor (e.g., confidence) shown as a plain text chip.
+- Shorthand: A short label for an optional tag (e.g., “High”). If missing, we use the raw value.
+- EMV: Entity–Metadata Values table that records “this entity has this tag value”.
+- RPC: A small, read-only database function that returns the exact data the UI needs.
+- EXISTS filter: A database pattern that efficiently checks “does a matching row exist?” — fast with our indexes.
