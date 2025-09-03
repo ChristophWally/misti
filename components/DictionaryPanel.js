@@ -27,7 +27,6 @@ export default function DictionaryPanel({
   const [isLoading, setIsLoading] = useState(false)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
   const [dictionarySystem] = useState(() => new EnhancedDictionarySystem(supabase))
-  const USE_NORMALIZED_TAGS = process.env.NEXT_PUBLIC_USE_NORMALIZED_TAGS === 'true'
 
   // Resize functionality state
   const [isResizing, setIsResizing] = useState(false)
@@ -48,9 +47,7 @@ export default function DictionaryPanel({
       }
       
       console.log('Loading words with filters:', processedFilters)
-      const results = USE_NORMALIZED_TAGS
-        ? await dictionarySystem.loadWordsNormalized(term, processedFilters)
-        : await dictionarySystem.loadWordsWithTranslations(term, processedFilters)
+      const results = await dictionarySystem.loadWordsNormalized(term, processedFilters)
       console.log('Loaded words:', results.length)
       setWords(results)
     } catch (error) {
