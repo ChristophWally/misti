@@ -286,7 +286,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       translation: t.translation,
       isPrimary: t.display_priority === 1,
       contextInfo: null,
-      usageNotes: t.usage_notes
+      usageNotes: t.usage_notes,
+      rpc_tags: t.rpc_tags || []
     })) || []
 
   // Show first 2 translations, rest are "additional"
