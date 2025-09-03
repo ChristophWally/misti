@@ -422,8 +422,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                     <span className="text-base text-gray-900 font-medium">
                       {translation.translation}
                     </span>
-                    {/* Primary badge for first translation */}
-                    {translation.isPrimary && (
+                    {/* Primary badge for first translation only (derived from sorted position) */}
+                    {index === 0 && (
                       <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-medium ml-2">
                         Primary
                       </span>
