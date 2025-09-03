@@ -329,11 +329,175 @@ Success signals
 Rollback
 - Toggle off the feature flag to use the legacy path. Keep the mapping module in code for future use.
 
+Front‑end changes in this phase (WordCard & Data Layer)
+
+We will introduce a small mapping utility and a feature‑flagged data path. The narrative below explains what changes and why, followed by code examples you can read line by line even if you don’t write code every day.
+
+We create a single place to translate database tags into chips. This keeps our visual rules consistent and makes future changes safer.
+
+- Add `lib/tag-display-map.js` to convert optional tag objects from the RPC into chip props.
+- Add a feature flag in `EnhancedDictionarySystem` to switch between the legacy path and the normalized RPC path.
+- Update `WordCard` to render optional chips per translation from the RPC, using the description for hover/tap tooltips.
+
+Example: mapping utility
+
+```js
+// lib/tag-display-map.js
+// Converts RPC tags (value, shorthand, description, attribute) to UI chips
+
+export function mapOptionalTagsToChips(tags = []) {
+  return tags
+    .filter(t => t && t.attribute === 'metaattr_opt_tag_translation')
+    .filter(t => !(t.value || '').startsWith('test_'))
+    .map(t => ({
+      key: `${t.attribute}:${t.value}`,
+      label: t.shorthand || t.value,
+      title: t.description || '',
+      className: 'text-xs px-2 py-1 rounded-full font-medium border bg-transparent text-gray-700 border-gray-400',
+    }));
+}
+
+export function mapWordOptionalTagsToChips(tags = []) {
+  return tags
+    .filter(t => t && t.attribute === 'metaattr_opt_tag_word')
+    .filter(t => !(t.value || '').startsWith('test_'))
+    .map(t => ({
+      key: `${t.attribute}:${t.value}`,
+      label: t.shorthand || t.value,
+      title: t.description || '',
+      className: 'text-xs px-2 py-1 rounded-full font-medium border bg-transparent text-gray-700 border-gray-400',
+    }));
+}
+```
+
+Example: feature‑flagged data loading (normalized path)
+
+```js
+// lib/enhanced-dictionary-system.js (additions)
+
+const USE_NORMALIZED_TAGS = process.env.NEXT_PUBLIC_USE_NORMALIZED_TAGS === 'true';
+
+function chunk(ids, size = 800) {
+  const out = [];
+  for (let i = 0; i < ids.length; i += size) out.push(ids.slice(i, i + size));
+  return out;
+}
+
+export class EnhancedDictionarySystem {
+  // ...existing methods
+
+  async loadWordsNormalized(searchTerm = '', filters = {}) {
+    // 1) Fetch base words + translations (existing query)
+    let query = this.supabase
+      .from('dictionary')
+      .select('id, italian, word_type, word_translations(id, translation, display_priority)')
+      .order('italian', { ascending: true })
+      .limit(20);
+
+    if (searchTerm) query = query.or(`italian.ilike.%${searchTerm}%`);
+    if (filters.wordType?.length) query = query.in('word_type', filters.wordType);
+
+    const { data: words, error } = await query;
+    if (error) throw error;
+
+    // 2) Collect translation IDs and fetch tags via RPC in chunks
+    const translationIds = (words || []).flatMap(w => (w.word_translations || []).map(t => t.id));
+    const results = new Map();
+
+    for (const batch of chunk(translationIds)) {
+      const { data, error: rpcError } = await this.supabase
+        .rpc('app_get_translation_tags', { p_translation_ids: batch });
+      if (rpcError) throw rpcError;
+      (data || []).forEach(row => results.set(row.translation_id, row.tags));
+    }
+
+    // 3) Attach tags array (objects) to each translation
+    return (words || []).map(w => ({
+      ...w,
+      word_translations: (w.word_translations || []).map(t => ({
+        ...t,
+        rpc_tags: results.get(t.id) || [], // [{ value, shorthand, label, description, attribute }]
+      })),
+    }));
+  }
+}
+```
+
+Example: render optional chips on the WordCard translation rows
+
+```jsx
+// components/WordCard.js (excerpt)
+import { mapOptionalTagsToChips } from '../lib/tag-display-map';
+
+function TranslationRow({ translation }) {
+  const chips = mapOptionalTagsToChips(translation.rpc_tags || []);
+  return (
+    <div className="flex items-stretch py-1 min-h-[32px]">
+      {/* existing translation text, restriction indicators, etc. */}
+      <div className="flex items-center mr-2">
+        <span className="text-base text-gray-900 font-medium">
+          {translation.translation}
+        </span>
+        {/* optional chips from RPC */}
+        {chips.map(c => (
+          <span key={c.key} className={c.className} title={c.title}>
+            {c.label}
+          </span>
+        ))}
+      </div>
+      {/* ...rest unchanged */}
+    </div>
+  );
+}
+```
+
+Feature flag wiring
+
+We will introduce a simple flag so we can roll back instantly without code changes. If the flag is off, we keep using the current path and ignore the RPC output.
+
+```js
+// components/DictionaryPanel.js (excerpt)
+const USE_NORMALIZED_TAGS = process.env.NEXT_PUBLIC_USE_NORMALIZED_TAGS === 'true';
+
+const loadWords = useCallback(async (term = searchTerm, currentFilters = filters) => {
+  setIsLoading(true);
+  try {
+    const data = USE_NORMALIZED_TAGS
+      ? await dictionarySystem.loadWordsNormalized(term, currentFilters)
+      : await dictionarySystem.loadWordsWithTranslations(term, currentFilters);
+    setWords(data);
+  } finally {
+    setIsLoading(false);
+  }
+}, [dictionarySystem, searchTerm, filters]);
+```
+
+Summary
+- Mapping is centralized in one helper.
+- The data layer can switch between legacy and normalized paths.
+- WordCard shows small optional chips with tooltips based on the RPC.
+
 Phase 3 – Conjugation UI (separate)
 - Rebuild using `optional_tag_form` shorthand chips.
 
 Why separate
 - Conjugation has different UX goals (depth over breadth) and requires independent testing and acceptance.
+
+Detail for this phase
+
+The conjugation modal will fetch form‑level optional tags via a dedicated RPC or by reusing `entity_meta_values` for `optional_tag_form`. These tags will render as shorthand chips within the modal only. We will include a compact legend for form‑level tags and keep chips small to avoid visual noise.
+
+Code sketch (future)
+
+```sql
+-- app_get_form_tags(form_ids uuid[]) -> [{ form_id, tags: [{ value, shorthand, label, description, attribute }] }]
+```
+
+```jsx
+// components/ConjugationModal.js (future)
+import { mapWordOptionalTagsToChips } from '../lib/tag-display-map';
+// fetch and map optional_tag_form for forms in view, render as small chips
+```
 
 Phase 4 – Docs & Cleanup
 - Update architecture doc sections.
@@ -341,6 +505,14 @@ Phase 4 – Docs & Cleanup
 
 Why this phase
 - Documentation is the shared memory of the team. Cleanup prevents confusion for future contributors.
+
+Additional actions
+- Move any view helpers created during testing to an `/admin` schema or remove them once we confirm the normalized path is stable.
+- Remove any form‑translation optional tag population logic.
+
+Summary
+- We document the final contracts and UI rules.
+- We remove temporary scaffolding and reduce schema noise.
 
 ---
 
