@@ -70,7 +70,7 @@ The tag system represents one of the most sophisticated aspects of the applicati
 
 The two-layer tag architecture separates required grammatical properties from optional semantic categorization. Layer 1 tags include essential information like word gender, conjugation groups, and irregularity markers that directly impact usage correctness. Layer 2 tags provide semantic organization through topics, CEFR difficulty levels, frequency rankings, and specialized vocabularies like business or academic terminology.
 
-PostgreSQL arrays with GIN indexes provide exceptional performance for tag-based searches, allowing users to quickly filter vocabulary by any combination of grammatical or semantic criteria. This technical foundation supports sophisticated vocabulary discovery workflows that help learners find exactly the words they need for their current study focus.
+Note (v3 architecture): We replaced array/GIN tag filtering with normalized metadata lookups via `entity_meta_values` and btree indexes. This reduces storage and keeps list queries predictable. See `documentation/architecture/tagging_v3_dda.md` for details.
 
 ### Phase 3: Authentication Strategy and Security Architecture
 
@@ -407,4 +407,3 @@ This comprehensive development foundation provides a solid, scalable base for bu
 - Implemented fixed mood and tense ordering for a consistent dropdown sequence.
 - Added progressive tenses to the recognized list and dropdown.
 - Updated dropdown rendering and default selection logic to respect the new order.
-

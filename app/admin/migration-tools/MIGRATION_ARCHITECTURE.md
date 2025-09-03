@@ -1,4 +1,4 @@
-# Migration System Architecture
+# Migration System Architecture (v3‑aligned)
 
 ## Overview
 The migration system provides a unified approach for managing database schema and data transformations. All migration rules are stored in the database and executed through a single, consistent interface.
@@ -11,7 +11,7 @@ The migration system provides a unified approach for managing database schema an
 - **Unified Loading**: Single `loadMigrationRules()` function loads all rules regardless of type
 
 ### 2. Rule Classification
-Rules are classified using the `tags` array field:
+Rules are classified using the `tags` array field (note: this classification is internal to the migration tool; content tags for dictionary/forms/translations are normalized via `meta_attributes`/`meta_values` and `entity_meta_values` in v3):
 - **Default Rules**: Tagged with `['default-rule', ...]` - System-provided rules for common migrations
 - **Custom Rules**: User-created rules without the `default-rule` tag
 

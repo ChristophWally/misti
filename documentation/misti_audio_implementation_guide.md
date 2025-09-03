@@ -10,7 +10,7 @@ The beauty of your implementation lies in its intelligent architecture: automati
 
 Your audio generation system operates through five interconnected layers that work together seamlessly:
 
-**Database Layer**: PostgreSQL tables that store vocabulary, track audio metadata, and trigger generation events through database functions. Your `dictionary` table holds Italian words with comprehensive grammatical tags, while `word_audio_metadata` tracks which audio files exist and maintains voice consistency across related words.
+**Database Layer**: PostgreSQL tables that store vocabulary, track audio metadata, and trigger generation events through database functions. Your `dictionary` table holds Italian words with comprehensive grammatical tags. Note (v3): tag display/filtering now read normalized metadata via `meta_attributes`/`meta_values` and the unified `entity_meta_values` assignment table. Optional tags appear as short chips using `meta_values.shorthand`, with tooltips sourced from `meta_values.description`.
 
 **Edge Function Layer**: Supabase Edge Functions provide serverless audio generation that responds to database events. When new words are added to your dictionary, database triggers automatically call your `azure-audio-generator` function, which handles the entire generation process from voice selection to file storage.
 
@@ -24,18 +24,10 @@ Your audio generation system operates through five interconnected layers that wo
 
 Your database architecture creates the foundation for automatic audio generation through carefully designed tables and trigger functions. The core relationship connects your shared vocabulary resource with individual audio metadata, enabling both automatic generation and manual oversight.
 
-The `dictionary` table serves as your shared vocabulary resource, containing Italian words with their English translations and comprehensive grammatical metadata stored as PostgreSQL arrays. This design allows multiple users to benefit from the same high-quality content while maintaining individual learning progress separately.
+The `dictionary` table serves as your shared vocabulary resource, containing Italian words with their English translations. Historically this guide showed tag arrays; the v3 architecture replaces arrays/GIN with normalized metadata (see `documentation/architecture/tagging_v3_dda.md`).
 
-```sql
--- Your dictionary table structure
-CREATE TABLE dictionary (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  italian TEXT NOT NULL,
-  english TEXT NOT NULL,
-  word_type TEXT NOT NULL, -- NOUN, VERB, ADJECTIVE, ADVERB
-  tags TEXT[], -- Comprehensive grammatical metadata
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+```
+// See v3 architecture for normalized tag patterns; arrays shown here are legacy.
 ```
 
 Your `word_audio_metadata` table tracks audio generation with rich metadata that ensures consistency and quality. Each entry records which Azure voice was used, enabling voice consistency across related word forms and providing detailed audit trails for content management.
