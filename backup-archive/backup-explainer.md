@@ -68,3 +68,13 @@ This file documents all backup files created during development, their purpose, 
 **Last Updated**: 2025-08-22  
 **Next Review**: After comprehensive testing of new implementation  
 **Cleanup Status**: NO CLEANUP AUTHORIZED - Testing required first
+
+## Planned Documentation Archive (2025-09)
+
+The following pre‑v3 tagging documents will be moved into a dated subfolder under this archive once the PRD implementation is validated:
+
+- documentation/tagging and db design.md (arrays/GIN era)
+- documentation/Tagging and Database Design v2.md (superseded by v3)
+- documentation/EPICS/002: Complete Conjugation System Architectural Rebuild/ (sections prescribing `optional_tags` arrays or GIN on tags)
+
+An archive README will be created in the new folder noting: “pre‑v3 tagging (arrays/GIN) — retained for historical reference; see documentation/architecture/tagging_v3_dda.md.”
