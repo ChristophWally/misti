@@ -58,6 +58,15 @@ export default function DictionaryPanel({
     }
   }, [dictionarySystem, searchTerm, filters])
 
+  // Initial load when panel opens
+  useEffect(() => {
+    if (isOpen) {
+      // Load with empty search to show initial results
+      loadWords('', filters)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen])
+
   // Handle search input with debouncing
   const handleSearchChange = (value) => {
     setSearchTerm(value)
