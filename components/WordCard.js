@@ -9,6 +9,7 @@ import AudioButton from './AudioButton'
 import ConjugationModal from './ConjugationModal'
 import { checkPremiumAudio } from '../lib/audio-utils'
 import { renderRestrictionIndicators } from '../lib/restriction-utils'
+import { mapOptionalTagsToChips } from '../lib/tag-display-map'
 
 export default function WordCard({ word, onAddToDeck, className = '' }) {
   const [showForms, setShowForms] = useState(false)
@@ -419,6 +420,17 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                     <span className="text-base text-gray-900 font-medium">
                       {translation.translation}
                     </span>
+                    {/* Optional tags (normalized) rendered as minimalist chips */}
+                    {Array.isArray(translation.rpc_tags) && mapOptionalTagsToChips(translation.rpc_tags).map((chip) => (
+                      <span
+                        key={chip.key}
+                        className={chip.className}
+                        title={chip.title}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {chip.label}
+                      </span>
+                    ))}
                     {getRestrictionIndicators(translation).map((indicator) => (
                       <span
                         key={indicator.key}
