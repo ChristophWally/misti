@@ -285,7 +285,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       id: t.id,
       translation: t.translation,
       isPrimary: t.display_priority === 1,
-      contextInfo: null,
+      // Pass translation.metadata directly to restriction utils
+      contextInfo: t.metadata || null,
       usageNotes: t.usage_notes,
       rpc_tags: t.rpc_tags || []
     })) || []
