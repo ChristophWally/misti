@@ -273,7 +273,11 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         'are-conjugation',
         'ere-conjugation',
         'ire-conjugation',
-        'ire-isc-conjugation'
+        'ire-isc-conjugation',
+        'ire-isc',
+        'are',
+        'ere',
+        'ire'
       ].includes(tag.tag)
     )
   ]
@@ -314,6 +318,32 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     }
     return out;
   };
+
+  // Translation-level chips: auxiliary (avere/essere) and reciprocal
+  const renderTranslationChips = (translation) => {
+    const chips = []
+    const core = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
+    const optional = Array.isArray(translation.rpc_tags) ? translation.rpc_tags : []
+
+    // Auxiliary Verb (metaattr002): show on translation
+    const aux = core.find((t) => t.attribute_stable_id === 'metaattr002')
+    if (aux) {
+      const val = String(aux.value_label || '').toLowerCase()
+      if (val === 'avere') {
+        chips.push({ symbol: '🤝', title: 'Auxiliary: avere', className: 'restriction-symbol-card' })
+      } else if (val === 'essere') {
+        chips.push({ symbol: '🫱', title: 'Auxiliary: essere', className: 'restriction-symbol-card' })
+      }
+    }
+
+    // Reciprocal: detect from optional tag 'mutual-action'
+    const reciprocal = optional.find((t) => String(t.value_label || '').toLowerCase() === 'mutual-action')
+    if (reciprocal) {
+      chips.push({ symbol: '↔️', title: 'Reciprocal action', className: 'restriction-symbol-card' })
+    }
+
+    return chips
+  }
 
   const translations =
     word.processedTranslations ||
@@ -466,6 +496,16 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                         Primary
                       </span>
                     )}
+                    {/* Translation-level attribute chips (auxiliary, reciprocal) */}
+                    {renderTranslationChips(translation).map((chip, idx) => (
+                      <span
+                        key={`tchip-${translation.id}-${idx}`}
+                        className={chip.className}
+                        title={chip.title}
+                      >
+                        {chip.symbol}
+                      </span>
+                    ))}
                     {getRestrictionIndicators(translation).map((indicator) => (
                       <span
                         key={indicator.key}
@@ -560,6 +600,15 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                         <span className="text-base text-gray-900 font-medium">
                           {translation.translation}
                         </span>
+                        {renderTranslationChips(translation).map((chip, idx) => (
+                          <span
+                            key={`tchip-b-${translation.id}-${idx}`}
+                            className={chip.className}
+                            title={chip.title}
+                          >
+                            {chip.symbol}
+                          </span>
+                        ))}
                         {getRestrictionIndicators(translation).map((indicator) => (
                           <span
                             key={indicator.key}
@@ -567,7 +616,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                             title={indicator.title}
                           >
                             {indicator.symbol}
-                          </span>
+                            </span>
                         ))}
                       </div>
                       <div className="flex-1 flex items-center justify-end mr-2">
