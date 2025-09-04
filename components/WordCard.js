@@ -279,17 +279,21 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   ]
 
   // Get translations - use processedTranslations from EnhancedDictionarySystem
+  // Ensure translations are sorted by display_priority so the first item is truly the primary meaning
   const translations =
     word.processedTranslations ||
-    (word.word_translations || []).map(t => ({
-      id: t.id,
-      translation: t.translation,
-      isPrimary: t.display_priority === 1,
-      // Pass translation.metadata directly to restriction utils
-      contextInfo: t.metadata || null,
-      usageNotes: t.usage_notes,
-      rpc_tags: t.rpc_tags || []
-    })) || []
+    (word.word_translations || [])
+      .slice()
+      .sort((a, b) => (a.display_priority || 999) - (b.display_priority || 999))
+      .map(t => ({
+        id: t.id,
+        translation: t.translation,
+        isPrimary: t.display_priority === 1,
+        // Pass translation.metadata directly to restriction utils
+        contextInfo: t.metadata || null,
+        usageNotes: t.usage_notes,
+        rpc_tags: t.rpc_tags || []
+      })) || []
 
   // Show first 2 translations, rest are "additional"
   const visibleTranslations = translations.slice(0, 2)
@@ -422,8 +426,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                     <span className="text-base text-gray-900 font-medium">
                       {translation.translation}
                     </span>
-                    {/* Primary badge for first translation only (derived from sorted position) */}
-                    {index === 0 && (
+                    {/* Primary badge on the translation with display_priority === 1 */}
+                    {translation.isPrimary && (
                       <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-medium ml-2">
                         Primary
                       </span>
