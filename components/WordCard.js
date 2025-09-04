@@ -282,11 +282,31 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   // Ensure translations are sorted by display_priority so the first item is truly the primary meaning
   const normalizeRestrictionContext = (meta = {}, core = {}) => {
     const out = { ...meta };
-    // gender_usage maps through as-is if present
+    // New normalized core: array of tag objects
+    if (Array.isArray(core)) {
+      for (const t of core) {
+        const attr = String(t.attribute_stable_id || '').toLowerCase();
+        const val = String(t.value_label || '').toLowerCase();
+        if (!attr) continue;
+        // Gender Usage (metaattr008)
+        if (attr === 'metaattr008' && !out.gender_usage) {
+          if (val.includes('male')) out.gender_usage = 'male-only';
+          else if (val.includes('female')) out.gender_usage = 'female-only';
+        }
+        // Number Restriction (metaattr013) or Plural Only (metaattr015)
+        if (!out.plurality) {
+          if (attr === 'metaattr013' || attr === 'metaattr015') {
+            if (val.includes('plural')) out.plurality = 'plural-only';
+            else if (val.includes('singular')) out.plurality = 'singular-only';
+          }
+        }
+      }
+      return out;
+    }
+    // Backward-compatibility path (object-like core)
     if (core.gender_usage && !out.gender_usage) {
       out.gender_usage = String(core.gender_usage).toLowerCase();
     }
-    // number_restriction → plurality mapping (handles variants like "plural only", "solo-plurale")
     if (core.number_restriction && !out.plurality) {
       const v = String(core.number_restriction).toLowerCase();
       if (v.includes('plural')) out.plurality = 'plural-only';
