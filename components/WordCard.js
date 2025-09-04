@@ -280,6 +280,21 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
   // Get translations - use processedTranslations from EnhancedDictionarySystem
   // Ensure translations are sorted by display_priority so the first item is truly the primary meaning
+  const normalizeRestrictionContext = (meta = {}, core = {}) => {
+    const out = { ...meta };
+    // gender_usage maps through as-is if present
+    if (core.gender_usage && !out.gender_usage) {
+      out.gender_usage = String(core.gender_usage).toLowerCase();
+    }
+    // number_restriction → plurality mapping (handles variants like "plural only", "solo-plurale")
+    if (core.number_restriction && !out.plurality) {
+      const v = String(core.number_restriction).toLowerCase();
+      if (v.includes('plural')) out.plurality = 'plural-only';
+      else if (v.includes('singular')) out.plurality = 'singular-only';
+    }
+    return out;
+  };
+
   const translations =
     word.processedTranslations ||
     (word.word_translations || [])
@@ -289,8 +304,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         id: t.id,
         translation: t.translation,
         isPrimary: t.display_priority === 1,
-        // Merge normalized core flags (if present) with legacy metadata
-        contextInfo: { ...(t.metadata || {}), ...((t.rpc_core || {}) || {}) },
+        contextInfo: normalizeRestrictionContext(t.metadata || {}, t.rpc_core || {}),
         usageNotes: t.usage_notes,
         rpc_tags: t.rpc_tags || []
       })) || []
