@@ -100,11 +100,11 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         description: 'Special rules or position-dependent forms'
       },
 
-      // ISC Conjugation (essential for verbs)
+      // ISC Conjugation (shown in word-type badge only, not as bottom chip)
       'ire-isc-conjugation': {
         display: '-ISC',
         class: 'bg-yellow-500 text-white',
-        essential: wordType === 'VERB',
+        essential: false,
         description: 'Uses -isc- infix in present forms'
       },
 
@@ -496,25 +496,33 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                         Primary
                       </span>
                     )}
-                    {/* Translation-level attribute chips (auxiliary, reciprocal) */}
-                    {renderTranslationChips(translation).map((chip, idx) => (
-                      <span
-                        key={`tchip-${translation.id}-${idx}`}
-                        className={chip.className}
-                        title={chip.title}
-                      >
-                        {chip.symbol}
-                      </span>
-                    ))}
-                    {getRestrictionIndicators(translation).map((indicator) => (
-                      <span
-                        key={indicator.key}
-                        className={indicator.className}
-                        title={indicator.title}
-                      >
-                        {indicator.symbol}
-                      </span>
-                    ))}
+                    {/* Translation-level chips group */}
+                    <span className="ml-2 flex items-center gap-1">
+                      {renderTranslationChips(translation).map((chip, idx) => (
+                        <span
+                          key={`tchip-${translation.id}-${idx}`}
+                          className={chip.className}
+                          title={chip.title}
+                        >
+                          {chip.symbol}
+                        </span>
+                      ))}
+                      {getRestrictionIndicators(translation).map((indicator) => {
+                        const base = 'text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent';
+                        const color = indicator.type === 'gender'
+                          ? (indicator.subtype === 'male' ? 'border-blue-500 text-blue-600' : indicator.subtype === 'female' ? 'border-pink-500 text-pink-600' : 'border-gray-400 text-gray-700')
+                          : 'border-gray-400 text-gray-700';
+                        return (
+                          <span
+                            key={indicator.key}
+                            className={`${base} ${color}`}
+                            title={indicator.title}
+                          >
+                            {indicator.symbol}
+                          </span>
+                        );
+                      })}
+                    </span>
                   </div>
 
                   {/* Context Hint - Flexible space to push button right */}
@@ -600,24 +608,32 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                         <span className="text-base text-gray-900 font-medium">
                           {translation.translation}
                         </span>
-                        {renderTranslationChips(translation).map((chip, idx) => (
-                          <span
-                            key={`tchip-b-${translation.id}-${idx}`}
-                            className={chip.className}
-                            title={chip.title}
-                          >
-                            {chip.symbol}
-                          </span>
-                        ))}
-                        {getRestrictionIndicators(translation).map((indicator) => (
-                          <span
-                            key={indicator.key}
-                            className={indicator.className}
-                            title={indicator.title}
-                          >
-                            {indicator.symbol}
+                        <span className="ml-2 flex items-center gap-1">
+                          {renderTranslationChips(translation).map((chip, idx) => (
+                            <span
+                              key={`tchip-b-${translation.id}-${idx}`}
+                              className={chip.className}
+                              title={chip.title}
+                            >
+                              {chip.symbol}
                             </span>
-                        ))}
+                          ))}
+                          {getRestrictionIndicators(translation).map((indicator) => {
+                            const base = 'text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent';
+                            const color = indicator.type === 'gender'
+                              ? (indicator.subtype === 'male' ? 'border-blue-500 text-blue-600' : indicator.subtype === 'female' ? 'border-pink-500 text-pink-600' : 'border-gray-400 text-gray-700')
+                              : 'border-gray-400 text-gray-700';
+                            return (
+                              <span
+                                key={indicator.key}
+                                className={`${base} ${color}`}
+                                title={indicator.title}
+                              >
+                                {indicator.symbol}
+                              </span>
+                            );
+                          })}
+                        </span>
                       </div>
                       <div className="flex-1 flex items-center justify-end mr-2">
                         <span className="text-xs text-gray-500 italic text-right">
