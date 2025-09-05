@@ -148,8 +148,10 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
       // Other detailed tags
       'reflexive-verb': { display: '🪞 reflexive', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Action reflects back on the subject' },
-      'type-gradable': { display: '📈 gradable', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Can be intensified or compared' },
-      'type-absolute': { display: '🛑 absolute', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Cannot be graded logically' },
+      // Gradability (updated labels)
+      'full-grade': { display: 'full grade.', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Fully gradable (both types). Analytical + standard gradability' },
+      'analytical-grade': { display: 'analytical grad.', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Analytically gradable' },
+      'non-grade': { display: 'non grade.', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Not gradable' },
 
       // Topics (detailed)
       'topic-place': { display: '🌍 place', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Geographical locations or spaces' },
@@ -325,21 +327,21 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     const core = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
     const optional = Array.isArray(translation.rpc_tags) ? translation.rpc_tags : []
 
-    // Auxiliary Verb (metaattr002): show on translation
+    // Auxiliary Verb (metaattr002): show on translation using shorthand
     const aux = core.find((t) => t.attribute_stable_id === 'metaattr002')
     if (aux) {
-      const val = String(aux.value_label || '').toLowerCase()
-      if (val === 'avere') {
-        chips.push({ symbol: '🤝', title: 'Auxiliary: avere', className: 'restriction-symbol-card' })
-      } else if (val === 'essere') {
-        chips.push({ symbol: '🫱', title: 'Auxiliary: essere', className: 'restriction-symbol-card' })
+      const label = aux.value_shorthand || aux.value_label || ''
+      if (label) {
+        chips.push({ symbol: label, title: `Auxiliary: ${aux.value_label || label}`, className: 'text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' })
       }
     }
 
     // Reciprocal: detect from optional tag 'mutual-action'
-    const reciprocal = optional.find((t) => String(t.value_label || '').toLowerCase() === 'mutual-action')
-    if (reciprocal) {
-      chips.push({ symbol: '↔️', title: 'Reciprocal action', className: 'restriction-symbol-card' })
+    const reciprocalCore = core.find((t) => t.attribute_stable_id === 'metaattr021' && String(t.value_label || '').toLowerCase() === 'reciprocal')
+    const reciprocalOpt = optional.find((t) => String(t.value_label || '').toLowerCase() === 'mutual-action')
+    if (reciprocalCore || reciprocalOpt) {
+      const label = reciprocalCore?.value_shorthand || reciprocalCore?.value_label || 'RECIP'
+      chips.push({ symbol: label, title: 'Reciprocal action', className: 'text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' })
     }
 
     return chips
