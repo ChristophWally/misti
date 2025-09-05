@@ -113,9 +113,22 @@ export default function DictionaryPanel({
   }
 
   // Handle add to deck
-  const handleAddToDeck = (word) => {
-    // TODO: Implement deck addition logic
-    console.log('Adding word to deck:', word.italian)
+  const handleAddToDeck = (word, translation = null) => {
+    console.log('handleAddToDeck called with:', { word, translation })
+    
+    // Provide immediate user feedback
+    const item = translation ? `${word.italian} - ${translation.translation}` : word.italian
+    
+    // Show visual feedback (you can replace this with a proper toast/notification system)
+    try {
+      alert(`Added to study deck: ${item}`)
+      console.log('Alert shown successfully')
+    } catch (error) {
+      console.error('Error showing alert:', error)
+    }
+    
+    // TODO: Implement actual deck addition logic
+    console.log('Adding to deck:', { word: word.italian, translation: translation?.translation })
   }
 
   // Resize functionality

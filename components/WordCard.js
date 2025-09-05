@@ -9,7 +9,7 @@ import AudioButton from './AudioButton'
 import ConjugationModal from './ConjugationModal'
 import { checkPremiumAudio } from '../lib/audio-utils'
 import { renderRestrictionIndicators } from '../lib/restriction-utils'
-import { mapOptionalTagsToChips } from '../lib/tag-display-map'
+import { ATTRIBUTES, VALUES, TAG_DISPLAYS, isAttribute, isValue, hasAttributeValue } from '../lib/meta-constants'
 
 export default function WordCard({ word, onAddToDeck, className = '' }) {
   const [showForms, setShowForms] = useState(false)
@@ -60,124 +60,238 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     return colors[wordType] || colors.NOUN
   }
 
-  // Process tags for display - Enhanced for multiple translations
-  const processTagsForDisplay = (tags, wordType) => {
+  // Process RPC tags for display - Comprehensive mapping of all original tags
+  const processRpcTagsForDisplay = (coreTags, wordType) => {
     const essential = []
     const detailed = []
 
-    const tagMap = {
-      // PRIMARY TAGS - Essential tags
-      masculine: {
-        display: '♂',
-        class: 'bg-blue-500 text-white',
-        essential: wordType === 'NOUN',
-        description: 'Masculine gender requiring masculine articles (il, un)'
-      },
-      feminine: {
-        display: '♀',
-        class: 'bg-pink-500 text-white',
-        essential: wordType === 'NOUN',
-        description: 'Feminine gender requiring feminine articles (la, una)'
-      },
-      'common-gender': {
-        display: '⚥',
-        class: 'bg-purple-500 text-white',
-        essential: wordType === 'NOUN',
-        description: 'Same form for both genders, determined by article'
-      },
-
-      // Irregularity (essential when present)
-      'irregular-pattern': {
-        display: '⚠️ IRREG',
-        class: 'bg-red-500 text-white',
-        essential: true,
-        description: 'Does not follow standard patterns'
-      },
-      'form-irregular': {
-        display: '⚠️ IRREG',
-        class: 'bg-red-500 text-white',
-        essential: true,
-        description: 'Special rules or position-dependent forms'
-      },
-
-      // ISC Conjugation (shown in word-type badge only, not as bottom chip)
-      'ire-isc-conjugation': {
-        display: '-ISC',
-        class: 'bg-yellow-500 text-white',
-        essential: false,
-        description: 'Uses -isc- infix in present forms'
-      },
-
-      // CEFR Levels (essential)
-      'CEFR-A1': { display: '📚 A1', class: 'bg-orange-500 text-white', essential: true, description: 'Beginner level vocabulary' },
-      'CEFR-A2': { display: '📚 A2', class: 'bg-orange-500 text-white', essential: true, description: 'Elementary level vocabulary' },
-      'CEFR-B1': { display: '📚 B1', class: 'bg-orange-500 text-white', essential: true, description: 'Intermediate level vocabulary' },
-      'CEFR-B2': { display: '📚 B2', class: 'bg-orange-500 text-white', essential: true, description: 'Upper intermediate vocabulary' },
-      'CEFR-C1': { display: '📚 C1', class: 'bg-orange-500 text-white', essential: true, description: 'Advanced level vocabulary' },
-      'CEFR-C2': { display: '📚 C2', class: 'bg-orange-500 text-white', essential: true, description: 'Proficiency level vocabulary' },
-
-      // Frequency (essential)
-      'freq-top100': { display: '⭐ 100', class: 'bg-yellow-500 text-white', essential: true, description: 'Top 100 most frequent words' },
-      'freq-top200': { display: '⭐ 200', class: 'bg-yellow-500 text-white', essential: true, description: 'Top 200 most frequent words' },
-      'freq-top300': { display: '⭐ 300', class: 'bg-yellow-500 text-white', essential: true, description: 'Top 300 most frequent words' },
-      'freq-top500': { display: '⭐ 500', class: 'bg-yellow-500 text-white', essential: true, description: 'Top 500 most frequent words' },
-      'freq-top1000': { display: '⭐ 1K', class: 'bg-yellow-500 text-white', essential: true, description: 'Top 1000 most frequent words' },
-      'freq-top5000': { display: '⭐ 5K', class: 'bg-yellow-500 text-white', essential: true, description: 'Top 5000 most frequent words' },
-
-      // Advanced Fluency (essential)
-      native: { display: '🗣️ NAT', class: 'bg-green-500 text-white', essential: true, description: 'Natural native-speaker vocabulary' },
-      business: { display: '💼 BIZ', class: 'bg-green-500 text-white', essential: true, description: 'Professional/commercial terminology' },
-      academic: { display: '🎓 ACAD', class: 'bg-green-500 text-white', essential: true, description: 'Scholarly and technical vocabulary' },
-      literary: { display: '📜 LIT', class: 'bg-green-500 text-white', essential: true, description: 'Literary and artistic language' },
-      regional: { display: '🗺️ REG', class: 'bg-green-500 text-white', essential: true, description: 'Regional dialects and variants' },
-
-      // SECONDARY TAGS - Detailed grammatical information
-      'are-conjugation': { display: '🔸 -are', class: 'bg-gray-200 text-gray-700', essential: false, description: 'First conjugation group' },
-      'ere-conjugation': { display: '🔹 -ere', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Second conjugation group' },
-      'ire-conjugation': { display: '🔶 -ire', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Third conjugation group' },
-
-      // Auxiliary Verbs (detailed)
-      'avere-auxiliary': { display: '🤝 avere', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Uses avere in compound tenses' },
-      'essere-auxiliary': { display: '🫱 essere', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Uses essere in compound tenses' },
-      'both-auxiliary': { display: '🤜🤛 both', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Can use either auxiliary' },
-
-      // Transitivity (detailed)
-      'transitive-verb': { display: '➡️ trans', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Takes a direct object' },
-      'intransitive-verb': { display: '↩️ intrans', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Does not take direct object' },
-      'both-transitivity': { display: '↔️ both', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Can be both transitive and intransitive' },
-
-      // Other detailed tags
-      'reflexive-verb': { display: '🪞 reflexive', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Action reflects back on the subject' },
-      // Gradability (updated labels + descriptions)
-      'full-grade': { display: 'full grade.', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Fully gradable: analytical and morphological gradability' },
-      'analytical-grade': { display: 'analytical grad.', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Analytical gradability' },
-      'non-grade': { display: 'non grade.', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Not gradable' },
-
-      // Topics (detailed)
-      'topic-place': { display: '🌍 place', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Geographical locations or spaces' },
-      'topic-food': { display: '🍕 food', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Food and drink vocabulary' },
-      'topic-bodypart': { display: '👁️ body', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Parts of the body' },
-      'topic-profession': { display: '👩‍💼 job', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Jobs and professional roles' },
-      'topic-abstract': { display: '💭 abstract', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Concepts, ideas, and feelings' },
-      'topic-daily-life': { display: '🏡 daily', class: 'bg-gray-200 text-gray-700', essential: false, description: 'Everyday activities and household' }
+    if (!Array.isArray(coreTags)) {
+      return { essential, detailed }
     }
 
-    ;(tags || []).forEach(tag => {
-      const tagInfo = tagMap[tag]
-      if (tagInfo) {
-        if (tagInfo.essential) {
+    coreTags.forEach(tag => {
+      const valueId = tag.value_id
+      const attributeId = tag.attribute_id
+      const valueLabel = tag.value_label || ''
+      const attributeStableId = tag.attribute_stable_id
+      
+      // CEFR LEVEL MAPPING (essential)
+      if (isAttribute(tag, ATTRIBUTES.CEFR_LEVEL)) {
+        if (['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(valueLabel)) {
           essential.push({
-            tag,
-            display: tagInfo.display,
-            class: tagInfo.class,
-            description: tagInfo.description
+            tag: `CEFR-${valueLabel}`,
+            display: `📚 ${valueLabel}`,
+            class: 'bg-orange-500 text-white',
+            description: `${valueLabel} level vocabulary`
           })
-        } else {
+        } else if (['academic', 'literary', 'native', 'specialized'].includes(valueLabel)) {
+          const icons = { academic: '🎓', literary: '📜', native: '🗣️', specialized: '⚙️' }
+          essential.push({
+            tag: valueLabel,
+            display: `${icons[valueLabel]} ${valueLabel.toUpperCase()}`,
+            class: 'bg-green-500 text-white',
+            description: `${valueLabel} level vocabulary`
+          })
+        }
+      }
+
+      // FREQUENCY TIER MAPPING (essential)
+      else if (isAttribute(tag, ATTRIBUTES.FREQUENCY_TIER)) {
+        const freqMap = {
+          'top100': '⭐ 100',
+          'top500': '⭐ 500', 
+          'top1000': '⭐ 1K',
+          'top5000': '⭐ 5K'
+        }
+        if (freqMap[valueLabel]) {
+          essential.push({
+            tag: `freq-${valueLabel}`,
+            display: freqMap[valueLabel],
+            class: 'bg-yellow-500 text-white',
+            description: `Top ${valueLabel.replace('top', '')} most frequent words`
+          })
+        }
+      }
+
+      // GENDER MAPPING (essential for nouns)
+      else if (isAttribute(tag, ATTRIBUTES.WORD_GENDER)) {
+        if (valueLabel === 'masculine') {
+          essential.push({
+            tag: 'masculine',
+            display: '♂',
+            class: 'bg-blue-500 text-white',
+            description: 'Masculine gender requiring masculine articles (il, un)'
+          })
+        } else if (valueLabel === 'feminine') {
+          essential.push({
+            tag: 'feminine',
+            display: '♀',
+            class: 'bg-pink-500 text-white',
+            description: 'Feminine gender requiring feminine articles (la, una)'
+          })
+        } else if (valueLabel === 'common') {
+          essential.push({
+            tag: 'common-gender',
+            display: '⚥',
+            class: 'bg-purple-500 text-white',
+            description: 'Same form for both genders, determined by article'
+          })
+        }
+      }
+
+      // IRREGULAR FORMS MAPPING (essential)
+      else if (isAttribute(tag, ATTRIBUTES.IRREGULAR_FORMS)) {
+        if (valueLabel === 'irregular') {
+          essential.push({
+            tag: 'irregular-pattern',
+            display: '⚠️ IRREG',
+            class: 'bg-red-500 text-white',
+            description: 'Does not follow standard patterns'
+          })
+        }
+      }
+
+      // AUXILIARY VERB MAPPING (detailed)
+      else if (isAttribute(tag, ATTRIBUTES.AUXILIARY_VERB)) {
+        if (valueLabel === 'avere') {
           detailed.push({
-            tag,
-            display: tagInfo.display,
-            class: tagInfo.class,
-            description: tagInfo.description
+            tag: 'avere-auxiliary',
+            display: '🤝 avere',
+            class: 'bg-gray-200 text-gray-700',
+            description: 'Uses avere in compound tenses'
+          })
+        } else if (valueLabel === 'essere') {
+          detailed.push({
+            tag: 'essere-auxiliary',
+            display: '🫱 essere',
+            class: 'bg-gray-200 text-gray-700',
+            description: 'Uses essere in compound tenses'
+          })
+        }
+      }
+
+      // CONJUGATION TYPE MAPPING (detailed for verbs)
+      else if (isAttribute(tag, ATTRIBUTES.CONJUGATION_TYPE) && wordType === 'VERB') {
+        const conjMap = {
+          'are': '🔸 -are',
+          'ere': '🔹 -ere',
+          'ire': '🔶 -ire',
+          'ire-isc': '-ISC'
+        }
+        if (conjMap[valueLabel]) {
+          const isIsc = valueLabel === 'ire-isc'
+          detailed.push({
+            tag: `${valueLabel}-conjugation`,
+            display: conjMap[valueLabel],
+            class: isIsc ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700',
+            description: isIsc ? 'Uses -isc- infix in present forms' : `${valueLabel} conjugation group`
+          })
+        }
+      }
+
+      // REFLEXIVE MAPPING (detailed for verbs)
+      else if (isAttribute(tag, ATTRIBUTES.REFLEXIVE) && wordType === 'VERB') {
+        if (valueLabel === 'reflexive') {
+          detailed.push({
+            tag: 'reflexive-verb',
+            display: '🪞 reflexive',
+            class: 'bg-gray-200 text-gray-700',
+            description: 'Action reflects back on the subject'
+          })
+        }
+      }
+
+      // REGISTER MAPPING (only show non-neutral)
+      else if (isAttribute(tag, ATTRIBUTES.REGISTER)) {
+        if (valueLabel === 'formal') {
+          detailed.push({
+            tag: 'formal-register',
+            display: '👔 formal',
+            class: 'bg-gray-200 text-gray-700',
+            description: 'Formal contexts only'
+          })
+        } else if (valueLabel === 'casual') {
+          detailed.push({
+            tag: 'casual-register', 
+            display: '👕 casual',
+            class: 'bg-gray-200 text-gray-700',
+            description: 'Casual/colloquial usage'
+          })
+        }
+        // Skip 'neutral' register - don't display
+      }
+
+      // ADVERB TYPE MAPPING (detailed) - EXPANDED
+      else if (isAttribute(tag, ATTRIBUTES.ADVERB_TYPE)) {
+        const advMap = {
+          'manner': { display: '📍 manner', desc: 'Describes how something is done' },
+          'time': { display: '⏰ time', desc: 'Indicates when something happens' },
+          'place': { display: '📍 place', desc: 'Indicates where something happens' },
+          'quantity': { display: '🔢 quantity', desc: 'Indicates amount or degree' },
+          'frequency': { display: '🔄 frequency', desc: 'Indicates how often' },
+          'affirmation': { display: '✅ affirmation', desc: 'Expresses agreement or certainty' },
+          'doubt': { display: '❓ doubt', desc: 'Expresses uncertainty' },
+          'negation': { display: '❌ negation', desc: 'Expresses denial or refusal' },
+          'interrogative': { display: '❓ interrogative', desc: 'Used in questions' },
+          'evaluation': { display: '📊 evaluation', desc: 'Expresses judgment or opinion' },
+          'emphasis': { display: '💪 emphasis', desc: 'Adds emphasis or intensity' }
+        }
+        if (advMap[valueLabel]) {
+          detailed.push({
+            tag: `adverb-${valueLabel}`,
+            display: advMap[valueLabel].display,
+            class: 'bg-gray-200 text-gray-700',
+            description: advMap[valueLabel].desc
+          })
+        }
+      }
+
+      // NOUN GENDER MAPPING (essential)
+      else if (isAttribute(tag, ATTRIBUTES.WORD_GENDER)) {
+        if (valueLabel === 'masculine') {
+          essential.push({
+            tag: 'gender-masculine',
+            display: '♂',
+            class: 'bg-blue-500 text-white',
+            description: 'Masculine gender'
+          })
+        } else if (valueLabel === 'feminine') {
+          essential.push({
+            tag: 'gender-feminine', 
+            display: '♀',
+            class: 'bg-pink-500 text-white',
+            description: 'Feminine gender'
+          })
+        } else if (valueLabel === 'common-gender') {
+          essential.push({
+            tag: 'gender-common',
+            display: '⚥',
+            class: 'bg-purple-500 text-white',
+            description: 'Common gender (both masculine and feminine)'
+          })
+        }
+      }
+
+      // REFLEXIVE MAPPING (essential)
+      else if (isAttribute(tag, ATTRIBUTES.REFLEXIVE)) {
+        if (valueLabel === 'reflexive') {
+          essential.push({
+            tag: 'reflexive',
+            display: '🔄 REFL',
+            class: 'bg-purple-500 text-white',
+            description: 'Reflexive verb (action directed to subject)'
+          })
+        }
+      }
+
+      // PLURAL ONLY MAPPING (essential) 
+      else if (isAttribute(tag, ATTRIBUTES.PLURAL_ONLY)) {
+        if (valueLabel === 'plural only') {
+          essential.push({
+            tag: 'plural-only',
+            display: '👥 PL-ONLY',
+            class: 'bg-green-500 text-white',
+            description: 'Always used in plural form'
           })
         }
       }
@@ -188,31 +302,45 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
   // Mobile-friendly tag tooltip system
   const handleTagClick = (event) => {
-    const tag = event.target.closest('.tag-essential, .tag-detailed')
-    if (!tag || !tag.title) return
+    // Use currentTarget since onClick is attached to the tag element.
+    const tag = event.currentTarget
+    const description = tag?.dataset?.description
+    if (!tag || !description) return
 
     event.preventDefault()
     event.stopPropagation()
 
-    const rect = tag.getBoundingClientRect()
-    const tooltipX = Math.min(rect.left, window.innerWidth - 250)
-    const tooltipY = rect.top - 35
+    const tagRect = tag.getBoundingClientRect()
+    const cardRect = tag.closest('.word-card').getBoundingClientRect()
+    
+    // Calculate position relative to the WordCard container - position above the tag
+    let tooltipX = (tagRect.left - cardRect.left) + (tagRect.width / 2) // Center above tag
+    const tooltipY = (tagRect.top - cardRect.top) - 35 // Position above tag
+    
+    // Prevent tooltip from going off the right edge (estimate tooltip width ~150px)
+    const cardWidth = cardRect.width
+    const estimatedTooltipWidth = 150
+    if (tooltipX + (estimatedTooltipWidth / 2) > cardWidth - 10) {
+      tooltipX = cardWidth - (estimatedTooltipWidth / 2) - 10 // Keep 10px margin from right edge
+    }
+    // Prevent tooltip from going off the left edge  
+    if (tooltipX - (estimatedTooltipWidth / 2) < 10) {
+      tooltipX = (estimatedTooltipWidth / 2) + 10 // Keep 10px margin from left edge
+    }
 
-    setTooltip({
-      show: true,
-      content: tag.title,
-      x: tooltipX,
-      y: tooltipY
-    })
+    setTooltip({ show: true, content: description, x: tooltipX, y: tooltipY })
 
     setTimeout(() => {
-      setTooltip(prev => ({ ...prev, show: false }))
+      setTooltip((prev) => ({ ...prev, show: false }))
     }, 3000)
   }
 
   const hideTooltip = (event) => {
-    if (!event.target.closest('.tag-essential, .tag-detailed')) {
-      setTooltip(prev => ({ ...prev, show: false }))
+    // document-level listener: event.target may be a Text node; guard for closest support
+    const target = event.target
+    const element = target && target.nodeType === 1 ? target : target?.parentElement
+    if (!element?.closest || !element.closest('.tag-essential, .tag-detailed')) {
+      setTooltip((prev) => ({ ...prev, show: false }))
     }
   }
 
@@ -224,20 +352,20 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   }, [])
 
   const colors = getWordTypeColors(word.word_type)
-  const processedTags = processTagsForDisplay(word.tags, word.word_type)
+  const processedTags = processRpcTagsForDisplay(word.word_core_tags || [], word.word_type)
 
-  // Determine verb conjugation type for combined badge label
-  const verbType = word.word_type === 'VERB'
-    ? (word.tags?.includes('are-conjugation')
-        ? 'are'
-        : word.tags?.includes('ere-conjugation')
-          ? 'ere'
-          : word.tags?.includes('ire-isc-conjugation')
-            ? 'ire-isc'
-            : word.tags?.includes('ire-conjugation')
-              ? 'ire'
-              : '')
-    : ''
+  // Determine verb conjugation type for combined badge label using RPC tags
+  const verbType = word.word_type === 'VERB' ? (() => {
+    const coreTags = word.word_core_tags || []
+    const conjugationTag = coreTags.find(tag => isAttribute(tag, ATTRIBUTES.CONJUGATION_TYPE))
+    if (conjugationTag?.value_label) {
+      // Map to simple display format for badge
+      const conjValue = conjugationTag.value_label
+      if (conjValue === 'ire-isc') return 'ire-isc'
+      return conjValue // are, ere, ire
+    }
+    return ''
+  })() : ''
 
   const wordTypeLabel = verbType ? `${word.word_type} ┃${verbType}` : word.word_type
 
@@ -286,60 +414,67 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
   // Get translations - use processedTranslations from EnhancedDictionarySystem
   // Ensure translations are sorted by display_priority so the first item is truly the primary meaning
-  const normalizeRestrictionContext = (meta = {}, core = {}) => {
-    const out = { ...meta };
-    // New normalized core: array of tag objects
-    if (Array.isArray(core)) {
-      for (const t of core) {
-        const attr = String(t.attribute_stable_id || '').toLowerCase();
-        const val = String(t.value_label || '').toLowerCase();
-        if (!attr) continue;
-        // Gender Usage (metaattr008)
-        if (attr === 'metaattr008' && !out.gender_usage) {
-          if (val.includes('male')) out.gender_usage = 'male-only';
-          else if (val.includes('female')) out.gender_usage = 'female-only';
-        }
-        // Number Restriction (metaattr013) or Plural Only (metaattr015)
-        if (!out.plurality) {
-          if (attr === 'metaattr013' || attr === 'metaattr015') {
-            if (val.includes('plural')) out.plurality = 'plural-only';
-            else if (val.includes('singular')) out.plurality = 'singular-only';
-          }
-        }
-      }
-      return out;
-    }
-    // Backward-compatibility path (object-like core)
-    if (core.gender_usage && !out.gender_usage) {
-      out.gender_usage = String(core.gender_usage).toLowerCase();
-    }
-    if (core.number_restriction && !out.plurality) {
-      const v = String(core.number_restriction).toLowerCase();
-      if (v.includes('plural')) out.plurality = 'plural-only';
-      else if (v.includes('singular')) out.plurality = 'singular-only';
-    }
-    return out;
-  };
 
-  // Translation-level chips: auxiliary (avere/essere) and reciprocal
+  // Count unique auxiliaries at word level to determine if translation-level auxiliary chips should be shown
+  const wordLevelAuxiliaries = new Set()
+  const wordCoreTags = word.word_core_tags || []
+  wordCoreTags.forEach(tag => {
+    if (tag.attribute_stable_id === 'metaattr002') {
+      wordLevelAuxiliaries.add(String(tag.value_label || '').toLowerCase())
+    }
+  })
+  const hasMultipleWordLevelAuxiliaries = wordLevelAuxiliaries.size > 1
+
+  // Translation-level chips: auxiliary (only when multiple exist at word level) and reciprocal
   const renderTranslationChips = (translation) => {
     const chips = []
     const core = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
     const optional = Array.isArray(translation.rpc_tags) ? translation.rpc_tags : []
 
-    // Auxiliary Verb (metaattr002): show on translation using requested shorthand (ess., av.)
-    const aux = core.find((t) => t.attribute_stable_id === 'metaattr002')
-    if (aux) {
-      const v = String(aux.value_label || '').toLowerCase()
-      const label = v === 'essere' ? 'ess.' : v === 'avere' ? 'av.' : (aux.value_shorthand || aux.value_label || '')
-      if (label) chips.push({ symbol: label, title: `Auxiliary: ${aux.value_label || label}`, className: 'text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' })
+    // Auxiliary Verb (metaattr002): ONLY show when multiple auxiliaries exist at word level
+    if (hasMultipleWordLevelAuxiliaries) {
+      const auxTags = core.filter((t) => t.attribute_stable_id === 'metaattr002')
+      if (auxTags.length > 0) {
+        if (auxTags.length > 1) {
+          // Multiple auxiliaries on this translation - combine into single chip
+          const auxValues = auxTags.map(aux => String(aux.value_label || '').toLowerCase()).sort()
+          const hasAvere = auxValues.includes('avere')
+          const hasEssere = auxValues.includes('essere') 
+          
+          if (hasAvere && hasEssere) {
+            chips.push({ 
+              symbol: 'av./ess.', 
+              title: 'Auxiliary: avere/essere (both)', 
+              className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
+            })
+          } else {
+            // Fallback - shouldn't happen but handle gracefully  
+            const labels = auxValues.map(v => v === 'essere' ? 'ess.' : v === 'avere' ? 'av.' : v)
+            chips.push({ 
+              symbol: labels.join('/'), 
+              title: `Auxiliary: ${auxValues.join('/')}`, 
+              className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
+            })
+          }
+        } else {
+          // Single auxiliary on this translation
+          const aux = auxTags[0]
+          const v = String(aux.value_label || '').toLowerCase()
+          const label = v === 'essere' ? 'ess.' : v === 'avere' ? 'av.' : (aux.value_shorthand || aux.value_label || '')
+          if (label) chips.push({ 
+            symbol: label, 
+            title: `Auxiliary: ${aux.value_label || label}`, 
+            className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
+          })
+        }
+      }
     }
 
     // Reciprocal: detect from optional tag 'mutual-action'
     const reciprocalCore = core.find((t) => t.attribute_stable_id === 'metaattr021' && String(t.value_label || '').toLowerCase() === 'reciprocal')
     const reciprocalOpt = optional.find((t) => String(t.value_label || '').toLowerCase() === 'mutual-action')
     if (reciprocalCore || reciprocalOpt) {
-      chips.push({ symbol: '↔️', title: 'Reciprocal action', className: 'text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' })
+      chips.push({ symbol: '↔️', title: 'Reciprocal action', className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' })
     }
 
     return chips
@@ -354,8 +489,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         id: t.id,
         translation: t.translation,
         isPrimary: t.display_priority === 1,
-        contextInfo: normalizeRestrictionContext(t.metadata || {}, t.rpc_core || {}),
         usageNotes: t.usage_notes,
+        rpc_core: t.rpc_core || [],
         rpc_tags: t.rpc_tags || []
       })) || []
 
@@ -365,13 +500,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   const fallbackTranslation = translations[0]?.translation || ''
 
   // Format context hint for display
-  const formatContextHint = (contextInfo, usageNotes) => {
+  const formatContextHint = (usageNotes) => {
     if (usageNotes && usageNotes.length < 30) {
       return usageNotes
-    }
-
-    if (contextInfo?.usage) {
-      return contextInfo.usage.replace(/-/g, ' ')
     }
 
     return ''
@@ -389,34 +520,35 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   }
 
   const getRestrictionIndicators = (translation) => {
-    const metadata = translation.contextInfo || {}
-    return renderRestrictionIndicators(metadata, 'restriction-symbol-card')
+    const coreTags = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
+    return renderRestrictionIndicators(coreTags, 'restriction-symbol-card')
   }
 
   // Render verb-specific features
 
   return (
     <>
+  <div className={`
+    word-card border-2 rounded-lg p-3 text-sm transition-all duration-200
+    ${colors.border} ${colors.bg} ${colors.hover}
+    word-card-${word.word_type.toLowerCase()} sketchy-fill
+    relative
+    ${className}
+  `}>
       {/* Mobile-friendly tooltip */}
       {tooltip.show && (
         <div
-          className="fixed bg-gray-800 text-white text-xs rounded px-2 py-1 z-50 max-w-xs pointer-events-none"
+          className="absolute bg-gray-800 text-white text-xs rounded px-2 py-1 max-w-xs pointer-events-none shadow-lg"
           style={{
             left: `${tooltip.x}px`,
             top: `${tooltip.y}px`,
-            transform: 'translateX(-50%)'
+            transform: 'translateX(-50%)',
+            zIndex: 9999
           }}
         >
           {tooltip.content}
         </div>
       )}
-
-  <div className={`
-    word-card border-2 rounded-lg p-3 text-sm transition-all duration-200
-    ${colors.border} ${colors.bg} ${colors.hover}
-    word-card-${word.word_type.toLowerCase()} sketchy-fill
-    ${className}
-  `}>
         {/* Main Word Header - New Layout */}
         <div className="mb-2">
           {renderArticleDisplay()}
@@ -440,7 +572,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           {genderTag && (
             <span
               className={`tag-essential text-xs px-2 py-1 rounded-full font-semibold ${genderTag.class}`}
-              title={genderTag.description}
+              data-description={genderTag.description}
               onClick={handleTagClick}
               style={{ cursor: 'pointer' }}
             >
@@ -461,7 +593,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           {irregularTag && (
             <span
               className={`tag-essential text-xs px-2 py-1 rounded-full font-semibold ${irregularTag.class}`}
-              title={irregularTag.description}
+              data-description={irregularTag.description}
               onClick={handleTagClick}
               style={{ cursor: 'pointer' }}
             >
@@ -492,31 +624,43 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                     </span>
                     {/* Primary badge on the translation with display_priority === 1 */}
                     {translation.isPrimary && (
-                      <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-medium ml-2">
-                        Primary
-                      </span>
+                      <>
+                        <span className="mx-1"></span>
+                        <span 
+                          className="tag-detailed text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-medium"
+                          data-description="Most common translation for this word"
+                          onClick={handleTagClick}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          Primary
+                        </span>
+                      </>
                     )}
                     {/* Translation-level chips group */}
                     <span className="ml-2 flex items-center gap-1">
                       {renderTranslationChips(translation).map((chip, idx) => (
                         <span
                           key={`tchip-${translation.id}-${idx}`}
-                          className={chip.className}
-                          title={chip.title}
+                          className={`tag-essential ${chip.className}`}
+                          data-description={chip.title}
+                          onClick={handleTagClick}
+                          style={{ cursor: 'pointer' }}
                         >
                           {chip.symbol}
                         </span>
                       ))}
                       {getRestrictionIndicators(translation).map((indicator) => {
-                        const base = 'text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent';
+                        const base = 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent';
                         const color = indicator.type === 'gender'
                           ? (indicator.subtype === 'male' ? 'border-blue-500 text-blue-600' : indicator.subtype === 'female' ? 'border-pink-500 text-pink-600' : 'border-gray-400 text-gray-700')
                           : 'border-gray-400 text-gray-700';
                         return (
                           <span
                             key={indicator.key}
-                            className={`${base} ${color}`}
-                            title={indicator.title}
+                            className={`tag-detailed ${base} ${color}`}
+                            data-description={indicator.title}
+                            onClick={handleTagClick}
+                            style={{ cursor: 'pointer' }}
                           >
                             {indicator.symbol}
                           </span>
@@ -528,15 +672,22 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                   {/* Context Hint - Flexible space to push button right */}
                   <div className="flex-1 flex items-center justify-end mr-2">
                     <span className="text-xs text-gray-500 italic text-right">
-                      {formatContextHint(translation.contextInfo, translation.usageNotes)}
+                      {formatContextHint(translation.usageNotes)}
                     </span>
                   </div>
 
                   {/* Study This Translation Button - Right edge */}
                   <div className="flex-shrink-0 flex items-center">
                     <button
-                      onClick={() => onAddToDeck && onAddToDeck(word, translation)}
-                      className="bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors"
+                      onClick={() => {
+                        console.log('Translation button clicked:', { word: word.italian, translation: translation.translation, onAddToDeck: !!onAddToDeck })
+                        if (onAddToDeck) {
+                          onAddToDeck(word, translation)
+                        } else {
+                          console.error('onAddToDeck function not provided')
+                        }
+                      }}
+                      className="bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
                       title={`Study: ${translation.translation}`}
                     >
                       +
@@ -612,22 +763,26 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                           {renderTranslationChips(translation).map((chip, idx) => (
                             <span
                               key={`tchip-b-${translation.id}-${idx}`}
-                              className={chip.className}
-                              title={chip.title}
+                              className={`tag-essential ${chip.className}`}
+                              data-description={chip.title}
+                              onClick={handleTagClick}
+                              style={{ cursor: 'pointer' }}
                             >
                               {chip.symbol}
                             </span>
                           ))}
                           {getRestrictionIndicators(translation).map((indicator) => {
-                            const base = 'text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent';
+                            const base = 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent';
                             const color = indicator.type === 'gender'
                               ? (indicator.subtype === 'male' ? 'border-blue-500 text-blue-600' : indicator.subtype === 'female' ? 'border-pink-500 text-pink-600' : 'border-gray-400 text-gray-700')
                               : 'border-gray-400 text-gray-700';
                             return (
                               <span
                                 key={indicator.key}
-                                className={`${base} ${color}`}
-                                title={indicator.title}
+                                className={`tag-detailed ${base} ${color}`}
+                                data-description={indicator.title}
+                                onClick={handleTagClick}
+                                style={{ cursor: 'pointer' }}
                               >
                                 {indicator.symbol}
                               </span>
@@ -637,13 +792,20 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                       </div>
                       <div className="flex-1 flex items-center justify-end mr-2">
                         <span className="text-xs text-gray-500 italic text-right">
-                          {formatContextHint(translation.contextInfo, translation.usageNotes)}
+                          {formatContextHint(translation.usageNotes)}
                         </span>
                       </div>
                       <div className="flex-shrink-0 flex items-center">
                         <button
-                          onClick={() => onAddToDeck && onAddToDeck(word, translation)}
-                          className="bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors"
+                          onClick={() => {
+                            console.log('Additional translation button clicked:', { word: word.italian, translation: translation.translation })
+                            if (onAddToDeck) {
+                              onAddToDeck(word, translation)
+                            } else {
+                              console.error('onAddToDeck function not provided')
+                            }
+                          }}
+                          className="bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
                           title={`Study: ${translation.translation}`}
                         >
                           +
@@ -667,7 +829,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
               <span
                 key={index}
                 className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${outlinedClass(tag.class)}`}
-                title={tag.description}
+                data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
               >
