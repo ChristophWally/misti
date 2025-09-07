@@ -123,6 +123,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       const valueLabel = tag.value_label || ''
       const attributeStableId = tag.attribute_stable_id
       
+      
       // CEFR LEVEL MAPPING (essential)
       if (isAttribute(tag, ATTRIBUTES.CEFR_LEVEL)) {
         if (['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(valueLabel)) {
@@ -179,12 +180,31 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             class: 'bg-pink-500 text-white',
             description: 'Feminine gender requiring feminine articles (la, una)'
           })
-        } else if (valueLabel === 'common') {
+        } else if (valueLabel === 'common-gender') {
           essential.push({
             tag: 'common-gender',
             display: '⚥',
             class: 'bg-purple-500 text-white',
             description: 'Same form for both genders, determined by article'
+          })
+        }
+      }
+
+      // NUMBER MAPPING (essential for nouns at word-level)
+      else if (isAttribute(tag, ATTRIBUTES.NUMBER) && wordType === 'NOUN') {
+        if (valueLabel === 'singolare') {
+          essential.push({
+            tag: 'singolare',
+            display: 'sing.',
+            class: 'bg-gray-200 text-gray-700',
+            description: 'Singular number form'
+          })
+        } else if (valueLabel === 'plurale') {
+          essential.push({
+            tag: 'plurale',
+            display: 'pl.',
+            class: 'bg-gray-200 text-gray-700',
+            description: 'Plural number form'
           })
         }
       }

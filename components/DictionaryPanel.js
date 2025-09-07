@@ -448,6 +448,33 @@ export default function DictionaryPanel({
                       </div>
                     </div>
                   )}
+
+                  {/* Number Filter - Show only when NOUN is selected */}
+                  {filters.wordType.includes('NOUN') && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Number
+                      </label>
+                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                        <span
+                          className={`filter-chip ${filters.tags.includes('singolare') ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value="singolare"
+                          title="Singular number form"
+                        >
+                          Singular
+                        </span>
+                        <span
+                          className={`filter-chip ${filters.tags.includes('plurale') ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value="plurale"
+                          title="Plural number form"
+                        >
+                          Plural
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Grammar Filters */}
                   <div>

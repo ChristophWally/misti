@@ -1148,8 +1148,11 @@ const loadWordTranslations = async () => {
     // Conjugation type (filled)
     tags.push({ text: colors.name, filled: true, color: colors.primary })
 
-    // Irregularity (filled red)
-    if (word?.tags?.includes('irregular-pattern')) {
+    // Irregularity (filled red) - using RPC data
+    const hasIrregular = word?.word_core_tags?.some(tag => 
+      tag.attribute_stable_id === 'metaattr005' && tag.value_label === 'irregular'
+    )
+    if (hasIrregular) {
       tags.push({ text: '⚠️ IRREG', filled: true, color: '#ef4444' })
     }
 

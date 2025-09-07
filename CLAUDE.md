@@ -2,6 +2,26 @@
 
 This file contains project-specific rules and guidelines for Claude Code when working on this project.
 
+## 🚨 GOLDEN RULE - NO ACTION WITHOUT APPROVAL
+
+**ABSOLUTE CRITICAL RULE**: NEVER TAKE ANY ACTION, MAKE ANY CHANGES, OR IMPLEMENT ANYTHING WITHOUT EXPLICIT USER APPROVAL FIRST.
+
+This means:
+- **NO code changes** without approval
+- **NO database operations** without approval  
+- **NO file modifications** without approval
+- **NO implementations** without approval
+- **NO fixes** without approval
+- **NO optimizations** without approval
+- **NO refactoring** without approval
+
+**ALWAYS**:
+1. **ANALYZE** and present findings
+2. **PROPOSE** approach and get explicit approval
+3. **IMPLEMENT** only after user says "yes" or "proceed"
+
+**NEVER ASSUME** the user wants you to take action. Always ask first.
+
 ## Database Modification Protocol
 
 **CRITICAL**: Before making any changes to Supabase database data:
@@ -215,3 +235,83 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 This ensures systematic, dependency-aware implementation with full traceability and no regressions.
+
+## Attribute Migration Implementation Cycle
+
+**CRITICAL**: For systematic metadata attribute migration, follow this standardized 8-step cycle:
+
+### 🔄 8-Step Implementation Cycle
+
+**Step 1: Check meta_values and current data usage**
+- Query meta_values table for attribute values
+- Check current EMV data usage and distribution
+- Document findings
+
+**Step 2: Check existing display implementation**
+- Review WordCard.js for display logic
+- Review meta-constants.js for UUIDs and mappings
+- Review enhanced-dictionary-system.js for RPC integration
+- Identify gaps and issues
+
+**Step 3: Implementation (sub-steps as needed)**
+- Add missing constants and UUIDs
+- Update WordCard display logic
+- Update RPC filter mapping
+- Add Advanced Filter sections
+- Migrate legacy code
+
+**Step 4: Add test data**
+- Add all attribute values to testnoun/testverb/testadjective/testadverb
+- Ensure comprehensive test coverage
+
+**Step 5: Test implementation**
+- Verify display functionality
+- Test filtering behavior  
+- Confirm RPC integration works
+
+**Step 6: Legacy Code Cleanup Verification**
+- **MANDATORY**: Search for and remove ALL legacy code
+- Check Dictionary Panel, WordCard, Enhanced Dictionary System
+- Look for old display mappings, filter arrays, tag references
+- Confirm complete migration to RPC UUID system
+- Document cleanup in commit message
+
+**Step 7: Complete attribute review**
+- Mark attribute as fully functional
+- Update documentation
+- Move to next attribute
+
+This cycle ensures complete, systematic implementation with no legacy code remaining.
+
+## Translation-Level Attribute Validation Protocol
+
+**CRITICAL**: For translation-level attributes, follow this specialized validation approach:
+
+### 🔍 Translation-Level Validation Steps
+
+**Step 1: RPC Data Verification**
+- Query RPC function for existing usage in core_tags array
+- Verify attribute appears correctly in translation.core_tags structure
+- Document current usage patterns and data distribution
+
+**Step 2: Display Logic Assessment** 
+- Check restriction-utils.js parseRestrictions function for handling
+- Verify WordCard.js getRestrictionIndicators integration
+- Confirm proper symbol/icon display (♂/♀, etc.)
+
+**Step 3: Test Data Validation**
+- Add test values to testnoun/testverb/testadjective translations
+- Verify symbols appear in restriction indicator section (not word tags)
+- Test all attribute values display correctly
+
+**Step 4: Advanced Filter Exclusion**
+- Confirm translation-level attributes are NOT in Advanced Filters
+- Verify no filter-utils.js integration needed
+- Document why filtering not applicable (translation-specific data)
+
+**Step 5: Complete Validation**
+- Mark attribute as fully functional if all display logic exists
+- Document any gaps in display or RPC integration
+- Move to next attribute only after approval
+
+This protocol ensures translation-level attributes are properly validated without unnecessary Advanced Filter implementation.
