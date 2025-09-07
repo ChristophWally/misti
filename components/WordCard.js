@@ -69,6 +69,54 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       return { essential, detailed }
     }
 
+    // AUXILIARY VERB COMBINATION LOGIC - Process all auxiliaries first to combine them
+    const auxiliaries = coreTags
+      .filter(tag => isAttribute(tag, ATTRIBUTES.AUXILIARY_VERB))
+      .map(tag => tag.value_label?.toLowerCase())
+      .filter(Boolean)
+      .sort()
+
+    if (auxiliaries.length > 1) {
+      // Multiple auxiliaries - combine into single chip
+      const hasAvere = auxiliaries.includes('avere')
+      const hasEssere = auxiliaries.includes('essere')
+      
+      if (hasAvere && hasEssere) {
+        detailed.push({
+          tag: 'auxiliary-combined',
+          display: '🤜🤛 av./ess.',
+          class: 'bg-gray-200 text-gray-700',
+          description: 'Uses both avere and essere in compound tenses'
+        })
+      } else {
+        // Fallback - multiple non-standard auxiliaries
+        detailed.push({
+          tag: 'auxiliary-multiple',
+          display: `🤜🤛 ${auxiliaries.map(aux => aux === 'avere' ? 'av.' : aux === 'essere' ? 'ess.' : aux).join('/')}`,
+          class: 'bg-gray-200 text-gray-700',
+          description: `Uses multiple auxiliaries: ${auxiliaries.join(', ')}`
+        })
+      }
+    } else if (auxiliaries.length === 1) {
+      // Single auxiliary - show individual chip
+      const aux = auxiliaries[0]
+      if (aux === 'avere') {
+        detailed.push({
+          tag: 'avere-auxiliary',
+          display: '🤝 avere',
+          class: 'bg-gray-200 text-gray-700',
+          description: 'Uses avere in compound tenses'
+        })
+      } else if (aux === 'essere') {
+        detailed.push({
+          tag: 'essere-auxiliary',
+          display: '🫱 essere',
+          class: 'bg-gray-200 text-gray-700',
+          description: 'Uses essere in compound tenses'
+        })
+      }
+    }
+
     coreTags.forEach(tag => {
       const valueId = tag.value_id
       const attributeId = tag.attribute_id
@@ -84,13 +132,13 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             class: 'bg-orange-500 text-white',
             description: `${valueLabel} level vocabulary`
           })
-        } else if (['academic', 'literary', 'native', 'specialized'].includes(valueLabel)) {
-          const icons = { academic: '🎓', literary: '📜', native: '🗣️', specialized: '⚙️' }
+        } else if (['academic', 'literary', 'native', 'specialized', 'business', 'regional'].includes(valueLabel)) {
+          const icons = { academic: '🎓', literary: '📜', native: '🗣️', specialized: '⚙️', business: '💼', regional: '🗺️' }
           essential.push({
             tag: valueLabel,
             display: `${icons[valueLabel]} ${valueLabel.toUpperCase()}`,
             class: 'bg-green-500 text-white',
-            description: `${valueLabel} level vocabulary`
+            description: `Beyond CEFR - ${valueLabel} level vocabulary`
           })
         }
       }
@@ -101,14 +149,16 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           'top100': '⭐ 100',
           'top500': '⭐ 500', 
           'top1000': '⭐ 1K',
-          'top5000': '⭐ 5K'
+          'top2500': '⭐ 2.5K',
+          'top5000': '⭐ 5K',
+          'top10000': '⭐ 10K'
         }
         if (freqMap[valueLabel]) {
           essential.push({
             tag: `freq-${valueLabel}`,
             display: freqMap[valueLabel],
             class: 'bg-yellow-500 text-white',
-            description: `Top ${valueLabel.replace('top', '')} most frequent words`
+            description: `Top ${valueLabel.replace('top', '').replace('10000', '10,000')} most frequent words`
           })
         }
       }
@@ -151,24 +201,52 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         }
       }
 
-      // AUXILIARY VERB MAPPING (detailed)
-      else if (isAttribute(tag, ATTRIBUTES.AUXILIARY_VERB)) {
-        if (valueLabel === 'avere') {
-          detailed.push({
-            tag: 'avere-auxiliary',
-            display: '🤝 avere',
-            class: 'bg-gray-200 text-gray-700',
-            description: 'Uses avere in compound tenses'
+      // FORM PATTERN MAPPING (essential for adjectives)
+      else if (isAttribute(tag, ATTRIBUTES.FORM_PATTERN) && wordType === 'ADJECTIVE') {
+        if (valueLabel === 'form-4') {
+          essential.push({
+            tag: 'form-4',
+            display: '📋 4F',
+            class: 'border border-blue-600 text-blue-600 bg-transparent',
+            description: 'Form pattern - Full agreement: rosso/rossa/rossi/rosse'
           })
-        } else if (valueLabel === 'essere') {
-          detailed.push({
-            tag: 'essere-auxiliary',
-            display: '🫱 essere',
-            class: 'bg-gray-200 text-gray-700',
-            description: 'Uses essere in compound tenses'
+        } else if (valueLabel === 'form-2') {
+          essential.push({
+            tag: 'form-2', 
+            display: '📑 2F',
+            class: 'border border-indigo-600 text-indigo-600 bg-transparent',
+            description: 'Form pattern - Limited agreement: grande/grandi'
           })
         }
       }
+
+      // GRADABLE MAPPING (detailed for adjectives)
+      else if (isAttribute(tag, ATTRIBUTES.GRADABLE) && wordType === 'ADJECTIVE') {
+        if (valueLabel === 'analytical-gradability') {
+          detailed.push({
+            tag: 'gradable-analytical',
+            display: '📊 Analytical',
+            class: 'bg-purple-200 text-purple-700',
+            description: 'Can form analytical comparatives with più/meno: più intelligente'
+          })
+        } else if (valueLabel === 'full-gradability') {
+          detailed.push({
+            tag: 'gradable-full',
+            display: '📈 Full',
+            class: 'bg-purple-200 text-purple-700',
+            description: 'Can form both analytical and synthetic comparatives: più bello, bellissimo'
+          })
+        } else if (valueLabel === 'non-gradable') {
+          detailed.push({
+            tag: 'gradable-none',
+            display: '🚫 Non-gradable',
+            class: 'bg-purple-200 text-purple-700',
+            description: 'Cannot form comparatives: morto, perfetto'
+          })
+        }
+      }
+
+      // AUXILIARY VERB MAPPING - Handled by combined logic at top, skip individual processing
 
       // CONJUGATION TYPE MAPPING (detailed for verbs)
       else if (isAttribute(tag, ATTRIBUTES.CONJUGATION_TYPE) && wordType === 'VERB') {
@@ -224,17 +302,17 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       // ADVERB TYPE MAPPING (detailed) - EXPANDED
       else if (isAttribute(tag, ATTRIBUTES.ADVERB_TYPE)) {
         const advMap = {
-          'manner': { display: '📍 manner', desc: 'Describes how something is done' },
-          'time': { display: '⏰ time', desc: 'Indicates when something happens' },
-          'place': { display: '📍 place', desc: 'Indicates where something happens' },
-          'quantity': { display: '🔢 quantity', desc: 'Indicates amount or degree' },
-          'frequency': { display: '🔄 frequency', desc: 'Indicates how often' },
-          'affirmation': { display: '✅ affirmation', desc: 'Expresses agreement or certainty' },
-          'doubt': { display: '❓ doubt', desc: 'Expresses uncertainty' },
-          'negation': { display: '❌ negation', desc: 'Expresses denial or refusal' },
-          'interrogative': { display: '❓ interrogative', desc: 'Used in questions' },
-          'evaluation': { display: '📊 evaluation', desc: 'Expresses judgment or opinion' },
-          'emphasis': { display: '💪 emphasis', desc: 'Adds emphasis or intensity' }
+          'manner': { display: '🔧 manner', desc: 'Adverb type - Describes how something is done' },
+          'time': { display: '⏰ time', desc: 'Adverb type - Indicates when something happens' },
+          'place': { display: '📍 place', desc: 'Adverb type - Indicates where something happens' },
+          'quantity': { display: '🔢 quantity', desc: 'Adverb type - Indicates amount or degree' },
+          'frequency': { display: '🔄 frequency', desc: 'Adverb type - Indicates how often' },
+          'affirmation': { display: '✅ affirmation', desc: 'Adverb type - Expresses agreement or certainty' },
+          'doubt': { display: '❓ doubt', desc: 'Adverb type - Expresses uncertainty' },
+          'negation': { display: '❌ negation', desc: 'Adverb type - Expresses denial or refusal' },
+          'interrogative': { display: '❓ interrogative', desc: 'Adverb type - Used in questions' },
+          'evaluation': { display: '📊 evaluation', desc: 'Adverb type - Expresses judgment or opinion' },
+          'emphasis': { display: '💪 emphasis', desc: 'Adverb type - Adds emphasis or intensity' }
         }
         if (advMap[valueLabel]) {
           detailed.push({
@@ -246,31 +324,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         }
       }
 
-      // NOUN GENDER MAPPING (essential)
-      else if (isAttribute(tag, ATTRIBUTES.WORD_GENDER)) {
-        if (valueLabel === 'masculine') {
-          essential.push({
-            tag: 'gender-masculine',
-            display: '♂',
-            class: 'bg-blue-500 text-white',
-            description: 'Masculine gender'
-          })
-        } else if (valueLabel === 'feminine') {
-          essential.push({
-            tag: 'gender-feminine', 
-            display: '♀',
-            class: 'bg-pink-500 text-white',
-            description: 'Feminine gender'
-          })
-        } else if (valueLabel === 'common-gender') {
-          essential.push({
-            tag: 'gender-common',
-            display: '⚥',
-            class: 'bg-purple-500 text-white',
-            description: 'Common gender (both masculine and feminine)'
-          })
-        }
-      }
 
       // REFLEXIVE MAPPING (essential)
       else if (isAttribute(tag, ATTRIBUTES.REFLEXIVE)) {
@@ -312,20 +365,24 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
     const tagRect = tag.getBoundingClientRect()
     const cardRect = tag.closest('.word-card').getBoundingClientRect()
+    const panelRect = tag.closest('.dictionary-panel')?.getBoundingClientRect() || cardRect
     
     // Calculate position relative to the WordCard container - position above the tag
     let tooltipX = (tagRect.left - cardRect.left) + (tagRect.width / 2) // Center above tag
     const tooltipY = (tagRect.top - cardRect.top) - 35 // Position above tag
     
-    // Prevent tooltip from going off the right edge (estimate tooltip width ~150px)
-    const cardWidth = cardRect.width
-    const estimatedTooltipWidth = 150
-    if (tooltipX + (estimatedTooltipWidth / 2) > cardWidth - 10) {
-      tooltipX = cardWidth - (estimatedTooltipWidth / 2) - 10 // Keep 10px margin from right edge
+    // Prevent tooltip from going off the right edge of panel (estimate tooltip width ~200px for longer text)
+    const panelWidth = panelRect.width
+    const cardOffsetInPanel = cardRect.left - panelRect.left
+    const estimatedTooltipWidth = 200
+    const absoluteTooltipX = cardOffsetInPanel + tooltipX
+    
+    if (absoluteTooltipX + (estimatedTooltipWidth / 2) > panelWidth - 20) {
+      tooltipX = (panelWidth - 20 - cardOffsetInPanel) - (estimatedTooltipWidth / 2) // Keep 20px margin from panel right edge
     }
-    // Prevent tooltip from going off the left edge  
-    if (tooltipX - (estimatedTooltipWidth / 2) < 10) {
-      tooltipX = (estimatedTooltipWidth / 2) + 10 // Keep 10px margin from left edge
+    // Prevent tooltip from going off the left edge of panel  
+    if (absoluteTooltipX - (estimatedTooltipWidth / 2) < 20) {
+      tooltipX = (20 - cardOffsetInPanel) + (estimatedTooltipWidth / 2) // Keep 20px margin from panel left edge
     }
 
     setTooltip({ show: true, content: description, x: tooltipX, y: tooltipY })
@@ -435,38 +492,15 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     if (hasMultipleWordLevelAuxiliaries) {
       const auxTags = core.filter((t) => t.attribute_stable_id === 'metaattr002')
       if (auxTags.length > 0) {
-        if (auxTags.length > 1) {
-          // Multiple auxiliaries on this translation - combine into single chip
-          const auxValues = auxTags.map(aux => String(aux.value_label || '').toLowerCase()).sort()
-          const hasAvere = auxValues.includes('avere')
-          const hasEssere = auxValues.includes('essere') 
-          
-          if (hasAvere && hasEssere) {
-            chips.push({ 
-              symbol: 'av./ess.', 
-              title: 'Auxiliary: avere/essere (both)', 
-              className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
-            })
-          } else {
-            // Fallback - shouldn't happen but handle gracefully  
-            const labels = auxValues.map(v => v === 'essere' ? 'ess.' : v === 'avere' ? 'av.' : v)
-            chips.push({ 
-              symbol: labels.join('/'), 
-              title: `Auxiliary: ${auxValues.join('/')}`, 
-              className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
-            })
-          }
-        } else {
-          // Single auxiliary on this translation
-          const aux = auxTags[0]
-          const v = String(aux.value_label || '').toLowerCase()
-          const label = v === 'essere' ? 'ess.' : v === 'avere' ? 'av.' : (aux.value_shorthand || aux.value_label || '')
-          if (label) chips.push({ 
-            symbol: label, 
-            title: `Auxiliary: ${aux.value_label || label}`, 
-            className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
-          })
-        }
+        // Each translation has only one auxiliary - show individual chip
+        const aux = auxTags[0]
+        const v = String(aux.value_label || '').toLowerCase()
+        const label = v === 'essere' ? 'ess.' : v === 'avere' ? 'av.' : (aux.value_shorthand || aux.value_label || '')
+        if (label) chips.push({ 
+          symbol: label, 
+          title: `Auxiliary: ${aux.value_label || label}`, 
+          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
+        })
       }
     }
 
@@ -543,7 +577,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             left: `${tooltip.x}px`,
             top: `${tooltip.y}px`,
             transform: 'translateX(-50%)',
-            zIndex: 9999
+            zIndex: 10000
           }}
         >
           {tooltip.content}
