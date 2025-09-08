@@ -8,7 +8,6 @@ import { useState, useEffect } from 'react'
 import AudioButton from './AudioButton'
 import ConjugationModal from './ConjugationModal'
 import { checkPremiumAudio } from '../lib/audio-utils'
-import { renderRestrictionIndicators } from '../lib/restriction-utils'
 import { ATTRIBUTES, VALUES, TAG_DISPLAYS, isAttribute, isValue, hasAttributeValue } from '../lib/meta-constants'
 
 export default function WordCard({ word, onAddToDeck, className = '' }) {
@@ -68,6 +67,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     if (!Array.isArray(coreTags)) {
       return { essential, detailed }
     }
+    
+    // Track number restrictions to implement hierarchical display
+    const hasNumberRestrictions = coreTags.some(tag => isAttribute(tag, ATTRIBUTES.NUMBER_RESTRICTION))
 
     // AUXILIARY VERB COMBINATION LOGIC - Process all auxiliaries first to combine them
     const auxiliaries = coreTags
@@ -191,7 +193,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       }
 
       // NUMBER MAPPING (essential for nouns at word-level)
-      else if (isAttribute(tag, ATTRIBUTES.NUMBER) && wordType === 'NOUN') {
+      // Skip if number restrictions exist (hierarchical priority)
+      else if (isAttribute(tag, ATTRIBUTES.NUMBER) && wordType === 'NOUN' && !hasNumberRestrictions) {
         if (valueLabel === 'singolare') {
           essential.push({
             tag: 'singolare',
@@ -357,14 +360,21 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         }
       }
 
-      // PLURAL ONLY MAPPING (essential) 
-      else if (isAttribute(tag, ATTRIBUTES.PLURAL_ONLY)) {
-        if (valueLabel === 'plural only') {
+      // NUMBER RESTRICTION MAPPING (essential) - Replaces PLURAL_ONLY
+      else if (isAttribute(tag, ATTRIBUTES.NUMBER_RESTRICTION)) {
+        if (isValue(tag, VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE)) {
           essential.push({
-            tag: 'plural-only',
-            display: '👥 PL-ONLY',
-            class: 'bg-green-500 text-white',
-            description: 'Always used in plural form'
+            tag: 'number-restriction-solo-singolare',
+            display: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE].display,
+            class: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE].class,
+            description: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE].description
+          })
+        } else if (isValue(tag, VALUES.NUMBER_RESTRICTION_SOLO_PLURALE)) {
+          essential.push({
+            tag: 'number-restriction-solo-plurale',
+            display: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_PLURALE].display,
+            class: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_PLURALE].class,
+            description: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_PLURALE].description
           })
         }
       }
@@ -502,7 +512,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   })
   const hasMultipleWordLevelAuxiliaries = wordLevelAuxiliaries.size > 1
 
-  // Translation-level chips: auxiliary (only when multiple exist at word level) and reciprocal
+  // Translation-level chips: auxiliary, reciprocal, number restrictions, and gender restrictions
   const renderTranslationChips = (translation) => {
     const chips = []
     const core = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
@@ -530,6 +540,42 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     if (reciprocalCore || reciprocalOpt) {
       chips.push({ symbol: '↔️', title: 'Reciprocal action', className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' })
     }
+
+    // Number Restriction: detect from core tags for translation-level restrictions (e.g., reciprocal verbs)
+    const numberRestrictionTags = core.filter((t) => isAttribute(t, ATTRIBUTES.NUMBER_RESTRICTION))
+    numberRestrictionTags.forEach(tag => {
+      if (isValue(tag, VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE)) {
+        chips.push({ 
+          symbol: '👤', 
+          title: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE].description, 
+          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
+        })
+      } else if (isValue(tag, VALUES.NUMBER_RESTRICTION_SOLO_PLURALE)) {
+        chips.push({ 
+          symbol: '👥', 
+          title: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_PLURALE].description, 
+          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
+        })
+      }
+    })
+
+    // Gender Usage Restrictions: consolidated logic from restriction-utils.js
+    core.forEach(tag => {
+      // Check for gender usage restrictions using UUID-based attribute/value matching
+      if (hasAttributeValue(tag, ATTRIBUTES.GENDER_USAGE, VALUES.GENDER_MALE_ONLY)) {
+        chips.push({ 
+          symbol: '♂', 
+          title: 'Use only with masculine subjects', 
+          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent border-blue-500 text-blue-600' 
+        })
+      } else if (hasAttributeValue(tag, ATTRIBUTES.GENDER_USAGE, VALUES.GENDER_FEMALE_ONLY)) {
+        chips.push({ 
+          symbol: '♀', 
+          title: 'Use only with feminine subjects', 
+          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent border-pink-500 text-pink-600' 
+        })
+      }
+    })
 
     return chips
   }
@@ -573,10 +619,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     )
   }
 
-  const getRestrictionIndicators = (translation) => {
-    const coreTags = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
-    return renderRestrictionIndicators(coreTags, 'restriction-symbol-card')
-  }
 
   // Render verb-specific features
 
@@ -703,23 +745,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                           {chip.symbol}
                         </span>
                       ))}
-                      {getRestrictionIndicators(translation).map((indicator) => {
-                        const base = 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent';
-                        const color = indicator.type === 'gender'
-                          ? (indicator.subtype === 'male' ? 'border-blue-500 text-blue-600' : indicator.subtype === 'female' ? 'border-pink-500 text-pink-600' : 'border-gray-400 text-gray-700')
-                          : 'border-gray-400 text-gray-700';
-                        return (
-                          <span
-                            key={indicator.key}
-                            className={`tag-detailed ${base} ${color}`}
-                            data-description={indicator.title}
-                            onClick={handleTagClick}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            {indicator.symbol}
-                          </span>
-                        );
-                      })}
                     </span>
                   </div>
 
@@ -825,23 +850,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                               {chip.symbol}
                             </span>
                           ))}
-                          {getRestrictionIndicators(translation).map((indicator) => {
-                            const base = 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent';
-                            const color = indicator.type === 'gender'
-                              ? (indicator.subtype === 'male' ? 'border-blue-500 text-blue-600' : indicator.subtype === 'female' ? 'border-pink-500 text-pink-600' : 'border-gray-400 text-gray-700')
-                              : 'border-gray-400 text-gray-700';
-                            return (
-                              <span
-                                key={indicator.key}
-                                className={`tag-detailed ${base} ${color}`}
-                                data-description={indicator.title}
-                                onClick={handleTagClick}
-                                style={{ cursor: 'pointer' }}
-                              >
-                                {indicator.symbol}
-                              </span>
-                            );
-                          })}
                         </span>
                       </div>
                       <div className="flex-1 flex items-center justify-end mr-2">

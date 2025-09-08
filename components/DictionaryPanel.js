@@ -511,6 +511,31 @@ export default function DictionaryPanel({
                       </span>
                     </div>
                   </div>
+
+                  {/* Number Restriction Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Number Restriction
+                    </label>
+                    <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                      <span
+                        className={`filter-chip ${filters.tags.includes('solo-singolare') ? 'active' : ''}`}
+                        data-filter="tags"
+                        data-value="solo-singolare"
+                        title="Words that only have or require singular form (some specialized terms)"
+                      >
+                        👤 Singular Only
+                      </span>
+                      <span
+                        className={`filter-chip ${filters.tags.includes('solo-plurale') ? 'active' : ''}`}
+                        data-filter="tags"
+                        data-value="solo-plurale"
+                        title="Words that only have or require plural form (reciprocal verbs, pluralia tantum)"
+                      >
+                        👥 Plural Only
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
