@@ -13,7 +13,9 @@ import {
   handleFilterChipClick,
   wordTypeFilters,
   cefrLevels,
-  frequencyFilters 
+  frequencyFilters,
+  registerFilters,
+  transitivityFilters
 } from '../lib/filter-utils'
 
 export default function DictionaryPanel({ 
@@ -318,6 +320,27 @@ export default function DictionaryPanel({
                       ))}
                     </div>
                   </div>
+
+                  {/* Register Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Register (Formality Level)
+                    </label>
+                    <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                      {registerFilters.map(register => (
+                        <span
+                          key={register.value}
+                          className={`filter-chip ${filters.tags.includes(register.value) ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value={register.value}
+                          title={`Register formality - ${register.label.replace(/🎩|👕|⚖️/g, '').trim()}`}
+                        >
+                          {register.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
                   
                   {/* Adverb Type Filter - Show only when ADVERB is selected */}
                   {filters.wordType.includes('ADVERB') && (
@@ -495,6 +518,28 @@ export default function DictionaryPanel({
                     </div>
                   </div>
 
+                  {/* Transitivity Filter - Show only when VERB is selected */}
+                  {(filters.wordType.includes('VERB') || filters.wordType.length === 0) && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Transitivity
+                      </label>
+                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                        {transitivityFilters.map(transitivity => (
+                          <span
+                            key={transitivity.value}
+                            className={`filter-chip ${filters.tags.includes(transitivity.value) ? 'active' : ''}`}
+                            data-filter="tags"
+                            data-value={transitivity.value}
+                            title={`Transitivity - ${transitivity.label.replace(/🎯|🌀|🔄/g, '').trim()}`}
+                          >
+                            {transitivity.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Irregular Forms Filter */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -536,6 +581,33 @@ export default function DictionaryPanel({
                       </span>
                     </div>
                   </div>
+
+                  {/* Plural Formation Filter - Show only when NOUN is selected */}
+                  {filters.wordType.includes('NOUN') && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Plural Formation
+                      </label>
+                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                        <span
+                          className={`filter-chip ${filters.tags.includes('plural-e') ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value="plural-e"
+                          title="Nouns that form plural by changing -a to -e (casa → case)"
+                        >
+                          plural-e
+                        </span>
+                        <span
+                          className={`filter-chip ${filters.tags.includes('plural-i') ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value="plural-i"
+                          title="Nouns that form plural by changing -o to -i (libro → libri)"
+                        >
+                          plural-i
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
