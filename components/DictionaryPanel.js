@@ -532,7 +532,7 @@ export default function DictionaryPanel({
                             className={`filter-chip ${filters.tags.includes(transitivity.value) ? 'active' : ''}`}
                             data-filter="tags"
                             data-value={transitivity.value}
-                            title={`Transitivity - ${transitivity.label.replace(/🎯|🌀|🔄/g, '').trim()}`}
+                            title={`Transitivity - ${transitivity.label.replace(/🎯|🌀|⚖️/g, '').trim()}`}
                           >
                             {transitivity.label}
                           </span>
