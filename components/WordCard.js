@@ -359,6 +359,37 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           })
         }
       }
+      // PLURAL_FORMATION MAPPING (detailed for nouns)
+      else if (isAttribute(tag, ATTRIBUTES.PLURAL_FORMATION) && wordType === 'NOUN') {
+        if (valueLabel === 'plural-e') {
+          detailed.push({
+            tag: 'plural-formation-e',
+            display: 'plural-e',
+            class: 'bg-gray-200 text-gray-700',
+            description: 'Forms plural by changing -a to -e (casa → case)'
+          })
+        } else if (valueLabel === 'plural-i') {
+          detailed.push({
+            tag: 'plural-formation-i',
+            display: 'plural-i',
+            class: 'bg-gray-200 text-gray-700',
+            description: 'Forms plural by changing -o to -i (libro → libri)'
+          })
+        }
+      }
+
+      // TRANSITIVITY MAPPING (detailed for verbs)
+      else if (isAttribute(tag, ATTRIBUTES.TRANSITIVITY) && wordType === 'VERB') {
+        const displayConfig = TAG_DISPLAYS[valueId]
+        if (displayConfig) {
+          detailed.push({
+            tag: `transitivity-${valueLabel}`,
+            display: displayConfig.display,
+            class: displayConfig.class,
+            description: displayConfig.description
+          })
+        }
+      }
 
       // NUMBER RESTRICTION MAPPING (essential) - Replaces PLURAL_ONLY
       else if (isAttribute(tag, ATTRIBUTES.NUMBER_RESTRICTION)) {
@@ -470,6 +501,44 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     return map[cls] || cls
   }
 
+  // Function to extract form-level tense chips from forms_json
+  const renderFormTenseChips = () => {
+    if (!word.forms_json || !Array.isArray(word.forms_json)) return []
+    
+    const tenseChips = []
+    const seenTenses = new Set()
+    
+    // Collect unique tenses from all forms
+    word.forms_json.forEach(form => {
+      if (form.core_tags && Array.isArray(form.core_tags)) {
+        form.core_tags.forEach(tag => {
+          if (isAttribute(tag, ATTRIBUTES.TENSE)) {
+            const valueId = tag.value_id
+            const valueLabel = tag.value_label
+            
+            // Skip if we've already seen this tense
+            if (!seenTenses.has(valueId)) {
+              seenTenses.add(valueId)
+              
+              // Map to display configuration from TAG_DISPLAYS
+              const displayConfig = TAG_DISPLAYS[valueId]
+              if (displayConfig) {
+                tenseChips.push({
+                  tag: `tense-${valueLabel}`,
+                  display: displayConfig.display,
+                  class: displayConfig.class,
+                  description: `Tense: ${valueLabel} (${form.form_text} example)`
+                })
+              }
+            }
+          }
+        })
+      }
+    })
+    
+    return tenseChips
+  }
+
   // Extract gender and irregularity tags for header
   const genderTag = processedTags.essential.find(tag =>
     tag.display === '♂' || tag.display === '♀' || tag.display === '⚥'
@@ -496,7 +565,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         'ere',
         'ire'
       ].includes(tag.tag)
-    )
+    ),
+    // Add form-level tense chips for verbs
+    ...(word.word_type === 'VERB' ? renderFormTenseChips() : [])
   ]
 
   // Get translations - use processedTranslations from EnhancedDictionarySystem
@@ -534,12 +605,23 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       }
     }
 
-    // Reciprocal: detect from optional tag 'mutual-action'
-    const reciprocalCore = core.find((t) => t.attribute_stable_id === 'metaattr021' && String(t.value_label || '').toLowerCase() === 'reciprocal')
-    const reciprocalOpt = optional.find((t) => String(t.value_label || '').toLowerCase() === 'mutual-action')
-    if (reciprocalCore || reciprocalOpt) {
-      chips.push({ symbol: '↔️', title: 'Reciprocal action', className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' })
-    }
+    // Reflexive Type (metaattr021): direct-reflexive/reciprocal
+    const reflexiveTypeTags = core.filter((t) => isAttribute(t, ATTRIBUTES.REFLEXIVE_TYPE))
+    reflexiveTypeTags.forEach(tag => {
+      if (isValue(tag, VALUES.REFLEXIVE_TYPE_DIRECT)) {
+        chips.push({ 
+          symbol: '🔄', 
+          title: TAG_DISPLAYS[VALUES.REFLEXIVE_TYPE_DIRECT].description, 
+          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
+        })
+      } else if (isValue(tag, VALUES.REFLEXIVE_TYPE_RECIPROCAL)) {
+        chips.push({ 
+          symbol: '🫂', 
+          title: TAG_DISPLAYS[VALUES.REFLEXIVE_TYPE_RECIPROCAL].description, 
+          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
+        })
+      }
+    })
 
     // Number Restriction: detect from core tags for translation-level restrictions (e.g., reciprocal verbs)
     const numberRestrictionTags = core.filter((t) => isAttribute(t, ATTRIBUTES.NUMBER_RESTRICTION))
@@ -574,6 +656,71 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           title: 'Use only with feminine subjects', 
           className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent border-pink-500 text-pink-600' 
         })
+      }
+    })
+
+    // Position chips
+    core.forEach(tag => {
+      if (isAttribute(tag, ATTRIBUTES.POSITION)) {
+        if (isValue(tag, VALUES.POSITION_BEFORE)) {
+          chips.push({
+            symbol: '⬅️',
+            title: 'Positioned before another word',
+            className: 'tag-detailed text-xs px-1 py-0.5 rounded border border-gray-300 text-gray-600 bg-transparent'
+          })
+        } else if (isValue(tag, VALUES.POSITION_AFTER)) {
+          chips.push({
+            symbol: '➡️',
+            title: 'Positioned after another word',
+            className: 'tag-detailed text-xs px-1 py-0.5 rounded border border-gray-300 text-gray-600 bg-transparent'
+          })
+        } else if (isValue(tag, VALUES.POSITION_BEFORE_AFTER)) {
+          chips.push({
+            symbol: '↔️',
+            title: 'Can be positioned before or after another word',
+            className: 'tag-detailed text-xs px-1 py-0.5 rounded border border-gray-300 text-gray-600 bg-transparent'
+          })
+        }
+      }
+    })
+
+    // Register chips (translation-level, emoji-only display)
+    core.forEach(tag => {
+      if (isAttribute(tag, ATTRIBUTES.REGISTER)) {
+        if (isValue(tag, VALUES.REGISTER_FORMAL)) {
+          chips.push({
+            symbol: TAG_DISPLAYS[VALUES.REGISTER_FORMAL].display,
+            title: 'Formal register - use in professional/elevated contexts',
+            className: TAG_DISPLAYS[VALUES.REGISTER_FORMAL].class
+          })
+        } else if (isValue(tag, VALUES.REGISTER_CASUAL)) {
+          chips.push({
+            symbol: TAG_DISPLAYS[VALUES.REGISTER_CASUAL].display,
+            title: 'Casual register - informal/everyday speech',
+            className: TAG_DISPLAYS[VALUES.REGISTER_CASUAL].class
+          })
+        } else if (isValue(tag, VALUES.REGISTER_MIXED)) {
+          chips.push({
+            symbol: TAG_DISPLAYS[VALUES.REGISTER_MIXED].display,
+            title: 'Mixed register - appropriate in both formal and casual contexts',
+            className: TAG_DISPLAYS[VALUES.REGISTER_MIXED].class
+          })
+        }
+        // Note: REGISTER_NEUTRAL is intentionally excluded (not displayed)
+      }
+    })
+
+    // Transitivity chips (translation-level)
+    core.forEach(tag => {
+      if (isAttribute(tag, ATTRIBUTES.TRANSITIVITY)) {
+        const displayConfig = TAG_DISPLAYS[tag.value_id]
+        if (displayConfig) {
+          chips.push({
+            symbol: displayConfig.display.split(' ')[0], // Extract emoji only (🎯, 🌀, 🔄)
+            title: displayConfig.description,
+            className: 'tag-detailed text-xs px-1 py-0.5 rounded border border-gray-300 text-gray-600 bg-transparent'
+          })
+        }
       }
     })
 

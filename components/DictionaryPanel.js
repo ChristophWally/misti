@@ -15,7 +15,8 @@ import {
   cefrLevels,
   frequencyFilters,
   registerFilters,
-  transitivityFilters
+  transitivityFilters,
+  reflexiveTypeFilters
 } from '../lib/filter-utils'
 
 export default function DictionaryPanel({ 
@@ -534,6 +535,28 @@ export default function DictionaryPanel({
                             title={`Transitivity - ${transitivity.label.replace(/🎯|🌀|🔄/g, '').trim()}`}
                           >
                             {transitivity.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Reflexive Type Filter - Show only when VERB is selected */}
+                  {(filters.wordType.includes('VERB') || filters.wordType.length === 0) && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Reflexive Type
+                      </label>
+                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                        {reflexiveTypeFilters.map(reflexiveType => (
+                          <span
+                            key={reflexiveType.value}
+                            className={`filter-chip ${filters.tags.includes(reflexiveType.value) ? 'active' : ''}`}
+                            data-filter="tags"
+                            data-value={reflexiveType.value}
+                            title={`Reflexive Type - ${reflexiveType.label.replace(/🔄|🫂/g, '').trim()}`}
+                          >
+                            {reflexiveType.label}
                           </span>
                         ))}
                       </div>
