@@ -2,3 +2,8 @@ node_modules/
 .next/
 package-lock.json
 
+# Backup archives and development agents
+backup-archive/
+claude/
+codex/
+
