@@ -216,24 +216,24 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         if (valueLabel === 'irregular') {
           essential.push({
             tag: 'irregular-pattern',
-            display: 'IRREG',
+            display: '⚠️ IRREG',
             class: 'bg-red-500 text-white',
             description: 'Does not follow standard patterns'
           })
         }
       }
 
-      // FORM PATTERN MAPPING (essential for adjectives)
+      // FORM PATTERN MAPPING (detailed for adjectives) - moved to detailed to appear after frequency
       else if (isAttribute(tag, ATTRIBUTES.FORM_PATTERN) && wordType === 'ADJECTIVE') {
         if (valueLabel === 'form-4') {
-          essential.push({
+          detailed.push({
             tag: 'form-4',
             display: '4F',
             class: 'bg-blue-500 text-white', // ADJECTIVE theme
             description: 'Form pattern - Full agreement: rosso/rossa/rossi/rosse'
           })
         } else if (valueLabel === 'form-2') {
-          essential.push({
+          detailed.push({
             tag: 'form-2', 
             display: '2F',
             class: 'bg-blue-500 text-white', // ADJECTIVE theme
