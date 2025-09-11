@@ -14,3 +14,8 @@ agent.*
 .pr_body.*
 test-migration.js
 
+# Development documentation and environment
+CLAUDE.md
+.env.local
+*.tsbuildinfo
+
