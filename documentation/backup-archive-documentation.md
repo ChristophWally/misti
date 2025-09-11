@@ -1,6 +1,8 @@
 # Backup Archive Documentation
 
-This file documents all backup files created during development, their purpose, and archival status.
+This file documents all backup files and archived components created during development, including their purpose, location, and restoration procedures.
+
+> **Note**: This documentation has been moved from `backup-archive/backup-explainer.md` to the main documentation folder for better accessibility and version control tracking.
 
 ## Current Active Backups
 
@@ -69,10 +71,10 @@ This file documents all backup files created during development, their purpose, 
 
 **Archive Creation Date**: 2025-09-11  
 **Reason**: Complete removal of admin testing section to optimize website space and cleanup test infrastructure  
-**Archive Location**: `/backup-archive/2025-09-11/`
+**Archive Location**: `backup-archive/2025-09-11/`
 
 ### Database Infrastructure Backup
-**Location**: `/backup-archive/2025-09-11/database-backups/`
+**Location**: `backup-archive/2025-09-11/database-backups/`
 
 #### **Database Tables Removed** (2 tables, 16 indexes total):
 - **custom_migration_rules**: 31 rows, 10 indexes (including unique constraints, GIN indexes for JSONB)
@@ -93,7 +95,7 @@ This file documents all backup files created during development, their purpose, 
 - **2 complete tables dropped** with CASCADE
 
 ### Admin Application Files Archived
-**Location**: `/backup-archive/2025-09-11/admin-section/`
+**Location**: `backup-archive/2025-09-11/admin-section/`
 
 #### **Directory Structure Archived**:
 - `app-admin/` - Complete `/app/admin/` directory
