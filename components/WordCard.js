@@ -86,16 +86,16 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       if (hasAvere && hasEssere) {
         detailed.push({
           tag: 'auxiliary-combined',
-          display: '🤜🤛 av./ess.',
-          class: 'bg-gray-200 text-gray-700',
+          display: 'av./ess.',
+          class: 'bg-teal-500 text-white', // VERB theme
           description: 'Uses both avere and essere in compound tenses'
         })
       } else {
         // Fallback - multiple non-standard auxiliaries
         detailed.push({
           tag: 'auxiliary-multiple',
-          display: `🤜🤛 ${auxiliaries.map(aux => aux === 'avere' ? 'av.' : aux === 'essere' ? 'ess.' : aux).join('/')}`,
-          class: 'bg-gray-200 text-gray-700',
+          display: `${auxiliaries.map(aux => aux === 'avere' ? 'av.' : aux === 'essere' ? 'ess.' : aux).join('/')}`,
+          class: 'bg-teal-500 text-white', // VERB theme
           description: `Uses multiple auxiliaries: ${auxiliaries.join(', ')}`
         })
       }
@@ -105,15 +105,15 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       if (aux === 'avere') {
         detailed.push({
           tag: 'avere-auxiliary',
-          display: '🤝 avere',
-          class: 'bg-gray-200 text-gray-700',
+          display: 'avere',
+          class: 'bg-teal-500 text-white', // VERB theme
           description: 'Uses avere in compound tenses'
         })
       } else if (aux === 'essere') {
         detailed.push({
           tag: 'essere-auxiliary',
-          display: '🫱 essere',
-          class: 'bg-gray-200 text-gray-700',
+          display: 'essere',
+          class: 'bg-teal-500 text-white', // VERB theme
           description: 'Uses essere in compound tenses'
         })
       }
@@ -131,17 +131,16 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         if (['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].includes(valueLabel)) {
           essential.push({
             tag: `CEFR-${valueLabel}`,
-            display: `📚 ${valueLabel}`,
+            display: valueLabel,
             class: 'bg-orange-500 text-white',
             description: `${valueLabel} level vocabulary`
           })
         } else if (['academic', 'literary', 'native', 'specialized', 'business', 'regional'].includes(valueLabel)) {
-          const icons = { academic: '🎓', literary: '📜', native: '🗣️', specialized: '⚙️', business: '💼', regional: '🗺️' }
           essential.push({
             tag: valueLabel,
-            display: `${icons[valueLabel]} ${valueLabel.toUpperCase()}`,
-            class: 'bg-green-500 text-white',
-            description: `Beyond CEFR - ${valueLabel} level vocabulary`
+            display: valueLabel,
+            class: 'bg-orange-500 text-white',
+            description: `beyond ${valueLabel} level vocabulary`
           })
         }
       }
@@ -149,17 +148,17 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       // FREQUENCY TIER MAPPING (essential)
       else if (isAttribute(tag, ATTRIBUTES.FREQUENCY_TIER)) {
         const freqMap = {
-          'top100': '⭐ 100',
-          'top500': '⭐ 500', 
-          'top1000': '⭐ 1K',
-          'top2500': '⭐ 2.5K',
-          'top5000': '⭐ 5K',
-          'top10000': '⭐ 10K'
+          'top100': '100',
+          'top500': '500', 
+          'top1000': '1K',
+          'top2500': '2.5K',
+          'top5000': '5K',
+          'top10000': '10K'
         }
         if (freqMap[valueLabel]) {
           essential.push({
             tag: `freq-${valueLabel}`,
-            display: freqMap[valueLabel],
+            display: `⭐ ${freqMap[valueLabel]}`,
             class: 'bg-yellow-500 text-white',
             description: `Top ${valueLabel.replace('top', '').replace('10000', '10,000')} most frequent words`
           })
@@ -199,14 +198,14 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           essential.push({
             tag: 'singolare',
             display: 'sing.',
-            class: 'bg-gray-200 text-gray-700',
+            class: 'bg-cyan-500 text-white', // NOUN theme
             description: 'Singular number form'
           })
         } else if (valueLabel === 'plurale') {
           essential.push({
             tag: 'plurale',
             display: 'pl.',
-            class: 'bg-gray-200 text-gray-700',
+            class: 'bg-cyan-500 text-white', // NOUN theme
             description: 'Plural number form'
           })
         }
@@ -217,7 +216,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         if (valueLabel === 'irregular') {
           essential.push({
             tag: 'irregular-pattern',
-            display: '⚠️ IRREG',
+            display: 'IRREG',
             class: 'bg-red-500 text-white',
             description: 'Does not follow standard patterns'
           })
@@ -229,15 +228,15 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         if (valueLabel === 'form-4') {
           essential.push({
             tag: 'form-4',
-            display: '📋 4F',
-            class: 'border border-blue-600 text-blue-600 bg-transparent',
+            display: '4F',
+            class: 'bg-blue-500 text-white', // ADJECTIVE theme
             description: 'Form pattern - Full agreement: rosso/rossa/rossi/rosse'
           })
         } else if (valueLabel === 'form-2') {
           essential.push({
             tag: 'form-2', 
-            display: '📑 2F',
-            class: 'border border-indigo-600 text-indigo-600 bg-transparent',
+            display: '2F',
+            class: 'bg-blue-500 text-white', // ADJECTIVE theme
             description: 'Form pattern - Limited agreement: grande/grandi'
           })
         }
@@ -248,22 +247,22 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         if (valueLabel === 'analytical-gradability') {
           detailed.push({
             tag: 'gradable-analytical',
-            display: '📊 Analytical',
-            class: 'bg-purple-200 text-purple-700',
+            display: 'analytical',
+            class: 'bg-blue-500 text-white', // ADJECTIVE theme
             description: 'Can form analytical comparatives with più/meno: più intelligente'
           })
         } else if (valueLabel === 'full-gradability') {
           detailed.push({
             tag: 'gradable-full',
-            display: '📈 Full',
-            class: 'bg-purple-200 text-purple-700',
+            display: 'fully gradable',
+            class: 'bg-blue-500 text-white', // ADJECTIVE theme
             description: 'Can form both analytical and synthetic comparatives: più bello, bellissimo'
           })
         } else if (valueLabel === 'non-gradable') {
           detailed.push({
             tag: 'gradable-none',
-            display: '🚫 Non-gradable',
-            class: 'bg-purple-200 text-purple-700',
+            display: 'non-gradable',
+            class: 'bg-blue-500 text-white', // ADJECTIVE theme
             description: 'Cannot form comparatives: morto, perfetto'
           })
         }
@@ -284,7 +283,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           detailed.push({
             tag: `${valueLabel}-conjugation`,
             display: conjMap[valueLabel],
-            class: isIsc ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700',
+            class: isIsc ? 'bg-yellow-500 text-white' : 'bg-teal-500 text-white', // VERB theme
             description: isIsc ? 'Uses -isc- infix in present forms' : `${valueLabel} conjugation group`
           })
         }
@@ -295,8 +294,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         if (valueLabel === 'reflexive') {
           detailed.push({
             tag: 'reflexive-verb',
-            display: '🪞 reflexive',
-            class: 'bg-gray-200 text-gray-700',
+            display: 'reflexive',
+            class: 'bg-teal-500 text-white', // VERB theme
             description: 'Action reflects back on the subject'
           })
         }
@@ -307,15 +306,15 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         if (valueLabel === 'formal') {
           detailed.push({
             tag: 'formal-register',
-            display: '👔 formal',
-            class: 'bg-gray-200 text-gray-700',
+            display: 'formal',
+            class: 'bg-gray-500 text-white', // Register is universal
             description: 'Formal contexts only'
           })
         } else if (valueLabel === 'casual') {
           detailed.push({
             tag: 'casual-register', 
-            display: '👕 casual',
-            class: 'bg-gray-200 text-gray-700',
+            display: 'casual',
+            class: 'bg-gray-500 text-white', // Register is universal
             description: 'Casual/colloquial usage'
           })
         }
@@ -325,23 +324,23 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       // ADVERB TYPE MAPPING (detailed) - EXPANDED
       else if (isAttribute(tag, ATTRIBUTES.ADVERB_TYPE)) {
         const advMap = {
-          'manner': { display: '🔧 manner', desc: 'Adverb type - Describes how something is done' },
-          'time': { display: '⏰ time', desc: 'Adverb type - Indicates when something happens' },
-          'place': { display: '📍 place', desc: 'Adverb type - Indicates where something happens' },
-          'quantity': { display: '🔢 quantity', desc: 'Adverb type - Indicates amount or degree' },
-          'frequency': { display: '🔄 frequency', desc: 'Adverb type - Indicates how often' },
-          'affirmation': { display: '✅ affirmation', desc: 'Adverb type - Expresses agreement or certainty' },
-          'doubt': { display: '❓ doubt', desc: 'Adverb type - Expresses uncertainty' },
-          'negation': { display: '❌ negation', desc: 'Adverb type - Expresses denial or refusal' },
-          'interrogative': { display: '❓ interrogative', desc: 'Adverb type - Used in questions' },
-          'evaluation': { display: '📊 evaluation', desc: 'Adverb type - Expresses judgment or opinion' },
-          'emphasis': { display: '💪 emphasis', desc: 'Adverb type - Adds emphasis or intensity' }
+          'manner': { display: 'manner', desc: 'Adverb type - Describes how something is done' },
+          'time': { display: 'time', desc: 'Adverb type - Indicates when something happens' },
+          'place': { display: 'place', desc: 'Adverb type - Indicates where something happens' },
+          'quantity': { display: 'quantity', desc: 'Adverb type - Indicates amount or degree' },
+          'frequency': { display: 'frequency', desc: 'Adverb type - Indicates how often' },
+          'affirmation': { display: 'affirmation', desc: 'Adverb type - Expresses agreement or certainty' },
+          'doubt': { display: 'doubt', desc: 'Adverb type - Expresses uncertainty' },
+          'negation': { display: 'negation', desc: 'Adverb type - Expresses denial or refusal' },
+          'interrogative': { display: 'interrogative', desc: 'Adverb type - Used in questions' },
+          'evaluation': { display: 'evaluation', desc: 'Adverb type - Expresses judgment or opinion' },
+          'emphasis': { display: 'emphasis', desc: 'Adverb type - Adds emphasis or intensity' }
         }
         if (advMap[valueLabel]) {
           detailed.push({
             tag: `adverb-${valueLabel}`,
             display: advMap[valueLabel].display,
-            class: 'bg-gray-200 text-gray-700',
+            class: 'bg-purple-500 text-white', // ADVERB theme
             description: advMap[valueLabel].desc
           })
         }
@@ -353,8 +352,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         if (valueLabel === 'reflexive') {
           essential.push({
             tag: 'reflexive',
-            display: '🔄 REFL',
-            class: 'bg-purple-500 text-white',
+            display: 'REFL',
+            class: 'bg-teal-500 text-white',
             description: 'Reflexive verb (action directed to subject)'
           })
         }
@@ -365,14 +364,14 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           detailed.push({
             tag: 'plural-formation-e',
             display: 'plural-e',
-            class: 'bg-gray-200 text-gray-700',
+            class: 'bg-cyan-500 text-white', // NOUN theme
             description: 'Forms plural by changing -a to -e (casa → case)'
           })
         } else if (valueLabel === 'plural-i') {
           detailed.push({
             tag: 'plural-formation-i',
             display: 'plural-i',
-            class: 'bg-gray-200 text-gray-700',
+            class: 'bg-cyan-500 text-white', // NOUN theme
             description: 'Forms plural by changing -o to -i (libro → libri)'
           })
         }
@@ -382,10 +381,20 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       else if (isAttribute(tag, ATTRIBUTES.TRANSITIVITY) && wordType === 'VERB') {
         const displayConfig = TAG_DISPLAYS[valueId]
         if (displayConfig) {
+          let display = displayConfig.display
+          // Convert short forms to full terms without emojis
+          if (isValue(tag, VALUES.TRANSITIVITY_TRANSITIVE)) {
+            display = 'transitive'
+          } else if (isValue(tag, VALUES.TRANSITIVITY_INTRANSITIVE)) {
+            display = 'intransitive'
+          } else if (isValue(tag, VALUES.TRANSITIVITY_AMBITRANSITIVE)) {
+            display = 'ambitransitive'
+          }
+          
           detailed.push({
             tag: `transitivity-${valueLabel}`,
-            display: displayConfig.display,
-            class: displayConfig.class,
+            display: display,
+            class: 'bg-teal-500 text-white', // VERB theme
             description: displayConfig.description
           })
         }
@@ -496,6 +505,10 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       'bg-yellow-500 text-white': 'border bg-transparent text-yellow-500 border-yellow-500',
       'bg-orange-500 text-white': 'border bg-transparent text-orange-500 border-orange-500',
       'bg-green-500 text-white': 'border bg-transparent text-green-500 border-green-500',
+      'bg-cyan-500 text-white': 'border bg-transparent text-cyan-500 border-cyan-500',
+      'bg-teal-500 text-white': 'border bg-transparent text-teal-500 border-teal-500',
+      'bg-indigo-500 text-white': 'border bg-transparent text-indigo-500 border-indigo-500',
+      'bg-gray-500 text-white': 'border bg-transparent text-gray-500 border-gray-500',
       'bg-gray-200 text-gray-700': 'border bg-transparent text-gray-700 border-gray-400'
     }
     return map[cls] || cls
@@ -584,7 +597,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   const hasMultipleWordLevelAuxiliaries = wordLevelAuxiliaries.size > 1
 
   // Translation-level chips: auxiliary, reciprocal, number restrictions, and gender restrictions
-  const renderTranslationChips = (translation) => {
+  const renderTranslationChips = (translation, hasMultipleWordLevelTransitivities = false) => {
     const chips = []
     const core = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
     const optional = Array.isArray(translation.rpc_tags) ? translation.rpc_tags : []
@@ -710,19 +723,21 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       }
     })
 
-    // Transitivity chips (translation-level)
-    core.forEach(tag => {
-      if (isAttribute(tag, ATTRIBUTES.TRANSITIVITY)) {
-        const displayConfig = TAG_DISPLAYS[tag.value_id]
-        if (displayConfig) {
-          chips.push({
-            symbol: displayConfig.display.split(' ')[0], // Extract emoji only (🎯, 🌀, 🔄)
-            title: displayConfig.description,
-            className: 'tag-detailed text-xs px-1 py-0.5 rounded border border-gray-300 text-gray-600 bg-transparent'
-          })
+    // Transitivity chips (translation-level): ONLY show when multiple transitivity values exist at word level
+    if (hasMultipleWordLevelTransitivities) {
+      core.forEach(tag => {
+        if (isAttribute(tag, ATTRIBUTES.TRANSITIVITY)) {
+          const displayConfig = TAG_DISPLAYS[tag.value_id]
+          if (displayConfig) {
+            chips.push({
+              symbol: displayConfig.display.split(' ')[0], // Use only emoji (🎯, 🌀, ⚖️)
+              title: displayConfig.description,
+              className: 'tag-detailed text-xs px-1 py-0.5 rounded border border-gray-300 text-gray-600 bg-transparent'
+            })
+          }
         }
-      }
-    })
+      })
+    }
 
     return chips
   }
@@ -740,6 +755,14 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         rpc_core: t.rpc_core || [],
         rpc_tags: t.rpc_tags || []
       })) || []
+
+  // Word-level transitivity analysis - similar to auxiliaries
+  const wordLevelTransitivities = new Set()
+  translations.forEach(translation => {
+    const transitivities = translation.rpc_core?.filter(tag => isAttribute(tag, ATTRIBUTES.TRANSITIVITY)) || []
+    transitivities.forEach(tag => wordLevelTransitivities.add(tag.value_id))
+  })
+  const hasMultipleWordLevelTransitivities = wordLevelTransitivities.size > 1
 
   // Show first 2 translations, rest are "additional"
   const visibleTranslations = translations.slice(0, 2)
@@ -865,23 +888,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                     <span className="text-base text-gray-900 font-medium">
                       {translation.translation}
                     </span>
-                    {/* Primary badge on the translation with display_priority === 1 */}
-                    {translation.isPrimary && (
-                      <>
-                        <span className="mx-1"></span>
-                        <span 
-                          className="tag-detailed text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-medium"
-                          data-description="Most common translation for this word"
-                          onClick={handleTagClick}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          Primary
-                        </span>
-                      </>
-                    )}
                     {/* Translation-level chips group */}
                     <span className="ml-2 flex items-center gap-1">
-                      {renderTranslationChips(translation).map((chip, idx) => (
+                      {renderTranslationChips(translation, hasMultipleWordLevelTransitivities).map((chip, idx) => (
                         <span
                           key={`tchip-${translation.id}-${idx}`}
                           className={`tag-essential ${chip.className}`}
@@ -986,7 +995,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                           {translation.translation}
                         </span>
                         <span className="ml-2 flex items-center gap-1">
-                          {renderTranslationChips(translation).map((chip, idx) => (
+                          {renderTranslationChips(translation, hasMultipleWordLevelTransitivities).map((chip, idx) => (
                             <span
                               key={`tchip-b-${translation.id}-${idx}`}
                               className={`tag-essential ${chip.className}`}
@@ -1037,7 +1046,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {bottomTags.map((tag, index) => (
               <span
                 key={index}
-                className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${outlinedClass(tag.class)}`}
+                className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${tag.class}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}

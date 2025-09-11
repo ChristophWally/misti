@@ -16,7 +16,10 @@ import {
   frequencyFilters,
   registerFilters,
   transitivityFilters,
-  reflexiveTypeFilters
+  verbTypeFilters,
+  auxiliaryTypeFilters,
+  reflexiveIndicatorFilters,
+  numberFilters
 } from '../lib/filter-utils'
 
 export default function DictionaryPanel({ 
@@ -46,8 +49,8 @@ export default function DictionaryPanel({
       // IMPORTANT FIX: Convert empty filters to work with your enhanced dictionary system
       const processedFilters = {
         ...currentFilters,
-        // If no word types selected, don't filter by word type (show all)
-        wordType: currentFilters.wordType?.length > 0 ? currentFilters.wordType : undefined
+        // If no word type selected, don't filter by word type (show all)
+        wordType: currentFilters.wordType ? [currentFilters.wordType] : undefined
       }
       
       console.log('Loading words with filters:', processedFilters)
@@ -261,7 +264,7 @@ export default function DictionaryPanel({
               {/* Advanced Filters */}
               {showAdvancedFilters && (
                 <div className="max-h-64 overflow-y-auto space-y-3 pt-2 border-t border-teal-200">
-                  {/* Word Type Filter */}
+                  {/* Word Type Filter - Single Select Chips */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Word Type
@@ -271,8 +274,7 @@ export default function DictionaryPanel({
                         <span
                           key={filter.value}
                           className={`filter-chip ${
-                            (filter.value === '' && filters.wordType.length === 0) ||
-                            filters.wordType.includes(filter.value) ? 'active' : ''
+                            filters.wordType === filter.value ? 'active' : ''
                           }`}
                           data-filter="wordType"
                           data-value={filter.value}
@@ -322,124 +324,27 @@ export default function DictionaryPanel({
                     </div>
                   </div>
 
-                  {/* Register Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Register (Formality Level)
-                    </label>
-                    <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
-                      {registerFilters.map(register => (
-                        <span
-                          key={register.value}
-                          className={`filter-chip ${filters.tags.includes(register.value) ? 'active' : ''}`}
-                          data-filter="tags"
-                          data-value={register.value}
-                          title={`Register formality - ${register.label.replace(/🎩|👕|⚖️/g, '').trim()}`}
-                        >
-                          {register.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  
-                  {/* Adverb Type Filter - Show only when ADVERB is selected */}
-                  {filters.wordType.includes('ADVERB') && (
+                  {/* Irregular Forms Filter - Show for all word types and "All Types" */}
+                  {(filters.wordType === '' || filters.wordType === 'NOUN' || filters.wordType === 'VERB' || filters.wordType === 'ADJECTIVE' || filters.wordType === 'ADVERB') && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Adverb Type
-                      </label>
-                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
-                        {[
-                          { value: 'manner', label: '🔧 Manner' },
-                          { value: 'time', label: '⏰ Time' },
-                          { value: 'place', label: '📍 Place' },
-                          { value: 'quantity', label: '🔢 Quantity' },
-                          { value: 'frequency', label: '🔄 Frequency' },
-                          { value: 'affirmation', label: '✅ Affirmation' },
-                          { value: 'doubt', label: '❓ Doubt' },
-                          { value: 'negation', label: '❌ Negation' },
-                          { value: 'interrogative', label: '❓ Question' },
-                          { value: 'evaluation', label: '📊 Evaluation' },
-                          { value: 'emphasis', label: '💪 Emphasis' }
-                        ].map(adverbType => (
-                          <span
-                            key={adverbType.value}
-                            className={`filter-chip ${filters.tags.includes(`adverb-${adverbType.value}`) ? 'active' : ''}`}
-                            data-filter="tags"
-                            data-value={`adverb-${adverbType.value}`}
-                          >
-                            {adverbType.label}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Form Pattern Filter - Show only when ADJECTIVE is selected */}
-                  {filters.wordType.includes('ADJECTIVE') && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Form Pattern
+                        Irregular Forms
                       </label>
                       <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
                         <span
-                          className={`filter-chip ${filters.tags.includes('form-4') ? 'active' : ''}`}
+                          className={`filter-chip ${filters.tags.includes('irregular-pattern') ? 'active' : ''}`}
                           data-filter="tags"
-                          data-value="form-4"
-                          title="Form pattern - Full agreement: rosso/rossa/rossi/rosse"
+                          data-value="irregular-pattern"
+                          title="Words with irregular patterns"
                         >
-                          📋 4 Forms
-                        </span>
-                        <span
-                          className={`filter-chip ${filters.tags.includes('form-2') ? 'active' : ''}`}
-                          data-filter="tags"
-                          data-value="form-2"
-                          title="Form pattern - Limited agreement: grande/grandi"
-                        >
-                          📑 2 Forms
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Gradable Filter - Show only when ADJECTIVE is selected */}
-                  {filters.wordType.includes('ADJECTIVE') && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Gradable
-                      </label>
-                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
-                        <span
-                          className={`filter-chip ${filters.tags.includes('gradable-analytical') ? 'active' : ''}`}
-                          data-filter="tags"
-                          data-value="gradable-analytical"
-                          title="Can form analytical comparatives with più/meno: più intelligente"
-                        >
-                          📊 Analytical
-                        </span>
-                        <span
-                          className={`filter-chip ${filters.tags.includes('gradable-full') ? 'active' : ''}`}
-                          data-filter="tags"
-                          data-value="gradable-full"
-                          title="Can form both analytical and synthetic comparatives: più bello, bellissimo"
-                        >
-                          📈 Full
-                        </span>
-                        <span
-                          className={`filter-chip ${filters.tags.includes('gradable-none') ? 'active' : ''}`}
-                          data-filter="tags"
-                          data-value="gradable-none"
-                          title="Cannot form comparatives: morto, perfetto"
-                        >
-                          🚫 Non-gradable
+                          ⚠️ Irregular
                         </span>
                       </div>
                     </div>
                   )}
 
                   {/* Gender Filter - Show only when NOUN is selected */}
-                  {filters.wordType.includes('NOUN') && (
+                  {filters.wordType === 'NOUN' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Gender
@@ -473,114 +378,148 @@ export default function DictionaryPanel({
                     </div>
                   )}
 
+                  {/* Register Filter - Show for non-VERB word types */}
+                  {filters.wordType !== 'VERB' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Register
+                    </label>
+                    <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                      {registerFilters.map(register => (
+                        <span
+                          key={register.value}
+                          className={`filter-chip ${filters.tags.includes(register.value) ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value={register.value}
+                          title={`Register formality - ${register.label.replace(/🎩|👕|⚖️/g, '').trim()}`}
+                        >
+                          {register.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  )}
+                  
+                  {/* Adverb Type Filter - Show only when ADVERB is selected */}
+                  {filters.wordType === 'ADVERB' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Adverb Type
+                      </label>
+                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                        {[
+                          { value: 'manner', label: '🔧 Manner' },
+                          { value: 'time', label: '⏰ Time' },
+                          { value: 'place', label: '📍 Place' },
+                          { value: 'quantity', label: '🔢 Quantity' },
+                          { value: 'frequency', label: '🔄 Frequency' },
+                          { value: 'affirmation', label: '✅ Affirmation' },
+                          { value: 'doubt', label: '❓ Doubt' },
+                          { value: 'negation', label: '❌ Negation' },
+                          { value: 'interrogative', label: '❓ Question' },
+                          { value: 'evaluation', label: '📊 Evaluation' },
+                          { value: 'emphasis', label: '💪 Emphasis' }
+                        ].map(adverbType => (
+                          <span
+                            key={adverbType.value}
+                            className={`filter-chip ${filters.tags.includes(`adverb-${adverbType.value}`) ? 'active' : ''}`}
+                            data-filter="tags"
+                            data-value={`adverb-${adverbType.value}`}
+                          >
+                            {adverbType.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Form Pattern Filter - Show only when ADJECTIVE is selected */}
+                  {filters.wordType === 'ADJECTIVE' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Form Pattern
+                      </label>
+                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                        <span
+                          className={`filter-chip ${filters.tags.includes('form-4') ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value="form-4"
+                          title="Form pattern - Full agreement: rosso/rossa/rossi/rosse"
+                        >
+                          📋 4 Forms
+                        </span>
+                        <span
+                          className={`filter-chip ${filters.tags.includes('form-2') ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value="form-2"
+                          title="Form pattern - Limited agreement: grande/grandi"
+                        >
+                          📑 2 Forms
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Gradable Filter - Show only when ADJECTIVE is selected */}
+                  {filters.wordType === 'ADJECTIVE' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Gradable
+                      </label>
+                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                        <span
+                          className={`filter-chip ${filters.tags.includes('gradable-analytical') ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value="gradable-analytical"
+                          title="Can form analytical comparatives with più/meno: più intelligente"
+                        >
+                          📊 Analytical
+                        </span>
+                        <span
+                          className={`filter-chip ${filters.tags.includes('gradable-full') ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value="gradable-full"
+                          title="Can form both analytical and synthetic comparatives: più bello, bellissimo"
+                        >
+                          Fully Gradable
+                        </span>
+                        <span
+                          className={`filter-chip ${filters.tags.includes('gradable-none') ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value="gradable-none"
+                          title="Cannot form comparatives: morto, perfetto"
+                        >
+                          🚫 Non-gradable
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+
                   {/* Number Filter - Show only when NOUN is selected */}
-                  {filters.wordType.includes('NOUN') && (
+                  {filters.wordType === 'NOUN' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Number
                       </label>
                       <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
-                        <span
-                          className={`filter-chip ${filters.tags.includes('singolare') ? 'active' : ''}`}
-                          data-filter="tags"
-                          data-value="singolare"
-                          title="Singular number form"
-                        >
-                          Singular
-                        </span>
-                        <span
-                          className={`filter-chip ${filters.tags.includes('plurale') ? 'active' : ''}`}
-                          data-filter="tags"
-                          data-value="plurale"
-                          title="Plural number form"
-                        >
-                          Plural
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Grammar Filters */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Grammar
-                    </label>
-                    <div className="flex flex-wrap gap-2 transition-all duration-300" onClick={handleChipClick}>
-                      {grammarFilters.map(filter => (
-                        <span
-                          key={filter.value}
-                          className={`filter-chip ${filters.tags.includes(filter.value) ? 'active' : ''}`}
-                          data-filter="tags"
-                          data-value={filter.value}
-                        >
-                          {filter.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Transitivity Filter - Show only when VERB is selected */}
-                  {(filters.wordType.includes('VERB') || filters.wordType.length === 0) && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Transitivity
-                      </label>
-                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
-                        {transitivityFilters.map(transitivity => (
+                        {numberFilters.map(filter => (
                           <span
-                            key={transitivity.value}
-                            className={`filter-chip ${filters.tags.includes(transitivity.value) ? 'active' : ''}`}
-                            data-filter="tags"
-                            data-value={transitivity.value}
-                            title={`Transitivity - ${transitivity.label.replace(/🎯|🌀|⚖️/g, '').trim()}`}
+                            key={filter.value}
+                            className={`filter-chip ${filters.numberFilter === filter.value ? 'active' : ''}`}
+                            data-filter="numberFilter"
+                            data-value={filter.value}
+                            title={filter.label}
                           >
-                            {transitivity.label}
+                            {filter.label}
                           </span>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Reflexive Type Filter - Show only when VERB is selected */}
-                  {(filters.wordType.includes('VERB') || filters.wordType.length === 0) && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Reflexive Type
-                      </label>
-                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
-                        {reflexiveTypeFilters.map(reflexiveType => (
-                          <span
-                            key={reflexiveType.value}
-                            className={`filter-chip ${filters.tags.includes(reflexiveType.value) ? 'active' : ''}`}
-                            data-filter="tags"
-                            data-value={reflexiveType.value}
-                            title={`Reflexive Type - ${reflexiveType.label.replace(/🔄|🫂/g, '').trim()}`}
-                          >
-                            {reflexiveType.label}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Irregular Forms Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Irregular Forms
-                    </label>
-                    <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
-                      <span
-                        className={`filter-chip ${filters.tags.includes('irregular-pattern') ? 'active' : ''}`}
-                        data-filter="tags"
-                        data-value="irregular-pattern"
-                        title="Words with irregular patterns"
-                      >
-                        ⚠️ Irregular
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Number Restriction Filter */}
+                  {/* Number Restriction Filter - Show only when NOUN is selected */}
+                  {filters.wordType === 'NOUN' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Number Restriction
@@ -604,9 +543,120 @@ export default function DictionaryPanel({
                       </span>
                     </div>
                   </div>
+                  )}
+                  
+                  {/* Verb Type Filters - Show only when VERB is selected */}
+                  {filters.wordType === 'VERB' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Verb Type
+                    </label>
+                    <div className="flex flex-wrap gap-2 transition-all duration-300" onClick={handleChipClick}>
+                      {verbTypeFilters.map(filter => (
+                        <span
+                          key={filter.value}
+                          className={`filter-chip ${filters.tags.includes(filter.value) ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value={filter.value}
+                        >
+                          {filter.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  )}
+
+                  {/* Auxiliary Type Filters - Show only when VERB is selected */}
+                  {filters.wordType === 'VERB' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Auxiliary Type
+                    </label>
+                    <div className="flex flex-wrap gap-2 transition-all duration-300" onClick={handleChipClick}>
+                      {auxiliaryTypeFilters.map(filter => (
+                        <span
+                          key={filter.value}
+                          className={`filter-chip ${filters.tags.includes(filter.value) ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value={filter.value}
+                        >
+                          {filter.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  )}
+
+                  {/* Reflexive Indicator Filters - Show only when VERB is selected */}
+                  {filters.wordType === 'VERB' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Reflexive Indicator
+                    </label>
+                    <div className="flex flex-wrap gap-2 transition-all duration-300" onClick={handleChipClick}>
+                      {reflexiveIndicatorFilters.map(filter => (
+                        <span
+                          key={filter.value}
+                          className={`filter-chip ${filters.tags.includes(filter.value) ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value={filter.value}
+                        >
+                          {filter.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  )}
+
+                  {/* Transitivity Filter - Show only when VERB is selected */}
+                  {filters.wordType === 'VERB' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Transitivity
+                      </label>
+                      <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                        {transitivityFilters.map(transitivity => (
+                          <span
+                            key={transitivity.value}
+                            className={`filter-chip ${filters.tags.includes(transitivity.value) ? 'active' : ''}`}
+                            data-filter="tags"
+                            data-value={transitivity.value}
+                            title={`Transitivity - ${transitivity.label.replace(/🎯|🌀|⚖️/g, '').trim()}`}
+                          >
+                            {transitivity.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Register Filter - Show only when VERB is selected */}
+                  {filters.wordType === 'VERB' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Register
+                    </label>
+                    <div className="flex flex-wrap gap-2" onClick={handleChipClick}>
+                      {registerFilters.map(register => (
+                        <span
+                          key={register.value}
+                          className={`filter-chip ${filters.tags.includes(register.value) ? 'active' : ''}`}
+                          data-filter="tags"
+                          data-value={register.value}
+                          title={`Register formality - ${register.label.replace(/🎩|👕|⚖️/g, '').trim()}`}
+                        >
+                          {register.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  )}
+
+
+
 
                   {/* Plural Formation Filter - Show only when NOUN is selected */}
-                  {filters.wordType.includes('NOUN') && (
+                  {filters.wordType === 'NOUN' && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Plural Formation
@@ -650,7 +700,7 @@ export default function DictionaryPanel({
               </div>
             ) : words.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                {searchTerm || filters.wordType.length > 0 || filters.cefrLevel || filters.tags.length > 0 
+                {searchTerm || filters.wordType || filters.cefrLevel || filters.tags.length > 0 
                   ? 'No words found matching your filters' 
                   : 'No words available'
                 }
