@@ -4,6 +4,13 @@ package-lock.json
 
 # Backup archives and development agents
 backup-archive/
-claude/
-codex/
+.claude/
+.codex/
+
+# Development and temporary files
+*.log
+.DS_Store
+agent.*
+.pr_body.*
+test-migration.js
 
