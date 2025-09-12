@@ -23,7 +23,7 @@
 
 The Misti verb forms system is built on a **materialization-centric architecture** where every verb form that students need to learn is pre-stored in the database as complete, ready-to-use entries. This design fundamentally differs from generation-on-demand systems.
 
-**Core Principle**: All compound forms (passato prossimo, trapassato prossimo, etc.) exist as individual `word_forms` records in the database. There is no dynamic generation at runtime - everything is pre-computed and stored with complete metadata.
+**Core Principle**: All forms (simple, compound, and progressive) exist as individual `word_forms` records in the database. There is no dynamic generation at runtime - everything is pre-materialized and stored with complete metadata using the normalized `entity_meta_values` tagging system.
 
 ### 1.2 Why This Approach Was Chosen
 
@@ -113,11 +113,11 @@ The system defines **26 essential form categories** that every verb should poten
 - `participio-passato` - Past participle (parlato)
 - `gerundio-presente` - Present gerund (parlando)
 
-#### Compound Forms (Generated Dynamically) - 14 categories
+#### Compound Forms (Stored with Building Block References) - 14 categories
 
-These are built from auxiliary patterns + building blocks:
+**CRITICAL CORRECTION**: Compound and progressive forms are **NOT generated dynamically**. They are **pre-stored** in the `word_forms` table with complete metadata, just like simple forms. The "generation" refers to the materialization process that creates these stored entries using auxiliary patterns + building blocks.
 
-**Perfect Compounds**
+**Perfect Compounds** (Stored with auxiliary + past participle references):
 - `passato-prossimo` - Present perfect (ho parlato)
 - `trapassato-prossimo` - Pluperfect (avevo parlato)
 - `futuro-anteriore` - Future perfect (avrò parlato)
@@ -128,7 +128,7 @@ These are built from auxiliary patterns + building blocks:
 - `infinito-passato` - Perfect infinitive (aver parlato)
 - `gerundio-passato` - Perfect gerund (avendo parlato)
 
-**Progressive Forms**  
+**Progressive Forms** (Stored with stare + present gerund references):
 - `presente-progressivo` - Present progressive (sto parlando)
 - `passato-progressivo` - Past progressive (stavo parlando)
 - `futuro-progressivo` - Future progressive (starò parlando)
@@ -161,9 +161,10 @@ These classifications drive materialization priority - high-frequency, low-CEFR 
 Special behavioral markers are applied to verbs requiring non-standard handling:
 
 #### reflexive-verb
-- **Purpose**: Marks verbs that require reflexive pronouns
-- **Examples**: lavarsi (to wash oneself), alzarsi (to get up)
-- **Impact**: Forms include inherent clitics (mi lavo, ti lavi, si lava)
+- **Purpose**: Marks verbs that require reflexive pronouns and dual translation system
+- **Examples**: lavarsi (to wash oneself/each other), alzarsi (to get up/help each other up)
+- **Impact**: Forms include inherent clitics (mi lavo, ti lavi, si lava) with both direct reflexive and reciprocal meanings
+- **Required Translations**: Every reflexive verb must have both direct reflexive and reciprocal translations
 
 #### modal-verb  
 - **Purpose**: Identifies modal auxiliaries
@@ -306,41 +307,41 @@ Person/number invariable:
 - **Tags**: Include mood, tense, person, number, `simple`
 - **Purpose**: Foundation forms and standalone expressions
 
-#### Compound Forms (Generated from Components)
-- **Storage**: Generated using auxiliary patterns + building blocks
+#### Compound Forms (Pre-stored with Component References)
+- **Storage**: Pre-stored in `word_forms` table with complete form text and metadata
 - **Structure**: Auxiliary + past participle (ho parlato, avevo parlato)
-- **Components**: 
+- **Materialization Components**: 
   - Auxiliary patterns from `/Users/Work/misti/lib/auxPatterns.ts` 
   - Past participles from stored `participio-passato` forms
-- **Generation**: `AuxiliaryPatternService` combines components dynamically
-- **Tags**: Include compound tense, person, number, `compound`, auxiliary type
+- **Creation Process**: `AuxiliaryPatternService` combines components during materialization, then stores complete forms
+- **Tags**: Stored in `entity_meta_values` table with compound tense, person, number, `compound`, auxiliary type references
 
-#### Progressive Forms (Generated from Components)  
-- **Storage**: Generated using stare patterns + gerunds
+#### Progressive Forms (Pre-stored with Component References)  
+- **Storage**: Pre-stored in `word_forms` table with complete form text and metadata
 - **Structure**: Stare + present gerund (sto parlando, stavo parlando)
-- **Components**:
+- **Materialization Components**:
   - Stare auxiliary patterns (different for each tense)
   - Present gerunds from stored `gerundio-presente` forms
-- **Generation**: Same service as compound forms, different auxiliary
-- **Tags**: Include progressive tense, person, number, `progressive`, `stare-auxiliary`
+- **Creation Process**: Same materialization service as compound forms, different auxiliary patterns
+- **Tags**: Stored in `entity_meta_values` table with progressive tense, person, number, `progressive`, `stare-auxiliary` references
 
 ### 3.4 Building Block Forms (Essential for Generation)
 
-Three forms are **critical** for the generation architecture:
+Three forms are **critical** for the materialization architecture:
 
 #### Past Participle (participio-passato)
 - **Required for**: All 8 compound perfect tenses
 - **Storage**: `word_forms` table with tags `['participio', 'participio-passato', 'simple']`
 - **Examples**: parlato, creduto, finito
 - **Irregulars**: fatto (fare), detto (dire), stato (essere/stare)
-- **Impact if missing**: Cannot generate any compound tense for that verb
+- **Impact if missing**: Cannot materialize any compound tense for that verb
 
 #### Present Gerund (gerundio-presente)  
 - **Required for**: All 5 progressive tenses
 - **Storage**: `word_forms` table with tags `['gerundio', 'gerundio-presente', 'simple']`
 - **Examples**: parlando, credendo, finendo  
 - **Irregulars**: facendo (fare), dicendo (dire), stando (stare)
-- **Impact if missing**: Cannot generate any progressive tense for that verb
+- **Impact if missing**: Cannot materialize any progressive tense for that verb
 
 #### Present Infinitive (infinito-presente)
 - **Required for**: Negative imperatives, clitic attachment (future scope)
@@ -423,7 +424,7 @@ Different meanings of the same verb can have different auxiliaries:
 - Translation 1: "to run (sport)" → `auxiliary: "avere"` (transitive reading)
 - Translation 2: "to rush to" → `auxiliary: "essere"` (motion reading)
 
-This allows the same verb to generate different compound forms based on meaning.
+This allows the same verb to have different stored compound forms based on meaning.
 
 #### Validation Rules
 The system enforces:
@@ -460,8 +461,12 @@ This eliminates auxiliary selection complexity for progressive tenses.
 
 ## 5. Special Cases & Complex Logic
 
-### 5.1 Reciprocal Verbs and Number Restrictions
+### 5.1 Reflexive and Reciprocal Verb Architecture
 
+#### Linguistic Foundation
+Italian reflexive verbs present a unique architectural challenge because the same morphological form (reflexive pronoun + verb) expresses two fundamentally different semantic relationships. This creates a mandatory dual translation system.
+
+#### Reciprocal Verbs and Number Restrictions
 Reciprocal verbs express mutual actions and have special constraints:
 
 #### Reciprocal Identification
@@ -485,8 +490,21 @@ context_metadata: {
   - ✅ `si incontrano` (they meet each other)
   - ❌ `mi incontro` (impossible - can't meet yourself)
 
+#### Direct Reflexive vs Reciprocal Distinction
+**Same form, different meanings**:
+- `si salutano` (direct reflexive) = "they greet themselves" (each person says goodbye to their own reflection)
+- `si salutano` (reciprocal) = "they greet each other" (mutual greeting between people)
+
+**Disambiguation strategies**:
+- Context usually clarifies meaning
+- "L'un l'altro" or "a vicenda" can be added for reciprocal emphasis
+- "Se stessi/se stesse" can be added for reflexive emphasis
+
 #### Validation Logic
-The system validates that reciprocal translations only have `form_translations` entries linking to plural forms, preventing pedagogically incorrect singular forms.
+The system validates that:
+- Reciprocal translations only have `form_translations` entries linking to plural forms
+- Direct reflexive translations have entries for all person/number combinations
+- Both translation types exist for every reflexive verb
 
 ### 5.2 Modal Verbs and Defective Verbs
 
@@ -543,16 +561,42 @@ Reflexive verbs require integrated pronouns that change form based on person:
 **Pronoun Set**: mi, ti, si, ci, vi, si
 **Integration**: Pronouns are **stored as part of the form**, not added dynamically
 
+#### Critical Linguistic Requirement: Dual Translation System
+Every reflexive verb **must have both** direct reflexive AND reciprocal translations, as Italian uses the same morphological structure (reflexive pronouns + verb) to express fundamentally different semantic relationships:
+
+**Direct Reflexive**: Action directed toward oneself
+- "si lavano" = "they wash themselves" (each person washes their own body)
+- Can be replaced with "se stessi/se stesse" (themselves)
+- Subject and object refer to the same entities
+
+**Reciprocal**: Mutual action between multiple participants  
+- "si lavano" = "they wash each other" (mutual washing action)
+- Can be clarified with "l'un l'altro" or "a vicenda" when ambiguous
+- Multiple subjects performing actions on each other
+
+#### Translation Storage Requirements
+Each reflexive verb must store:
+1. **Direct Reflexive Translation**: `usage: "direct-reflexive"`, covers all persons (io, tu, lui/lei, noi, voi, loro)
+2. **Reciprocal Translation**: `usage: "reciprocal"`, `plurality: "plural-only"`, covers only plural persons (noi, voi, loro)
+
 #### Base Clitic Forms Storage
 Every reflexive verb stores "base clitic forms":
 
-**Examples for `lavarsi`**:
+**Examples for `lavarsi` - Direct Reflexive**:
 - `mi lavo` (I wash myself)
 - `ti lavi` (you wash yourself)  
 - `si lava` (he/she washes himself/herself)
 - `ci laviamo` (we wash ourselves)
 - `vi lavate` (you wash yourselves)
 - `si lavano` (they wash themselves)
+
+**Examples for `lavarsi` - Reciprocal**:
+- ❌ `mi lavo` (impossible - cannot wash oneself reciprocally)
+- ❌ `ti lavi` (impossible - cannot wash oneself reciprocally)
+- ❌ `si lava` (impossible - cannot wash oneself reciprocally)
+- ✅ `ci laviamo` (we wash each other)
+- ✅ `vi lavate` (you wash each other)
+- ✅ `si lavano` (they wash each other)
 
 #### Clitic Integration Scope
 **Current scope**: Base subject clitics only
@@ -579,48 +623,89 @@ This is enforced through validation rules that ensure reflexive verbs have `auxi
 
 ## 6. Form-Translation Assignment Architecture
 
-### 6.1 Why Every Form Needs Every Translation
+### 6.1 Why Form Translations Coverage is Complex
 
-The architecture requires **complete coverage** between forms and translations for several reasons:
+The architecture requires **strategic coverage** between forms and translations, but coverage requirements are more complex than simple auxiliary patterns.
 
-#### Semantic Precision
+#### Number Restrictions from Meta Attributes
+Meta attributes affect coverage requirements significantly:
+- **"solo-plurale" restriction**: Translations marked with plural-only constraints (like reciprocals) only receive form_translations for plural forms
+- **"solo-singolare" restriction**: Translations with singular-only constraints only get singular form_translations
+- **No restriction**: Translations get form_translations for all appropriate forms
+
+#### Coverage Matrix Complexity
+Each form_translation links to exactly:
+- **1 translation**: Specific meaning/usage context  
+- **1 form**: Specific conjugated form
+
+**Coverage calculation per translation**:
+- Normal translation: ~130 forms total (simple + compound + progressive)
+- Reciprocal translation: ~65 forms total (only plural persons)
+- Impersonal translation: ~22 forms total (only 3rd person singular)
+
+#### Semantic Precision Requirements
 Different translations of the same verb may have different:
 - **Auxiliary requirements**: correre (race/rush) → avere vs essere
 - **Usage constraints**: incontrarsi (meet alone/meet each other) → any vs plural-only  
 - **Register differences**: andare (go/leave) → informal vs formal
+- **Number restrictions**: reciprocal verbs vs direct reflexive versions
 
 #### Learning Progression Control
 Students need to encounter:
 - **Beginner translations** first (simple, common meanings)
 - **Advanced translations** later (nuanced, contextual meanings)
 - **Form-specific explanations** for complex tenses
+- **Restricted forms** only when linguistically appropriate
 
 #### UI Flexibility Requirements
 The interface must show:
 - **Translation variety** for the same form across different meanings
 - **Contextual appropriateness** for each form-translation pairing
 - **Progressive disclosure** based on student level
+- **Filtered coverage** respecting number/person restrictions
 
 ### 6.2 Complete Coverage Matrix Requirements
 
 #### Expected Coverage Calculation
-For a typical verb with N translations and M auxiliaries:
+Coverage calculations must account for number restrictions from meta attributes:
+
+**For a normal verb translation (no restrictions)**:
 - **Simple forms**: ~51 forms per verb (all moods/tenses/persons)
-- **Compound forms**: ~49 forms × M auxiliaries per meaning  
+- **Compound forms**: ~49 forms per auxiliary pattern  
 - **Progressive forms**: ~30 forms (same for all meanings)
-- **Total per translation**: 51 + (49 × auxiliary_count) + 30
+- **Total per translation**: ~130 form_translations
+
+**For a reciprocal translation ("solo-plurale" restriction)**:
+- **Simple forms**: ~17 forms (only plural persons: noi, voi, loro)
+- **Compound forms**: ~16 forms per auxiliary pattern (only plurals)
+- **Progressive forms**: ~10 forms (only plural persons)
+- **Total per translation**: ~43 form_translations
+
+**For an impersonal translation ("solo-terza-persona-singolare")**:
+- **Simple forms**: ~4 forms (only lui/lei across tenses)
+- **Compound forms**: ~4 forms per auxiliary pattern
+- **Progressive forms**: ~3 forms
+- **Total per translation**: ~11 form_translations
+
+#### Form_Translation Relationship Rules
+- Each form_translation links to **exactly 1 translation** and **exactly 1 form**
+- Coverage matrix must respect meta attribute restrictions per translation
+- Missing coverage for restricted forms is expected and correct
+- Over-coverage (restricted forms getting inappropriate translations) triggers validation warnings
 
 #### Coverage Validation
 The system expects:
-- **Normal verbs**: Each translation covers all appropriate forms
+- **Normal verbs**: Each translation covers all appropriate forms based on restrictions
 - **Reciprocal verbs**: Only plural forms linked to reciprocal meanings
 - **Impersonal verbs**: Only 3rd person forms linked  
 - **Defective verbs**: Reduced form sets based on linguistic reality
+- **Meta attribute compliance**: Form_translation coverage respects number/person restrictions
 
 #### Assignment Quality Scoring
 Each form-translation assignment includes:
 - `assignment_method`: How the assignment was created (manual/automatic)
 - `confidence_score`: Quality rating (0-100) for the pairing
+- `restriction_compliance`: Whether assignment respects meta attribute restrictions
 
 ### 6.3 Confidence Scoring and Assignment Methods
 
@@ -671,81 +756,132 @@ The UI applies filters based on:
 
 The `word_forms` table is the **central storage** for all conjugated forms:
 
-#### Core Structure
+#### Core Structure (Corrected)
 ```sql
 word_forms (
   id: bigint PRIMARY KEY,
   word_id: uuid FOREIGN KEY → dictionary.id,
   form_text: text,           -- The actual conjugated form
   form_type: text,           -- 'conjugation' for verb forms
-  tags: text[],              -- All classification metadata
   phonetic_form: text,       -- Pronunciation guide
   ipa: text,                 -- International Phonetic Alphabet
   created_at: timestamptz
 )
 ```
 
-#### Tag-Based Classification System
-All grammatical information is stored in the `tags` array:
+**CRITICAL CORRECTION**: The `word_forms` table does **NOT** contain a `tags: text[]` field. This is architecturally incorrect.
 
-**Example for "parlavo"**:
-```json
-[
-  "indicativo",           // mood
-  "imperfetto",          // tense
-  "prima-persona",       // person
-  "singolare",          // number
-  "simple"              // form type
-]
+#### Normalized Tagging System via entity_meta_values
+All grammatical metadata is stored in the **normalized tagging system**:
+
+**entity_meta_values Structure**:
+```sql
+entity_meta_values (
+  entity_type: text,         -- 'form' for word_forms
+  entity_id: uuid,           -- References word_forms.id
+  value_id: uuid,            -- References meta_values.id
+  derived_from: text,        -- NULL for direct assignments
+  propagation_source_id: uuid, -- NULL for direct assignments
+  propagation_method: text   -- NULL for direct assignments
+)
 ```
 
-**Example for "ho parlato"** (if stored):
-```json
-[
-  "passato-prossimo",    // compound tense
-  "prima-persona",       // person  
-  "singolare",          // number
-  "compound",           // form type
-  "avere-auxiliary"     // auxiliary used
-]
+**meta_values Structure**:
+```sql
+meta_values (
+  id: uuid PRIMARY KEY,
+  value: text,               -- "indicativo", "imperfetto", etc.
+  shorthand: text,           -- Short display version
+  stable_id: text,           -- System identifier
+  attribute_id: uuid         -- Links to meta_attributes
+)
+```
+
+#### Example Metadata for "parlavo"
+Instead of a tags array, the form has linked metadata entries:
+
+```sql
+-- In entity_meta_values (entity_type='form', entity_id=<parlavo_form_id>)
+value_id → meta_values.value: "indicativo"    (mood)
+value_id → meta_values.value: "imperfetto"    (tense)
+value_id → meta_values.value: "prima-persona" (person)
+value_id → meta_values.value: "singolare"     (number)
+value_id → meta_values.value: "simple"        (form_type)
+```
+
+#### Example Metadata for "ho parlato"
+Compound forms also use the normalized system:
+
+```sql
+-- In entity_meta_values (entity_type='form', entity_id=<ho_parlato_form_id>)
+value_id → meta_values.value: "passato-prossimo" (compound tense)
+value_id → meta_values.value: "prima-persona"   (person)
+value_id → meta_values.value: "singolare"       (number)
+value_id → meta_values.value: "compound"        (form_type)
+value_id → meta_values.value: "avere-auxiliary" (auxiliary used)
 ```
 
 #### Universal Terminology Compliance
-All tags use **language-agnostic universal terms**:
+All metadata values use **language-agnostic universal terms** stored in `meta_values.value`:
 - `prima-persona` instead of `io`
 - `singolare` instead of locale-specific terms
 - `indicativo` instead of various language equivalents
 
-This allows the same data to power interfaces in multiple languages.
+This allows the same data to power interfaces in multiple languages through the normalized reference system.
 
-### 7.2 Meta-attribute Tagging System via entity_meta_values
+### 7.2 Normalized Tagging Architecture via entity_meta_values
 
-The system uses a **flexible metadata architecture** for additional attributes:
+The system uses a **three-tier normalized metadata architecture** that replaces array-based tagging:
 
-#### entity_meta_values Structure
+#### Three-Tier Architecture
+1. **meta_attributes**: Defines metadata categories and rules
+2. **meta_values**: Contains actual metadata values linked to attributes
+3. **entity_meta_values**: Assigns metadata values to entities
+
+#### entity_meta_values Structure (Authoritative)
 ```sql
 entity_meta_values (
-  id: bigint PRIMARY KEY,
-  entity_type: text,         -- 'word', 'word_form', 'word_translation'
-  entity_id: text,           -- References the specific record
-  attribute_name: text,      -- What kind of metadata
-  attribute_value: text,     -- The metadata value
-  created_at: timestamptz
+  entity_type: text,         -- 'word', 'form', 'word_translation', 'form_translation'
+  entity_id: uuid,           -- References the specific record ID
+  value_id: uuid,            -- References meta_values.id (not attribute_value text)
+  created_at: timestamptz,
+  created_by: uuid,
+  derived_from: text,        -- 'form', 'translation', etc. (NULL = direct assignment)
+  propagation_source_id: uuid, -- The specific child entity that caused propagation
+  propagation_method: text,  -- 'ANY_MATCH', 'COMBINE', 'FIRST_WINS', etc.
+  PRIMARY KEY (entity_type, entity_id, value_id)
 )
 ```
 
-#### Common Meta-attributes for Verb Forms
-- **`difficulty_level`**: Pedagogical complexity rating
-- **`usage_frequency`**: How often this form appears in real text
-- **`register`**: Formal/informal/colloquial classification  
-- **`regional_variant`**: Geographic usage variations
-- **`archaic_status`**: Whether form is obsolete/literary
+#### Core vs Optional Metadata Categories
+**Core metadata** (stored for all entities):
+- **Form-level**: tense, mood, person, number, verb_form_type
+- **Translation-level**: auxiliary, transitivity, usage (direct-reflexive/reciprocal), number restrictions
+- **Word-level**: conjugation_type, cefr_level, frequency_tier, reflexive status
 
-#### Benefits of Meta-attribute System
-- **Extensibility**: New attributes can be added without schema changes
-- **Flexibility**: Different entities can have different metadata sets
-- **Performance**: Core queries don't need to JOIN metadata unless required
-- **Versioning**: Metadata can evolve while preserving historical values
+**Optional tags** (stored selectively):
+- **optional_tag_word**: Word-level descriptive tags
+- **optional_tag_form**: Form-level descriptive tags  
+- **optional_tag_translation**: Translation-level descriptive tags
+
+#### Translation Tags via entity_meta_values
+Translation metadata (auxiliary type, reflexive/reciprocal usage, number restrictions) are **also** stored in the normalized system:
+
+```sql
+-- Translation with reciprocal usage + number restriction
+-- entity_type='word_translation', entity_id=<translation_id>
+value_id → meta_values.value: "reciprocal"     (usage type)
+value_id → meta_values.value: "plural-only"    (number restriction)
+value_id → meta_values.value: "essere"         (auxiliary)
+```
+
+#### Benefits of Normalized Architecture
+- **Storage Efficiency**: Eliminates expensive GIN indexes on arrays/JSONB
+- **Referential Integrity**: Foreign key constraints maintain data consistency
+- **Query Performance**: Btree indexes on UUID keys provide predictable performance
+- **Extensibility**: New metadata can be added through meta_values without schema changes
+- **Traceability**: Propagation fields track derived metadata sources
+- **Universal Access**: Same system handles core metadata and optional tags
 
 ### 7.3 form_translations Assignment Matrix
 
@@ -800,7 +936,7 @@ The auxiliary patterns from `/Users/Work/misti/lib/auxPatterns.ts` integrate wit
 1. **Translation specifies auxiliary**: `context_metadata.auxiliary: "avere"`
 2. **Pattern lookup**: Based on tense/person/number
 3. **Building block retrieval**: Past participle/gerund from `word_forms`  
-4. **Dynamic generation**: Auxiliary + building block = compound form
+4. **Materialization process**: Auxiliary + building block = stored compound form
 5. **Assignment creation**: Generated form linked to appropriate translations
 
 #### Validation Relationship Rules
@@ -810,18 +946,352 @@ The system enforces referential integrity:
 - `form_translations.form_id` must reference existing `word_forms.id`
 - `form_translations.word_translation_id` must reference existing `word_translations.id`
 - `word_forms.word_id` must reference existing `dictionary.id`
+- `entity_meta_values.value_id` must reference existing `meta_values.id`
+- `entity_meta_values.entity_id` must match valid entity IDs based on entity_type
 
-**Auxiliary Consistency**:
-- Forms with `avere-auxiliary` tag must link to translations with `auxiliary: "avere"`
-- Forms with `essere-auxiliary` tag must link to translations with `auxiliary: "essere"`  
-- Reflexive translations (`usage: "direct-reflexive"`) must use `auxiliary: "essere"`
+**Auxiliary Consistency** (via normalized metadata):
+- Forms with "avere-auxiliary" metadata must link to translations with "avere" auxiliary metadata
+- Forms with "essere-auxiliary" metadata must link to translations with "essere" auxiliary metadata  
+- Translations with "direct-reflexive" usage must have "essere" auxiliary metadata
 
 **Semantic Validation**:
-- Reciprocal translations can only link to plural-person forms
-- Impersonal verbs can only have 3rd-person singular forms
-- Building block forms (participles, gerunds) must exist before compound generation
+- Translations with "reciprocal" usage and "plural-only" restriction can only link to plural-person forms
+- Verbs with "impersonal-verb" metadata can only have forms with "terza-persona" + "singolare" metadata
+- Building block forms (participles, gerunds) must exist before compound form materialization
+- Metadata propagation rules are enforced through the entity_meta_values propagation fields
 
 This comprehensive relationship system ensures data integrity while providing maximum flexibility for pedagogical and linguistic requirements.
+
+---
+
+## 8. Concrete Implementation Scenarios
+
+This section provides detailed examples showing exactly how the verb forms architecture handles three representative scenarios, including complete metadata structures and form_translation coverage matrices.
+
+### Scenario A: Normal Verb - "mangiare" (to eat)
+
+#### Dictionary Entry
+```sql
+-- dictionary table
+id: 550e8400-e29b-41d4-a716-446655440000
+lemma: "mangiare"
+word_type: "verb"
+```
+
+#### Word-Level Metadata (via entity_meta_values)
+```sql
+-- entity_type='word', entity_id=550e8400-e29b-41d4-a716-446655440000
+value_id → meta_values.value: "are-conjugation"    (conjugation_type)
+value_id → meta_values.value: "freq-top100"        (frequency_tier)
+value_id → meta_values.value: "CEFR-A1"            (cefr_level)
+value_id → meta_values.value: "transitive"         (primary_transitivity)
+```
+
+#### Translation 1: "to eat" (primary meaning)
+```sql
+-- word_translations table
+id: 660e8400-e29b-41d4-a716-446655440001
+word_id: 550e8400-e29b-41d4-a716-446655440000
+translation: "to eat"
+display_priority: 1
+context_metadata: {
+  "auxiliary": "avere",
+  "transitivity": "transitive"
+}
+```
+
+**Translation-Level Metadata**:
+```sql
+-- entity_type='word_translation', entity_id=660e8400-e29b-41d4-a716-446655440001
+value_id → meta_values.value: "avere"          (auxiliary)
+value_id → meta_values.value: "transitive"     (transitivity)
+value_id → meta_values.value: "usage-primary"  (optional_tag_translation)
+```
+
+#### Expected Forms (Sample - Total ~130 per translation)
+
+**Simple Forms** (~51 forms):
+```sql
+-- Present indicative examples
+form_text: "mangio"    | person: prima | number: singolare | mood: indicativo | tense: presente
+form_text: "mangi"     | person: seconda | number: singolare | mood: indicativo | tense: presente
+form_text: "mangia"    | person: terza | number: singolare | mood: indicativo | tense: presente
+
+-- Building blocks
+form_text: "mangiato"  | participio-passato (required for compounds)
+form_text: "mangiando" | gerundio-presente (required for progressives)
+form_text: "mangiare"  | infinito-presente
+```
+
+**Compound Forms** (~49 forms with avere auxiliary):
+```sql
+form_text: "ho mangiato"     | tense: passato-prossimo | auxiliary: avere
+form_text: "avevo mangiato"  | tense: trapassato-prossimo | auxiliary: avere
+form_text: "avrò mangiato"   | tense: futuro-anteriore | auxiliary: avere
+```
+
+**Progressive Forms** (~30 forms with stare):
+```sql
+form_text: "sto mangiando"    | tense: presente-progressivo
+form_text: "stavo mangiando"  | tense: passato-progressivo
+form_text: "starò mangiando"  | tense: futuro-progressivo
+```
+
+#### Form_Translations Coverage
+**Total Expected**: ~130 form_translations linking each form to the "to eat" translation
+- No number restrictions → all forms get coverage
+- Single auxiliary (avere) → straightforward compound coverage
+- All progressive forms covered (stare is universal)
+
+**Sample form_translations entries**:
+```sql
+form_id: <mangio_id> → word_translation_id: 660e8400-e29b-41d4-a716-446655440001
+form_id: <ho_mangiato_id> → word_translation_id: 660e8400-e29b-41d4-a716-446655440001
+form_id: <sto_mangiando_id> → word_translation_id: 660e8400-e29b-41d4-a716-446655440001
+```
+
+### Scenario B: Reflexive Verb - "lavarsi" (to wash oneself/each other)
+
+#### Dictionary Entry
+```sql
+-- dictionary table
+id: 770e8400-e29b-41d4-a716-446655440000
+lemma: "lavarsi"
+word_type: "verb"
+```
+
+#### Word-Level Metadata
+```sql
+-- entity_type='word', entity_id=770e8400-e29b-41d4-a716-446655440000
+value_id → meta_values.value: "are-conjugation"  (conjugation_type)
+value_id → meta_values.value: "reflexive-verb"   (verb_type)
+value_id → meta_values.value: "freq-top200"      (frequency_tier)
+value_id → meta_values.value: "CEFR-A2"          (cefr_level)
+```
+
+#### Translation 1: Direct Reflexive "to wash oneself"
+```sql
+-- word_translations table
+id: 880e8400-e29b-41d4-a716-446655440001
+word_id: 770e8400-e29b-41d4-a716-446655440000
+translation: "to wash oneself"
+display_priority: 1
+context_metadata: {
+  "auxiliary": "essere",
+  "usage": "direct-reflexive",
+  "transitivity": "reflexive"
+}
+```
+
+**Translation 1 Metadata**:
+```sql
+-- entity_type='word_translation', entity_id=880e8400-e29b-41d4-a716-446655440001
+value_id → meta_values.value: "essere"           (auxiliary)
+value_id → meta_values.value: "direct-reflexive" (usage)
+value_id → meta_values.value: "reflexive"        (transitivity)
+```
+
+#### Translation 2: Reciprocal "to wash each other" (MANDATORY)
+```sql
+-- word_translations table
+id: 880e8400-e29b-41d4-a716-446655440002
+word_id: 770e8400-e29b-41d4-a716-446655440000
+translation: "to wash each other"
+display_priority: 2
+context_metadata: {
+  "auxiliary": "essere",
+  "usage": "reciprocal",
+  "plurality": "plural-only"
+}
+```
+
+**Translation 2 Metadata**:
+```sql
+-- entity_type='word_translation', entity_id=880e8400-e29b-41d4-a716-446655440002
+value_id → meta_values.value: "essere"      (auxiliary)
+value_id → meta_values.value: "reciprocal"  (usage)
+value_id → meta_values.value: "plural-only" (number_restriction)
+```
+
+#### Expected Forms with Clitics (Sample)
+
+**Simple Forms with Integrated Pronouns** (~51 forms):
+```sql
+-- Present indicative with reflexive clitics
+form_text: "mi lavo"   | person: prima | number: singolare | clitic: mi
+form_text: "ti lavi"   | person: seconda | number: singolare | clitic: ti
+form_text: "si lava"   | person: terza | number: singolare | clitic: si
+form_text: "ci laviamo" | person: prima | number: plurale | clitic: ci
+form_text: "vi lavate"  | person: seconda | number: plurale | clitic: vi
+form_text: "si lavano"  | person: terza | number: plurale | clitic: si
+
+-- Building blocks
+form_text: "lavato/a/i/e" | participio-passato (with agreement variants)
+form_text: "lavandosi"    | gerundio-presente with si
+form_text: "lavarsi"      | infinito-presente
+```
+
+**Compound Forms with essere + agreement** (~49 forms):
+```sql
+form_text: "mi sono lavato/a"    | passato-prossimo | auxiliary: essere
+form_text: "ci siamo lavati/e"   | passato-prossimo | auxiliary: essere | plural
+form_text: "si erano lavati/e"   | trapassato-prossimo | auxiliary: essere
+```
+
+#### Form_Translations Coverage (Complex)
+
+**Translation 1 (Direct Reflexive)**: ~130 form_translations
+- All forms covered (no number restrictions)
+- All persons: io, tu, lui/lei, noi, voi, loro
+
+**Translation 2 (Reciprocal)**: ~43 form_translations
+- Only plural forms covered (due to "plural-only" restriction)
+- Only persons: noi, voi, loro
+- Singular forms (mi lavo, ti lavi, si lava) NOT linked to reciprocal translation
+
+**Coverage Validation**:
+```sql
+-- ✅ Valid: plural form → reciprocal translation
+form_id: <ci_laviamo_id> → word_translation_id: 880e8400-e29b-41d4-a716-446655440002
+
+-- ❌ Invalid: singular form → reciprocal translation
+-- This should NOT exist in form_translations
+form_id: <mi_lavo_id> → word_translation_id: 880e8400-e29b-41d4-a716-446655440002
+```
+
+### Scenario C: Dual Auxiliary Verb - "correre" (to run)
+
+#### Dictionary Entry
+```sql
+-- dictionary table
+id: 990e8400-e29b-41d4-a716-446655440000
+lemma: "correre"
+word_type: "verb"
+```
+
+#### Word-Level Metadata
+```sql
+-- entity_type='word', entity_id=990e8400-e29b-41d4-a716-446655440000
+value_id → meta_values.value: "ere-conjugation" (conjugation_type)
+value_id → meta_values.value: "freq-top500"     (frequency_tier)
+value_id → meta_values.value: "CEFR-B1"         (cefr_level)
+value_id → meta_values.value: "both-auxiliary"  (derived from translations)
+```
+
+#### Translation 1: "to run" (sport/exercise - transitive with avere)
+```sql
+-- word_translations table
+id: aa0e8400-e29b-41d4-a716-446655440001
+word_id: 990e8400-e29b-41d4-a716-446655440000
+translation: "to run (sport)"
+display_priority: 1
+context_metadata: {
+  "auxiliary": "avere",
+  "transitivity": "transitive",
+  "context": "sport/exercise"
+}
+```
+
+**Translation 1 Metadata**:
+```sql
+-- entity_type='word_translation', entity_id=aa0e8400-e29b-41d4-a716-446655440001
+value_id → meta_values.value: "avere"       (auxiliary)
+value_id → meta_values.value: "transitive"  (transitivity)
+value_id → meta_values.value: "sport"       (optional_tag_translation)
+```
+
+#### Translation 2: "to rush to" (motion with destination - intransitive with essere)
+```sql
+-- word_translations table
+id: aa0e8400-e29b-41d4-a716-446655440002
+word_id: 990e8400-e29b-41d4-a716-446655440000
+translation: "to rush to"
+display_priority: 2
+context_metadata: {
+  "auxiliary": "essere",
+  "transitivity": "intransitive",
+  "semantic_field": "motion"
+}
+```
+
+**Translation 2 Metadata**:
+```sql
+-- entity_type='word_translation', entity_id=aa0e8400-e29b-41d4-a716-446655440002
+value_id → meta_values.value: "essere"        (auxiliary)
+value_id → meta_values.value: "intransitive"   (transitivity)
+value_id → meta_values.value: "motion"        (optional_tag_translation)
+```
+
+#### Expected Forms (Shared across translations)
+
+**Simple Forms** (~51 forms - same for both meanings):
+```sql
+form_text: "corro"    | present indicative 1st singular
+form_text: "corri"    | present indicative 2nd singular
+form_text: "corre"    | present indicative 3rd singular
+
+-- Building blocks
+form_text: "corso"     | participio-passato
+form_text: "correndo"  | gerundio-presente
+form_text: "correre"   | infinito-presente
+```
+
+**Compound Forms - Two Different Sets**:
+
+**For Translation 1 (avere auxiliary)** (~49 forms):
+```sql
+form_text: "ho corso"      | passato-prossimo with avere
+form_text: "avevo corso"   | trapassato-prossimo with avere
+form_text: "avrò corso"    | futuro-anteriore with avere
+```
+
+**For Translation 2 (essere auxiliary)** (~49 forms):
+```sql
+form_text: "sono corso/a"     | passato-prossimo with essere + agreement
+form_text: "ero corso/a"      | trapassato-prossimo with essere + agreement
+form_text: "sarò corso/a"     | futuro-anteriore with essere + agreement
+```
+
+**Progressive Forms** (~30 forms - same for both meanings):
+```sql
+form_text: "sto correndo"   | presente-progressivo
+form_text: "stavo correndo" | passato-progressivo
+```
+
+#### Form_Translations Coverage (Dual Auxiliary Impact)
+
+**Translation 1 (Sport - avere)**: ~130 form_translations
+- All simple forms: 51
+- Compound forms with avere: 49
+- All progressive forms: 30
+
+**Translation 2 (Motion - essere)**: ~130 form_translations
+- All simple forms: 51 (same forms, different meaning)
+- Compound forms with essere: 49 (different forms)
+- All progressive forms: 30 (same forms)
+
+**Critical Architecture Point**: The same simple form ("corro") gets **two different form_translations entries** - one for each meaning. Compound forms are **different word_forms records** due to different auxiliaries.
+
+**Form Storage Strategy**:
+```sql
+-- Simple forms: single storage, multiple translations
+form_text: "corro" → links to both translations
+
+-- Compound forms: separate storage per auxiliary
+form_text: "ho corso" → links only to Translation 1 (avere)
+form_text: "sono corso" → links only to Translation 2 (essere)
+```
+
+#### Complete Tag Structure Summary
+
+Each scenario demonstrates the complete metadata hierarchy:
+
+**Word Level**: Core attributes (conjugation, frequency, CEFR, verb type)
+**Translation Level**: Auxiliary, transitivity, usage constraints, restrictions
+**Form Level**: Mood, tense, person, number, form type, auxiliary used
+**Assignment Level**: Form↔Translation linkages with coverage validation
+
+This normalized system ensures complete architectural consistency while handling the full complexity of Italian verb semantics and pedagogy.
 
 ---
 
@@ -831,10 +1301,12 @@ The Misti verb forms system represents a sophisticated **materialization-centric
 
 **Key Architectural Principles**:
 
-1. **Complete Materialization**: All simple forms and building blocks are stored; compound forms are generated from pre-computed auxiliary patterns
+1. **Complete Materialization**: All forms (simple, compound, progressive) are pre-stored with complete metadata
 2. **Translation-Centric Design**: Auxiliary selection and usage constraints are specified at the meaning level, not the word level
-3. **Universal Terminology**: Language-agnostic internal representation enables multi-language interfaces
-4. **Pedagogical Priority**: Form materialization and translation assignment prioritizes learning needs over linguistic completeness
-5. **Validation-First**: Comprehensive compliance checking ensures data quality at all architectural layers
+3. **Normalized Tagging**: All metadata stored via entity_meta_values system, eliminating array-based storage
+4. **Dual Translation Requirement**: Reflexive verbs must have both direct reflexive and reciprocal translations
+5. **Restriction-Aware Coverage**: Form_translations respect number/person restrictions from meta attributes
+6. **Universal Terminology**: Language-agnostic internal representation enables multi-language interfaces
+7. **Validation-First**: Comprehensive compliance checking ensures data quality at all architectural layers
 
 This system successfully handles the full complexity of Italian verb conjugation while maintaining the flexibility needed for effective language learning applications.
