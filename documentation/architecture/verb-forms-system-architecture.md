@@ -160,7 +160,7 @@ These classifications drive materialization priority - high-frequency, low-CEFR 
 
 Special behavioral markers are applied to verbs requiring non-standard handling:
 
-#### reflexive-verb
+#### direct-reflexive
 - **Purpose**: Marks verbs that require reflexive pronouns and dual translation system
 - **Examples**: lavarsi (to wash oneself/each other), alzarsi (to get up/help each other up)
 - **Impact**: Forms include inherent clitics (mi lavo, ti lavi, si lava) with both direct reflexive and reciprocal meanings
@@ -176,7 +176,7 @@ Special behavioral markers are applied to verbs requiring non-standard handling:
 - **Examples**: bisognare (to be necessary), importare (to matter)
 - **Impact**: Only 3rd person forms are materialized
 
-#### weather-verb
+#### meteorological-verb
 - **Purpose**: Atmospheric/meteorological verbs
 - **Examples**: piovere (to rain), nevicare (to snow)  
 - **Impact**: Typically impersonal, uses essere auxiliary
@@ -537,7 +537,7 @@ Defective verbs miss certain forms entirely:
 ### 5.3 Impersonal/Weather Verbs
 
 #### Impersonal Verb Classification
-- **Marker**: `impersonal-verb` and/or `weather-verb` tags
+- **Marker**: `impersonal-verb` and/or `meteorological-verb` tags
 - **Constraint**: Only 3rd person singular forms are valid
 - **Examples**: bisognare, importare, piovere, nevicare
 
@@ -1170,7 +1170,7 @@ word_type: "verb"
 ```sql
 -- entity_type='word', entity_id=770e8400-e29b-41d4-a716-446655440000
 value_id → meta_values.value: "are-conjugation"  (conjugation_type)
-value_id → meta_values.value: "reflexive-verb"   (verb_type)
+value_id → meta_values.value: "direct-reflexive" (verb_type)
 value_id → meta_values.value: "freq-top200"      (frequency_tier)
 value_id → meta_values.value: "CEFR-A2"          (cefr_level)
 ```
@@ -1380,7 +1380,7 @@ word_type: "verb"
 value_id → meta_values.value: "ere-conjugation" (conjugation_type)
 value_id → meta_values.value: "freq-top500"     (frequency_tier)
 value_id → meta_values.value: "CEFR-B1"         (cefr_level)
-value_id → meta_values.value: "dual-auxiliary"  (derived from translations)
+value_id → meta_values.value: "transitive-verb" (verb_type)
 ```
 
 #### Translation 1: "to run" (sport/exercise - transitive with avere)
@@ -1407,7 +1407,7 @@ display_priority: 2
 context_metadata: {
   "auxiliary": "essere", 
   "transitivity": "intransitive",
-  "semantic_field": "motion"
+  "verb_type": "transitive-verb"
 }
 ```
 
@@ -1490,7 +1490,6 @@ value_id → meta_values.value: "ere-conjugation"    (conjugation_type)
 value_id → meta_values.value: "modal-verb"         (verb_type)
 value_id → meta_values.value: "freq-top50"         (frequency_tier)
 value_id → meta_values.value: "CEFR-A1"            (cefr_level)
-value_id → meta_values.value: "dual-auxiliary"     (inherited auxiliary flexibility)
 ```
 
 #### Meta Attribute Integration
@@ -1511,7 +1510,7 @@ display_priority: 1
 context_metadata: {
   "auxiliary": "avere",
   "modal_pattern": "dovere + infinitive",
-  "semantic_field": "obligation"
+  "usage": "modal"
 }
 ```
 
@@ -1525,7 +1524,7 @@ display_priority: 2
 context_metadata: {
   "auxiliary": "avere",
   "transitivity": "transitive",
-  "semantic_field": "debt"
+  "usage": "transitive"
 }
 ```
 
@@ -1615,7 +1614,7 @@ value_id → meta_values.value: "ere-conjugation"    (conjugation_type)
 value_id → meta_values.value: "defective-verb"     (verb_type)
 value_id → meta_values.value: "freq-rare"          (frequency_tier)
 value_id → meta_values.value: "CEFR-C1"            (cefr_level)
-value_id → meta_values.value: "legal-formal"       (register_restriction)
+value_id → meta_values.value: "missing-first-second-person" (number_restriction)
 ```
 
 #### Meta Attribute Integration for Defective Status
@@ -1625,8 +1624,8 @@ value_id → meta_values.value: "legal-formal"       (register_restriction)
 -- entity_meta_values links: entity_type='word', entity_id=<vigere_id>, value_id=<defective_verb_value_id>
 
 -- Additional restriction metadata
--- meta_attributes contains: attribute_name="form_restrictions", category="morphological"
--- meta_values contains: value="missing-imperative", value="missing-first-second-person", etc.
+-- meta_attributes contains: attribute_name="number_restriction", category="morphological"
+-- meta_values contains: value="missing-first-second-person", stable_id="missing_first_second_person"
 ```
 
 #### Translation: "to be in force/to be valid" (legal/formal)
@@ -1639,7 +1638,7 @@ display_priority: 1
 context_metadata: {
   "auxiliary": "essere",
   "transitivity": "intransitive",
-  "semantic_field": "legal",
+  "usage": "formal",
   "register": "formal"
 }
 ```
@@ -1727,7 +1726,7 @@ value_id → meta_values.value: "are-conjugation"      (conjugation_type)
 value_id → meta_values.value: "impersonal-verb"      (verb_type)  
 value_id → meta_values.value: "freq-top1000"         (frequency_tier)
 value_id → meta_values.value: "CEFR-B1"              (cefr_level)
-value_id → meta_values.value: "dual-meaning"         (semantic_complexity)
+value_id → meta_values.value: "third-person-only"    (number_restriction)
 ```
 
 #### Meta Attribute Integration for Impersonal Status  
@@ -1737,7 +1736,7 @@ value_id → meta_values.value: "dual-meaning"         (semantic_complexity)
 -- entity_meta_values links: entity_type='word', entity_id=<importare_id>, value_id=<impersonal_verb_value_id>
 
 -- Person restriction metadata  
--- meta_attributes contains: attribute_name="person_restrictions", category="morphological"
+-- meta_attributes contains: attribute_name="number_restriction", category="morphological"
 -- meta_values contains: value="third-person-only", stable_id="third_person_restriction"
 ```
 
@@ -1751,8 +1750,7 @@ display_priority: 1
 context_metadata: {
   "auxiliary": "essere",
   "usage": "impersonal",
-  "plurality": "third-person-only",
-  "semantic_field": "importance"
+  "plurality": "third-person-only"
 }
 ```
 
@@ -1766,7 +1764,7 @@ display_priority: 2
 context_metadata: {
   "auxiliary": "avere",
   "transitivity": "transitive", 
-  "semantic_field": "commerce"
+  "usage": "transitive"
 }
 ```
 
@@ -1866,21 +1864,20 @@ word_type: "verb"
 ```sql
 -- entity_type='word', entity_id=220e8400-e29b-41d4-a716-446655440000
 value_id → meta_values.value: "ere-conjugation"       (conjugation_type)
-value_id → meta_values.value: "weather-verb"          (verb_type)
-value_id → meta_values.value: "impersonal-verb"       (verb_subtype)
+value_id → meta_values.value: "meteorological-verb"  (verb_type)
+value_id → meta_values.value: "third-singular-only"   (number_restriction)
 value_id → meta_values.value: "freq-top500"           (frequency_tier)
 value_id → meta_values.value: "CEFR-A2"               (cefr_level)
-value_id → meta_values.value: "meteorological"        (semantic_field)
 ```
 
 #### Meta Attribute Integration for Weather Verb Status
 ```sql  
 -- meta_attributes contains: attribute_name="verb_type", category="grammatical"
--- meta_values contains: value="weather-verb", stable_id="weather_verb", attribute_id=<verb_type_attr_id>
+-- meta_values contains: value="meteorological-verb", stable_id="meteorological_verb", attribute_id=<verb_type_attr_id>
 -- entity_meta_values links: entity_type='word', entity_id=<piovere_id>, value_id=<weather_verb_value_id>
 
 -- Ultra-restrictive person limitation
--- meta_attributes contains: attribute_name="person_restrictions", category="morphological"  
+-- meta_attributes contains: attribute_name="number_restriction", category="morphological"  
 -- meta_values contains: value="third-singular-only", stable_id="third_singular_restriction"
 ```
 
@@ -1894,8 +1891,7 @@ display_priority: 1
 context_metadata: {
   "auxiliary": "essere",
   "usage": "meteorological", 
-  "plurality": "third-singular-only",
-  "semantic_field": "weather"
+  "plurality": "third-singular-only"
 }
 ```
 
@@ -1909,8 +1905,7 @@ display_priority: 2
 context_metadata: {
   "auxiliary": "essere",
   "usage": "metaphorical",
-  "plurality": "third-person-only", 
-  "semantic_field": "metaphorical"
+  "plurality": "third-person-only"
 }
 ```
 
@@ -1989,11 +1984,11 @@ Weather verbs have the most restrictive person limitations:
   - Simple forms: 17 (3rd singular + non-finite)
   - Compound forms: 11 (3rd singular + infinitive)
   - Progressive forms: 11 (3rd singular + non-finite)
-- **Translation 2 ("To Rain Down" - Metaphorical)**: 78 form_translations  
-  - Simple forms: 23 (3rd person both singular/plural + non-finite)
-  - Compound forms: 22 (3rd person both numbers + infinitive)
-  - Progressive forms: 33 (3rd person both numbers + non-finite)
-- **Total Coverage**: 117 form_translations across both meanings
+- **Translation 2 ("To Rain Down" - Metaphorical)**: 28 form_translations  
+  - Simple forms: 12 (3rd person both singular/plural + non-finite)
+  - Compound forms: 11 (3rd person both numbers + infinitive)
+  - Progressive forms: 5 (3rd person both numbers + non-finite)
+- **Total Coverage**: 67 form_translations across both meanings
 - **Most Restrictive**: Weather verbs have the smallest form coverage in the system
 
 ---
@@ -2010,7 +2005,7 @@ Weather verbs have the most restrictive person limitations:
 | Modal | dovere | 270** | 270 (all + modal patterns) | 135 (standard patterns only) | 405 |
 | Defective | vigere | 67 | 67 (existing forms only) | - | 67 |
 | Impersonal | importare | 135 | 25 (3rd person only) | 135 (all forms) | 160 |
-| Weather | piovere | 67*** | 39 (3rd singular + non-finite) | 78 (3rd person + non-finite) | 117 |
+| Weather | piovere | 67*** | 39 (3rd singular + non-finite) | 28 (3rd person + non-finite) | 67 |
 
 **Notes:**
 - *219 forms for correre: 51 shared simple + 35 shared progressive + 49 avere compounds + 49 essere compounds + 35 shared infinitive/participle/gerund
@@ -2022,12 +2017,12 @@ Weather verbs have the most restrictive person limitations:
 | Verb Type | Primary Meta Attribute | Additional Restrictions | Storage Location |
 |-----------|----------------------|----------------------|-----------------|
 | Normal | conjugation_type: "are-conjugation" | None | entity_meta_values |
-| Reflexive | verb_type: "reflexive-verb" | usage: "direct-reflexive"/"reciprocal" | entity_meta_values + context_metadata |
-| Dual Auxiliary | auxiliary_flexibility: "dual-auxiliary" | Derived from translation auxiliaries | entity_meta_values (derived) |
+| Reflexive | verb_type: "direct-reflexive" | usage: "direct-reflexive"/"reciprocal" | entity_meta_values + context_metadata |
+| Dual Auxiliary | verb_type: "transitive-verb" | Derived from translation auxiliaries | entity_meta_values + context_metadata |
 | Modal | verb_type: "modal-verb" | modal_pattern: "modal + infinitive" | entity_meta_values |
-| Defective | verb_type: "defective-verb" | form_restrictions: "missing-imperative", "missing-first-second-person" | entity_meta_values |
-| Impersonal | verb_type: "impersonal-verb" | person_restrictions: "third-person-only" | entity_meta_values |
-| Weather | verb_type: "weather-verb", verb_subtype: "impersonal-verb" | person_restrictions: "third-singular-only" | entity_meta_values |
+| Defective | verb_type: "defective-verb" | number_restriction: "missing-first-second-person" | entity_meta_values |
+| Impersonal | verb_type: "impersonal-verb" | number_restriction: "third-person-only" | entity_meta_values |
+| Weather | verb_type: "meteorological-verb" | number_restriction: "third-singular-only" | entity_meta_values |
 
 This comprehensive expansion demonstrates how the Misti verb forms architecture handles the full spectrum of Italian verb complexity through systematic form materialization, metadata integration, and coverage validation.
 
