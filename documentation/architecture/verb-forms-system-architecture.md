@@ -85,7 +85,53 @@ Italian verbs are classified into **4 conjugation patterns** based on their infi
 - **Characteristics**: -isc- appears in 1st/2nd/3rd singular and 3rd plural present forms
 - **Present endings**: -isco, -isci, -isce, -iamo, -ite, -iscono
 
-### 2.2 Complete Mood/Tense Matrix from epicRequiredForms
+### 2.2 Multi-Dimensional Verb Classification Architecture
+
+The Misti system uses a **multi-dimensional approach** to verb classification, recognizing that verbs have multiple independent characteristics that must be tracked separately:
+
+#### Behavioral Pattern Classification (verb_type)
+This dimension captures **special behavioral patterns** that affect how verbs conjugate, what forms they have, or how they function grammatically:
+
+- **modal-verb** - Verbs that can take bare infinitives (dovere, potere, volere)
+- **dual-auxiliary-verb** - Verbs that use different auxiliaries based on meaning (correre, saltare)
+- **defective-verb** - Verbs missing certain persons/numbers (vigere, urgere)  
+- **impersonal-verb** - Verbs primarily used in 3rd person (importare, bisognare)
+- **meteorological-verb** - Weather verbs restricted to 3rd singular (piovere, nevicare)
+- **direct-reflexive** - Inherently reflexive verbs (svegliarsi, pentirsi)
+
+#### Grammatical Property Classification (transitivity)
+This dimension captures **grammatical argument structure** independent of behavioral patterns:
+
+- **transitive** - Takes direct objects (mangiare qualcosa)
+- **intransitive** - Cannot take direct objects (arrivare, dormire)
+- **ambitransitive** - Can be used both ways (correre una gara / correre velocemente)
+
+#### Why Multi-Dimensional Classification?
+This separation is **linguistically accurate** because:
+
+1. **Independence**: A verb can be modal AND transitive (dovere), or meteorological AND intransitive (piovere)
+2. **Precision**: Different translations of the same verb can have different transitivity without changing behavioral type
+3. **Extensibility**: New behavioral patterns can be added without affecting grammatical classifications
+4. **Pedagogical Clarity**: Students learn behavioral patterns and grammatical properties as separate concepts
+
+#### Examples of Multi-Dimensional Classification:
+```sql
+-- Modal verb that can be transitive in some uses
+verb_type: "modal-verb"
+transitivity: "transitive"
+
+-- Weather verb that is grammatically intransitive  
+verb_type: "meteorological-verb"
+transitivity: "intransitive"
+
+-- Dual auxiliary verb that can be used both ways
+verb_type: "dual-auxiliary-verb" 
+transitivity: "ambitransitive"
+```
+
+**IMPORTANT**: The `verb_type` attribute should **never** contain values like "transitive-verb" or "intransitive-verb" as these mix behavioral and grammatical dimensions inappropriately.
+
+### 2.3 Complete Mood/Tense Matrix from epicRequiredForms
 
 The system defines **26 essential form categories** that every verb should potentially have:
 
@@ -135,7 +181,7 @@ The system defines **26 essential form categories** that every verb should poten
 - `congiuntivo-presente-progressivo` - Subjunctive present progressive (che io stia parlando)
 - `condizionale-presente-progressivo` - Conditional present progressive (starei parlando)
 
-### 2.3 Frequency/CEFR Classification System
+### 2.4 Frequency/CEFR Classification System
 
 Verbs are prioritized using two complementary systems:
 
@@ -984,7 +1030,7 @@ word_type: "verb"
 value_id → meta_values.value: "are-conjugation"    (conjugation_type)
 value_id → meta_values.value: "freq-top100"        (frequency_tier)
 value_id → meta_values.value: "CEFR-A1"            (cefr_level)
-value_id → meta_values.value: "transitive"         (primary_transitivity)
+value_id → meta_values.value: "transitive"         (transitivity)
 ```
 
 #### Translation: "to eat" (primary meaning)
@@ -1171,6 +1217,7 @@ word_type: "verb"
 -- entity_type='word', entity_id=770e8400-e29b-41d4-a716-446655440000
 value_id → meta_values.value: "are-conjugation"  (conjugation_type)
 value_id → meta_values.value: "direct-reflexive" (verb_type)
+value_id → meta_values.value: "intransitive"     (transitivity)
 value_id → meta_values.value: "freq-top200"      (frequency_tier)
 value_id → meta_values.value: "CEFR-A2"          (cefr_level)
 ```
@@ -1380,7 +1427,8 @@ word_type: "verb"
 value_id → meta_values.value: "ere-conjugation" (conjugation_type)
 value_id → meta_values.value: "freq-top500"     (frequency_tier)
 value_id → meta_values.value: "CEFR-B1"         (cefr_level)
-value_id → meta_values.value: "transitive-verb" (verb_type)
+value_id → meta_values.value: "dual-auxiliary-verb" (verb_type)
+value_id → meta_values.value: "ambitransitive"      (transitivity)
 ```
 
 #### Translation 1: "to run" (sport/exercise - transitive with avere)
@@ -1406,8 +1454,7 @@ translation: "to rush to"
 display_priority: 2
 context_metadata: {
   "auxiliary": "essere", 
-  "transitivity": "intransitive",
-  "verb_type": "transitive-verb"
+  "usage_context": "motion-verb"
 }
 ```
 
@@ -1488,6 +1535,7 @@ word_type: "verb"
 -- entity_type='word', entity_id=bb0e8400-e29b-41d4-a716-446655440000
 value_id → meta_values.value: "ere-conjugation"    (conjugation_type)
 value_id → meta_values.value: "modal-verb"         (verb_type)
+value_id → meta_values.value: "transitive"         (transitivity)
 value_id → meta_values.value: "freq-top50"         (frequency_tier)
 value_id → meta_values.value: "CEFR-A1"            (cefr_level)
 ```
@@ -1612,6 +1660,7 @@ word_type: "verb"
 -- entity_type='word', entity_id=dd0e8400-e29b-41d4-a716-446655440000
 value_id → meta_values.value: "ere-conjugation"    (conjugation_type)
 value_id → meta_values.value: "defective-verb"     (verb_type)
+value_id → meta_values.value: "intransitive"       (transitivity)
 value_id → meta_values.value: "freq-rare"          (frequency_tier)
 value_id → meta_values.value: "CEFR-C1"            (cefr_level)
 value_id → meta_values.value: "missing-first-second-person" (number_restriction)
@@ -1723,7 +1772,8 @@ word_type: "verb"
 ```sql
 -- entity_type='word', entity_id=ff0e8400-e29b-41d4-a716-446655440000
 value_id → meta_values.value: "are-conjugation"      (conjugation_type)
-value_id → meta_values.value: "impersonal-verb"      (verb_type)  
+value_id → meta_values.value: "impersonal-verb"      (verb_type)
+value_id → meta_values.value: "ambitransitive"       (transitivity)
 value_id → meta_values.value: "freq-top1000"         (frequency_tier)
 value_id → meta_values.value: "CEFR-B1"              (cefr_level)
 value_id → meta_values.value: "third-person-only"    (number_restriction)
@@ -1865,6 +1915,7 @@ word_type: "verb"
 -- entity_type='word', entity_id=220e8400-e29b-41d4-a716-446655440000
 value_id → meta_values.value: "ere-conjugation"       (conjugation_type)
 value_id → meta_values.value: "meteorological-verb"  (verb_type)
+value_id → meta_values.value: "intransitive"          (transitivity)
 value_id → meta_values.value: "third-singular-only"   (number_restriction)
 value_id → meta_values.value: "freq-top500"           (frequency_tier)
 value_id → meta_values.value: "CEFR-A2"               (cefr_level)
@@ -2014,15 +2065,15 @@ Weather verbs have the most restrictive person limitations:
 
 ### Meta Attribute Integration Patterns
 
-| Verb Type | Primary Meta Attribute | Additional Restrictions | Storage Location |
-|-----------|----------------------|----------------------|-----------------|
-| Normal | conjugation_type: "are-conjugation" | None | entity_meta_values |
-| Reflexive | verb_type: "direct-reflexive" | usage: "direct-reflexive"/"reciprocal" | entity_meta_values + context_metadata |
-| Dual Auxiliary | verb_type: "transitive-verb" | Derived from translation auxiliaries | entity_meta_values + context_metadata |
-| Modal | verb_type: "modal-verb" | modal_pattern: "modal + infinitive" | entity_meta_values |
-| Defective | verb_type: "defective-verb" | number_restriction: "missing-first-second-person" | entity_meta_values |
-| Impersonal | verb_type: "impersonal-verb" | number_restriction: "third-person-only" | entity_meta_values |
-| Weather | verb_type: "meteorological-verb" | number_restriction: "third-singular-only" | entity_meta_values |
+| Verb Type | Behavioral Pattern (verb_type) | Grammatical Property (transitivity) | Additional Restrictions | Storage Location |
+|-----------|----------------------|---------------------|----------------------|-----------------|
+| Normal | None | transitive/intransitive/ambitransitive | None | entity_meta_values |
+| Reflexive | verb_type: "direct-reflexive" | intransitive | usage: "direct-reflexive"/"reciprocal" | entity_meta_values + context_metadata |
+| Dual Auxiliary | verb_type: "dual-auxiliary-verb" | ambitransitive | Derived from translation auxiliaries | entity_meta_values + context_metadata |
+| Modal | verb_type: "modal-verb" | transitive | modal_pattern: "modal + infinitive" | entity_meta_values |
+| Defective | verb_type: "defective-verb" | intransitive | number_restriction: "missing-first-second-person" | entity_meta_values |
+| Impersonal | verb_type: "impersonal-verb" | ambitransitive | number_restriction: "third-person-only" | entity_meta_values |
+| Weather | verb_type: "meteorological-verb" | intransitive | number_restriction: "third-singular-only" | entity_meta_values |
 
 This comprehensive expansion demonstrates how the Misti verb forms architecture handles the full spectrum of Italian verb complexity through systematic form materialization, metadata integration, and coverage validation.
 
