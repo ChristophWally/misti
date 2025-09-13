@@ -104,7 +104,7 @@ This dimension captures **grammatical argument structure** independent of behavi
 
 - **transitive** - Takes direct objects (mangiare qualcosa)
 - **intransitive** - Cannot take direct objects (arrivare, dormire)
-- **ambitransitive** - Can be used both ways (correre una gara / correre velocemente)
+- **ambitransitive** - A SINGLE translation that can be used both transitively and intransitively (correre: "I run a race" / "I run fast" - same meaning, different object usage)
 
 #### Why Multi-Dimensional Classification?
 This separation is **linguistically accurate** because:
@@ -369,7 +369,7 @@ Person/number invariable:
   - Stare auxiliary patterns (different for each tense)
   - Present gerunds from stored `gerundio-presente` forms
 - **Creation Process**: Same materialization service as compound forms, different auxiliary patterns
-- **Tags**: Stored in `entity_meta_values` table with progressive tense, person, number, `progressive`, `stare-auxiliary` references
+- **Tags**: Stored in `entity_meta_values` table with progressive tense, person, number, `progressive` references
 
 ### 3.4 Building Block Forms (Essential for Generation)
 
@@ -405,9 +405,9 @@ Three forms are **critical** for the materialization architecture:
 Auxiliary selection in Italian follows semantic and syntactic principles stored at the **translation level**, not the word level.
 
 #### Translation-Level Assignment
-Each entry in `word_translations` contains `context_metadata.auxiliary` specifying:
-- `"avere"` - For transitive actions and direct objects
-- `"essere"` - For intransitive actions, motion, state changes
+Each translation has auxiliary metadata stored via entity_meta_values:
+- `auxiliary: "avere"` - For transitive actions and direct objects
+- `auxiliary: "essere"` - For intransitive actions, motion, state changes
 
 #### Semantic Guidelines Implemented
 
@@ -423,9 +423,9 @@ Each entry in `word_translations` contains `context_metadata.auxiliary` specifyi
 - General activities: parlare, lavorare, giocare
 
 #### Transitivity Validation
-The system validates auxiliary assignment against transitivity:
-- `context_metadata.transitivity: "transitive"` should use `auxiliary: "avere"`
-- `context_metadata.transitivity: "intransitive"` should use `auxiliary: "essere"`
+The system validates auxiliary assignment against transitivity via entity_meta_values:
+- `transitivity: "transitive"` should use `auxiliary: "avere"`
+- `transitivity: "intransitive"` should use `auxiliary: "essere"`
 - Mismatches trigger validation warnings
 
 ### 4.2 Past Participle Agreement Rules  
@@ -459,8 +459,12 @@ Each form has appropriate gender/number tags for correct selection.
 The auxiliary assignment architecture works as follows:
 
 #### Assignment Location
-```
-word_translations.context_metadata.auxiliary: "avere" | "essere"
+Translation auxiliary assignment via entity_meta_values:
+```sql
+-- entity_type='word_translation', entity_id=<translation_id>
+value_id → metaattr002val014 (auxiliary: "avere")
+-- OR
+value_id → metaattr002val015 (auxiliary: "essere")
 ```
 
 #### Assignment Logic per Translation
@@ -494,7 +498,7 @@ The `AUXILIARY_PATTERNS` in `/Users/Work/misti/lib/auxPatterns.ts` includes 74 p
 1. Load appropriate stare pattern for tense/person/number
 2. Retrieve stored present gerund for the verb
 3. Combine: `stare_auxiliary` + ` ` + `gerund_form`
-4. Tag with `progressive` and `stare-auxiliary`
+4. Tag with `progressive` and appropriate tense metadata
 
 #### Progressive Auxiliary Independence
 Progressive forms are **completely independent** of avere/essere auxiliary assignment:
@@ -516,12 +520,11 @@ Italian reflexive verbs present a unique architectural challenge because the sam
 Reciprocal verbs express mutual actions and have special constraints:
 
 #### Reciprocal Identification
-Reciprocal translations are marked with:
-```
-context_metadata: {
-  usage: "reciprocal",
-  plurality: "plural-only"
-}
+Reciprocal translations are marked via entity_meta_values:
+```sql
+-- entity_type='word_translation', entity_id=<translation_id>
+value_id → metaattr021val103 (verb_type: "reciprocal")
+value_id → metaattr013val056 (number_restriction: "plural-only")
 ```
 
 #### Number Restrictions Implementation
@@ -798,7 +801,116 @@ The UI applies filters based on:
 
 ## 7. Database Integration Architecture
 
-### 7.1 How word_forms Table Stores All Data
+### 7.1 Translation Data Structure Architecture
+
+The translation layer is **fundamental to understanding** how form-translation assignments work, as it bridges the gap between word meanings and their conjugated expressions through the normalized metavals system.
+
+#### word_translations Table Structure
+The `word_translations` table stores individual meanings/usages for each word:
+
+```sql
+word_translations (
+  id: uuid PRIMARY KEY,
+  word_id: uuid FOREIGN KEY → dictionary.id,
+  translation: text,           -- English translation
+  display_priority: integer,   -- Ordering for UI display (1 = primary)
+  usage_notes: text,           -- Optional explanatory notes
+  frequency_estimate: integer, -- Usage frequency ranking
+  created_at: timestamptz
+)
+```
+
+#### Critical Translation Metadata via entity_meta_values
+
+**ALL translation metadata** is stored through the normalized entity_meta_values system. Translations do **NOT** have a `context_metadata` JSON field - this is architecturally incorrect.
+
+**Translation Metadata Categories**:
+1. **Core Required Metadata** (every translation must have):
+   - `auxiliary`: `avere` or `essere` (drives compound form generation)
+   - `transitivity`: `transitive`, `intransitive`, or `ambitransitive`
+
+2. **Usage Constraint Metadata** (optional but critical for reflexive verbs):
+   - `verb_type`: `direct-reflexive` or `reciprocal` (for reflexive verbs)
+   - `number_restriction`: `plural-only`, `singular-only`, `third-person-only`, `third-singular-only`
+
+3. **Optional Descriptive Metadata**:
+   - `register`: `formal`, `casual`, `neutral`, `mixed`
+   - `cefr_level`: `A1`, `A2`, `B1`, `B2`, `C1`, `C2`
+   - `frequency_tier`: `top100`, `top500`, `top1000`, `top2500`, `top5000`, `top10000`
+
+#### Translation Metadata Examples Using Real Metavals Schema
+
+**Example 1: Normal Transitive Translation (mangiare)**
+```sql
+-- Translation: "to eat"
+-- entity_type='word_translation', entity_id=<translation_id>
+value_id → metaattr002val014 (auxiliary: "avere")
+value_id → metaattr020val099 (transitivity: "transitive")
+value_id → metaattr007val038 (frequency_tier: "top500")
+value_id → metaattr003val033 (cefr_level: "A1")
+```
+
+**Example 2: Direct Reflexive Translation (lavarsi)**
+```sql
+-- Translation: "to wash oneself"
+-- entity_type='word_translation', entity_id=<translation_id>
+value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr020val100 (transitivity: "intransitive")
+value_id → metaattr021val102 (verb_type: "direct-reflexive")
+value_id → metaattr003val032 (cefr_level: "A2")
+```
+
+**Example 3: Reciprocal Translation (lavarsi)**
+```sql
+-- Translation: "to wash each other"
+-- entity_type='word_translation', entity_id=<translation_id>
+value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr020val100 (transitivity: "intransitive")
+value_id → metaattr021val103 (verb_type: "reciprocal")
+value_id → metaattr013val056 (number_restriction: "plural-only")
+value_id → metaattr003val031 (cefr_level: "B1")
+```
+
+**Example 4: Ambitransitive Translation (correre)**
+```sql
+-- Translation: "to run (single meaning usable both transitively and intransitively)"
+-- entity_type='word_translation', entity_id=<translation_id>
+value_id → metaattr002val014 (auxiliary: "avere")
+value_id → metaattr020val101 (transitivity: "ambitransitive")
+value_id → metaattr007val037 (frequency_tier: "top1000")
+```
+
+#### How Translation Metadata Drives Form-Translation Assignment
+
+The entity_meta_values relationships for translations **directly control**:
+
+1. **Auxiliary Selection**: Translation's `auxiliary` metaval determines which compound forms are generated
+2. **Number Filtering**: `number_restriction` metavals filter which persons/numbers get form_translations
+3. **Usage Context**: `verb_type` metavals (direct-reflexive vs reciprocal) affect form assignment logic
+4. **Display Priority**: Multiple translations with different metavals create layered meaning systems
+
+#### Translation-to-Form Relationship Architecture
+
+Each `form_translations` record links exactly **one translation** to exactly **one form**:
+
+```sql
+form_translations (
+  id: uuid PRIMARY KEY,
+  form_id: bigint FOREIGN KEY → word_forms.id,
+  word_translation_id: uuid FOREIGN KEY → word_translations.id,
+  translation: text,          -- Contextualized English for this specific form
+  assignment_method: text,    -- "manual", "automatic-auxiliary", "automatic-semantic"
+  confidence_score: numeric   -- Quality rating 0-100
+)
+```
+
+**Assignment Respects Translation Metadata**:
+- Forms only get linked to translations where metaval constraints match
+- `plural-only` translations only link to plural forms (noi, voi, loro)
+- `third-singular-only` translations only link to lui/lei forms
+- `auxiliary` mismatch prevents form_translation creation
+
+### 7.2 How word_forms Table Stores All Data
 
 The `word_forms` table is the **central storage** for all conjugated forms:
 
@@ -875,7 +987,7 @@ All metadata values use **language-agnostic universal terms** stored in `meta_va
 
 This allows the same data to power interfaces in multiple languages through the normalized reference system.
 
-### 7.2 Normalized Tagging Architecture via entity_meta_values
+### 7.3 Normalized Tagging Architecture via entity_meta_values
 
 The system uses a **three-tier normalized metadata architecture** that replaces array-based tagging:
 
@@ -929,7 +1041,7 @@ value_id → meta_values.value: "essere"         (auxiliary)
 - **Traceability**: Propagation fields track derived metadata sources
 - **Universal Access**: Same system handles core metadata and optional tags
 
-### 7.3 form_translations Assignment Matrix
+### 7.4 form_translations Assignment Matrix
 
 The `form_translations` table creates the **many-to-many relationship** between forms and translations:
 
@@ -979,7 +1091,7 @@ form_translations (assignment matrix)
 #### Auxiliary Pattern Integration
 The auxiliary patterns from `/Users/Work/misti/lib/auxPatterns.ts` integrate with the database:
 
-1. **Translation specifies auxiliary**: `context_metadata.auxiliary: "avere"`
+1. **Translation specifies auxiliary**: Via entity_meta_values `auxiliary: "avere"` or `auxiliary: "essere"`
 2. **Pattern lookup**: Based on tense/person/number
 3. **Building block retrieval**: Past participle/gerund from `word_forms`  
 4. **Materialization process**: Auxiliary + building block = stored compound form
@@ -996,9 +1108,8 @@ The system enforces referential integrity:
 - `entity_meta_values.entity_id` must match valid entity IDs based on entity_type
 
 **Auxiliary Consistency** (via normalized metadata):
-- Forms with "avere-auxiliary" metadata must link to translations with "avere" auxiliary metadata
-- Forms with "essere-auxiliary" metadata must link to translations with "essere" auxiliary metadata  
-- Translations with "direct-reflexive" usage must have "essere" auxiliary metadata
+- Forms with compound verb_form_type must link to translations with matching auxiliary metadata
+- Translations with "direct-reflexive" verb_type must have "essere" auxiliary metadata
 
 **Semantic Validation**:
 - Translations with "reciprocal" usage and "plural-only" restriction can only link to plural-person forms
@@ -1040,10 +1151,11 @@ id: 660e8400-e29b-41d4-a716-446655440001
 word_id: 550e8400-e29b-41d4-a716-446655440000
 translation: "to eat"
 display_priority: 1
-context_metadata: {
-  "auxiliary": "avere",
-  "transitivity": "transitive"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=660e8400-e29b-41d4-a716-446655440001
+value_id → metaattr002val014 (auxiliary: "avere")
+value_id → metaattr020val099 (transitivity: "transitive")
 ```
 
 #### Complete Form Inventory (137 Total Forms)
@@ -1106,97 +1218,97 @@ context_metadata: {
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|---------------------|
-| 052 | ho mangiato | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary | I have eaten |
-| 053 | hai mangiato | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary | you have eaten |
-| 054 | ha mangiato | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary | he/she has eaten |
-| 055 | abbiamo mangiato | indicativo | passato-prossimo | prima-persona | plurale | compound | passato-prossimo, compound, avere-auxiliary | we have eaten |
-| 056 | avete mangiato | indicativo | passato-prossimo | seconda-persona | plurale | compound | passato-prossimo, compound, avere-auxiliary | you have eaten |
-| 057 | hanno mangiato | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, avere-auxiliary | they have eaten |
-| 058 | avevo mangiato | indicativo | trapassato-prossimo | prima-persona | singolare | compound | trapassato-prossimo, compound, avere-auxiliary | I had eaten |
-| 059 | avevi mangiato | indicativo | trapassato-prossimo | seconda-persona | singolare | compound | trapassato-prossimo, compound, avere-auxiliary | you had eaten |
-| 060 | aveva mangiato | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trapassato-prossimo, compound, avere-auxiliary | he/she had eaten |
-| 061 | avevamo mangiato | indicativo | trapassato-prossimo | prima-persona | plurale | compound | trapassato-prossimo, compound, avere-auxiliary | we had eaten |
-| 062 | avevate mangiato | indicativo | trapassato-prossimo | seconda-persona | plurale | compound | trapassato-prossimo, compound, avere-auxiliary | you had eaten |
-| 063 | avevano mangiato | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trapassato-prossimo, compound, avere-auxiliary | they had eaten |
-| 064 | ebbi mangiato | indicativo | trapassato-remoto | prima-persona | singolare | compound | trapassato-remoto, compound, avere-auxiliary | I had eaten |
-| 065 | avesti mangiato | indicativo | trapassato-remoto | seconda-persona | singolare | compound | trapassato-remoto, compound, avere-auxiliary | you had eaten |
-| 066 | ebbe mangiato | indicativo | trapassato-remoto | terza-persona | singolare | compound | trapassato-remoto, compound, avere-auxiliary | he/she had eaten |
-| 067 | avemmo mangiato | indicativo | trapassato-remoto | prima-persona | plurale | compound | trapassato-remoto, compound, avere-auxiliary | we had eaten |
-| 068 | aveste mangiato | indicativo | trapassato-remoto | seconda-persona | plurale | compound | trapassato-remoto, compound, avere-auxiliary | you had eaten |
-| 069 | ebbero mangiato | indicativo | trapassato-remoto | terza-persona | plurale | compound | trapassato-remoto, compound, avere-auxiliary | they had eaten |
-| 070 | avrò mangiato | indicativo | futuro-anteriore | prima-persona | singolare | compound | futuro-anteriore, compound, avere-auxiliary | I will have eaten |
-| 071 | avrai mangiato | indicativo | futuro-anteriore | seconda-persona | singolare | compound | futuro-anteriore, compound, avere-auxiliary | you will have eaten |
-| 072 | avrà mangiato | indicativo | futuro-anteriore | terza-persona | singolare | compound | futuro-anteriore, compound, avere-auxiliary | he/she will have eaten |
-| 073 | avremo mangiato | indicativo | futuro-anteriore | prima-persona | plurale | compound | futuro-anteriore, compound, avere-auxiliary | we will have eaten |
-| 074 | avrete mangiato | indicativo | futuro-anteriore | seconda-persona | plurale | compound | futuro-anteriore, compound, avere-auxiliary | you will have eaten |
-| 075 | avranno mangiato | indicativo | futuro-anteriore | terza-persona | plurale | compound | futuro-anteriore, compound, avere-auxiliary | they will have eaten |
-| 076 | abbia mangiato | congiuntivo | congiuntivo-passato | prima-persona | singolare | compound | congiuntivo-passato, compound, avere-auxiliary | (that) I have eaten |
-| 077 | abbia mangiato | congiuntivo | congiuntivo-passato | seconda-persona | singolare | compound | congiuntivo-passato, compound, avere-auxiliary | (that) you have eaten |
-| 078 | abbia mangiato | congiuntivo | congiuntivo-passato | terza-persona | singolare | compound | congiuntivo-passato, compound, avere-auxiliary | (that) he/she has eaten |
-| 079 | abbiamo mangiato | congiuntivo | congiuntivo-passato | prima-persona | plurale | compound | congiuntivo-passato, compound, avere-auxiliary | (that) we have eaten |
-| 080 | abbiate mangiato | congiuntivo | congiuntivo-passato | seconda-persona | plurale | compound | congiuntivo-passato, compound, avere-auxiliary | (that) you have eaten |
-| 081 | abbiano mangiato | congiuntivo | congiuntivo-passato | terza-persona | plurale | compound | congiuntivo-passato, compound, avere-auxiliary | (that) they have eaten |
-| 082 | avessi mangiato | congiuntivo | congiuntivo-trapassato | prima-persona | singolare | compound | congiuntivo-trapassato, compound, avere-auxiliary | (that) I had eaten |
-| 083 | avessi mangiato | congiuntivo | congiuntivo-trapassato | seconda-persona | singolare | compound | congiuntivo-trapassato, compound, avere-auxiliary | (that) you had eaten |
-| 084 | avesse mangiato | congiuntivo | congiuntivo-trapassato | terza-persona | singolare | compound | congiuntivo-trapassato, compound, avere-auxiliary | (that) he/she had eaten |
-| 085 | avessimo mangiato | congiuntivo | congiuntivo-trapassato | prima-persona | plurale | compound | congiuntivo-trapassato, compound, avere-auxiliary | (that) we had eaten |
-| 086 | aveste mangiato | congiuntivo | congiuntivo-trapassato | seconda-persona | plurale | compound | congiuntivo-trapassato, compound, avere-auxiliary | (that) you had eaten |
-| 087 | avessero mangiato | congiuntivo | congiuntivo-trapassato | terza-persona | plurale | compound | congiuntivo-trapassato, compound, avere-auxiliary | (that) they had eaten |
-| 088 | avrei mangiato | condizionale | condizionale-passato | prima-persona | singolare | compound | condizionale-passato, compound, avere-auxiliary | I would have eaten |
-| 089 | avresti mangiato | condizionale | condizionale-passato | seconda-persona | singolare | compound | condizionale-passato, compound, avere-auxiliary | you would have eaten |
-| 090 | avrebbe mangiato | condizionale | condizionale-passato | terza-persona | singolare | compound | condizionale-passato, compound, avere-auxiliary | he/she would have eaten |
-| 091 | avremmo mangiato | condizionale | condizionale-passato | prima-persona | plurale | compound | condizionale-passato, compound, avere-auxiliary | we would have eaten |
-| 092 | avreste mangiato | condizionale | condizionale-passato | seconda-persona | plurale | compound | condizionale-passato, compound, avere-auxiliary | you would have eaten |
-| 093 | avrebbero mangiato | condizionale | condizionale-passato | terza-persona | plurale | compound | condizionale-passato, compound, avere-auxiliary | they would have eaten |
-| 094 | abbi mangiato | imperativo | imperativo-passato | seconda-persona | singolare | compound | imperativo-passato, compound, avere-auxiliary | have eaten! |
-| 095 | abbia mangiato | imperativo | imperativo-passato | terza-persona | singolare | compound | imperativo-passato, compound, avere-auxiliary | let him/her have eaten! |
-| 096 | abbiamo mangiato | imperativo | imperativo-passato | prima-persona | plurale | compound | imperativo-passato, compound, avere-auxiliary | let's have eaten! |
-| 097 | abbiate mangiato | imperativo | imperativo-passato | seconda-persona | plurale | compound | imperativo-passato, compound, avere-auxiliary | have eaten! |
-| 098 | abbiano mangiato | imperativo | imperativo-passato | terza-persona | plurale | compound | imperativo-passato, compound, avere-auxiliary | let them have eaten! |
-| 099 | avendo mangiato | gerundio | gerundio-passato | - | - | compound | gerundio-passato, compound, avere-auxiliary | having eaten |
-| 100 | aver mangiato | infinito | infinito-passato | - | - | compound | infinito-passato, compound, avere-auxiliary | to have eaten |
+| 052 | ho mangiato | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound | I have eaten |
+| 053 | hai mangiato | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound | you have eaten |
+| 054 | ha mangiato | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound | he/she has eaten |
+| 055 | abbiamo mangiato | indicativo | passato-prossimo | prima-persona | plurale | compound | passato-prossimo, compound | we have eaten |
+| 056 | avete mangiato | indicativo | passato-prossimo | seconda-persona | plurale | compound | passato-prossimo, compound | you have eaten |
+| 057 | hanno mangiato | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound | they have eaten |
+| 058 | avevo mangiato | indicativo | trapassato-prossimo | prima-persona | singolare | compound | trapassato-prossimo, compound | I had eaten |
+| 059 | avevi mangiato | indicativo | trapassato-prossimo | seconda-persona | singolare | compound | trapassato-prossimo, compound | you had eaten |
+| 060 | aveva mangiato | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trapassato-prossimo, compound | he/she had eaten |
+| 061 | avevamo mangiato | indicativo | trapassato-prossimo | prima-persona | plurale | compound | trapassato-prossimo, compound | we had eaten |
+| 062 | avevate mangiato | indicativo | trapassato-prossimo | seconda-persona | plurale | compound | trapassato-prossimo, compound | you had eaten |
+| 063 | avevano mangiato | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trapassato-prossimo, compound | they had eaten |
+| 064 | ebbi mangiato | indicativo | trapassato-remoto | prima-persona | singolare | compound | trapassato-remoto, compound | I had eaten |
+| 065 | avesti mangiato | indicativo | trapassato-remoto | seconda-persona | singolare | compound | trapassato-remoto, compound | you had eaten |
+| 066 | ebbe mangiato | indicativo | trapassato-remoto | terza-persona | singolare | compound | trapassato-remoto, compound | he/she had eaten |
+| 067 | avemmo mangiato | indicativo | trapassato-remoto | prima-persona | plurale | compound | trapassato-remoto, compound | we had eaten |
+| 068 | aveste mangiato | indicativo | trapassato-remoto | seconda-persona | plurale | compound | trapassato-remoto, compound | you had eaten |
+| 069 | ebbero mangiato | indicativo | trapassato-remoto | terza-persona | plurale | compound | trapassato-remoto, compound | they had eaten |
+| 070 | avrò mangiato | indicativo | futuro-anteriore | prima-persona | singolare | compound | futuro-anteriore, compound | I will have eaten |
+| 071 | avrai mangiato | indicativo | futuro-anteriore | seconda-persona | singolare | compound | futuro-anteriore, compound | you will have eaten |
+| 072 | avrà mangiato | indicativo | futuro-anteriore | terza-persona | singolare | compound | futuro-anteriore, compound | he/she will have eaten |
+| 073 | avremo mangiato | indicativo | futuro-anteriore | prima-persona | plurale | compound | futuro-anteriore, compound | we will have eaten |
+| 074 | avrete mangiato | indicativo | futuro-anteriore | seconda-persona | plurale | compound | futuro-anteriore, compound | you will have eaten |
+| 075 | avranno mangiato | indicativo | futuro-anteriore | terza-persona | plurale | compound | futuro-anteriore, compound | they will have eaten |
+| 076 | abbia mangiato | congiuntivo | congiuntivo-passato | prima-persona | singolare | compound | congiuntivo-passato, compound | (that) I have eaten |
+| 077 | abbia mangiato | congiuntivo | congiuntivo-passato | seconda-persona | singolare | compound | congiuntivo-passato, compound | (that) you have eaten |
+| 078 | abbia mangiato | congiuntivo | congiuntivo-passato | terza-persona | singolare | compound | congiuntivo-passato, compound | (that) he/she has eaten |
+| 079 | abbiamo mangiato | congiuntivo | congiuntivo-passato | prima-persona | plurale | compound | congiuntivo-passato, compound | (that) we have eaten |
+| 080 | abbiate mangiato | congiuntivo | congiuntivo-passato | seconda-persona | plurale | compound | congiuntivo-passato, compound | (that) you have eaten |
+| 081 | abbiano mangiato | congiuntivo | congiuntivo-passato | terza-persona | plurale | compound | congiuntivo-passato, compound | (that) they have eaten |
+| 082 | avessi mangiato | congiuntivo | congiuntivo-trapassato | prima-persona | singolare | compound | congiuntivo-trapassato, compound | (that) I had eaten |
+| 083 | avessi mangiato | congiuntivo | congiuntivo-trapassato | seconda-persona | singolare | compound | congiuntivo-trapassato, compound | (that) you had eaten |
+| 084 | avesse mangiato | congiuntivo | congiuntivo-trapassato | terza-persona | singolare | compound | congiuntivo-trapassato, compound | (that) he/she had eaten |
+| 085 | avessimo mangiato | congiuntivo | congiuntivo-trapassato | prima-persona | plurale | compound | congiuntivo-trapassato, compound | (that) we had eaten |
+| 086 | aveste mangiato | congiuntivo | congiuntivo-trapassato | seconda-persona | plurale | compound | congiuntivo-trapassato, compound | (that) you had eaten |
+| 087 | avessero mangiato | congiuntivo | congiuntivo-trapassato | terza-persona | plurale | compound | congiuntivo-trapassato, compound | (that) they had eaten |
+| 088 | avrei mangiato | condizionale | condizionale-passato | prima-persona | singolare | compound | condizionale-passato, compound | I would have eaten |
+| 089 | avresti mangiato | condizionale | condizionale-passato | seconda-persona | singolare | compound | condizionale-passato, compound | you would have eaten |
+| 090 | avrebbe mangiato | condizionale | condizionale-passato | terza-persona | singolare | compound | condizionale-passato, compound | he/she would have eaten |
+| 091 | avremmo mangiato | condizionale | condizionale-passato | prima-persona | plurale | compound | condizionale-passato, compound | we would have eaten |
+| 092 | avreste mangiato | condizionale | condizionale-passato | seconda-persona | plurale | compound | condizionale-passato, compound | you would have eaten |
+| 093 | avrebbero mangiato | condizionale | condizionale-passato | terza-persona | plurale | compound | condizionale-passato, compound | they would have eaten |
+| 094 | abbi mangiato | imperativo | imperativo-passato | seconda-persona | singolare | compound | imperativo-passato, compound | have eaten! |
+| 095 | abbia mangiato | imperativo | imperativo-passato | terza-persona | singolare | compound | imperativo-passato, compound | let him/her have eaten! |
+| 096 | abbiamo mangiato | imperativo | imperativo-passato | prima-persona | plurale | compound | imperativo-passato, compound | let's have eaten! |
+| 097 | abbiate mangiato | imperativo | imperativo-passato | seconda-persona | plurale | compound | imperativo-passato, compound | have eaten! |
+| 098 | abbiano mangiato | imperativo | imperativo-passato | terza-persona | plurale | compound | imperativo-passato, compound | let them have eaten! |
+| 099 | avendo mangiato | gerundio | gerundio-passato | - | - | compound | gerundio-passato, compound | having eaten |
+| 100 | aver mangiato | infinito | infinito-passato | - | - | compound | infinito-passato, compound | to have eaten |
 
 **Progressive Forms with stare auxiliary (35 forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|---------------------|
-| 101 | sto mangiando | indicativo | presente-progressivo | prima-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary | I am eating |
-| 102 | stai mangiando | indicativo | presente-progressivo | seconda-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary | you are eating |
-| 103 | sta mangiando | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary | he/she is eating |
-| 104 | stiamo mangiando | indicativo | presente-progressivo | prima-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary | we are eating |
-| 105 | state mangiando | indicativo | presente-progressivo | seconda-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary | you are eating |
-| 106 | stanno mangiando | indicativo | presente-progressivo | terza-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary | they are eating |
-| 107 | stavo mangiando | indicativo | passato-progressivo | prima-persona | singolare | progressive | passato-progressivo, progressive, stare-auxiliary | I was eating |
-| 108 | stavi mangiando | indicativo | passato-progressivo | seconda-persona | singolare | progressive | passato-progressivo, progressive, stare-auxiliary | you were eating |
-| 109 | stava mangiando | indicativo | passato-progressivo | terza-persona | singolare | progressive | passato-progressivo, progressive, stare-auxiliary | he/she was eating |
-| 110 | stavamo mangiando | indicativo | passato-progressivo | prima-persona | plurale | progressive | passato-progressivo, progressive, stare-auxiliary | we were eating |
-| 111 | stavate mangiando | indicativo | passato-progressivo | seconda-persona | plurale | progressive | passato-progressivo, progressive, stare-auxiliary | you were eating |
-| 112 | stavano mangiando | indicativo | passato-progressivo | terza-persona | plurale | progressive | passato-progressivo, progressive, stare-auxiliary | they were eating |
-| 113 | starò mangiando | indicativo | futuro-progressivo | prima-persona | singolare | progressive | futuro-progressivo, progressive, stare-auxiliary | I will be eating |
-| 114 | starai mangiando | indicativo | futuro-progressivo | seconda-persona | singolare | progressive | futuro-progressivo, progressive, stare-auxiliary | you will be eating |
-| 115 | starà mangiando | indicativo | futuro-progressivo | terza-persona | singolare | progressive | futuro-progressivo, progressive, stare-auxiliary | he/she will be eating |
-| 116 | staremo mangiando | indicativo | futuro-progressivo | prima-persona | plurale | progressive | futuro-progressivo, progressive, stare-auxiliary | we will be eating |
-| 117 | starete mangiando | indicativo | futuro-progressivo | seconda-persona | plurale | progressive | futuro-progressivo, progressive, stare-auxiliary | you will be eating |
-| 118 | staranno mangiando | indicativo | futuro-progressivo | terza-persona | plurale | progressive | futuro-progressivo, progressive, stare-auxiliary | they will be eating |
-| 119 | stia mangiando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary | (that) I be eating |
-| 120 | stia mangiando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary | (that) you be eating |
-| 121 | stia mangiando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary | (that) he/she be eating |
-| 122 | stiamo mangiando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary | (that) we be eating |
-| 123 | stiate mangiando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary | (that) you be eating |
-| 124 | stiano mangiando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary | (that) they be eating |
-| 125 | stessi mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary | (that) I were eating |
-| 126 | stessi mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary | (that) you were eating |
-| 127 | stesse mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary | (that) he/she were eating |
-| 128 | stessimo mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary | (that) we were eating |
-| 129 | steste mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary | (that) you were eating |
-| 130 | stessero mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary | (that) they were eating |
-| 131 | starei mangiando | condizionale | condizionale-progressivo | prima-persona | singolare | progressive | condizionale-progressivo, progressive, stare-auxiliary | I would be eating |
-| 132 | staresti mangiando | condizionale | condizionale-progressivo | seconda-persona | singolare | progressive | condizionale-progressivo, progressive, stare-auxiliary | you would be eating |
-| 133 | starebbe mangiando | condizionale | condizionale-progressivo | terza-persona | singolare | progressive | condizionale-progressivo, progressive, stare-auxiliary | he/she would be eating |
-| 134 | staremmo mangiando | condizionale | condizionale-progressivo | prima-persona | plurale | progressive | condizionale-progressivo, progressive, stare-auxiliary | we would be eating |
-| 135 | stareste mangiando | condizionale | condizionale-progressivo | seconda-persona | plurale | progressive | condizionale-progressivo, progressive, stare-auxiliary | you would be eating |
-| 136 | starebbero mangiando | condizionale | condizionale-progressivo | terza-persona | plurale | progressive | condizionale-progressivo, progressive, stare-auxiliary | they would be eating |
-| 137 | stando mangiando | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, stare-auxiliary | being eating |
+| 101 | sto mangiando | indicativo | presente-progressivo | prima-persona | singolare | progressive | presente-progressivo, progressive | I am eating |
+| 102 | stai mangiando | indicativo | presente-progressivo | seconda-persona | singolare | progressive | presente-progressivo, progressive | you are eating |
+| 103 | sta mangiando | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive | he/she is eating |
+| 104 | stiamo mangiando | indicativo | presente-progressivo | prima-persona | plurale | progressive | presente-progressivo, progressive | we are eating |
+| 105 | state mangiando | indicativo | presente-progressivo | seconda-persona | plurale | progressive | presente-progressivo, progressive | you are eating |
+| 106 | stanno mangiando | indicativo | presente-progressivo | terza-persona | plurale | progressive | presente-progressivo, progressive | they are eating |
+| 107 | stavo mangiando | indicativo | passato-progressivo | prima-persona | singolare | progressive | passato-progressivo, progressive | I was eating |
+| 108 | stavi mangiando | indicativo | passato-progressivo | seconda-persona | singolare | progressive | passato-progressivo, progressive | you were eating |
+| 109 | stava mangiando | indicativo | passato-progressivo | terza-persona | singolare | progressive | passato-progressivo, progressive | he/she was eating |
+| 110 | stavamo mangiando | indicativo | passato-progressivo | prima-persona | plurale | progressive | passato-progressivo, progressive | we were eating |
+| 111 | stavate mangiando | indicativo | passato-progressivo | seconda-persona | plurale | progressive | passato-progressivo, progressive | you were eating |
+| 112 | stavano mangiando | indicativo | passato-progressivo | terza-persona | plurale | progressive | passato-progressivo, progressive | they were eating |
+| 113 | starò mangiando | indicativo | futuro-progressivo | prima-persona | singolare | progressive | futuro-progressivo, progressive | I will be eating |
+| 114 | starai mangiando | indicativo | futuro-progressivo | seconda-persona | singolare | progressive | futuro-progressivo, progressive | you will be eating |
+| 115 | starà mangiando | indicativo | futuro-progressivo | terza-persona | singolare | progressive | futuro-progressivo, progressive | he/she will be eating |
+| 116 | staremo mangiando | indicativo | futuro-progressivo | prima-persona | plurale | progressive | futuro-progressivo, progressive | we will be eating |
+| 117 | starete mangiando | indicativo | futuro-progressivo | seconda-persona | plurale | progressive | futuro-progressivo, progressive | you will be eating |
+| 118 | staranno mangiando | indicativo | futuro-progressivo | terza-persona | plurale | progressive | futuro-progressivo, progressive | they will be eating |
+| 119 | stia mangiando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive | (that) I be eating |
+| 120 | stia mangiando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive | (that) you be eating |
+| 121 | stia mangiando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive | (that) he/she be eating |
+| 122 | stiamo mangiando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive | (that) we be eating |
+| 123 | stiate mangiando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive | (that) you be eating |
+| 124 | stiano mangiando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive | (that) they be eating |
+| 125 | stessi mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) I were eating |
+| 126 | stessi mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) you were eating |
+| 127 | stesse mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) he/she were eating |
+| 128 | stessimo mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) we were eating |
+| 129 | steste mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) you were eating |
+| 130 | stessero mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) they were eating |
+| 131 | starei mangiando | condizionale | condizionale-progressivo | prima-persona | singolare | progressive | condizionale-progressivo, progressive | I would be eating |
+| 132 | staresti mangiando | condizionale | condizionale-progressivo | seconda-persona | singolare | progressive | condizionale-progressivo, progressive | you would be eating |
+| 133 | starebbe mangiando | condizionale | condizionale-progressivo | terza-persona | singolare | progressive | condizionale-progressivo, progressive | he/she would be eating |
+| 134 | staremmo mangiando | condizionale | condizionale-progressivo | prima-persona | plurale | progressive | condizionale-progressivo, progressive | we would be eating |
+| 135 | stareste mangiando | condizionale | condizionale-progressivo | seconda-persona | plurale | progressive | condizionale-progressivo, progressive | you would be eating |
+| 136 | starebbero mangiando | condizionale | condizionale-progressivo | terza-persona | plurale | progressive | condizionale-progressivo, progressive | they would be eating |
+| 137 | stando mangiando | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive | being eating |
 
 **Form_Translations Coverage**: 137 form_translations total, all linking to single "to eat" translation. No restrictions apply - all forms covered.
 
@@ -1229,11 +1341,12 @@ id: 880e8400-e29b-41d4-a716-446655440001
 word_id: 770e8400-e29b-41d4-a716-446655440000
 translation: "to wash oneself"
 display_priority: 1
-context_metadata: {
-  "auxiliary": "essere",
-  "usage": "direct-reflexive",
-  "transitivity": "reflexive"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=880e8400-e29b-41d4-a716-446655440001
+value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr021val102 (verb_type: "direct-reflexive")
+value_id → metaattr020val100 (transitivity: "intransitive")
 ```
 
 #### Translation 2: Reciprocal "to wash each other" (MANDATORY)
@@ -1243,11 +1356,12 @@ id: 880e8400-e29b-41d4-a716-446655440002
 word_id: 770e8400-e29b-41d4-a716-446655440000
 translation: "to wash each other"
 display_priority: 2
-context_metadata: {
-  "auxiliary": "essere",
-  "usage": "reciprocal", 
-  "plurality": "plural-only"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=880e8400-e29b-41d4-a716-446655440002
+value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr021val103 (verb_type: "reciprocal")
+value_id → metaattr013val056 (number_restriction: "plural-only")
 ```
 
 #### Complete Form Inventory with Integrated Clitics (137 Total Forms)
@@ -1312,97 +1426,97 @@ context_metadata: {
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 252 | mi sono lavato/a | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary, reflexive, agreement | I have washed myself | - |
-| 253 | ti sei lavato/a | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary, reflexive, agreement | you have washed yourself | - |
-| 254 | si è lavato/a | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary, reflexive, agreement | he/she has washed himself/herself | - |
-| 255 | ci siamo lavati/e | indicativo | passato-prossimo | prima-persona | plurale | compound | passato-prossimo, compound, essere-auxiliary, reflexive, agreement | we have washed ourselves | we have washed each other |
-| 256 | vi siete lavati/e | indicativo | passato-prossimo | seconda-persona | plurale | compound | passato-prossimo, compound, essere-auxiliary, reflexive, agreement | you have washed yourselves | you have washed each other |
-| 257 | si sono lavati/e | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, essere-auxiliary, reflexive, agreement | they have washed themselves | they have washed each other |
-| 258 | mi ero lavato/a | indicativo | trapassato-prossimo | prima-persona | singolare | compound | trapassato-prossimo, compound, essere-auxiliary, reflexive, agreement | I had washed myself | - |
-| 259 | ti eri lavato/a | indicativo | trapassato-prossimo | seconda-persona | singolare | compound | trapassato-prossimo, compound, essere-auxiliary, reflexive, agreement | you had washed yourself | - |
-| 260 | si era lavato/a | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trapassato-prossimo, compound, essere-auxiliary, reflexive, agreement | he/she had washed himself/herself | - |
-| 261 | ci eravamo lavati/e | indicativo | trapassato-prossimo | prima-persona | plurale | compound | trapassato-prossimo, compound, essere-auxiliary, reflexive, agreement | we had washed ourselves | we had washed each other |
-| 262 | vi eravate lavati/e | indicativo | trapassato-prossimo | seconda-persona | plurale | compound | trapassato-prossimo, compound, essere-auxiliary, reflexive, agreement | you had washed yourselves | you had washed each other |
-| 263 | si erano lavati/e | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trapassato-prossimo, compound, essere-auxiliary, reflexive, agreement | they had washed themselves | they had washed each other |
-| 264 | mi fui lavato/a | indicativo | trapassato-remoto | prima-persona | singolare | compound | trapassato-remoto, compound, essere-auxiliary, reflexive, agreement | I had washed myself | - |
-| 265 | ti fosti lavato/a | indicativo | trapassato-remoto | seconda-persona | singolare | compound | trapassato-remoto, compound, essere-auxiliary, reflexive, agreement | you had washed yourself | - |
-| 266 | si fu lavato/a | indicativo | trapassato-remoto | terza-persona | singolare | compound | trapassato-remoto, compound, essere-auxiliary, reflexive, agreement | he/she had washed himself/herself | - |
-| 267 | ci fummo lavati/e | indicativo | trapassato-remoto | prima-persona | plurale | compound | trapassato-remoto, compound, essere-auxiliary, reflexive, agreement | we had washed ourselves | we had washed each other |
-| 268 | vi foste lavati/e | indicativo | trapassato-remoto | seconda-persona | plurale | compound | trapassato-remoto, compound, essere-auxiliary, reflexive, agreement | you had washed yourselves | you had washed each other |
-| 269 | si furono lavati/e | indicativo | trapassato-remoto | terza-persona | plurale | compound | trapassato-remoto, compound, essere-auxiliary, reflexive, agreement | they had washed themselves | they had washed each other |
-| 270 | mi sarò lavato/a | indicativo | futuro-anteriore | prima-persona | singolare | compound | futuro-anteriore, compound, essere-auxiliary, reflexive, agreement | I will have washed myself | - |
-| 271 | ti sarai lavato/a | indicativo | futuro-anteriore | seconda-persona | singolare | compound | futuro-anteriore, compound, essere-auxiliary, reflexive, agreement | you will have washed yourself | - |
-| 272 | si sarà lavato/a | indicativo | futuro-anteriore | terza-persona | singolare | compound | futuro-anteriore, compound, essere-auxiliary, reflexive, agreement | he/she will have washed himself/herself | - |
-| 273 | ci saremo lavati/e | indicativo | futuro-anteriore | prima-persona | plurale | compound | futuro-anteriore, compound, essere-auxiliary, reflexive, agreement | we will have washed ourselves | we will have washed each other |
-| 274 | vi sarete lavati/e | indicativo | futuro-anteriore | seconda-persona | plurale | compound | futuro-anteriore, compound, essere-auxiliary, reflexive, agreement | you will have washed yourselves | you will have washed each other |
-| 275 | si saranno lavati/e | indicativo | futuro-anteriore | terza-persona | plurale | compound | futuro-anteriore, compound, essere-auxiliary, reflexive, agreement | they will have washed themselves | they will have washed each other |
-| 276 | mi sia lavato/a | congiuntivo | congiuntivo-passato | prima-persona | singolare | compound | congiuntivo-passato, compound, essere-auxiliary, reflexive, agreement | (that) I have washed myself | - |
-| 277 | ti sia lavato/a | congiuntivo | congiuntivo-passato | seconda-persona | singolare | compound | congiuntivo-passato, compound, essere-auxiliary, reflexive, agreement | (that) you have washed yourself | - |
-| 278 | si sia lavato/a | congiuntivo | congiuntivo-passato | terza-persona | singolare | compound | congiuntivo-passato, compound, essere-auxiliary, reflexive, agreement | (that) he/she has washed himself/herself | - |
-| 279 | ci siamo lavati/e | congiuntivo | congiuntivo-passato | prima-persona | plurale | compound | congiuntivo-passato, compound, essere-auxiliary, reflexive, agreement | (that) we have washed ourselves | (that) we have washed each other |
-| 280 | vi siate lavati/e | congiuntivo | congiuntivo-passato | seconda-persona | plurale | compound | congiuntivo-passato, compound, essere-auxiliary, reflexive, agreement | (that) you have washed yourselves | (that) you have washed each other |
-| 281 | si siano lavati/e | congiuntivo | congiuntivo-passato | terza-persona | plurale | compound | congiuntivo-passato, compound, essere-auxiliary, reflexive, agreement | (that) they have washed themselves | (that) they have washed each other |
-| 282 | mi fossi lavato/a | congiuntivo | congiuntivo-trapassato | prima-persona | singolare | compound | congiuntivo-trapassato, compound, essere-auxiliary, reflexive, agreement | (that) I had washed myself | - |
-| 283 | ti fossi lavato/a | congiuntivo | congiuntivo-trapassato | seconda-persona | singolare | compound | congiuntivo-trapassato, compound, essere-auxiliary, reflexive, agreement | (that) you had washed yourself | - |
-| 284 | si fosse lavato/a | congiuntivo | congiuntivo-trapassato | terza-persona | singolare | compound | congiuntivo-trapassato, compound, essere-auxiliary, reflexive, agreement | (that) he/she had washed himself/herself | - |
-| 285 | ci fossimo lavati/e | congiuntivo | congiuntivo-trapassato | prima-persona | plurale | compound | congiuntivo-trapassato, compound, essere-auxiliary, reflexive, agreement | (that) we had washed ourselves | (that) we had washed each other |
-| 286 | vi foste lavati/e | congiuntivo | congiuntivo-trapassato | seconda-persona | plurale | compound | congiuntivo-trapassato, compound, essere-auxiliary, reflexive, agreement | (that) you had washed yourselves | (that) you had washed each other |
-| 287 | si fossero lavati/e | congiuntivo | congiuntivo-trapassato | terza-persona | plurale | compound | congiuntivo-trapassato, compound, essere-auxiliary, reflexive, agreement | (that) they had washed themselves | (that) they had washed each other |
-| 288 | mi sarei lavato/a | condizionale | condizionale-passato | prima-persona | singolare | compound | condizionale-passato, compound, essere-auxiliary, reflexive, agreement | I would have washed myself | - |
-| 289 | ti saresti lavato/a | condizionale | condizionale-passato | seconda-persona | singolare | compound | condizionale-passato, compound, essere-auxiliary, reflexive, agreement | you would have washed yourself | - |
-| 290 | si sarebbe lavato/a | condizionale | condizionale-passato | terza-persona | singolare | compound | condizionale-passato, compound, essere-auxiliary, reflexive, agreement | he/she would have washed himself/herself | - |
-| 291 | ci saremmo lavati/e | condizionale | condizionale-passato | prima-persona | plurale | compound | condizionale-passato, compound, essere-auxiliary, reflexive, agreement | we would have washed ourselves | we would have washed each other |
-| 292 | vi sareste lavati/e | condizionale | condizionale-passato | seconda-persona | plurale | compound | condizionale-passato, compound, essere-auxiliary, reflexive, agreement | you would have washed yourselves | you would have washed each other |
-| 293 | si sarebbero lavati/e | condizionale | condizionale-passato | terza-persona | plurale | compound | condizionale-passato, compound, essere-auxiliary, reflexive, agreement | they would have washed themselves | they would have washed each other |
-| 294 | sii lavato/a | imperativo | imperativo-passato | seconda-persona | singolare | compound | imperativo-passato, compound, essere-auxiliary, reflexive, agreement | have washed yourself! | - |
-| 295 | si sia lavato/a | imperativo | imperativo-passato | terza-persona | singolare | compound | imperativo-passato, compound, essere-auxiliary, reflexive, agreement | let him/her have washed himself/herself! | - |
-| 296 | siamoci lavati/e | imperativo | imperativo-passato | prima-persona | plurale | compound | imperativo-passato, compound, essere-auxiliary, reflexive, agreement | let's have washed ourselves! | let's have washed each other! |
-| 297 | siatevi lavati/e | imperativo | imperativo-passato | seconda-persona | plurale | compound | imperativo-passato, compound, essere-auxiliary, reflexive, agreement | have washed yourselves! | have washed each other! |
-| 298 | si siano lavati/e | imperativo | imperativo-passato | terza-persona | plurale | compound | imperativo-passato, compound, essere-auxiliary, reflexive, agreement | let them have washed themselves! | let them have washed each other! |
-| 299 | essendosi lavato/a/i/e | gerundio | gerundio-passato | - | - | compound | gerundio-passato, compound, essere-auxiliary, reflexive, agreement | having washed oneself | having washed each other |
-| 300 | essersi lavato/a/i/e | infinito | infinito-passato | - | - | compound | infinito-passato, compound, essere-auxiliary, reflexive, agreement | to have washed oneself | to have washed each other |
+| 252 | mi sono lavato/a | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, reflexive, agreement | I have washed myself | - |
+| 253 | ti sei lavato/a | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, reflexive, agreement | you have washed yourself | - |
+| 254 | si è lavato/a | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, reflexive, agreement | he/she has washed himself/herself | - |
+| 255 | ci siamo lavati/e | indicativo | passato-prossimo | prima-persona | plurale | compound | passato-prossimo, compound, reflexive, agreement | we have washed ourselves | we have washed each other |
+| 256 | vi siete lavati/e | indicativo | passato-prossimo | seconda-persona | plurale | compound | passato-prossimo, compound, reflexive, agreement | you have washed yourselves | you have washed each other |
+| 257 | si sono lavati/e | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, reflexive, agreement | they have washed themselves | they have washed each other |
+| 258 | mi ero lavato/a | indicativo | trapassato-prossimo | prima-persona | singolare | compound | trapassato-prossimo, compound, reflexive, agreement | I had washed myself | - |
+| 259 | ti eri lavato/a | indicativo | trapassato-prossimo | seconda-persona | singolare | compound | trapassato-prossimo, compound, reflexive, agreement | you had washed yourself | - |
+| 260 | si era lavato/a | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trapassato-prossimo, compound, reflexive, agreement | he/she had washed himself/herself | - |
+| 261 | ci eravamo lavati/e | indicativo | trapassato-prossimo | prima-persona | plurale | compound | trapassato-prossimo, compound, reflexive, agreement | we had washed ourselves | we had washed each other |
+| 262 | vi eravate lavati/e | indicativo | trapassato-prossimo | seconda-persona | plurale | compound | trapassato-prossimo, compound, reflexive, agreement | you had washed yourselves | you had washed each other |
+| 263 | si erano lavati/e | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trapassato-prossimo, compound, reflexive, agreement | they had washed themselves | they had washed each other |
+| 264 | mi fui lavato/a | indicativo | trapassato-remoto | prima-persona | singolare | compound | trapassato-remoto, compound, reflexive, agreement | I had washed myself | - |
+| 265 | ti fosti lavato/a | indicativo | trapassato-remoto | seconda-persona | singolare | compound | trapassato-remoto, compound, reflexive, agreement | you had washed yourself | - |
+| 266 | si fu lavato/a | indicativo | trapassato-remoto | terza-persona | singolare | compound | trapassato-remoto, compound, reflexive, agreement | he/she had washed himself/herself | - |
+| 267 | ci fummo lavati/e | indicativo | trapassato-remoto | prima-persona | plurale | compound | trapassato-remoto, compound, reflexive, agreement | we had washed ourselves | we had washed each other |
+| 268 | vi foste lavati/e | indicativo | trapassato-remoto | seconda-persona | plurale | compound | trapassato-remoto, compound, reflexive, agreement | you had washed yourselves | you had washed each other |
+| 269 | si furono lavati/e | indicativo | trapassato-remoto | terza-persona | plurale | compound | trapassato-remoto, compound, reflexive, agreement | they had washed themselves | they had washed each other |
+| 270 | mi sarò lavato/a | indicativo | futuro-anteriore | prima-persona | singolare | compound | futuro-anteriore, compound, reflexive, agreement | I will have washed myself | - |
+| 271 | ti sarai lavato/a | indicativo | futuro-anteriore | seconda-persona | singolare | compound | futuro-anteriore, compound, reflexive, agreement | you will have washed yourself | - |
+| 272 | si sarà lavato/a | indicativo | futuro-anteriore | terza-persona | singolare | compound | futuro-anteriore, compound, reflexive, agreement | he/she will have washed himself/herself | - |
+| 273 | ci saremo lavati/e | indicativo | futuro-anteriore | prima-persona | plurale | compound | futuro-anteriore, compound, reflexive, agreement | we will have washed ourselves | we will have washed each other |
+| 274 | vi sarete lavati/e | indicativo | futuro-anteriore | seconda-persona | plurale | compound | futuro-anteriore, compound, reflexive, agreement | you will have washed yourselves | you will have washed each other |
+| 275 | si saranno lavati/e | indicativo | futuro-anteriore | terza-persona | plurale | compound | futuro-anteriore, compound, reflexive, agreement | they will have washed themselves | they will have washed each other |
+| 276 | mi sia lavato/a | congiuntivo | congiuntivo-passato | prima-persona | singolare | compound | congiuntivo-passato, compound, reflexive, agreement | (that) I have washed myself | - |
+| 277 | ti sia lavato/a | congiuntivo | congiuntivo-passato | seconda-persona | singolare | compound | congiuntivo-passato, compound, reflexive, agreement | (that) you have washed yourself | - |
+| 278 | si sia lavato/a | congiuntivo | congiuntivo-passato | terza-persona | singolare | compound | congiuntivo-passato, compound, reflexive, agreement | (that) he/she has washed himself/herself | - |
+| 279 | ci siamo lavati/e | congiuntivo | congiuntivo-passato | prima-persona | plurale | compound | congiuntivo-passato, compound, reflexive, agreement | (that) we have washed ourselves | (that) we have washed each other |
+| 280 | vi siate lavati/e | congiuntivo | congiuntivo-passato | seconda-persona | plurale | compound | congiuntivo-passato, compound, reflexive, agreement | (that) you have washed yourselves | (that) you have washed each other |
+| 281 | si siano lavati/e | congiuntivo | congiuntivo-passato | terza-persona | plurale | compound | congiuntivo-passato, compound, reflexive, agreement | (that) they have washed themselves | (that) they have washed each other |
+| 282 | mi fossi lavato/a | congiuntivo | congiuntivo-trapassato | prima-persona | singolare | compound | congiuntivo-trapassato, compound, reflexive, agreement | (that) I had washed myself | - |
+| 283 | ti fossi lavato/a | congiuntivo | congiuntivo-trapassato | seconda-persona | singolare | compound | congiuntivo-trapassato, compound, reflexive, agreement | (that) you had washed yourself | - |
+| 284 | si fosse lavato/a | congiuntivo | congiuntivo-trapassato | terza-persona | singolare | compound | congiuntivo-trapassato, compound, reflexive, agreement | (that) he/she had washed himself/herself | - |
+| 285 | ci fossimo lavati/e | congiuntivo | congiuntivo-trapassato | prima-persona | plurale | compound | congiuntivo-trapassato, compound, reflexive, agreement | (that) we had washed ourselves | (that) we had washed each other |
+| 286 | vi foste lavati/e | congiuntivo | congiuntivo-trapassato | seconda-persona | plurale | compound | congiuntivo-trapassato, compound, reflexive, agreement | (that) you had washed yourselves | (that) you had washed each other |
+| 287 | si fossero lavati/e | congiuntivo | congiuntivo-trapassato | terza-persona | plurale | compound | congiuntivo-trapassato, compound, reflexive, agreement | (that) they had washed themselves | (that) they had washed each other |
+| 288 | mi sarei lavato/a | condizionale | condizionale-passato | prima-persona | singolare | compound | condizionale-passato, compound, reflexive, agreement | I would have washed myself | - |
+| 289 | ti saresti lavato/a | condizionale | condizionale-passato | seconda-persona | singolare | compound | condizionale-passato, compound, reflexive, agreement | you would have washed yourself | - |
+| 290 | si sarebbe lavato/a | condizionale | condizionale-passato | terza-persona | singolare | compound | condizionale-passato, compound, reflexive, agreement | he/she would have washed himself/herself | - |
+| 291 | ci saremmo lavati/e | condizionale | condizionale-passato | prima-persona | plurale | compound | condizionale-passato, compound, reflexive, agreement | we would have washed ourselves | we would have washed each other |
+| 292 | vi sareste lavati/e | condizionale | condizionale-passato | seconda-persona | plurale | compound | condizionale-passato, compound, reflexive, agreement | you would have washed yourselves | you would have washed each other |
+| 293 | si sarebbero lavati/e | condizionale | condizionale-passato | terza-persona | plurale | compound | condizionale-passato, compound, reflexive, agreement | they would have washed themselves | they would have washed each other |
+| 294 | sii lavato/a | imperativo | imperativo-passato | seconda-persona | singolare | compound | imperativo-passato, compound, reflexive, agreement | have washed yourself! | - |
+| 295 | si sia lavato/a | imperativo | imperativo-passato | terza-persona | singolare | compound | imperativo-passato, compound, reflexive, agreement | let him/her have washed himself/herself! | - |
+| 296 | siamoci lavati/e | imperativo | imperativo-passato | prima-persona | plurale | compound | imperativo-passato, compound, reflexive, agreement | let's have washed ourselves! | let's have washed each other! |
+| 297 | siatevi lavati/e | imperativo | imperativo-passato | seconda-persona | plurale | compound | imperativo-passato, compound, reflexive, agreement | have washed yourselves! | have washed each other! |
+| 298 | si siano lavati/e | imperativo | imperativo-passato | terza-persona | plurale | compound | imperativo-passato, compound, reflexive, agreement | let them have washed themselves! | let them have washed each other! |
+| 299 | essendosi lavato/a/i/e | gerundio | gerundio-passato | - | - | compound | gerundio-passato, compound, reflexive, agreement | having washed oneself | having washed each other |
+| 300 | essersi lavato/a/i/e | infinito | infinito-passato | - | - | compound | infinito-passato, compound, reflexive, agreement | to have washed oneself | to have washed each other |
 
 **Progressive Forms with stare (35 forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 301 | mi sto lavando | indicativo | presente-progressivo | prima-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary, reflexive, mi-clitic | I am washing myself | - |
-| 302 | ti stai lavando | indicativo | presente-progressivo | seconda-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary, reflexive, ti-clitic | you are washing yourself | - |
-| 303 | si sta lavando | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | he/she is washing himself/herself | - |
-| 304 | ci stiamo lavando | indicativo | presente-progressivo | prima-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary, reflexive, ci-clitic | we are washing ourselves | we are washing each other |
-| 305 | vi state lavando | indicativo | presente-progressivo | seconda-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary, reflexive, vi-clitic | you are washing yourselves | you are washing each other |
-| 306 | si stanno lavando | indicativo | presente-progressivo | terza-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | they are washing themselves | they are washing each other |
-| 307 | mi stavo lavando | indicativo | passato-progressivo | prima-persona | singolare | progressive | passato-progressivo, progressive, stare-auxiliary, reflexive, mi-clitic | I was washing myself | - |
-| 308 | ti stavi lavando | indicativo | passato-progressivo | seconda-persona | singolare | progressive | passato-progressivo, progressive, stare-auxiliary, reflexive, ti-clitic | you were washing yourself | - |
-| 309 | si stava lavando | indicativo | passato-progressivo | terza-persona | singolare | progressive | passato-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | he/she was washing himself/herself | - |
-| 310 | ci stavamo lavando | indicativo | passato-progressivo | prima-persona | plurale | progressive | passato-progressivo, progressive, stare-auxiliary, reflexive, ci-clitic | we were washing ourselves | we were washing each other |
-| 311 | vi stavate lavando | indicativo | passato-progressivo | seconda-persona | plurale | progressive | passato-progressivo, progressive, stare-auxiliary, reflexive, vi-clitic | you were washing yourselves | you were washing each other |
-| 312 | si stavano lavando | indicativo | passato-progressivo | terza-persona | plurale | progressive | passato-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | they were washing themselves | they were washing each other |
-| 313 | mi starò lavando | indicativo | futuro-progressivo | prima-persona | singolare | progressive | futuro-progressivo, progressive, stare-auxiliary, reflexive, mi-clitic | I will be washing myself | - |
-| 314 | ti starai lavando | indicativo | futuro-progressivo | seconda-persona | singolare | progressive | futuro-progressivo, progressive, stare-auxiliary, reflexive, ti-clitic | you will be washing yourself | - |
-| 315 | si starà lavando | indicativo | futuro-progressivo | terza-persona | singolare | progressive | futuro-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | he/she will be washing himself/herself | - |
-| 316 | ci staremo lavando | indicativo | futuro-progressivo | prima-persona | plurale | progressive | futuro-progressivo, progressive, stare-auxiliary, reflexive, ci-clitic | we will be washing ourselves | we will be washing each other |
-| 317 | vi starete lavando | indicativo | futuro-progressivo | seconda-persona | plurale | progressive | futuro-progressivo, progressive, stare-auxiliary, reflexive, vi-clitic | you will be washing yourselves | you will be washing each other |
-| 318 | si staranno lavando | indicativo | futuro-progressivo | terza-persona | plurale | progressive | futuro-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | they will be washing themselves | they will be washing each other |
-| 319 | mi stia lavando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary, reflexive, mi-clitic | (that) I be washing myself | - |
-| 320 | ti stia lavando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary, reflexive, ti-clitic | (that) you be washing yourself | - |
-| 321 | si stia lavando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | (that) he/she be washing himself/herself | - |
-| 322 | ci stiamo lavando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary, reflexive, ci-clitic | (that) we be washing ourselves | (that) we be washing each other |
-| 323 | vi stiate lavando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary, reflexive, vi-clitic | (that) you be washing yourselves | (that) you be washing each other |
-| 324 | si stiano lavando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | (that) they be washing themselves | (that) they be washing each other |
-| 325 | mi stessi lavando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary, reflexive, mi-clitic | (that) I were washing myself | - |
-| 326 | ti stessi lavando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary, reflexive, ti-clitic | (that) you were washing yourself | - |
-| 327 | si stesse lavando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | (that) he/she were washing himself/herself | - |
-| 328 | ci stessimo lavando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary, reflexive, ci-clitic | (that) we were washing ourselves | (that) we were washing each other |
-| 329 | vi steste lavando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary, reflexive, vi-clitic | (that) you were washing yourselves | (that) you were washing each other |
-| 330 | si stessero lavando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | (that) they were washing themselves | (that) they were washing each other |
-| 331 | mi starei lavando | condizionale | condizionale-progressivo | prima-persona | singolare | progressive | condizionale-progressivo, progressive, stare-auxiliary, reflexive, mi-clitic | I would be washing myself | - |
-| 332 | ti staresti lavando | condizionale | condizionale-progressivo | seconda-persona | singolare | progressive | condizionale-progressivo, progressive, stare-auxiliary, reflexive, ti-clitic | you would be washing yourself | - |
-| 333 | si starebbe lavando | condizionale | condizionale-progressivo | terza-persona | singolare | progressive | condizionale-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | he/she would be washing himself/herself | - |
-| 334 | ci staremmo lavando | condizionale | condizionale-progressivo | prima-persona | plurale | progressive | condizionale-progressivo, progressive, stare-auxiliary, reflexive, ci-clitic | we would be washing ourselves | we would be washing each other |
-| 335 | vi stareste lavando | condizionale | condizionale-progressivo | seconda-persona | plurale | progressive | condizionale-progressivo, progressive, stare-auxiliary, reflexive, vi-clitic | you would be washing yourselves | you would be washing each other |
-| 336 | si starebbero lavando | condizionale | condizionale-progressivo | terza-persona | plurale | progressive | condizionale-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | they would be washing themselves | they would be washing each other |
-| 337 | standosi lavando | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, stare-auxiliary, reflexive, si-clitic | being washing oneself | being washing each other |
+| 301 | mi sto lavando | indicativo | presente-progressivo | prima-persona | singolare | progressive | presente-progressivo, progressive, reflexive, mi-clitic | I am washing myself | - |
+| 302 | ti stai lavando | indicativo | presente-progressivo | seconda-persona | singolare | progressive | presente-progressivo, progressive, reflexive, ti-clitic | you are washing yourself | - |
+| 303 | si sta lavando | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive, reflexive, si-clitic | he/she is washing himself/herself | - |
+| 304 | ci stiamo lavando | indicativo | presente-progressivo | prima-persona | plurale | progressive | presente-progressivo, progressive, reflexive, ci-clitic | we are washing ourselves | we are washing each other |
+| 305 | vi state lavando | indicativo | presente-progressivo | seconda-persona | plurale | progressive | presente-progressivo, progressive, reflexive, vi-clitic | you are washing yourselves | you are washing each other |
+| 306 | si stanno lavando | indicativo | presente-progressivo | terza-persona | plurale | progressive | presente-progressivo, progressive, reflexive, si-clitic | they are washing themselves | they are washing each other |
+| 307 | mi stavo lavando | indicativo | passato-progressivo | prima-persona | singolare | progressive | passato-progressivo, progressive, reflexive, mi-clitic | I was washing myself | - |
+| 308 | ti stavi lavando | indicativo | passato-progressivo | seconda-persona | singolare | progressive | passato-progressivo, progressive, reflexive, ti-clitic | you were washing yourself | - |
+| 309 | si stava lavando | indicativo | passato-progressivo | terza-persona | singolare | progressive | passato-progressivo, progressive, reflexive, si-clitic | he/she was washing himself/herself | - |
+| 310 | ci stavamo lavando | indicativo | passato-progressivo | prima-persona | plurale | progressive | passato-progressivo, progressive, reflexive, ci-clitic | we were washing ourselves | we were washing each other |
+| 311 | vi stavate lavando | indicativo | passato-progressivo | seconda-persona | plurale | progressive | passato-progressivo, progressive, reflexive, vi-clitic | you were washing yourselves | you were washing each other |
+| 312 | si stavano lavando | indicativo | passato-progressivo | terza-persona | plurale | progressive | passato-progressivo, progressive, reflexive, si-clitic | they were washing themselves | they were washing each other |
+| 313 | mi starò lavando | indicativo | futuro-progressivo | prima-persona | singolare | progressive | futuro-progressivo, progressive, reflexive, mi-clitic | I will be washing myself | - |
+| 314 | ti starai lavando | indicativo | futuro-progressivo | seconda-persona | singolare | progressive | futuro-progressivo, progressive, reflexive, ti-clitic | you will be washing yourself | - |
+| 315 | si starà lavando | indicativo | futuro-progressivo | terza-persona | singolare | progressive | futuro-progressivo, progressive, reflexive, si-clitic | he/she will be washing himself/herself | - |
+| 316 | ci staremo lavando | indicativo | futuro-progressivo | prima-persona | plurale | progressive | futuro-progressivo, progressive, reflexive, ci-clitic | we will be washing ourselves | we will be washing each other |
+| 317 | vi starete lavando | indicativo | futuro-progressivo | seconda-persona | plurale | progressive | futuro-progressivo, progressive, reflexive, vi-clitic | you will be washing yourselves | you will be washing each other |
+| 318 | si staranno lavando | indicativo | futuro-progressivo | terza-persona | plurale | progressive | futuro-progressivo, progressive, reflexive, si-clitic | they will be washing themselves | they will be washing each other |
+| 319 | mi stia lavando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive, reflexive, mi-clitic | (that) I be washing myself | - |
+| 320 | ti stia lavando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive, reflexive, ti-clitic | (that) you be washing yourself | - |
+| 321 | si stia lavando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | singolare | progressive | congiuntivo-presente-progressivo, progressive, reflexive, si-clitic | (that) he/she be washing himself/herself | - |
+| 322 | ci stiamo lavando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive, reflexive, ci-clitic | (that) we be washing ourselves | (that) we be washing each other |
+| 323 | vi stiate lavando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive, reflexive, vi-clitic | (that) you be washing yourselves | (that) you be washing each other |
+| 324 | si stiano lavando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | plurale | progressive | congiuntivo-presente-progressivo, progressive, reflexive, si-clitic | (that) they be washing themselves | (that) they be washing each other |
+| 325 | mi stessi lavando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive, reflexive, mi-clitic | (that) I were washing myself | - |
+| 326 | ti stessi lavando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive, reflexive, ti-clitic | (that) you were washing yourself | - |
+| 327 | si stesse lavando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive, reflexive, si-clitic | (that) he/she were washing himself/herself | - |
+| 328 | ci stessimo lavando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive, reflexive, ci-clitic | (that) we were washing ourselves | (that) we were washing each other |
+| 329 | vi steste lavando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive, reflexive, vi-clitic | (that) you were washing yourselves | (that) you were washing each other |
+| 330 | si stessero lavando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive, reflexive, si-clitic | (that) they were washing themselves | (that) they were washing each other |
+| 331 | mi starei lavando | condizionale | condizionale-progressivo | prima-persona | singolare | progressive | condizionale-progressivo, progressive, reflexive, mi-clitic | I would be washing myself | - |
+| 332 | ti staresti lavando | condizionale | condizionale-progressivo | seconda-persona | singolare | progressive | condizionale-progressivo, progressive, reflexive, ti-clitic | you would be washing yourself | - |
+| 333 | si starebbe lavando | condizionale | condizionale-progressivo | terza-persona | singolare | progressive | condizionale-progressivo, progressive, reflexive, si-clitic | he/she would be washing himself/herself | - |
+| 334 | ci staremmo lavando | condizionale | condizionale-progressivo | prima-persona | plurale | progressive | condizionale-progressivo, progressive, reflexive, ci-clitic | we would be washing ourselves | we would be washing each other |
+| 335 | vi stareste lavando | condizionale | condizionale-progressivo | seconda-persona | plurale | progressive | condizionale-progressivo, progressive, reflexive, vi-clitic | you would be washing yourselves | you would be washing each other |
+| 336 | si starebbero lavando | condizionale | condizionale-progressivo | terza-persona | plurale | progressive | condizionale-progressivo, progressive, reflexive, si-clitic | they would be washing themselves | they would be washing each other |
+| 337 | standosi lavando | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, reflexive, si-clitic | being washing oneself | being washing each other |
 
 **Form_Translations Coverage Analysis:**
 - **Translation 1 (Direct Reflexive)**: 137 form_translations (all forms covered)
@@ -1427,8 +1541,9 @@ word_type: "verb"
 value_id → meta_values.value: "ere-conjugation" (conjugation_type)
 value_id → meta_values.value: "freq-top500"     (frequency_tier)
 value_id → meta_values.value: "CEFR-B1"         (cefr_level)
-value_id → meta_values.value: "dual-auxiliary-verb" (verb_type)
-value_id → meta_values.value: "ambitransitive"      (transitivity)
+-- Note: Word-level transitivity is derived from translations
+-- Translation 1: "transitive" + Translation 2: "intransitive" → displays as "trans./intrans."
+-- Translation with "ambitransitive" → displays as "ambitrans."
 ```
 
 #### Translation 1: "to run" (sport/exercise - transitive with avere)
@@ -1438,11 +1553,11 @@ id: aa0e8400-e29b-41d4-a716-446655440001
 word_id: 990e8400-e29b-41d4-a716-446655440000
 translation: "to run (sport)"
 display_priority: 1
-context_metadata: {
-  "auxiliary": "avere",
-  "transitivity": "transitive",
-  "context": "sport/exercise"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=aa0e8400-e29b-41d4-a716-446655440001
+value_id → metaattr002val014 (auxiliary: "avere")
+value_id → metaattr020val099 (transitivity: "transitive")
 ```
 
 #### Translation 2: "to rush to" (motion with destination - intransitive with essere)
@@ -1452,10 +1567,11 @@ id: aa0e8400-e29b-41d4-a716-446655440002
 word_id: 990e8400-e29b-41d4-a716-446655440000
 translation: "to rush to"
 display_priority: 2
-context_metadata: {
-  "auxiliary": "essere", 
-  "usage_context": "motion-verb"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=aa0e8400-e29b-41d4-a716-446655440002
+value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr020val100 (transitivity: "intransitive")
 ```
 
 #### Complete Form Inventory - Shared and Auxiliary-Specific (219 Total Forms)
@@ -1480,37 +1596,37 @@ context_metadata: {
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 452 | ho corso | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary | I have run (sport) | - |
-| 453 | hai corso | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary | you have run (sport) | - |
-| 454 | ha corso | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary | he/she has run (sport) | - |
-| 455 | abbiamo corso | indicativo | passato-prossimo | prima-persona | plurale | compound | passato-prossimo, compound, avere-auxiliary | we have run (sport) | - |
-| 456 | avete corso | indicativo | passato-prossimo | seconda-persona | plurale | compound | passato-prossimo, compound, avere-auxiliary | you have run (sport) | - |
-| 457 | hanno corso | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, avere-auxiliary | they have run (sport) | - |
+| 452 | ho corso | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound | I have run (sport) | - |
+| 453 | hai corso | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound | you have run (sport) | - |
+| 454 | ha corso | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound | he/she has run (sport) | - |
+| 455 | abbiamo corso | indicativo | passato-prossimo | prima-persona | plurale | compound | passato-prossimo, compound | we have run (sport) | - |
+| 456 | avete corso | indicativo | passato-prossimo | seconda-persona | plurale | compound | passato-prossimo, compound | you have run (sport) | - |
+| 457 | hanno corso | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound | they have run (sport) | - |
 | ... | (43 additional compound forms with avere) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 500 | aver corso | infinito | infinito-passato | - | - | compound | infinito-passato, compound, avere-auxiliary | to have run (sport) | - |
+| 500 | aver corso | infinito | infinito-passato | - | - | compound | infinito-passato, compound | to have run (sport) | - |
 
 **Compound Forms with essere - Translation 2 Only (49 forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 501 | sono corso/a | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary, agreement | - | I have rushed |
-| 502 | sei corso/a | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary, agreement | - | you have rushed |
-| 503 | è corso/a | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary, agreement | - | he/she has rushed |
-| 504 | siamo corsi/e | indicativo | passato-prossimo | prima-persona | plurale | compound | passato-prossimo, compound, essere-auxiliary, agreement | - | we have rushed |
-| 505 | siete corsi/e | indicativo | passato-prossimo | seconda-persona | plurale | compound | passato-prossimo, compound, essere-auxiliary, agreement | - | you have rushed |
-| 506 | sono corsi/e | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, essere-auxiliary, agreement | - | they have rushed |
+| 501 | sono corso/a | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, agreement | - | I have rushed |
+| 502 | sei corso/a | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, agreement | - | you have rushed |
+| 503 | è corso/a | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, agreement | - | he/she has rushed |
+| 504 | siamo corsi/e | indicativo | passato-prossimo | prima-persona | plurale | compound | passato-prossimo, compound, agreement | - | we have rushed |
+| 505 | siete corsi/e | indicativo | passato-prossimo | seconda-persona | plurale | compound | passato-prossimo, compound, agreement | - | you have rushed |
+| 506 | sono corsi/e | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, agreement | - | they have rushed |
 | ... | (43 additional compound forms with essere) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 549 | essere corso/a/i/e | infinito | infinito-passato | - | - | compound | infinito-passato, compound, essere-auxiliary, agreement | - | to have rushed |
+| 549 | essere corso/a/i/e | infinito | infinito-passato | - | - | compound | infinito-passato, compound, agreement | - | to have rushed |
 
 **Progressive Forms - Shared Across Both Meanings (35 forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 550 | sto correndo | indicativo | presente-progressivo | prima-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary | I am running (sport) | I am rushing |
-| 551 | stai correndo | indicativo | presente-progressivo | seconda-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary | you are running (sport) | you are rushing |
-| 552 | sta correndo | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary | he/she is running (sport) | he/she is rushing |
+| 550 | sto correndo | indicativo | presente-progressivo | prima-persona | singolare | progressive | presente-progressivo, progressive | I am running (sport) | I am rushing |
+| 551 | stai correndo | indicativo | presente-progressivo | seconda-persona | singolare | progressive | presente-progressivo, progressive | you are running (sport) | you are rushing |
+| 552 | sta correndo | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive | he/she is running (sport) | he/she is rushing |
 | ... | (32 additional progressive forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 584 | stando correndo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, stare-auxiliary | being running | being rushing |
+| 584 | stando correndo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive | being running | being rushing |
 
 **Form_Translations Coverage Analysis:**
 - **Translation 1 (Sport - avere)**: 135 form_translations (51 simple + 49 avere compounds + 35 progressives)
@@ -1555,11 +1671,11 @@ id: cc0e8400-e29b-41d4-a716-446655440001
 word_id: bb0e8400-e29b-41d4-a716-446655440000
 translation: "must/to have to"
 display_priority: 1
-context_metadata: {
-  "auxiliary": "avere",
-  "modal_pattern": "dovere + infinitive",
-  "usage": "modal"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=cc0e8400-e29b-41d4-a716-446655440001
+value_id → metaattr002val014 (auxiliary: "avere")
+value_id → metaattr021val123 (verb_type: "modal-verb")
 ```
 
 #### Translation 2: "to owe" (debt/obligation)
@@ -1569,11 +1685,11 @@ id: cc0e8400-e29b-41d4-a716-446655440002
 word_id: bb0e8400-e29b-41d4-a716-446655440000
 translation: "to owe"
 display_priority: 2  
-context_metadata: {
-  "auxiliary": "avere",
-  "transitivity": "transitive",
-  "usage": "transitive"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=cc0e8400-e29b-41d4-a716-446655440002
+value_id → metaattr002val014 (auxiliary: "avere")
+value_id → metaattr020val099 (transitivity: "transitive")
 ```
 
 #### Modal-Specific Architecture Pattern
@@ -1583,7 +1699,7 @@ Modal verbs have unique auxiliary behavior:
   - "ho dovuto mangiare" (mangiare uses avere)
   - "sono dovuto andare" (andare uses essere)
 
-#### Complete Form Inventory (270 Total Forms)
+#### Complete Form Inventory (137 Total Forms - Database Stored Only)
 
 **Simple Forms - Core Modal Conjugations (51 forms):**
 
@@ -1605,43 +1721,44 @@ Modal verbs have unique auxiliary behavior:
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 652 | ho dovuto | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary, modal | I have had to | I have owed |
-| 653 | hai dovuto | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary, modal | you have had to | you have owed |
+| 652 | ho dovuto | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, modal | I have had to | I have owed |
+| 653 | hai dovuto | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, modal | you have had to | you have owed |
 | ... | (47 additional compound forms with avere) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 700 | aver dovuto | infinito | infinito-passato | - | - | compound | infinito-passato, compound, avere-auxiliary, modal | to have had to | to have owed |
+| 700 | aver dovuto | infinito | infinito-passato | - | - | compound | infinito-passato, compound, modal | to have had to | to have owed |
 
 **Compound Forms with essere - Inherited from Infinitive (49 forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 701 | sono dovuto/a | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary, modal, agreement | I have had to (motion context) | - |
-| 702 | sei dovuto/a | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary, modal, agreement | you have had to (motion context) | - |
+| 701 | sono dovuto/a | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, modal, agreement | I have had to (motion context) | - |
+| 702 | sei dovuto/a | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, modal, agreement | you have had to (motion context) | - |
 | ... | (47 additional compound forms with essere) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 749 | essere dovuto/a/i/e | infinito | infinito-passato | - | - | compound | infinito-passato, compound, essere-auxiliary, modal, agreement | to have had to (motion context) | - |
+| 749 | essere dovuto/a/i/e | infinito | infinito-passato | - | - | compound | infinito-passato, compound, modal, agreement | to have had to (motion context) | - |
 
 **Progressive Forms - Modal in Progressive Context (35 forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 750 | sto dovendo | indicativo | presente-progressivo | prima-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary, modal | I am having to | I am owing |
-| 751 | stai dovendo | indicativo | presente-progressivo | seconda-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary, modal | you are having to | you are owing |
+| 750 | sto dovendo | indicativo | presente-progressivo | prima-persona | singolare | progressive | presente-progressivo, progressive, modal | I am having to | I am owing |
+| 751 | stai dovendo | indicativo | presente-progressivo | seconda-persona | singolare | progressive | presente-progressivo, progressive, modal | you are having to | you are owing |
 | ... | (33 additional progressive forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 784 | stando dovendo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, stare-auxiliary, modal | being having to | being owing |
+| 784 | stando dovendo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, modal | being having to | being owing |
 
 **Modal Pattern Forms - Special Constructions (86 additional forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 785 | ho dovuto mangiare | compound-modal | passato-prossimo-modal | prima-persona | singolare | compound-modal | passato-prossimo, compound, avere-auxiliary, modal-infinitive | I have had to eat | - |
-| 786 | sono dovuto/a andare | compound-modal | passato-prossimo-modal | prima-persona | singolare | compound-modal | passato-prossimo, compound, essere-auxiliary, modal-infinitive, agreement | I have had to go | - |
+| 785 | ho dovuto mangiare | compound-modal | passato-prossimo-modal | prima-persona | singolare | compound-modal | passato-prossimo, compound, modal-infinitive | I have had to eat | - |
+| 786 | sono dovuto/a andare | compound-modal | passato-prossimo-modal | prima-persona | singolare | compound-modal | passato-prossimo, compound, modal-infinitive, agreement | I have had to go | - |
 | ... | (84 additional modal pattern forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 870 | starò dovendo fare | progressive-modal | futuro-progressivo-modal | prima-persona | singolare | progressive-modal | futuro-progressivo, progressive, stare-auxiliary, modal-infinitive | I will be having to do | - |
+| 870 | starò dovendo fare | progressive-modal | futuro-progressivo-modal | prima-persona | singolare | progressive-modal | futuro-progressivo, progressive, modal-infinitive | I will be having to do | - |
 
 **Form_Translations Coverage Analysis:**
-- **Translation 1 (Must/Have to)**: 270 form_translations (all forms covered including modal patterns)
-- **Translation 2 (Owe)**: 135 form_translations (excludes essere compounds and complex modal patterns)
-- **Total Coverage**: 405 form_translations across both meanings
-- **Modal Complexity**: Dual auxiliary system creates extensive form variation
+**CORRECTED - Modal Constructions Frontend-Generated**:
+- **Translation 1 (Must/Have to)**: 137 form_translations (standard forms only)
+- **Translation 2 (Owe)**: 137 form_translations (standard forms only)  
+- **Total Coverage**: 274 form_translations across both meanings
+- **Modal Constructions**: "ho dovuto mangiare" etc. are frontend combinations, not stored forms
 
 ---
 
@@ -1684,12 +1801,13 @@ id: ee0e8400-e29b-41d4-a716-446655440001
 word_id: dd0e8400-e29b-41d4-a716-446655440000
 translation: "to be in force/to be valid" 
 display_priority: 1
-context_metadata: {
-  "auxiliary": "essere",
-  "transitivity": "intransitive",
-  "usage": "formal",
-  "register": "formal"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=ee0e8400-e29b-41d4-a716-446655440001
+value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr020val100 (transitivity: "intransitive")
+value_id → metaattr021val126 (verb_type: "defective-verb")
+value_id → metaattr018val069 (register: "formal")
 ```
 
 #### Defective Limitations Explanation
@@ -1732,23 +1850,23 @@ Vigere is defective due to semantic constraints:
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|---------------------|
-| 916 | è viguto | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary, defective, third-person-only | it has been in force |
-| 917 | sono viguti | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, essere-auxiliary, defective, third-person-only | they have been in force |
-| 918 | era viguto | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trapassato-prossimo, compound, essere-auxiliary, defective, third-person-only | it had been in force |
-| 919 | erano viguti | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trapassato-prossimo, compound, essere-auxiliary, defective, third-person-only | they had been in force |
+| 916 | è viguto | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, defective, third-person-only | it has been in force |
+| 917 | sono viguti | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, defective, third-person-only | they have been in force |
+| 918 | era viguto | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trapassato-prossimo, compound, defective, third-person-only | it had been in force |
+| 919 | erano viguti | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trapassato-prossimo, compound, defective, third-person-only | they had been in force |
 | ... | (22 additional limited compound forms) | ... | ... | ... | ... | ... | ... | ... |
-| 941 | essere viguto | infinito | infinito-passato | - | - | compound | infinito-passato, compound, essere-auxiliary, defective | to have been in force |
+| 941 | essere viguto | infinito | infinito-passato | - | - | compound | infinito-passato, compound, defective | to have been in force |
 
 **Progressive Forms - Limited Context (26 forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|---------------------|
-| 942 | sta vigendo | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary, defective, third-person-only | it is being in force |
-| 943 | stanno vigendo | indicativo | presente-progressivo | terza-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary, defective, third-person-only | they are being in force |
-| 944 | stava vigendo | indicativo | passato-progressivo | terza-persona | singolare | progressive | passato-progressivo, progressive, stare-auxiliary, defective, third-person-only | it was being in force |
-| 945 | stavano vigendo | indicativo | passato-progressivo | terza-persona | plurale | progressive | passato-progressivo, progressive, stare-auxiliary, defective, third-person-only | they were being in force |
+| 942 | sta vigendo | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive, defective, third-person-only | it is being in force |
+| 943 | stanno vigendo | indicativo | presente-progressivo | terza-persona | plurale | progressive | presente-progressivo, progressive, defective, third-person-only | they are being in force |
+| 944 | stava vigendo | indicativo | passato-progressivo | terza-persona | singolare | progressive | passato-progressivo, progressive, defective, third-person-only | it was being in force |
+| 945 | stavano vigendo | indicativo | passato-progressivo | terza-persona | plurale | progressive | passato-progressivo, progressive, defective, third-person-only | they were being in force |
 | ... | (22 additional limited progressive forms) | ... | ... | ... | ... | ... | ... | ... |
-| 967 | stando vigendo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, stare-auxiliary, defective | being being in force |
+| 967 | stando vigendo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, defective | being being in force |
 
 **Form_Translations Coverage Analysis:**
 - **Single Translation**: 67 form_translations (only for linguistically valid forms)
@@ -1773,10 +1891,11 @@ word_type: "verb"
 -- entity_type='word', entity_id=ff0e8400-e29b-41d4-a716-446655440000
 value_id → meta_values.value: "are-conjugation"      (conjugation_type)
 value_id → meta_values.value: "impersonal-verb"      (verb_type)
-value_id → meta_values.value: "ambitransitive"       (transitivity)
 value_id → meta_values.value: "freq-top1000"         (frequency_tier)
 value_id → meta_values.value: "CEFR-B1"              (cefr_level)
-value_id → meta_values.value: "third-person-only"    (number_restriction)
+-- Note: Word-level transitivity derived from translations
+-- Translation 1: "impersonal-verb" (essere) + Translation 2: "transitive" (avere)
+-- → displays as "impers./trans."
 ```
 
 #### Meta Attribute Integration for Impersonal Status  
@@ -1797,11 +1916,12 @@ id: 110e8400-e29b-41d4-a716-446655440001
 word_id: ff0e8400-e29b-41d4-a716-446655440000
 translation: "to matter"
 display_priority: 1
-context_metadata: {
-  "auxiliary": "essere",
-  "usage": "impersonal",
-  "plurality": "third-person-only"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=110e8400-e29b-41d4-a716-446655440001
+value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr021val124 (verb_type: "impersonal-verb")
+value_id → metaattr013val129 (number_restriction: "third-person-only")
 ```
 
 #### Translation 2: "to import" (personal usage - all persons)
@@ -1811,11 +1931,11 @@ id: 110e8400-e29b-41d4-a716-446655440002
 word_id: ff0e8400-e29b-41d4-a716-446655440000
 translation: "to import"
 display_priority: 2
-context_metadata: {
-  "auxiliary": "avere",
-  "transitivity": "transitive", 
-  "usage": "transitive"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=110e8400-e29b-41d4-a716-446655440002
+value_id → metaattr002val014 (auxiliary: "avere")
+value_id → metaattr020val099 (transitivity: "transitive")
 ```
 
 #### Dual Meaning Architecture Analysis
@@ -1853,38 +1973,38 @@ This verb demonstrates complex person restrictions:
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 1052 | è importato | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary | it has mattered | - |
-| 1053 | sono importati | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, essere-auxiliary | they have mattered | - |
-| 1054 | era importato | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trapassato-prossimo, compound, essere-auxiliary | it had mattered | - |
-| 1055 | erano importati | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trapassato-prossimo, compound, essere-auxiliary | they had mattered | - |
+| 1052 | è importato | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound | it has mattered | - |
+| 1053 | sono importati | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound | they have mattered | - |
+| 1054 | era importato | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trapassato-prossimo, compound | it had mattered | - |
+| 1055 | erano importati | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trapassato-prossimo, compound | they had mattered | - |
 | ... | (13 additional compound forms with essere - 3rd person only) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1068 | essere importato | infinito | infinito-passato | - | - | compound | infinito-passato, compound, essere-auxiliary | to have mattered | - |
+| 1068 | essere importato | infinito | infinito-passato | - | - | compound | infinito-passato, compound | to have mattered | - |
 
 **Compound Forms with avere - "To Import" Translation (49 forms - all persons):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 1069 | ho importato | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary | - | I have imported |
-| 1070 | hai importato | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary | - | you have imported |
-| 1071 | ha importato | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, avere-auxiliary | - | he/she has imported |
-| 1072 | abbiamo importato | indicativo | passato-prossimo | prima-persona | plurale | compound | passato-prossimo, compound, avere-auxiliary | - | we have imported |
-| 1073 | avete importato | indicativo | passato-prossimo | seconda-persona | plurale | compound | passato-prossimo, compound, avere-auxiliary | - | you have imported |
-| 1074 | hanno importato | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, avere-auxiliary | - | they have imported |
+| 1069 | ho importato | indicativo | passato-prossimo | prima-persona | singolare | compound | passato-prossimo, compound | - | I have imported |
+| 1070 | hai importato | indicativo | passato-prossimo | seconda-persona | singolare | compound | passato-prossimo, compound | - | you have imported |
+| 1071 | ha importato | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound | - | he/she has imported |
+| 1072 | abbiamo importato | indicativo | passato-prossimo | prima-persona | plurale | compound | passato-prossimo, compound | - | we have imported |
+| 1073 | avete importato | indicativo | passato-prossimo | seconda-persona | plurale | compound | passato-prossimo, compound | - | you have imported |
+| 1074 | hanno importato | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound | - | they have imported |
 | ... | (43 additional compound forms with avere) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1117 | aver importato | infinito | infinito-passato | - | - | compound | infinito-passato, compound, avere-auxiliary | - | to have imported |
+| 1117 | aver importato | infinito | infinito-passato | - | - | compound | infinito-passato, compound | - | to have imported |
 
 **Progressive Forms - Restricted and Unrestricted (35 forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 1118 | sto importando | indicativo | presente-progressivo | prima-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary | - | I am importing |
-| 1119 | stai importando | indicativo | presente-progressivo | seconda-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary | - | you are importing |
-| 1120 | sta importando | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary | it is mattering | he/she is importing |
-| 1121 | stiamo importando | indicativo | presente-progressivo | prima-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary | - | we are importing |
-| 1122 | state importando | indicativo | presente-progressivo | seconda-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary | - | you are importing |
-| 1123 | stanno importando | indicativo | presente-progressivo | terza-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary | they are mattering | they are importing |
+| 1118 | sto importando | indicativo | presente-progressivo | prima-persona | singolare | progressive | presente-progressivo, progressive | - | I am importing |
+| 1119 | stai importando | indicativo | presente-progressivo | seconda-persona | singolare | progressive | presente-progressivo, progressive | - | you are importing |
+| 1120 | sta importando | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive | it is mattering | he/she is importing |
+| 1121 | stiamo importando | indicativo | presente-progressivo | prima-persona | plurale | progressive | presente-progressivo, progressive | - | we are importing |
+| 1122 | state importando | indicativo | presente-progressivo | seconda-persona | plurale | progressive | presente-progressivo, progressive | - | you are importing |
+| 1123 | stanno importando | indicativo | presente-progressivo | terza-persona | plurale | progressive | presente-progressivo, progressive | they are mattering | they are importing |
 | ... | (29 additional progressive forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1152 | stando importando | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, stare-auxiliary | being mattering | being importing |
+| 1152 | stando importando | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive | being mattering | being importing |
 
 **Form_Translations Coverage Analysis:**
 - **Translation 1 ("To Matter")**: 25 form_translations (3rd person forms + infinitive/participle/gerund forms)  
@@ -1939,11 +2059,12 @@ id: 330e8400-e29b-41d4-a716-446655440001
 word_id: 220e8400-e29b-41d4-a716-446655440000
 translation: "to rain"
 display_priority: 1
-context_metadata: {
-  "auxiliary": "essere",
-  "usage": "meteorological", 
-  "plurality": "third-singular-only"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=330e8400-e29b-41d4-a716-446655440001
+value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr021val125 (verb_type: "meteorological-verb")
+value_id → metaattr013val130 (number_restriction: "third-singular-only")
 ```
 
 #### Translation 2: "to rain down" (metaphorical usage)
@@ -1953,11 +2074,12 @@ id: 330e8400-e29b-41d4-a716-446655440002
 word_id: 220e8400-e29b-41d4-a716-446655440000
 translation: "to rain down"
 display_priority: 2
-context_metadata: {
-  "auxiliary": "essere",
-  "usage": "metaphorical",
-  "plurality": "third-person-only"
-}
+
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=330e8400-e29b-41d4-a716-446655440002
+value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr020val100 (transitivity: "intransitive")
+value_id → metaattr013val129 (number_restriction: "third-person-only")
 ```
 
 #### Weather Verb Restrictions Explained
@@ -2000,35 +2122,35 @@ Weather verbs have the most restrictive person limitations:
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 1218 | è piovuto | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, essere-auxiliary, weather, third-singular-only | it has rained | - |
-| 1219 | era piovuto | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trapassato-prossimo, compound, essere-auxiliary, weather, third-singular-only | it had rained | - |
-| 1220 | sarà piovuto | indicativo | futuro-anteriore | terza-persona | singolare | compound | futuro-anteriore, compound, essere-auxiliary, weather, third-singular-only | it will have rained | - |
-| 1221 | sia piovuto | congiuntivo | congiuntivo-passato | terza-persona | singolare | compound | congiuntivo-passato, compound, essere-auxiliary, weather, third-singular-only | (that) it has rained | - |
-| 1222 | fosse piovuto | congiuntivo | congiuntivo-trapassato | terza-persona | singolare | compound | congiuntivo-trapassato, compound, essere-auxiliary, weather, third-singular-only | (that) it had rained | - |
-| 1223 | sarebbe piovuto | condizionale | condizionale-passato | terza-persona | singolare | compound | condizionale-passato, compound, essere-auxiliary, weather, third-singular-only | it would have rained | - |
+| 1218 | è piovuto | indicativo | passato-prossimo | terza-persona | singolare | compound | passato-prossimo, compound, weather, third-singular-only | it has rained | - |
+| 1219 | era piovuto | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trapassato-prossimo, compound, weather, third-singular-only | it had rained | - |
+| 1220 | sarà piovuto | indicativo | futuro-anteriore | terza-persona | singolare | compound | futuro-anteriore, compound, weather, third-singular-only | it will have rained | - |
+| 1221 | sia piovuto | congiuntivo | congiuntivo-passato | terza-persona | singolare | compound | congiuntivo-passato, compound, weather, third-singular-only | (that) it has rained | - |
+| 1222 | fosse piovuto | congiuntivo | congiuntivo-trapassato | terza-persona | singolare | compound | congiuntivo-trapassato, compound, weather, third-singular-only | (that) it had rained | - |
+| 1223 | sarebbe piovuto | condizionale | condizionale-passato | terza-persona | singolare | compound | condizionale-passato, compound, weather, third-singular-only | it would have rained | - |
 | ... | (5 additional compound singular forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1228 | essere piovuto | infinito | infinito-passato | - | - | compound | infinito-passato, compound, essere-auxiliary, weather | to have rained | to have rained down |
+| 1228 | essere piovuto | infinito | infinito-passato | - | - | compound | infinito-passato, compound, weather | to have rained | to have rained down |
 
 **Compound Forms - Plural for Metaphorical Usage (11 additional forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 1229 | sono piovuti | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, essere-auxiliary, weather, third-person-only | - | they have rained down |
-| 1230 | erano piovuti | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trapassato-prossimo, compound, essere-auxiliary, weather, third-person-only | - | they had rained down |
+| 1229 | sono piovuti | indicativo | passato-prossimo | terza-persona | plurale | compound | passato-prossimo, compound, weather, third-person-only | - | they have rained down |
+| 1230 | erano piovuti | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trapassato-prossimo, compound, weather, third-person-only | - | they had rained down |
 | ... | (9 additional compound plural forms) | ... | ... | ... | ... | ... | ... | ... | ... |
 
 **Progressive Forms - Highly Limited (11 forms):**
 
 | Form ID | Form Text | Mood | Tense | Person | Number | Variant Type | Meta Tags | Translation 1 Coverage | Translation 2 Coverage |
 |---------|-----------|------|-------|--------|--------|-------------|-----------|----------------------|----------------------|
-| 1240 | sta piovendo | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive, stare-auxiliary, weather, third-singular-only | it is raining | - |
-| 1241 | stava piovendo | indicativo | passato-progressivo | terza-persona | singolare | progressive | passato-progressivo, progressive, stare-auxiliary, weather, third-singular-only | it was raining | - |
-| 1242 | starà piovendo | indicativo | futuro-progressivo | terza-persona | singolare | progressive | futuro-progressivo, progressive, stare-auxiliary, weather, third-singular-only | it will be raining | - |
+| 1240 | sta piovendo | indicativo | presente-progressivo | terza-persona | singolare | progressive | presente-progressivo, progressive, weather, third-singular-only | it is raining | - |
+| 1241 | stava piovendo | indicativo | passato-progressivo | terza-persona | singolare | progressive | passato-progressivo, progressive, weather, third-singular-only | it was raining | - |
+| 1242 | starà piovendo | indicativo | futuro-progressivo | terza-persona | singolare | progressive | futuro-progressivo, progressive, weather, third-singular-only | it will be raining | - |
 | ... | (5 additional progressive singular forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1246 | stanno piovendo | indicativo | presente-progressivo | terza-persona | plurale | progressive | presente-progressivo, progressive, stare-auxiliary, weather, third-person-only | - | they are raining down |
-| 1247 | stavano piovendo | indicativo | passato-progressivo | terza-persona | plurale | progressive | passato-progressivo, progressive, stare-auxiliary, weather, third-person-only | - | they were raining down |
+| 1246 | stanno piovendo | indicativo | presente-progressivo | terza-persona | plurale | progressive | presente-progressivo, progressive, weather, third-person-only | - | they are raining down |
+| 1247 | stavano piovendo | indicativo | passato-progressivo | terza-persona | plurale | progressive | passato-progressivo, progressive, weather, third-person-only | - | they were raining down |
 | ... | (3 additional progressive plural forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1250 | stando piovendo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, stare-auxiliary, weather | being raining | being raining down |
+| 1250 | stando piovendo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive, weather | being raining | being raining down |
 
 **Form_Translations Coverage Analysis:**
 - **Translation 1 ("To Rain" - Literal)**: 39 form_translations
@@ -2052,28 +2174,28 @@ Weather verbs have the most restrictive person limitations:
 |-----------|----------|-------------|----------------------|----------------------|----------------------|
 | Normal | mangiare | 137 | 137 (all forms) | - | 137 |
 | Reflexive | lavarsi | 137 | 137 (all forms) | 45 (plural only) | 182 |
-| Dual Auxiliary | correre | 219* | 135 (shared + avere compounds) | 135 (shared + essere compounds) | 270 |
-| Modal | dovere | 270** | 270 (all + modal patterns) | 135 (standard patterns only) | 405 |
+| Dual Auxiliary | correre | 137* | 137 (all forms) | 137 (all forms) | 274 |
+| Modal | dovere | 137** | 137 (all standard forms) | 137 (all standard forms) | 274 |
 | Defective | vigere | 67 | 67 (existing forms only) | - | 67 |
 | Impersonal | importare | 135 | 25 (3rd person only) | 135 (all forms) | 160 |
 | Weather | piovere | 67*** | 39 (3rd singular + non-finite) | 28 (3rd person + non-finite) | 67 |
 
-**Notes:**
-- *219 forms for correre: 51 shared simple + 35 shared progressive + 49 avere compounds + 49 essere compounds + 35 shared infinitive/participle/gerund
-- **270 forms for dovere: 135 standard + 135 modal pattern variants
-- ***67 forms for piovere: Heavily reduced due to weather verb restrictions
+**Mathematical Explanations:**
+- *Dual Auxiliary Corrected: All verbs have same 137 base forms (51 simple + 49 compound + 37 progressive). Each translation covers ALL forms but uses different auxiliaries for compound forms only.
+- **Modal Corrected: Only standard 137 forms stored in database. Modal constructions (dovere + infinitive) are frontend-generated, NOT stored as separate forms.
+- ***Weather Verb Calculation: 67 total forms = 22 (3rd singular specific) + 45 (non-finite forms shared by both translations). Numbers now add up correctly.
 
 ### Meta Attribute Integration Patterns
 
 | Verb Type | Behavioral Pattern (verb_type) | Grammatical Property (transitivity) | Additional Restrictions | Storage Location |
 |-----------|----------------------|---------------------|----------------------|-----------------|
-| Normal | None | transitive/intransitive/ambitransitive | None | entity_meta_values |
-| Reflexive | verb_type: "direct-reflexive" | intransitive | usage: "direct-reflexive"/"reciprocal" | entity_meta_values + context_metadata |
-| Dual Auxiliary | verb_type: "dual-auxiliary-verb" | ambitransitive | Derived from translation auxiliaries | entity_meta_values + context_metadata |
-| Modal | verb_type: "modal-verb" | transitive | modal_pattern: "modal + infinitive" | entity_meta_values |
-| Defective | verb_type: "defective-verb" | intransitive | number_restriction: "missing-first-second-person" | entity_meta_values |
-| Impersonal | verb_type: "impersonal-verb" | ambitransitive | number_restriction: "third-person-only" | entity_meta_values |
-| Weather | verb_type: "meteorological-verb" | intransitive | number_restriction: "third-singular-only" | entity_meta_values |
+| Normal | None | Derived from translations | None | entity_meta_values |
+| Reflexive | verb_type: "direct-reflexive" | Derived from translations (intransitive) | verb_type: "direct-reflexive"/"reciprocal" | entity_meta_values |
+| Dual Auxiliary | None (derived from translations) | Derived from translations (mixed) | Translation auxiliaries differ | entity_meta_values |
+| Modal | verb_type: "modal-verb" | Derived from translations | None (modal behavior is frontend-handled) | entity_meta_values |
+| Defective | verb_type: "defective-verb" | Derived from translations | number_restriction: "missing-first-second-person" | entity_meta_values |
+| Impersonal | verb_type: "impersonal-verb" | Derived from translations (mixed) | number_restriction: "third-person-only" | entity_meta_values |
+| Weather | verb_type: "meteorological-verb" | Derived from translations (intransitive) | number_restriction: "third-singular-only" | entity_meta_values |
 
 This comprehensive expansion demonstrates how the Misti verb forms architecture handles the full spectrum of Italian verb complexity through systematic form materialization, metadata integration, and coverage validation.
 
