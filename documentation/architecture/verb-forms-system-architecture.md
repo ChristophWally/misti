@@ -1189,6 +1189,8 @@ This section provides comprehensive form inventories showing EVERY form and form
 
 ### 8.1 Scenario A: Normal Verb - "mangiare" (to eat) - Complete Form Inventory
 
+**📋 Complete Section**: [Section 8.1: Complete Forms for "mangiare"](./section-8-1-mangiare-complete-forms.md) - **ALL 137 individual conjugations**
+
 #### Dictionary Entry
 ```sql
 -- dictionary table
@@ -1238,79 +1240,79 @@ value_id → metaattr020val099 (transitivity: "transitive")
 | 005 | mangiate | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you eat |
 | 006 | mangiano | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they eat |
 | 007 | mangiavo | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | I was eating |
-| ... | ... | **[Pattern continues systematically for all 51 simple forms, following above metavalue format with appropriate tense/mood/person/number/type combinations]** | ... |
-| 009 | mangiava | indicativo | imperfetto | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") | he/she was eating |
-| 010 | mangiavamo | indicativo | imperfetto | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") | we were eating |
-| 011 | mangiavate | indicativo | imperfetto | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") | you were eating |
-| 012 | mangiavano | indicativo | imperfetto | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") | they were eating |
-| 013 | mangiai | indicativo | passato-remoto | prima-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") | I ate |
-| 014 | mangiasti | indicativo | passato-remoto | seconda-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") | you ate |
-| 015 | mangiò | indicativo | passato-remoto | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") | he/she ate |
-| 016 | mangiammo | indicativo | passato-remoto | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") | we ate |
-| 017 | mangiaste | indicativo | passato-remoto | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") | you ate |
-| 018 | mangiarono | indicativo | passato-remoto | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") | they ate |
-| 019 | mangerò | indicativo | futuro-semplice | prima-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") | I will eat |
-| 020 | mangerai | indicativo | futuro-semplice | seconda-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") | you will eat |
-| 021 | mangerà | indicativo | futuro-semplice | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") | he/she will eat |
-| 022 | mangeremo | indicativo | futuro-semplice | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") | we will eat |
-| 023 | mangerete | indicativo | futuro-semplice | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") | you will eat |
-| 024 | mangeranno | indicativo | futuro-semplice | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") | they will eat |
-| 025 | mangi | congiuntivo | congiuntivo-presente | prima-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") | (that) I eat |
-| 026 | mangi | congiuntivo | congiuntivo-presente | seconda-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") | (that) you eat |
-| 027 | mangi | congiuntivo | congiuntivo-presente | terza-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") | (that) he/she eats |
-| 028 | mangiamo | congiuntivo | congiuntivo-presente | prima-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") | (that) we eat |
-| 029 | mangiate | congiuntivo | congiuntivo-presente | seconda-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") | (that) you eat |
-| 030 | mangino | congiuntivo | congiuntivo-presente | terza-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") | (that) they eat |
-| 031 | mangiassi | congiuntivo | congiuntivo-imperfetto | prima-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") | (that) I ate |
-| 032 | mangiassi | congiuntivo | congiuntivo-imperfetto | seconda-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") | (that) you ate |
-| 033 | mangiasse | congiuntivo | congiuntivo-imperfetto | terza-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") | (that) he/she ate |
-| 034 | mangiassimo | congiuntivo | congiuntivo-imperfetto | prima-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") | (that) we ate |
-| 035 | mangiaste | congiuntivo | congiuntivo-imperfetto | seconda-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") | (that) you ate |
-| 036 | mangiassero | congiuntivo | congiuntivo-imperfetto | terza-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") | (that) they ate |
-| 037 | mangerei | condizionale | condizionale-presente | prima-persona | singolare | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") | I would eat |
-| 038 | mangeresti | condizionale | condizionale-presente | seconda-persona | singolare | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") | you would eat |
-| 039 | mangerebbe | condizionale | condizionale-presente | terza-persona | singolare | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") | he/she would eat |
-| 040 | mangeremmo | condizionale | condizionale-presente | prima-persona | plurale | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") | we would eat |
-| 041 | mangereste | condizionale | condizionale-presente | seconda-persona | plurale | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") | you would eat |
-| 042 | mangerebbero | condizionale | condizionale-presente | terza-persona | plurale | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") | they would eat |
-| 043 | mangia | imperativo | imperativo-presente | seconda-persona | singolare | simple | imperativo-metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | eat! |
-| 044 | mangi | imperativo | imperativo-presente | terza-persona | singolare | simple | imperativo-metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | let him/her eat! |
-| 045 | mangiamo | imperativo | imperativo-presente | prima-persona | plurale | simple | imperativo-metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | let's eat! |
-| 046 | mangiate | imperativo | imperativo-presente | seconda-persona | plurale | simple | imperativo-metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | eat! |
-| 047 | mangino | imperativo | imperativo-presente | terza-persona | plurale | simple | imperativo-metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | let them eat! |
-| 048 | mangiare | infinito | infinito-presente | - | - | simple | metaattr008val049 (mood: "infinito") + metaattr009val059 (tense: "infinito-presente") + metaattr011val058 (variant_type: "simple") | to eat |
-| 049 | mangiante | participio | participio-presente | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val060 (tense: "participio-presente") + metaattr011val058 (variant_type: "simple") | eating |
-| 050 | mangiato | participio | participio-passato | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val061 (tense: "participio-passato") + metaattr011val058 (variant_type: "simple") | eaten |
-| 051 | mangiando | gerundio | gerundio-presente | - | - | simple | metaattr008val051 (mood: "gerundio") + metaattr009val062 (tense: "gerundio-presente") + metaattr011val058 (variant_type: "simple") | eating |
+| 008 | mangiavi | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | you were eating |
+| 009 | mangiava | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | he/she was eating |
+| 010 | mangiavamo | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | we were eating |
+| 011 | mangiavate | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you were eating |
+| 012 | mangiavano | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they were eating |
+| 013 | mangiai | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | I ate |
+| 014 | mangiasti | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | you ate |
+| 015 | mangiò | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | he/she ate |
+| 016 | mangiammo | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | we ate |
+| 017 | mangiaste | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you ate |
+| 018 | mangiarono | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they ate |
+| 019 | mangerò | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | I will eat |
+| 020 | mangerai | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | you will eat |
+| 021 | mangerà | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | he/she will eat |
+| 022 | mangeremo | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | we will eat |
+| 023 | mangerete | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you will eat |
+| 024 | mangeranno | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they will eat |
+| 025 | mangi | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) I eat |
+| 026 | mangi | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) you eat |
+| 027 | mangi | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) he/she eats |
+| 028 | mangiamo | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) we eat |
+| 029 | mangiate | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) you eat |
+| 030 | mangino | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) they eat |
+| 031 | mangiassi | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) I ate |
+| 032 | mangiassi | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) you ate |
+| 033 | mangiasse | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) he/she ate |
+| 034 | mangiassimo | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) we ate |
+| 035 | mangiaste | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) you ate |
+| 036 | mangiassero | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) they ate |
+| 037 | mangerei | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | I would eat |
+| 038 | mangeresti | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | you would eat |
+| 039 | mangerebbe | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | he/she would eat |
+| 040 | mangeremmo | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | we would eat |
+| 041 | mangereste | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you would eat |
+| 042 | mangerebbero | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they would eat |
+| 043 | mangia | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | eat! |
+| 044 | mangi | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | let him/her eat! |
+| 045 | mangiamo | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | let's eat! |
+| 046 | mangiate | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | eat! |
+| 047 | mangino | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | let them eat! |
+| 048 | mangiare | metaattr010val058 (mood: "infinito") + metaattr019val106 (tense: "infinito-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | to eat |
+| 049 | mangiante | metaattr010val059 (mood: "participio") + metaattr019val107 (tense: "participio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | eating |
+| 050 | mangiato | metaattr010val059 (mood: "participio") + metaattr019val108 (tense: "participio-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | eaten |
+| 051 | mangiando | metaattr010val060 (mood: "gerundio") + metaattr019val109 (tense: "gerundio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | eating |
 
 **Compound Forms with avere auxiliary (49 forms):**
 
 | Form ID | Form Text | Entity Meta Values | Translation Coverage |
 |---------|-----------|-----------|---------------------|
-| 052 | ho mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val100 (tense: "passato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | I have eaten |
-| ... | ... | **[Pattern continues for all 49 compound forms using metaattr022val108 (compound) + appropriate compound tenses: passato-prossimo, trapassato-prossimo, trapassato-remoto, futuro-anteriore, congiuntivo-passato, congiuntivo-trapassato, condizionale-passato, imperativo-passato, infinito-passato, gerundio-passato]** | ... |
-| 054 | ha mangiato | indicativo | passato-prossimo | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | he/she has eaten |
-| 055 | abbiamo mangiato | indicativo | passato-prossimo | prima-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | we have eaten |
-| 056 | avete mangiato | indicativo | passato-prossimo | seconda-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | you have eaten |
-| 057 | hanno mangiato | indicativo | passato-prossimo | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | they have eaten |
-| 058 | avevo mangiato | indicativo | trapassato-prossimo | prima-persona | singolare | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | I had eaten |
-| 059 | avevi mangiato | indicativo | trapassato-prossimo | seconda-persona | singolare | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | you had eaten |
-| 060 | aveva mangiato | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | he/she had eaten |
-| 061 | avevamo mangiato | indicativo | trapassato-prossimo | prima-persona | plurale | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | we had eaten |
-| 062 | avevate mangiato | indicativo | trapassato-prossimo | seconda-persona | plurale | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | you had eaten |
-| 063 | avevano mangiato | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | they had eaten |
-| 064 | ebbi mangiato | indicativo | trapassato-remoto | prima-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") | I had eaten |
-| 065 | avesti mangiato | indicativo | trapassato-remoto | seconda-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") | you had eaten |
-| 066 | ebbe mangiato | indicativo | trapassato-remoto | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") | he/she had eaten |
-| 067 | avemmo mangiato | indicativo | trapassato-remoto | prima-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") | we had eaten |
-| 068 | aveste mangiato | indicativo | trapassato-remoto | seconda-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") | you had eaten |
-| 069 | ebbero mangiato | indicativo | trapassato-remoto | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") | they had eaten |
-| 070 | avrò mangiato | indicativo | futuro-anteriore | prima-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") | I will have eaten |
-| 071 | avrai mangiato | indicativo | futuro-anteriore | seconda-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") | you will have eaten |
-| 072 | avrà mangiato | indicativo | futuro-anteriore | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") | he/she will have eaten |
-| 073 | avremo mangiato | indicativo | futuro-anteriore | prima-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") | we will have eaten |
-| 074 | avrete mangiato | indicativo | futuro-anteriore | seconda-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") | you will have eaten |
-| 075 | avranno mangiato | indicativo | futuro-anteriore | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") | they will have eaten |
+| 052 | ho mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | I have eaten |
+| 053 | hai mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | you have eaten |
+| 054 | ha mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | he/she has eaten |
+| 055 | abbiamo mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | we have eaten |
+| 056 | avete mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | you have eaten |
+| 057 | hanno mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | they have eaten |
+| 058 | avevo mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | I had eaten |
+| 059 | avevi mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | you had eaten |
+| 060 | aveva mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | he/she had eaten |
+| 061 | avevamo mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | we had eaten |
+| 062 | avevate mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | you had eaten |
+| 063 | avevano mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | they had eaten |
+| 064 | ebbi mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | I had eaten |
+| 065 | avesti mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | you had eaten |
+| 066 | ebbe mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | he/she had eaten |
+| 067 | avemmo mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | we had eaten |
+| 068 | aveste mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | you had eaten |
+| 069 | ebbero mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | they had eaten |
+| 070 | avrò mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | I will have eaten |
+| 071 | avrai mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | you will have eaten |
+| 072 | avrà mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | he/she will have eaten |
+| 073 | avremo mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | we will have eaten |
+| 074 | avrete mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | you will have eaten |
+| 075 | avranno mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | they will have eaten |
 | 076 | abbia mangiato | congiuntivo | congiuntivo-passato | prima-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") | (that) I have eaten |
 | 077 | abbia mangiato | congiuntivo | congiuntivo-passato | seconda-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") | (that) you have eaten |
 | 078 | abbia mangiato | congiuntivo | congiuntivo-passato | terza-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") | (that) he/she has eaten |
@@ -1337,13 +1339,13 @@ value_id → metaattr020val099 (transitivity: "transitive")
 | 099 | avendo mangiato | gerundio | gerundio-passato | - | - | compound | metaattr008val051 (mood: "gerundio") + metaattr009val071 (tense: "gerundio-passato") + metaattr011val059 (variant_type: "compound") | having eaten |
 | 100 | aver mangiato | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") | to have eaten |
 
-**Progressive Forms with stare auxiliary (35 forms):**
+**Progressive Forms with stare auxiliary (37 forms):**
 
 | Form ID | Form Text | Entity Meta Values | Translation Coverage |
 |---------|-----------|-----------|---------------------|
-| 101 | sto mangiando | metaattr010val054 (mood: "indicativo") + metaattr019val101 (tense: "presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | I am eating |
-| ... | ... | **[Pattern continues for all 37 progressive forms using metaattr022val109 (progressive) + appropriate progressive tenses: presente-progressivo, passato-progressivo, futuro-progressivo, congiuntivo-presente-progressivo, congiuntivo-imperfetto-progressivo, condizionale-progressivo, gerundio-progressivo]** | ... |
-| 103 | sta mangiando | indicativo | presente-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | he/she is eating |
+| 101 | sto mangiando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | I am eating |
+| 102 | stai mangiando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | you are eating |
+| 103 | sta mangiando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | he/she is eating |
 | 104 | stiamo mangiando | indicativo | presente-progressivo | prima-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | we are eating |
 | 105 | state mangiando | indicativo | presente-progressivo | seconda-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | you are eating |
 | 106 | stanno mangiando | indicativo | presente-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | they are eating |
@@ -1384,6 +1386,8 @@ value_id → metaattr020val099 (transitivity: "transitive")
 ---
 
 ### 8.2 Scenario B: Reflexive Verb - "lavarsi" (to wash oneself/each other) - Complete Form Inventory
+
+**📋 Complete Section**: [Section 8.2: Complete Forms for "lavarsi"](./section-8-2-lavarsi-complete-forms.md) - **ALL 137 individual conjugations with reflexive pronouns**
 
 #### Dictionary Entry
 ```sql
@@ -1602,6 +1606,8 @@ value_id → metaattr013val056 (number_restriction: "plural-only")
 
 ### 8.3 Scenario C: Dual Auxiliary Verb - "correre" (to run) - Complete Form Inventory
 
+**📋 Complete Section**: [Section 8.3: Complete Forms for "correre"](./section-8-3-correre-complete-forms.md) - **ALL 230+ individual conjugations with dual auxiliary patterns**
+
 **ARCHITECTURAL NOTE**: All tables in Scenarios C-G follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
 - **Removed Columns**: Mood, Tense, Person, Number, Variant Type
 - **Consolidated Format**: metaattr010val0XX (mood) + metaattr019val0XX (tense) + metaattr014val0XX (person) + metaattr012val0XX (number) + metaattr022val0XX (verb_form_type) + additional type-specific metavalues
@@ -1717,6 +1723,8 @@ value_id → metaattr020val100 (transitivity: "intransitive")
 ---
 
 ### 8.4 Scenario D: Modal Verb - "dovere" (to have to) - Complete Form Inventory
+
+**📋 Complete Section**: [Section 8.4: Complete Forms for "dovere"](./section-8-4-dovere-complete-forms.md) - **ALL 370+ individual conjugations with modal constructions**
 
 **ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
 - **Removed Columns**: Mood, Tense, Person, Number, Variant Type
@@ -1849,6 +1857,8 @@ Modal verbs have unique auxiliary behavior:
 
 ### 8.5 Scenario E: Defective Verb - "vigere" (to be in force) - Complete Form Inventory
 
+**📋 Complete Section**: [Section 8.5: Complete Forms for "vigere"](./section-8-5-vigere-complete-forms.md) - **ALL 67 existing forms with semantic restriction patterns**
+
 **ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
 - **Removed Columns**: Mood, Tense, Person, Number, Variant Type  
 - **Consolidated Format**: metaattr010val0XX (mood) + metaattr019val0XX (tense) + metaattr014val0XX (person) + metaattr012val0XX (number) + metaattr022val0XX (verb_form_type) + metaattr021val0XX (defective_type)
@@ -1967,6 +1977,8 @@ Vigere is defective due to semantic constraints:
 ---
 
 ### 8.6 Scenario F: Impersonal Verb - "importare" (to matter) - Complete Form Inventory
+
+**📋 Complete Section**: [Section 8.6: Complete Forms for "importare"](./section-8-6-importare-complete-forms.md) - **ALL 137 individual conjugations with dual semantic patterns**
 
 **ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
 - **Removed Columns**: Mood, Tense, Person, Number, Variant Type
@@ -2116,6 +2128,8 @@ This verb demonstrates complex person restrictions:
 ---
 
 ### 8.7 Scenario G: Weather Verb - "piovere" (to rain) - Complete Form Inventory
+
+**📋 Complete Section**: [Section 8.7: Complete Forms for "piovere"](./section-8-7-piovere-complete-forms.md) - **ALL 67 individual conjugations with weather restriction patterns**
 
 **ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
 - **Removed Columns**: Mood, Tense, Person, Number, Variant Type
