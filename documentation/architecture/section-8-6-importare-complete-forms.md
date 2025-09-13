@@ -1,385 +1,216 @@
-# Section 8.6: Impersonal Verb "importare" (to matter/to import) - Complete Forms
+# Section 8.6: Impersonal Verb "importare" (to matter/to be important) - Complete Form Inventory
 
 ## Overview
-The verb "importare" demonstrates dual semantic patterns:
-- **Impersonal usage**: "to matter" (primarily 3rd person singular)
-- **Transitive usage**: "to import" (all persons, regular conjugation)
+This section provides a comprehensive form inventory showing EVERY form and form_translation for the impersonal verb "importare" in the Misti system. This demonstrates complete metadata structures, coverage matrices, and architectural patterns for impersonal Italian verbs with full conjugation availability but specialized usage patterns.
 
-All ~137 forms exist in the database but with semantic usage restrictions controlling appropriateness rather than form existence.
+**Total Forms**: 137 (51 simple + 49 compound + 37 progressive)
 
-## Architecture Pattern
-- **Simple forms**: Universal existence (all persons)
-- **Compound forms**: Split auxiliary patterns (essere for impersonal, avere for transitive)
-- **Progressive forms**: Follow auxiliary patterns
-- **Usage control**: Semantic restrictions rather than form restrictions
+## Dictionary Entry
+```sql
+-- dictionary table
+id: 990e8400-e29b-41d4-a716-446655440005
+lemma: "importare"
+word_type: "verb"
+```
 
-## Complete Form Inventory
+## Word-Level Metadata (via entity_meta_values)
+```sql
+-- entity_type='word', entity_id=990e8400-e29b-41d4-a716-446655440005
+value_id → meta_values.value: "are-conjugation"    (conjugation_type)
+value_id → meta_values.value: "freq-top300"        (frequency_tier)
+value_id → meta_values.value: "CEFR-B2"            (cefr_level)
+value_id → meta_values.value: "impersonal"         (verb_type)
+```
 
-### SIMPLE FORMS (21 forms)
+## Translation: "to matter/to be important" (primary meaning)
+```sql
+-- word_translations table
+id: 770e8400-e29b-41d4-a716-446655440006
+word_id: 990e8400-e29b-41d4-a716-446655440005
+translation: "to matter/to be important"
+display_priority: 1
 
-#### Infinitive (1 form)
-| Form | Translation | Entity Meta Values |
-|------|-------------|-------------------|
-| importare | to matter/to import | metaattr021val127 (impersonal-verb) |
+-- entity_meta_values for this translation
+-- entity_type='word_translation', entity_id=770e8400-e29b-41d4-a716-446655440006
+value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr021val118 (verb_type: "impersonal")
+```
 
-#### Present Indicative (6 forms)
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | importo | I matter/I import | metaattr021val127 (impersonal-verb) | Transitive: "I import goods" |
-| 2sg | importi | you matter/you import | metaattr021val127 (impersonal-verb) | Transitive: "you import data" |
-| 3sg | importa | it matters/he-she imports | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal: "it matters" |
-| 1pl | importiamo | we matter/we import | metaattr021val127 (impersonal-verb) | Transitive: "we import products" |
-| 2pl | importate | you matter/you import | metaattr021val127 (impersonal-verb) | Transitive: "you import files" |
-| 3pl | importano | they matter/they import | metaattr021val127 (impersonal-verb) | Both: "they matter" / "they import" |
+## Complete Form Inventory (137 Total Forms)
 
-#### Imperfect Indicative (6 forms)
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | importavo | I mattered/I was importing | metaattr021val127 (impersonal-verb) | Transitive: "I was importing" |
-| 2sg | importavi | you mattered/you were importing | metaattr021val127 (impersonal-verb) | Transitive: "you were importing" |
-| 3sg | importava | it mattered/he-she was importing | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal: "it mattered" |
-| 1pl | importavamo | we mattered/we were importing | metaattr021val127 (impersonal-verb) | Transitive: "we were importing" |
-| 2pl | importavate | you mattered/you were importing | metaattr021val127 (impersonal-verb) | Transitive: "you were importing" |
-| 3pl | importavano | they mattered/they were importing | metaattr021val127 (impersonal-verb) | Both: "they mattered" / "they were importing" |
+### Metadata Architecture
+All forms use the consolidated Entity Meta Values architecture:
+- **Mood**: metaattr010val054 (indicativo), metaattr010val055 (congiuntivo), metaattr010val056 (condizionale), metaattr010val057 (imperativo), metaattr010val058 (infinito), metaattr010val059 (participio), metaattr010val060 (gerundio)
+- **Tense**: metaattr019val096 (presente), metaattr019val097 (imperfetto), metaattr019val098 (passato-remoto), metaattr019val099 (futuro-semplice), etc.
+- **Person**: metaattr014val060 (prima-persona), metaattr014val061 (seconda-persona), metaattr014val062 (terza-persona), metaattr014val063 (none)
+- **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale), metaattr012val056 (none)
+- **Verb Form Type**: metaattr022val107 (simple), metaattr022val108 (compound), metaattr022val109 (progressive)
+- **Verb Type**: metaattr021val118 (impersonal)
 
-#### Future (6 forms)
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | importerò | I will matter/I will import | metaattr021val127 (impersonal-verb) | Transitive: "I will import" |
-| 2sg | importerai | you will matter/you will import | metaattr021val127 (impersonal-verb) | Transitive: "you will import" |
-| 3sg | importerà | it will matter/he-she will import | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal: "it will matter" |
-| 1pl | importeremo | we will matter/we will import | metaattr021val127 (impersonal-verb) | Transitive: "we will import" |
-| 2pl | importerete | you will matter/you will import | metaattr021val127 (impersonal-verb) | Transitive: "you will import" |
-| 3pl | importeranno | they will matter/they will import | metaattr021val127 (impersonal-verb) | Both: "they will matter" / "they will import" |
+### Simple Forms (51 forms)
 
-#### Present Subjunctive (6 forms)
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | importi | that I matter/that I import | metaattr021val127 (impersonal-verb) | Transitive: "that I import" |
-| 2sg | importi | that you matter/that you import | metaattr021val127 (impersonal-verb) | Transitive: "that you import" |
-| 3sg | importi | that it matter/that he-she import | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal: "that it matter" |
-| 1pl | importiamo | that we matter/that we import | metaattr021val127 (impersonal-verb) | Transitive: "that we import" |
-| 2pl | importiate | that you matter/that you import | metaattr021val127 (impersonal-verb) | Transitive: "that you import" |
-| 3pl | importino | that they matter/that they import | metaattr021val127 (impersonal-verb) | Both: "that they matter" / "that they import" |
+| Form ID | Form Text | Entity Meta Values | Translation Coverage |
+|---------|-----------|-----------|---------------------|
+| 1068 | importo | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | I matter/am important |
+| 1069 | importi | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | you matter/are important |
+| 1070 | importa | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | it matters/is important |
+| 1071 | importiamo | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | we matter/are important |
+| 1072 | importate | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | you matter/are important |
+| 1073 | importano | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | they matter/are important |
+| 1074 | importavo | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | I was mattering/being important |
+| 1075 | importavi | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | you were mattering/being important |
+| 1076 | importava | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | it was mattering/being important |
+| 1077 | importavamo | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | we were mattering/being important |
+| 1078 | importavate | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | you were mattering/being important |
+| 1079 | importavano | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | they were mattering/being important |
+| 1080 | importai | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | I mattered/was important |
+| 1081 | importasti | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | you mattered/were important |
+| 1082 | importò | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | it mattered/was important |
+| 1083 | importammo | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | we mattered/were important |
+| 1084 | importaste | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | you mattered/were important |
+| 1085 | importarono | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | they mattered/were important |
+| 1086 | importerò | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | I will matter/be important |
+| 1087 | importerai | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | you will matter/be important |
+| 1088 | importerà | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | it will matter/be important |
+| 1089 | importeremo | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | we will matter/be important |
+| 1090 | importerete | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | you will matter/be important |
+| 1091 | importeranno | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | they will matter/be important |
+| 1092 | importi | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) I matter/be important |
+| 1093 | importi | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) you matter/be important |
+| 1094 | importi | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) it matter/be important |
+| 1095 | importiamo | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) we matter/be important |
+| 1096 | importiate | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) you matter/be important |
+| 1097 | importino | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) they matter/be important |
+| 1098 | importassi | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) I mattered/were important |
+| 1099 | importassi | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) you mattered/were important |
+| 1100 | importasse | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) it mattered/were important |
+| 1101 | importassimo | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) we mattered/were important |
+| 1102 | importaste | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) you mattered/were important |
+| 1103 | importassero | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | (that) they mattered/were important |
+| 1104 | importerei | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | I would matter/be important |
+| 1105 | importeresti | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | you would matter/be important |
+| 1106 | importerebbe | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | it would matter/be important |
+| 1107 | importeremmo | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | we would matter/be important |
+| 1108 | importereste | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | you would matter/be important |
+| 1109 | importerebbero | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | they would matter/be important |
+| 1110 | importa | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | matter!/be important! |
+| 1111 | importi | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | let it matter/be important! |
+| 1112 | importiamo | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | let's matter/be important! |
+| 1113 | importate | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | matter!/be important! |
+| 1114 | importino | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | let them matter/be important! |
+| 1115 | importare | metaattr010val058 (mood: "infinito") + metaattr019val106 (tense: "infinito-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | to matter/be important |
+| 1116 | importante | metaattr010val059 (mood: "participio") + metaattr019val107 (tense: "participio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | mattering/being important |
+| 1117 | importato | metaattr010val059 (mood: "participio") + metaattr019val108 (tense: "participio-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | mattered/been important |
+| 1118 | importando | metaattr010val060 (mood: "gerundio") + metaattr019val109 (tense: "gerundio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") + metaattr021val118 (verb_type: "impersonal") | mattering/being important |
 
-#### Imperfect Subjunctive (4 forms)
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | importassi | that I mattered/that I imported | metaattr021val127 (impersonal-verb) | Transitive: "that I imported" |
-| 2sg | importassi | that you mattered/that you imported | metaattr021val127 (impersonal-verb) | Transitive: "that you imported" |
-| 3sg | importasse | that it mattered/that he-she imported | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal: "that it mattered" |
-| 1pl | importassimo | that we mattered/that we imported | metaattr021val127 (impersonal-verb) | Transitive: "that we imported" |
-| 2pl | importaste | that you mattered/that you imported | metaattr021val127 (impersonal-verb) | Transitive: "that you imported" |
-| 3pl | importassero | that they mattered/that they imported | metaattr021val127 (impersonal-verb) | Both: "that they mattered" / "that they imported" |
+### Compound Forms with essere auxiliary (49 forms)
 
-#### Conditional (6 forms)
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | importerei | I would matter/I would import | metaattr021val127 (impersonal-verb) | Transitive: "I would import" |
-| 2sg | importeresti | you would matter/you would import | metaattr021val127 (impersonal-verb) | Transitive: "you would import" |
-| 3sg | importerebbe | it would matter/he-she would import | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal: "it would matter" |
-| 1pl | importeremmo | we would matter/we would import | metaattr021val127 (impersonal-verb) | Transitive: "we would import" |
-| 2pl | importereste | you would matter/you would import | metaattr021val127 (impersonal-verb) | Transitive: "you would import" |
-| 3pl | importerebbero | they would matter/they would import | metaattr021val127 (impersonal-verb) | Both: "they would matter" / "they would import" |
+| Form ID | Form Text | Entity Meta Values | Translation Coverage |
+|---------|-----------|-----------|---------------------|
+| 1119 | sono importato/a | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | I have mattered/been important |
+| 1120 | sei importato/a | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | you have mattered/been important |
+| 1121 | è importato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | it has mattered/been important |
+| 1122 | siamo importati/e | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | we have mattered/been important |
+| 1123 | siete importati/e | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | you have mattered/been important |
+| 1124 | sono importati | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | they have mattered/been important |
+| 1125 | ero importato/a | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | I had mattered/been important |
+| 1126 | eri importato/a | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | you had mattered/been important |
+| 1127 | era importato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | it had mattered/been important |
+| 1128 | eravamo importati/e | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | we had mattered/been important |
+| 1129 | eravate importati/e | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | you had mattered/been important |
+| 1130 | erano importati | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | they had mattered/been important |
+| 1131 | fui importato/a | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | I had mattered/been important |
+| 1132 | fosti importato/a | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | you had mattered/been important |
+| 1133 | fu importato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | it had mattered/been important |
+| 1134 | fummo importati/e | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | we had mattered/been important |
+| 1135 | foste importati/e | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | you had mattered/been important |
+| 1136 | furono importati | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | they had mattered/been important |
+| 1137 | sarò importato/a | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | I will have mattered/been important |
+| 1138 | sarai importato/a | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | you will have mattered/been important |
+| 1139 | sarà importato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | it will have mattered/been important |
+| 1140 | saremo importati/e | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | we will have mattered/been important |
+| 1141 | sarete importati/e | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | you will have mattered/been important |
+| 1142 | saranno importati | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | they will have mattered/been important |
+| 1143 | sia importato/a | metaattr010val055 (mood: "congiuntivo") + metaattr019val114 (tense: "congiuntivo-passato") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) I have mattered/been important |
+| 1144 | sia importato/a | metaattr010val055 (mood: "congiuntivo") + metaattr019val114 (tense: "congiuntivo-passato") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) you have mattered/been important |
+| 1145 | sia importato | metaattr010val055 (mood: "congiuntivo") + metaattr019val114 (tense: "congiuntivo-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) it have mattered/been important |
+| 1146 | siamo importati/e | metaattr010val055 (mood: "congiuntivo") + metaattr019val114 (tense: "congiuntivo-passato") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) we have mattered/been important |
+| 1147 | siate importati/e | metaattr010val055 (mood: "congiuntivo") + metaattr019val114 (tense: "congiuntivo-passato") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) you have mattered/been important |
+| 1148 | siano importati | metaattr010val055 (mood: "congiuntivo") + metaattr019val114 (tense: "congiuntivo-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) they have mattered/been important |
+| 1149 | fossi importato/a | metaattr010val055 (mood: "congiuntivo") + metaattr019val115 (tense: "congiuntivo-trapassato") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) I had mattered/been important |
+| 1150 | fossi importato/a | metaattr010val055 (mood: "congiuntivo") + metaattr019val115 (tense: "congiuntivo-trapassato") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) you had mattered/been important |
+| 1151 | fosse importato | metaattr010val055 (mood: "congiuntivo") + metaattr019val115 (tense: "congiuntivo-trapassato") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) it had mattered/been important |
+| 1152 | fossimo importati/e | metaattr010val055 (mood: "congiuntivo") + metaattr019val115 (tense: "congiuntivo-trapassato") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) we had mattered/been important |
+| 1153 | foste importati/e | metaattr010val055 (mood: "congiuntivo") + metaattr019val115 (tense: "congiuntivo-trapassato") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) you had mattered/been important |
+| 1154 | fossero importati | metaattr010val055 (mood: "congiuntivo") + metaattr019val115 (tense: "congiuntivo-trapassato") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | (that) they had mattered/been important |
+| 1155 | sarei importato/a | metaattr010val056 (mood: "condizionale") + metaattr019val116 (tense: "condizionale-passato") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | I would have mattered/been important |
+| 1156 | saresti importato/a | metaattr010val056 (mood: "condizionale") + metaattr019val116 (tense: "condizionale-passato") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | you would have mattered/been important |
+| 1157 | sarebbe importato | metaattr010val056 (mood: "condizionale") + metaattr019val116 (tense: "condizionale-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | it would have mattered/been important |
+| 1158 | saremmo importati/e | metaattr010val056 (mood: "condizionale") + metaattr019val116 (tense: "condizionale-passato") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | we would have mattered/been important |
+| 1159 | sareste importati/e | metaattr010val056 (mood: "condizionale") + metaattr019val116 (tense: "condizionale-passato") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | you would have mattered/been important |
+| 1160 | sarebbero importati | metaattr010val056 (mood: "condizionale") + metaattr019val116 (tense: "condizionale-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | they would have mattered/been important |
+| 1161 | sii importato/a | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | have mattered/been important! |
+| 1162 | sia importato | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | let it have mattered/been important! |
+| 1163 | siamo importati/e | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | let's have mattered/been important! |
+| 1164 | siate importati/e | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | have mattered/been important! |
+| 1165 | siano importati | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | let them have mattered/been important! |
+| 1166 | essendo importato | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | having mattered/been important |
+| 1167 | essere importato | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val108 (verb_form_type: "compound") + metaattr021val118 (verb_type: "impersonal") + metaattr002val015 (auxiliary: "essere") | to have mattered/been important |
 
-#### Imperative (4 forms)
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 2sg | importa | matter!/import! | metaattr021val127 (impersonal-verb) | Transitive: "import!" (command) |
-| 3sg | importi | let it matter/let him-her import | metaattr021val127 (impersonal-verb) | Formal imperative |
-| 1pl | importiamo | let's matter/let's import | metaattr021val127 (impersonal-verb) | Transitive: "let's import" |
-| 2pl | importate | matter!/import! | metaattr021val127 (impersonal-verb) | Transitive: "import!" (plural) |
+### Progressive Forms with stare auxiliary (37 forms)
 
-#### Past Remote (6 forms)
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | importai | I mattered/I imported | metaattr021val127 (impersonal-verb) | Transitive: "I imported" |
-| 2sg | importasti | you mattered/you imported | metaattr021val127 (impersonal-verb) | Transitive: "you imported" |
-| 3sg | importò | it mattered/he-she imported | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal: "it mattered" |
-| 1pl | importammo | we mattered/we imported | metaattr021val127 (impersonal-verb) | Transitive: "we imported" |
-| 2pl | importaste | you mattered/you imported | metaattr021val127 (impersonal-verb) | Transitive: "you imported" |
-| 3pl | importarono | they mattered/they imported | metaattr021val127 (impersonal-verb) | Both: "they mattered" / "they imported" |
+| Form ID | Form Text | Entity Meta Values | Translation Coverage |
+|---------|-----------|-----------|---------------------|
+| 1168 | sto importando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | I am mattering/being important |
+| 1169 | stai importando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | you are mattering/being important |
+| 1170 | sta importando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | it is mattering/being important |
+| 1171 | stiamo importando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | we are mattering/being important |
+| 1172 | state importando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | you are mattering/being important |
+| 1173 | stanno importando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | they are mattering/being important |
+| 1174 | stavo importando | metaattr010val054 (mood: "indicativo") + metaattr019val121 (tense: "passato-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | I was mattering/being important |
+| 1175 | stavi importando | metaattr010val054 (mood: "indicativo") + metaattr019val121 (tense: "passato-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | you were mattering/being important |
+| 1176 | stava importando | metaattr010val054 (mood: "indicativo") + metaattr019val121 (tense: "passato-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | it was mattering/being important |
+| 1177 | stavamo importando | metaattr010val054 (mood: "indicativo") + metaattr019val121 (tense: "passato-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | we were mattering/being important |
+| 1178 | stavate importando | metaattr010val054 (mood: "indicativo") + metaattr019val121 (tense: "passato-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | you were mattering/being important |
+| 1179 | stavano importando | metaattr010val054 (mood: "indicativo") + metaattr019val121 (tense: "passato-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | they were mattering/being important |
+| 1180 | starò importando | metaattr010val054 (mood: "indicativo") + metaattr019val122 (tense: "futuro-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | I will be mattering/being important |
+| 1181 | starai importando | metaattr010val054 (mood: "indicativo") + metaattr019val122 (tense: "futuro-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | you will be mattering/being important |
+| 1182 | starà importando | metaattr010val054 (mood: "indicativo") + metaattr019val122 (tense: "futuro-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | it will be mattering/being important |
+| 1183 | staremo importando | metaattr010val054 (mood: "indicativo") + metaattr019val122 (tense: "futuro-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | we will be mattering/being important |
+| 1184 | starete importando | metaattr010val054 (mood: "indicativo") + metaattr019val122 (tense: "futuro-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | you will be mattering/being important |
+| 1185 | staranno importando | metaattr010val054 (mood: "indicativo") + metaattr019val122 (tense: "futuro-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | they will be mattering/being important |
+| 1186 | stia importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) I be mattering/being important |
+| 1187 | stia importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) you be mattering/being important |
+| 1188 | stia importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) it be mattering/being important |
+| 1189 | stiamo importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) we be mattering/being important |
+| 1190 | stiate importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) you be mattering/being important |
+| 1191 | stiano importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) they be mattering/being important |
+| 1192 | stessi importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) I were mattering/being important |
+| 1193 | stessi importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) you were mattering/being important |
+| 1194 | stesse importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) it were mattering/being important |
+| 1195 | stessimo importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) we were mattering/being important |
+| 1196 | steste importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) you were mattering/being important |
+| 1197 | stessero importando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | (that) they were mattering/being important |
+| 1198 | starei importando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | I would be mattering/being important |
+| 1199 | staresti importando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | you would be mattering/being important |
+| 1200 | starebbe importando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | it would be mattering/being important |
+| 1201 | staremmo importando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | we would be mattering/being important |
+| 1202 | stareste importando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | you would be mattering/being important |
+| 1203 | starebbero importando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | they would be mattering/being important |
+| 1204 | stando importando | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val118 (verb_type: "impersonal") | being mattering/being important |
 
-### COMPOUND FORMS (58 forms)
+## Form_Translations Coverage
 
-#### Perfect Infinitive (2 forms - Split Auxiliary)
-| Form | Translation | Entity Meta Values | Auxiliary Pattern |
-|------|-------------|-------------------|-------------------|
-| essere importato | to have mattered | metaattr021val127 (impersonal-verb) | essere (impersonal) |
-| avere importato | to have imported | metaattr021val127 (impersonal-verb) | avere (transitive) |
+**Specialized Coverage**: All 137 forms link to the single "to matter/to be important" translation with impersonal usage patterns. This demonstrates the impersonal verb pattern where full conjugation exists but semantic usage is restricted to specific constructions like "mi importa" (it matters to me) and formal/philosophical contexts.
 
-#### Present Perfect (12 forms - Split Auxiliary)
+## Architectural Significance
 
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | sono importato/a | I have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | sei importato/a | you have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | è importato | it has mattered | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | siamo importati/e | we have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | siete importati/e | you have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | sono importati | they have mattered | metaattr021val127 (impersonal-verb) | Impersonal: "they have mattered" |
+Section 8.6 demonstrates the impersonal verb architectural pattern in the Misti system:
 
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | ho importato | I have imported | metaattr021val127 (impersonal-verb) | Transitive: "I have imported goods" |
-| 2sg | hai importato | you have imported | metaattr021val127 (impersonal-verb) | Transitive: "you have imported data" |
-| 3sg | ha importato | he-she has imported | metaattr021val127 (impersonal-verb) | Transitive: "he has imported products" |
-| 1pl | abbiamo importato | we have imported | metaattr021val127 (impersonal-verb) | Transitive: "we have imported files" |
-| 2pl | avete importato | you have imported | metaattr021val127 (impersonal-verb) | Transitive: "you have imported materials" |
-| 3pl | hanno importato | they have imported | metaattr021val127 (impersonal-verb) | Transitive: "they have imported equipment" |
+1. **Complete Form Generation**: Every grammatically possible form exists (137 total), demonstrating architectural completeness
+2. **Consistent Metavalue Structure**: All forms include metaattr021val118 (verb_type: "impersonal") alongside standard metadata
+3. **Auxiliary Specification**: Uses essere auxiliary (metaattr002val015) for compound forms with agreement requirements
+4. **Usage Pattern Control**: Impersonal constructions primarily use 3rd person but all persons are architecturally available
+5. **Translation Specialization**: Single meaning focused on importance/mattering rather than multiple translations
 
-#### Pluperfect (12 forms - Split Auxiliary)
-
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | ero importato/a | I had mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | eri importato/a | you had mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | era importato | it had mattered | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | eravamo importati/e | we had mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | eravate importati/e | you had mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | erano importati | they had mattered | metaattr021val127 (impersonal-verb) | Impersonal: "they had mattered" |
-
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | avevo importato | I had imported | metaattr021val127 (impersonal-verb) | Transitive: "I had imported goods" |
-| 2sg | avevi importato | you had imported | metaattr021val127 (impersonal-verb) | Transitive: "you had imported data" |
-| 3sg | aveva importato | he-she had imported | metaattr021val127 (impersonal-verb) | Transitive: "he had imported products" |
-| 1pl | avevamo importato | we had imported | metaattr021val127 (impersonal-verb) | Transitive: "we had imported files" |
-| 2pl | avevate importato | you had imported | metaattr021val127 (impersonal-verb) | Transitive: "you had imported materials" |
-| 3pl | avevano importato | they had imported | metaattr021val127 (impersonal-verb) | Transitive: "they had imported equipment" |
-
-#### Future Perfect (12 forms - Split Auxiliary)
-
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | sarò importato/a | I will have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | sarai importato/a | you will have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | sarà importato | it will have mattered | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | saremo importati/e | we will have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | sarete importati/e | you will have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | saranno importati | they will have mattered | metaattr021val127 (impersonal-verb) | Impersonal: "they will have mattered" |
-
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | avrò importato | I will have imported | metaattr021val127 (impersonal-verb) | Transitive: "I will have imported goods" |
-| 2sg | avrai importato | you will have imported | metaattr021val127 (impersonal-verb) | Transitive: "you will have imported data" |
-| 3sg | avrà importato | he-she will have imported | metaattr021val127 (impersonal-verb) | Transitive: "he will have imported products" |
-| 1pl | avremo importato | we will have imported | metaattr021val127 (impersonal-verb) | Transitive: "we will have imported files" |
-| 2pl | avrete importato | you will have imported | metaattr021val127 (impersonal-verb) | Transitive: "you will have imported materials" |
-| 3pl | avranno importato | they will have imported | metaattr021val127 (impersonal-verb) | Transitive: "they will have imported equipment" |
-
-#### Perfect Subjunctive (12 forms - Split Auxiliary)
-
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | sia importato/a | that I have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | sia importato/a | that you have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | sia importato | that it have mattered | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | siamo importati/e | that we have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | siate importati/e | that you have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | siano importati | that they have mattered | metaattr021val127 (impersonal-verb) | Impersonal: "that they have mattered" |
-
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | abbia importato | that I have imported | metaattr021val127 (impersonal-verb) | Transitive: "that I have imported goods" |
-| 2sg | abbia importato | that you have imported | metaattr021val127 (impersonal-verb) | Transitive: "that you have imported data" |
-| 3sg | abbia importato | that he-she have imported | metaattr021val127 (impersonal-verb) | Transitive: "that he have imported products" |
-| 1pl | abbiamo importato | that we have imported | metaattr021val127 (impersonal-verb) | Transitive: "that we have imported files" |
-| 2pl | abbiate importato | that you have imported | metaattr021val127 (impersonal-verb) | Transitive: "that you have imported materials" |
-| 3pl | abbiano importato | that they have imported | metaattr021val127 (impersonal-verb) | Transitive: "that they have imported equipment" |
-
-#### Pluperfect Subjunctive (12 forms - Split Auxiliary)
-
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | fossi importato/a | that I had mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | fossi importato/a | that you had mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | fosse importato | that it had mattered | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | fossimo importati/e | that we had mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | foste importati/e | that you had mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | fossero importati | that they had mattered | metaattr021val127 (impersonal-verb) | Impersonal: "that they had mattered" |
-
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | avessi importato | that I had imported | metaattr021val127 (impersonal-verb) | Transitive: "that I had imported goods" |
-| 2sg | avessi importato | that you had imported | metaattr021val127 (impersonal-verb) | Transitive: "that you had imported data" |
-| 3sg | avesse importato | that he-she had imported | metaattr021val127 (impersonal-verb) | Transitive: "that he had imported products" |
-| 1pl | avessimo importato | that we had imported | metaattr021val127 (impersonal-verb) | Transitive: "that we had imported files" |
-| 2pl | aveste importato | that you had imported | metaattr021val127 (impersonal-verb) | Transitive: "that you had imported materials" |
-| 3pl | avessero importato | that they had imported | metaattr021val127 (impersonal-verb) | Transitive: "that they had imported equipment" |
-
-#### Perfect Conditional (12 forms - Split Auxiliary)
-
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | sarei importato/a | I would have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | saresti importato/a | you would have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | sarebbe importato | it would have mattered | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | saremmo importati/e | we would have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | sareste importati/e | you would have mattered | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | sarebbero importati | they would have mattered | metaattr021val127 (impersonal-verb) | Impersonal: "they would have mattered" |
-
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | avrei importato | I would have imported | metaattr021val127 (impersonal-verb) | Transitive: "I would have imported goods" |
-| 2sg | avresti importato | you would have imported | metaattr021val127 (impersonal-verb) | Transitive: "you would have imported data" |
-| 3sg | avrebbe importato | he-she would have imported | metaattr021val127 (impersonal-verb) | Transitive: "he would have imported products" |
-| 1pl | avremmo importato | we would have imported | metaattr021val127 (impersonal-verb) | Transitive: "we would have imported files" |
-| 2pl | avreste importato | you would have imported | metaattr021val127 (impersonal-verb) | Transitive: "you would have imported materials" |
-| 3pl | avrebbero importato | they would have imported | metaattr021val127 (impersonal-verb) | Transitive: "they would have imported equipment" |
-
-### PROGRESSIVE FORMS (58 forms)
-
-#### Present Progressive (12 forms - Split Auxiliary)
-
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | sto essendo importato/a | I am mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | stai essendo importato/a | you are mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | sta essendo importato | it is mattering | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | stiamo essendo importati/e | we are mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | state essendo importati/e | you are mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | stanno essendo importati | they are mattering | metaattr021val127 (impersonal-verb) | Impersonal: "they are mattering" |
-
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | sto importando | I am importing | metaattr021val127 (impersonal-verb) | Transitive: "I am importing goods" |
-| 2sg | stai importando | you are importing | metaattr021val127 (impersonal-verb) | Transitive: "you are importing data" |
-| 3sg | sta importando | he-she is importing | metaattr021val127 (impersonal-verb) | Transitive: "he is importing products" |
-| 1pl | stiamo importando | we are importing | metaattr021val127 (impersonal-verb) | Transitive: "we are importing files" |
-| 2pl | state importando | you are importing | metaattr021val127 (impersonal-verb) | Transitive: "you are importing materials" |
-| 3pl | stanno importando | they are importing | metaattr021val127 (impersonal-verb) | Transitive: "they are importing equipment" |
-
-#### Imperfect Progressive (12 forms - Split Auxiliary)
-
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | stavo essendo importato/a | I was mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | stavi essendo importato/a | you were mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | stava essendo importato | it was mattering | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | stavamo essendo importati/e | we were mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | stavate essendo importati/e | you were mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | stavano essendo importati | they were mattering | metaattr021val127 (impersonal-verb) | Impersonal: "they were mattering" |
-
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | stavo importando | I was importing | metaattr021val127 (impersonal-verb) | Transitive: "I was importing goods" |
-| 2sg | stavi importando | you were importing | metaattr021val127 (impersonal-verb) | Transitive: "you were importing data" |
-| 3sg | stava importando | he-she was importing | metaattr021val127 (impersonal-verb) | Transitive: "he was importing products" |
-| 1pl | stavamo importando | we were importing | metaattr021val127 (impersonal-verb) | Transitive: "we were importing files" |
-| 2pl | stavate importando | you were importing | metaattr021val127 (impersonal-verb) | Transitive: "you were importing materials" |
-| 3pl | stavano importando | they were importing | metaattr021val127 (impersonal-verb) | Transitive: "they were importing equipment" |
-
-#### Future Progressive (12 forms - Split Auxiliary)
-
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | starò essendo importato/a | I will be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | starai essendo importato/a | you will be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | starà essendo importato | it will be mattering | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | staremo essendo importati/e | we will be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | starete essendo importati/e | you will be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | staranno essendo importati | they will be mattering | metaattr021val127 (impersonal-verb) | Impersonal: "they will be mattering" |
-
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | starò importando | I will be importing | metaattr021val127 (impersonal-verb) | Transitive: "I will be importing goods" |
-| 2sg | starai importando | you will be importing | metaattr021val127 (impersonal-verb) | Transitive: "you will be importing data" |
-| 3sg | starà importando | he-she will be importing | metaattr021val127 (impersonal-verb) | Transitive: "he will be importing products" |
-| 1pl | staremo importando | we will be importing | metaattr021val127 (impersonal-verb) | Transitive: "we will be importing files" |
-| 2pl | starete importando | you will be importing | metaattr021val127 (impersonal-verb) | Transitive: "you will be importing materials" |
-| 3pl | staranno importando | they will be importing | metaattr021val127 (impersonal-verb) | Transitive: "they will be importing equipment" |
-
-#### Progressive Subjunctive (12 forms - Split Auxiliary)
-
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | stia essendo importato/a | that I be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | stia essendo importato/a | that you be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | stia essendo importato | that it be mattering | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | stiamo essendo importati/e | that we be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | stiate essendo importati/e | that you be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | stiano essendo importati | that they be mattering | metaattr021val127 (impersonal-verb) | Impersonal: "that they be mattering" |
-
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | stia importando | that I be importing | metaattr021val127 (impersonal-verb) | Transitive: "that I be importing goods" |
-| 2sg | stia importando | that you be importing | metaattr021val127 (impersonal-verb) | Transitive: "that you be importing data" |
-| 3sg | stia importando | that he-she be importing | metaattr021val127 (impersonal-verb) | Transitive: "that he be importing products" |
-| 1pl | stiamo importando | that we be importing | metaattr021val127 (impersonal-verb) | Transitive: "that we be importing files" |
-| 2pl | stiate importando | that you be importing | metaattr021val127 (impersonal-verb) | Transitive: "that you be importing materials" |
-| 3pl | stiano importando | that they be importing | metaattr021val127 (impersonal-verb) | Transitive: "that they be importing equipment" |
-
-#### Progressive Conditional (12 forms - Split Auxiliary)
-
-**With essere (impersonal "to matter")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | starei essendo importato/a | I would be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2sg | staresti essendo importato/a | you would be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3sg | starebbe essendo importato | it would be mattering | metaattr021val127 (impersonal-verb), metaattr013val130 (number_restriction: "third-singular-only") | Primary impersonal usage |
-| 1pl | staremmo essendo importati/e | we would be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 2pl | stareste essendo importati/e | you would be mattering | metaattr021val127 (impersonal-verb) | Rare, philosophical usage |
-| 3pl | starebbero essendo importati | they would be mattering | metaattr021val127 (impersonal-verb) | Impersonal: "they would be mattering" |
-
-**With avere (transitive "to import")**
-| Person | Form | Translation | Entity Meta Values | Usage Notes |
-|--------|------|-------------|-------------------|-------------|
-| 1sg | starei importando | I would be importing | metaattr021val127 (impersonal-verb) | Transitive: "I would be importing goods" |
-| 2sg | staresti importando | you would be importing | metaattr021val127 (impersonal-verb) | Transitive: "you would be importing data" |
-| 3sg | starebbe importando | he-she would be importing | metaattr021val127 (impersonal-verb) | Transitive: "he would be importing products" |
-| 1pl | staremmo importando | we would be importing | metaattr021val127 (impersonal-verb) | Transitive: "we would be importing files" |
-| 2pl | stareste importando | you would be importing | metaattr021val127 (impersonal-verb) | Transitive: "you would be importing materials" |
-| 3pl | starebbero importando | they would be importing | metaattr021val127 (impersonal-verb) | Transitive: "they would be importing equipment" |
-
-### PARTICIPLES (2 forms)
-
-| Form | Type | Translation | Entity Meta Values |
-|------|------|-------------|-------------------|
-| importato | past participle | mattered/imported | metaattr021val127 (impersonal-verb) |
-| importando | present participle | mattering/importing | metaattr021val127 (impersonal-verb) |
-
-## Usage Patterns
-
-### Semantic Distribution
-- **Impersonal "to matter"**: Primarily 3rd person singular, philosophical contexts
-- **Transitive "to import"**: All persons, business/commercial contexts
-
-### Auxiliary Selection
-- **essere**: Impersonal usage focusing on states of importance
-- **avere**: Transitive usage focusing on actions of importing
-
-### Translation Strategy
-- Forms exist universally but translations reflect semantic appropriateness
-- Usage restrictions control naturalness, not form existence
-- Database architecture accommodates both meanings within single conjugation system
-
-## Database Architecture Notes
-
-This demonstrates how impersonal verbs with dual meanings are handled:
-- **Form completeness**: All ~137 forms exist in database
-- **Semantic control**: Usage restrictions guide appropriate translations
-- **Auxiliary flexibility**: Split compound patterns based on meaning
-- **Metadata consistency**: metaattr021val127 (impersonal-verb) throughout all forms
-
-The architecture shows that form existence and semantic appropriateness are separate concerns in comprehensive verb databases.
+This complete inventory serves as the definitive reference for implementing impersonal verb conjugation with full architectural support while maintaining semantic appropriateness through usage patterns rather than form restrictions.
