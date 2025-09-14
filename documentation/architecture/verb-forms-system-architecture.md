@@ -97,7 +97,6 @@ This dimension captures **special behavioral patterns** that affect how verbs co
 - **dual-auxiliary-verb** - Verbs that use different auxiliaries based on meaning (correre, saltare)
 - **defective-verb** - Verbs missing certain persons/numbers (vigere, urgere)  
 - **impersonal-verb** - Verbs primarily used in 3rd person (importare, bisognare)
-- **meteorological-verb** - Weather verbs restricted to 3rd singular (piovere, nevicare)
 - **direct-reflexive** - Inherently reflexive verbs (svegliarsi, pentirsi)
 
 #### Grammatical Property Classification (transitivity)
@@ -110,7 +109,7 @@ This dimension captures **grammatical argument structure** independent of behavi
 #### Why Multi-Dimensional Classification?
 This separation is **linguistically accurate** because:
 
-1. **Independence**: A verb can be modal AND transitive (dovere), or meteorological AND intransitive (piovere)
+1. **Independence**: A verb can be modal AND transitive (dovere), or impersonal AND intransitive (importare)
 2. **Precision**: Different translations of the same verb can have different transitivity without changing behavioral type
 3. **Extensibility**: New behavioral patterns can be added without affecting grammatical classifications
 4. **Pedagogical Clarity**: Students learn behavioral patterns and grammatical properties as separate concepts
@@ -223,10 +222,6 @@ Special behavioral markers are applied to verbs requiring non-standard handling:
 - **Examples**: bisognare (to be necessary), importare (to matter)
 - **Impact**: Only 3rd person forms are materialized
 
-#### meteorological-verb
-- **Purpose**: Atmospheric/meteorological verbs
-- **Examples**: piovere (to rain), nevicare (to snow)  
-- **Impact**: Typically impersonal, uses essere auxiliary
 
 #### defective-verb
 - **Purpose**: Verbs missing certain forms
@@ -584,22 +579,22 @@ Defective verbs miss certain forms entirely:
 - Only materialize forms that linguistically exist
 - Validation system expects fewer forms for defective verbs
 
-### 5.3 Impersonal/Weather Verbs
+### 5.3 Impersonal Verbs
 
 #### Impersonal Verb Classification
-- **Marker**: `impersonal-verb` and/or `meteorological-verb` tags
+- **Marker**: `impersonal-verb` tags
 - **Constraint**: Only 3rd person singular forms are valid
-- **Examples**: bisognare, importare, piovere, nevicare
+- **Examples**: bisognare, importare
 
 #### Form Materialization Strategy
 - **Skip**: 1st/2nd person forms (io, tu, noi, voi)
 - **Include**: Only `terza-persona singolare` forms
-- **Auxiliary**: Typically essere (meteorological phenomena)
+- **Auxiliary**: Typically essere for state-describing impersonals
 
-#### Weather Verb Extensions
-Some weather verbs can metaphorically use other persons:
-- `piovere` literally: "piove" (it rains)
-- `piovere` metaphorically: "piovono critiche" (criticisms rain down)
+#### Impersonal Verb Extensions
+Some impersonal verbs can be used with other persons in specific contexts:
+- `importare` literally: "importa" (it matters)
+- `importare` extended: "importiamo prodotti" (we import products)
 
 The system handles this through multiple translations with different `plurality` constraints.
 
@@ -1185,7 +1180,6 @@ This section provides comprehensive form inventories showing EVERY form and form
 - [8.4 Scenario D: Modal Verb - "dovere"](#84-scenario-d-modal-verb---dovere-to-have-to---complete-form-inventory)
 - [8.5 Scenario E: Defective Verb - "vigere"](#85-scenario-e-defective-verb---vigere-to-be-in-force---complete-form-inventory)
 - [8.6 Scenario F: Impersonal Verb - "importare"](#86-scenario-f-impersonal-verb---importare-to-matter---complete-form-inventory)
-- [8.7 Scenario G: Weather Verb - "piovere"](#87-scenario-g-weather-verb---piovere-to-rain---complete-form-inventory)
 
 ### 8.1 Scenario A: Normal Verb - "mangiare" (to eat) - Complete Form Inventory
 
@@ -2125,16 +2119,6 @@ This verb demonstrates complex person restrictions:
 - **Total Coverage**: 160 form_translations across both meanings
 - **Shared Forms**: 135 forms exist, but different coverage patterns create semantic precision
 
----
-
-### 8.7 Scenario G: Weather Verb - "piovere" (to rain) - Complete Form Inventory
-
-**📋 Complete Section**: [Section 8.7: Complete Forms for "piovere"](./section-8-7-piovere-complete-forms.md) - **ALL 67 individual conjugations with weather restriction patterns**
-
-**ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
-- **Removed Columns**: Mood, Tense, Person, Number, Variant Type
-- **Consolidated Format**: metaattr010val0XX (mood) + metaattr019val0XX (tense) + metaattr014val0XX (person) + metaattr012val0XX (number) + metaattr022val0XX (verb_form_type) + metaattr021val0XX (weather_type)
-- **Weather Specifics**: All forms exist; strict translation restrictions based on semantic appropriateness
 
 #### Dictionary Entry
 ```sql
@@ -2293,12 +2277,10 @@ Weather verbs have the most restrictive person limitations:
 | Modal | dovere | 137** | 137 (all standard forms) | 137 (all standard forms) | 274 |
 | Defective | vigere | 67 | 67 (existing forms only) | - | 67 |
 | Impersonal | importare | 135 | 25 (3rd person only) | 135 (all forms) | 160 |
-| Weather | piovere | 67*** | 39 (3rd singular + non-finite) | 28 (3rd person + non-finite) | 67 |
 
 **Mathematical Explanations:**
 - *Dual Auxiliary Corrected: All verbs have same 137 base forms (51 simple + 49 compound + 37 progressive). Each translation covers ALL forms but uses different auxiliaries for compound forms only.
 - **Modal Corrected: Only standard 137 forms stored in database. Modal constructions (dovere + infinitive) are frontend-generated, NOT stored as separate forms.
-- ***Weather Verb Calculation: 67 total forms = 22 (3rd singular specific) + 45 (non-finite forms shared by both translations). Numbers now add up correctly.
 
 ### Meta Attribute Integration Patterns
 
@@ -2310,7 +2292,6 @@ Weather verbs have the most restrictive person limitations:
 | Modal | verb_type: "modal-verb" | Derived from translations | None (modal behavior is frontend-handled) | entity_meta_values |
 | Defective | verb_type: "defective-verb" | Derived from translations | number_restriction: "missing-first-second-person" | entity_meta_values |
 | Impersonal | verb_type: "impersonal-verb" | Derived from translations (mixed) | number_restriction: "third-person-only" | entity_meta_values |
-| Weather | verb_type: "meteorological-verb" | Derived from translations (intransitive) | number_restriction: "third-singular-only" | entity_meta_values |
 
 This comprehensive expansion demonstrates how the Misti verb forms architecture handles the full spectrum of Italian verb complexity through systematic form materialization, metadata integration, and coverage validation.
 

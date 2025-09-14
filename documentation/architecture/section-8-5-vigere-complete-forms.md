@@ -19,7 +19,6 @@ word_type: "verb"
 value_id → meta_values.value: "ere-conjugation"    (conjugation_type)
 value_id → meta_values.value: "freq-rare"          (frequency_tier)
 value_id → meta_values.value: "CEFR-C2"            (cefr_level)
-value_id → meta_values.value: "defective"          (verb_type)
 ```
 
 ## Translation: "to be in force" (primary meaning)
