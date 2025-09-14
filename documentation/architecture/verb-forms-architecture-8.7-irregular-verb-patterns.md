@@ -1,4 +1,10 @@
-# Section 8.7: Irregular Verb "andare" (to go) - Complete Form Inventory
+> **Part of**: [Misti Verb Forms System Architecture](./verb-forms-system-architecture.md)
+> **Section**: 8.7 - Irregular Verb Patterns
+> **Example Verb**: "andare" (to go)
+
+---
+
+# Irregular Verb Patterns: "andare" (to go) - Complete Form Inventory
 
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the irregular verb "andare" in the Misti system. This demonstrates irregular verb architecture with proper irregularity marking, essere auxiliary usage, and complete coverage matrices for Italian irregular verbs.

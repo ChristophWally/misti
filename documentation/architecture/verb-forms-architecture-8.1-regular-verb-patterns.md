@@ -1,7 +1,13 @@
-# Section 8.1: Normal Verb "mangiare" (to eat) - Complete Form Inventory
+> **Part of**: [Misti Verb Forms System Architecture](./verb-forms-system-architecture.md)
+> **Section**: 8.1 - Regular Verb Patterns
+> **Example Verb**: "mangiare" (to eat)
+
+---
+
+# Regular Verb Patterns: "mangiare" (to eat) - Complete Form Inventory
 
 ## Overview
-This section provides a comprehensive form inventory showing EVERY form and form_translation for the normal verb "mangiare" in the Misti system. This demonstrates complete metadata structures, coverage matrices, and architectural patterns for regular Italian verbs.
+This section provides a comprehensive form inventory showing EVERY form and form_translation for the regular verb "mangiare" in the Misti system. This demonstrates complete metadata structures, coverage matrices, and architectural patterns for regular Italian verbs.
 
 **Total Forms**: 137 (51 simple + 49 compound + 37 progressive)
 

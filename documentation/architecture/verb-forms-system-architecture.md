@@ -1174,17 +1174,17 @@ This word-level architecture ensures that every verb's complete conjugation para
 This section provides comprehensive form inventories showing EVERY form and form_translation for major verb categories in the Misti system. Each scenario demonstrates complete metadata structures, coverage matrices, and architectural patterns.
 
 ### Navigation:
-- [8.1 Scenario A: Normal Verb - "mangiare"](#81-scenario-a-normal-verb---mangiare-to-eat---complete-form-inventory)
-- [8.2 Scenario B: Reflexive Verb - "lavarsi"](#82-scenario-b-reflexive-verb---lavarsi-to-wash-oneselfeach-other---complete-form-inventory)
-- [8.3 Scenario C: Dual Auxiliary Verb - "correre"](#83-scenario-c-dual-auxiliary-verb---correre-to-run---complete-form-inventory)
-- [8.4 Scenario D: Modal Verb - "dovere"](#84-scenario-d-modal-verb---dovere-to-have-to---complete-form-inventory)
-- [8.5 Scenario E: Defective Verb - "vigere"](#85-scenario-e-defective-verb---vigere-to-be-in-force---complete-form-inventory)
-- [8.6 Scenario F: Impersonal Verb - "importare"](#86-scenario-f-impersonal-verb---importare-to-matter---complete-form-inventory)
-- [8.7 Scenario G: Irregular Verb - "andare"](#87-scenario-g-irregular-verb---andare-to-go---complete-form-inventory)
+- [8.1 Regular Verb Patterns - "mangiare"](#81-scenario-a-normal-verb---mangiare-to-eat---complete-form-inventory)
+- [8.2 Reflexive Verb Patterns - "lavarsi"](#82-scenario-b-reflexive-verb---lavarsi-to-wash-oneselfeach-other---complete-form-inventory)
+- [8.3 Dual Auxiliary Verb Patterns - "correre"](#83-scenario-c-dual-auxiliary-verb---correre-to-run---complete-form-inventory)
+- [8.4 Modal Verb Patterns - "dovere"](#84-scenario-d-modal-verb---dovere-to-have-to---complete-form-inventory)
+- [8.5 Defective Verb Patterns - "vigere"](#85-scenario-e-defective-verb---vigere-to-be-in-force---complete-form-inventory)
+- [8.6 Impersonal Verb Patterns - "importare"](#86-scenario-f-impersonal-verb---importare-to-matter---complete-form-inventory)
+- [8.7 Irregular Verb Patterns - "andare"](#87-scenario-g-irregular-verb---andare-to-go---complete-form-inventory)
 
 ### 8.1 Scenario A: Normal Verb - "mangiare" (to eat) - Complete Form Inventory
 
-**📋 Complete Section**: [Section 8.1: Complete Forms for "mangiare"](./section-8-1-mangiare-complete-forms.md) - **ALL 137 individual conjugations**
+**📋 Complete Section**: [Section 8.1: Regular Verb Patterns - "mangiare"](./verb-forms-architecture-8.1-regular-verb-patterns.md) - **ALL 137 individual conjugations**
 
 #### Dictionary Entry
 ```sql
@@ -1256,7 +1256,7 @@ This architectural pattern serves as the foundation for understanding how regula
 
 ### 8.2 Scenario B: Reflexive Verb - "lavarsi" (to wash oneself/each other) - Complete Form Inventory
 
-**📋 Complete Section**: [Section 8.2: Complete Forms for "lavarsi"](./section-8-2-lavarsi-complete-forms.md) - **ALL 137 individual conjugations with reflexive pronouns**
+**📋 Complete Section**: [Section 8.2: Reflexive Verb Patterns - "lavarsi"](./verb-forms-architecture-8.2-reflexive-verb-patterns.md) - **ALL 137 individual conjugations with reflexive pronouns**
 
 #### Dictionary Entry
 ```sql
@@ -1351,7 +1351,7 @@ This pattern demonstrates how reflexive verbs extend the standard conjugation ar
 
 ### 8.3 Scenario C: Dual Auxiliary Verb - "correre" (to run) - Complete Form Inventory
 
-**📋 Complete Section**: [Section 8.3: Complete Forms for "correre"](./section-8-3-correre-complete-forms.md) - **ALL 230+ individual conjugations with dual auxiliary patterns**
+**📋 Complete Section**: [Section 8.3: Dual Auxiliary Verb Patterns - "correre"](./verb-forms-architecture-8.3-dual-auxiliary-verb-patterns.md) - **ALL 186 individual conjugations with dual auxiliary patterns**
 
 **ARCHITECTURAL NOTE**: All tables in Scenarios C-G follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
 - **Removed Columns**: Mood, Tense, Person, Number, Variant Type
@@ -1443,7 +1443,7 @@ This pattern demonstrates how verb meaning drives auxiliary selection while main
 
 ### 8.4 Scenario D: Modal Verb - "dovere" (to have to) - Complete Form Inventory
 
-**📋 Complete Section**: [Section 8.4: Complete Forms for "dovere"](./section-8-4-dovere-complete-forms.md) - **ALL 370+ individual conjugations with modal constructions**
+**📋 Complete Section**: [Section 8.4: Modal Verb Patterns - "dovere"](./verb-forms-architecture-8.4-modal-verb-patterns.md) - **ALL 137 individual conjugations with dual modal meanings**
 
 **ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
 - **Removed Columns**: Mood, Tense, Person, Number, Variant Type
@@ -1557,7 +1557,7 @@ This pattern demonstrates how modal verbs maintain standard conjugation architec
 
 ### 8.5 Scenario E: Defective Verb - "vigere" (to be in force) - Complete Form Inventory
 
-**📋 Complete Section**: [Section 8.5: Complete Forms for "vigere"](./section-8-5-vigere-complete-forms.md) - **ALL 67 existing forms with semantic restriction patterns**
+**📋 Complete Section**: [Section 8.5: Defective Verb Patterns - "vigere"](./verb-forms-architecture-8.5-defective-verb-patterns.md) - **ALL 67 existing forms with semantic restriction patterns**
 
 **ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
 - **Removed Columns**: Mood, Tense, Person, Number, Variant Type  
@@ -1663,7 +1663,7 @@ This pattern demonstrates how the system handles linguistically restricted verbs
 
 ### 8.6 Scenario F: Impersonal Verb - "importare" (to matter) - Complete Form Inventory
 
-**📋 Complete Section**: [Section 8.6: Complete Forms for "importare"](./section-8-6-importare-complete-forms.md) - **ALL 137 individual conjugations with dual semantic patterns**
+**📋 Complete Section**: [Section 8.6: Impersonal Verb Patterns - "importare"](./verb-forms-architecture-8.6-impersonal-verb-patterns.md) - **ALL 274 individual conjugations with dual semantic patterns**
 
 **ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
 - **Removed Columns**: Mood, Tense, Person, Number, Variant Type
@@ -1790,7 +1790,7 @@ This pattern demonstrates how impersonal verbs maintain full conjugation capabil
 
 ### 8.7 Scenario G: Irregular Verb - "andare" (to go) - Complete Form Inventory
 
-**📋 Complete Section**: [Section 8.7: Complete Forms for "andare"](./section-8-7-andare-complete-forms.md) - **ALL 137 individual conjugations with irregular form patterns**
+**📋 Complete Section**: [Section 8.7: Irregular Verb Patterns - "andare"](./verb-forms-architecture-8.7-irregular-verb-patterns.md) - **ALL 137 individual conjugations with irregular form patterns**
 
 **Architectural Pattern Summary**:
 

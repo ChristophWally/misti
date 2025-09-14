@@ -1,4 +1,10 @@
-# Section 8.6: Impersonal Verb "importare" (to matter/to be important) - Complete Form Inventory
+> **Part of**: [Misti Verb Forms System Architecture](./verb-forms-system-architecture.md)
+> **Section**: 8.6 - Impersonal Verb Patterns
+> **Example Verb**: "importare" (to matter/to import)
+
+---
+
+# Impersonal Verb Patterns: "importare" (to matter/to import) - Complete Form Inventory
 
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the impersonal verb "importare" in the Misti system. This demonstrates complete metadata structures, coverage matrices, and architectural patterns for impersonal Italian verbs with full conjugation availability but specialized usage patterns.

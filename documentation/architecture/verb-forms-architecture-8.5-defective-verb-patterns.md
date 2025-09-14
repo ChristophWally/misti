@@ -1,4 +1,10 @@
-# Section 8.5: Defective Verb "vigere" (to be in force) - Complete Form Inventory
+> **Part of**: [Misti Verb Forms System Architecture](./verb-forms-system-architecture.md)
+> **Section**: 8.5 - Defective Verb Patterns
+> **Example Verb**: "vigere" (to be in force)
+
+---
+
+# Defective Verb Patterns: "vigere" (to be in force) - Complete Form Inventory
 
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the defective verb "vigere" in the Misti system. This demonstrates defective verb metadata structures, semantic restrictions, and architectural patterns for Latin-derived verbs with limited forms.

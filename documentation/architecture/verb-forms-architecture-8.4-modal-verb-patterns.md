@@ -1,4 +1,10 @@
-# Section 8.4: Modal Verb "dovere" (must/have to; to owe) - Complete Form Inventory
+> **Part of**: [Misti Verb Forms System Architecture](./verb-forms-system-architecture.md)
+> **Section**: 8.4 - Modal Verb Patterns
+> **Example Verb**: "dovere" (must/have to; to owe)
+
+---
+
+# Modal Verb Patterns: "dovere" (must/have to; to owe) - Complete Form Inventory
 
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the modal verb "dovere" in the Misti system. This demonstrates modal verb architecture with dual semantic meanings, complex auxiliary patterns, and translation coverage matrices for Italian modal verbs.

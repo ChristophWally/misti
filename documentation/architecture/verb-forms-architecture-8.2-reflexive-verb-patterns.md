@@ -1,4 +1,10 @@
-# Section 8.2: Reflexive Verb "lavarsi" (to wash oneself/each other) - Complete Form Inventory
+> **Part of**: [Misti Verb Forms System Architecture](./verb-forms-system-architecture.md)
+> **Section**: 8.2 - Reflexive Verb Patterns
+> **Example Verb**: "lavarsi" (to wash oneself/each other)
+
+---
+
+# Reflexive Verb Patterns: "lavarsi" (to wash oneself/each other) - Complete Form Inventory
 
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the reflexive verb "lavarsi" in the Misti system. This demonstrates reflexive clitic integration, dual translation patterns, and architectural patterns for reflexive Italian verbs.

@@ -1,4 +1,10 @@
-# Section 8.3: Dual Auxiliary Verb "correre" (to run/to rush) - Complete Form Inventory
+> **Part of**: [Misti Verb Forms System Architecture](./verb-forms-system-architecture.md)
+> **Section**: 8.3 - Dual Auxiliary Verb Patterns
+> **Example Verb**: "correre" (to run/to rush)
+
+---
+
+# Dual Auxiliary Verb Patterns: "correre" (to run/to rush) - Complete Form Inventory
 
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the dual auxiliary verb "correre" in the Misti system. This demonstrates critical auxiliary selection mechanics, dual translation patterns, and architectural patterns for Italian verbs with multiple auxiliary options.
