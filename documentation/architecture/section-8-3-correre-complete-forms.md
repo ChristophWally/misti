@@ -33,7 +33,6 @@ display_priority: 1
 -- entity_type='word_translation', entity_id=990e8400-e29b-41d4-a716-446655440001
 value_id → metaattr002val014 (auxiliary: "avere")
 value_id → metaattr020val099 (transitivity: "transitive")
-value_id → metaattr021val104 (verb_type: "dual-auxiliary")
 value_id → metaattr021val105 (context: "sport-activity")
 ```
 
@@ -49,7 +48,6 @@ display_priority: 2
 -- entity_type='word_translation', entity_id=990e8400-e29b-41d4-a716-446655440002
 value_id → metaattr002val015 (auxiliary: "essere")
 value_id → metaattr020val100 (transitivity: "intransitive")
-value_id → metaattr021val104 (verb_type: "dual-auxiliary")
 value_id → metaattr021val106 (context: "directional-movement")
 ```
 
