@@ -1180,6 +1180,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 - [8.4 Scenario D: Modal Verb - "dovere"](#84-scenario-d-modal-verb---dovere-to-have-to---complete-form-inventory)
 - [8.5 Scenario E: Defective Verb - "vigere"](#85-scenario-e-defective-verb---vigere-to-be-in-force---complete-form-inventory)
 - [8.6 Scenario F: Impersonal Verb - "importare"](#86-scenario-f-impersonal-verb---importare-to-matter---complete-form-inventory)
+- [8.7 Scenario G: Irregular Verb - "andare"](#87-scenario-g-irregular-verb---andare-to-go---complete-form-inventory)
 
 ### 8.1 Scenario A: Normal Verb - "mangiare" (to eat) - Complete Form Inventory
 
@@ -1225,156 +1226,30 @@ value_id → metaattr020val099 (transitivity: "transitive")
 - **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale)
 - **Verb Form Type**: metaattr022val107 (simple), metaattr022val108 (compound), metaattr022val109 (progressive)
 
-| Form ID | Form Text | Entity Meta Values | Translation Coverage |
-|---------|-----------|-----------|---------------------|
-| 001 | mangio | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | I eat |
-| 002 | mangi | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | you eat |
-| 003 | mangia | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | he/she eats |
-| 004 | mangiamo | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | we eat |
-| 005 | mangiate | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you eat |
-| 006 | mangiano | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they eat |
-| 007 | mangiavo | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | I was eating |
-| 008 | mangiavi | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | you were eating |
-| 009 | mangiava | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | he/she was eating |
-| 010 | mangiavamo | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | we were eating |
-| 011 | mangiavate | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you were eating |
-| 012 | mangiavano | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they were eating |
-| 013 | mangiai | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | I ate |
-| 014 | mangiasti | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | you ate |
-| 015 | mangiò | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | he/she ate |
-| 016 | mangiammo | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | we ate |
-| 017 | mangiaste | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you ate |
-| 018 | mangiarono | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they ate |
-| 019 | mangerò | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | I will eat |
-| 020 | mangerai | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | you will eat |
-| 021 | mangerà | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | he/she will eat |
-| 022 | mangeremo | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | we will eat |
-| 023 | mangerete | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you will eat |
-| 024 | mangeranno | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they will eat |
-| 025 | mangi | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) I eat |
-| 026 | mangi | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) you eat |
-| 027 | mangi | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) he/she eats |
-| 028 | mangiamo | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) we eat |
-| 029 | mangiate | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) you eat |
-| 030 | mangino | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) they eat |
-| 031 | mangiassi | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) I ate |
-| 032 | mangiassi | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) you ate |
-| 033 | mangiasse | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (that) he/she ate |
-| 034 | mangiassimo | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) we ate |
-| 035 | mangiaste | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) you ate |
-| 036 | mangiassero | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | (that) they ate |
-| 037 | mangerei | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | I would eat |
-| 038 | mangeresti | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | you would eat |
-| 039 | mangerebbe | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | he/she would eat |
-| 040 | mangeremmo | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | we would eat |
-| 041 | mangereste | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you would eat |
-| 042 | mangerebbero | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they would eat |
-| 043 | mangia | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | eat! |
-| 044 | mangi | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | let him/her eat! |
-| 045 | mangiamo | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | let's eat! |
-| 046 | mangiate | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | eat! |
-| 047 | mangino | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | let them eat! |
-| 048 | mangiare | metaattr010val058 (mood: "infinito") + metaattr019val106 (tense: "infinito-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | to eat |
-| 049 | mangiante | metaattr010val059 (mood: "participio") + metaattr019val107 (tense: "participio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | eating |
-| 050 | mangiato | metaattr010val059 (mood: "participio") + metaattr019val108 (tense: "participio-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | eaten |
-| 051 | mangiando | metaattr010val060 (mood: "gerundio") + metaattr019val109 (tense: "gerundio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | eating |
+**Architectural Pattern Summary**:
 
-**Compound Forms with avere auxiliary (49 forms):**
+"Mangiare" represents the standard **are-conjugation** pattern serving as the architectural baseline for regular Italian verbs. This verb type demonstrates:
 
-| Form ID | Form Text | Entity Meta Values | Translation Coverage |
-|---------|-----------|-----------|---------------------|
-| 052 | ho mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | I have eaten |
-| 053 | hai mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | you have eaten |
-| 054 | ha mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | he/she has eaten |
-| 055 | abbiamo mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | we have eaten |
-| 056 | avete mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | you have eaten |
-| 057 | hanno mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val110 (tense: "passato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | they have eaten |
-| 058 | avevo mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | I had eaten |
-| 059 | avevi mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | you had eaten |
-| 060 | aveva mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | he/she had eaten |
-| 061 | avevamo mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | we had eaten |
-| 062 | avevate mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | you had eaten |
-| 063 | avevano mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val111 (tense: "trapassato-prossimo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | they had eaten |
-| 064 | ebbi mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | I had eaten |
-| 065 | avesti mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | you had eaten |
-| 066 | ebbe mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | he/she had eaten |
-| 067 | avemmo mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | we had eaten |
-| 068 | aveste mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | you had eaten |
-| 069 | ebbero mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val112 (tense: "trapassato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | they had eaten |
-| 070 | avrò mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | I will have eaten |
-| 071 | avrai mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | you will have eaten |
-| 072 | avrà mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | he/she will have eaten |
-| 073 | avremo mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | we will have eaten |
-| 074 | avrete mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | you will have eaten |
-| 075 | avranno mangiato | metaattr010val054 (mood: "indicativo") + metaattr019val113 (tense: "futuro-anteriore") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | they will have eaten |
-| 076 | abbia mangiato | congiuntivo | congiuntivo-passato | prima-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") | (that) I have eaten |
-| 077 | abbia mangiato | congiuntivo | congiuntivo-passato | seconda-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") | (that) you have eaten |
-| 078 | abbia mangiato | congiuntivo | congiuntivo-passato | terza-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") | (that) he/she has eaten |
-| 079 | abbiamo mangiato | congiuntivo | congiuntivo-passato | prima-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") | (that) we have eaten |
-| 080 | abbiate mangiato | congiuntivo | congiuntivo-passato | seconda-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") | (that) you have eaten |
-| 081 | abbiano mangiato | congiuntivo | congiuntivo-passato | terza-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") | (that) they have eaten |
-| 082 | avessi mangiato | congiuntivo | congiuntivo-trapassato | prima-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") | (that) I had eaten |
-| 083 | avessi mangiato | congiuntivo | congiuntivo-trapassato | seconda-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") | (that) you had eaten |
-| 084 | avesse mangiato | congiuntivo | congiuntivo-trapassato | terza-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") | (that) he/she had eaten |
-| 085 | avessimo mangiato | congiuntivo | congiuntivo-trapassato | prima-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") | (that) we had eaten |
-| 086 | aveste mangiato | congiuntivo | congiuntivo-trapassato | seconda-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") | (that) you had eaten |
-| 087 | avessero mangiato | congiuntivo | congiuntivo-trapassato | terza-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") | (that) they had eaten |
-| 088 | avrei mangiato | condizionale | condizionale-passato | prima-persona | singolare | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") | I would have eaten |
-| 089 | avresti mangiato | condizionale | condizionale-passato | seconda-persona | singolare | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") | you would have eaten |
-| 090 | avrebbe mangiato | condizionale | condizionale-passato | terza-persona | singolare | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") | he/she would have eaten |
-| 091 | avremmo mangiato | condizionale | condizionale-passato | prima-persona | plurale | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") | we would have eaten |
-| 092 | avreste mangiato | condizionale | condizionale-passato | seconda-persona | plurale | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") | you would have eaten |
-| 093 | avrebbero mangiato | condizionale | condizionale-passato | terza-persona | plurale | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") | they would have eaten |
-| 094 | abbi mangiato | imperativo | imperativo-passato | seconda-persona | singolare | compound | imperativo-passato, compound | have eaten! |
-| 095 | abbia mangiato | imperativo | imperativo-passato | terza-persona | singolare | compound | imperativo-passato, compound | let him/her have eaten! |
-| 096 | abbiamo mangiato | imperativo | imperativo-passato | prima-persona | plurale | compound | imperativo-passato, compound | let's have eaten! |
-| 097 | abbiate mangiato | imperativo | imperativo-passato | seconda-persona | plurale | compound | imperativo-passato, compound | have eaten! |
-| 098 | abbiano mangiato | imperativo | imperativo-passato | terza-persona | plurale | compound | imperativo-passato, compound | let them have eaten! |
-| 099 | avendo mangiato | gerundio | gerundio-passato | - | - | compound | metaattr008val051 (mood: "gerundio") + metaattr009val071 (tense: "gerundio-passato") + metaattr011val059 (variant_type: "compound") | having eaten |
-| 100 | aver mangiato | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") | to have eaten |
+**Form Structure Coverage**:
+- **51 Simple Forms**: Standard conjugation across all 7 moods and 26 tenses where applicable
+- **49 Compound Forms**: Using auxiliary "avere" (to have) for all compound tenses
+- **37 Progressive Forms**: Using auxiliary "stare" (to be) + gerund for ongoing actions
+- **Total**: 137 forms covering complete conjugation landscape
 
-**Progressive Forms with stare auxiliary (37 forms):**
+**Key Architectural Elements**:
+- **Entity Meta Values Integration**: Each form tagged with mood, tense, person, number, and verb_form_type metavalues
+- **Universal Translation Coverage**: Single translation ("to eat") applies to all 137 forms with no restrictions
+- **Standard Auxiliary Usage**: "avere" for compounds, "stare" for progressives - typical transitive verb pattern
+- **Complete Person/Number Matrix**: All 6 person-number combinations present across applicable tenses
 
-| Form ID | Form Text | Entity Meta Values | Translation Coverage |
-|---------|-----------|-----------|---------------------|
-| 101 | sto mangiando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | I am eating |
-| 102 | stai mangiando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | you are eating |
-| 103 | sta mangiando | metaattr010val054 (mood: "indicativo") + metaattr019val120 (tense: "presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | he/she is eating |
-| 104 | stiamo mangiando | indicativo | presente-progressivo | prima-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | we are eating |
-| 105 | state mangiando | indicativo | presente-progressivo | seconda-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | you are eating |
-| 106 | stanno mangiando | indicativo | presente-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | they are eating |
-| 107 | stavo mangiando | indicativo | passato-progressivo | prima-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") | I was eating |
-| 108 | stavi mangiando | indicativo | passato-progressivo | seconda-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") | you were eating |
-| 109 | stava mangiando | indicativo | passato-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") | he/she was eating |
-| 110 | stavamo mangiando | indicativo | passato-progressivo | prima-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") | we were eating |
-| 111 | stavate mangiando | indicativo | passato-progressivo | seconda-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") | you were eating |
-| 112 | stavano mangiando | indicativo | passato-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") | they were eating |
-| 113 | starò mangiando | indicativo | futuro-progressivo | prima-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") | I will be eating |
-| 114 | starai mangiando | indicativo | futuro-progressivo | seconda-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") | you will be eating |
-| 115 | starà mangiando | indicativo | futuro-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") | he/she will be eating |
-| 116 | staremo mangiando | indicativo | futuro-progressivo | prima-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") | we will be eating |
-| 117 | starete mangiando | indicativo | futuro-progressivo | seconda-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") | you will be eating |
-| 118 | staranno mangiando | indicativo | futuro-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") | they will be eating |
-| 119 | stia mangiando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | singolare | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") | (that) I be eating |
-| 120 | stia mangiando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | singolare | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") | (that) you be eating |
-| 121 | stia mangiando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | singolare | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") | (that) he/she be eating |
-| 122 | stiamo mangiando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | plurale | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") | (that) we be eating |
-| 123 | stiate mangiando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | plurale | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") | (that) you be eating |
-| 124 | stiano mangiando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | plurale | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") | (that) they be eating |
-| 125 | stessi mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) I were eating |
-| 126 | stessi mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) you were eating |
-| 127 | stesse mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) he/she were eating |
-| 128 | stessimo mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) we were eating |
-| 129 | steste mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) you were eating |
-| 130 | stessero mangiando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive | (that) they were eating |
-| 131 | starei mangiando | condizionale | condizionale-progressivo | prima-persona | singolare | progressive | condizionale-progressivo, progressive | I would be eating |
-| 132 | staresti mangiando | condizionale | condizionale-progressivo | seconda-persona | singolare | progressive | condizionale-progressivo, progressive | you would be eating |
-| 133 | starebbe mangiando | condizionale | condizionale-progressivo | terza-persona | singolare | progressive | condizionale-progressivo, progressive | he/she would be eating |
-| 134 | staremmo mangiando | condizionale | condizionale-progressivo | prima-persona | plurale | progressive | condizionale-progressivo, progressive | we would be eating |
-| 135 | stareste mangiando | condizionale | condizionale-progressivo | seconda-persona | plurale | progressive | condizionale-progressivo, progressive | you would be eating |
-| 136 | starebbero mangiando | condizionale | condizionale-progressivo | terza-persona | plurale | progressive | condizionale-progressivo, progressive | they would be eating |
-| 137 | stando mangiando | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive | being eating |
+**Metadata Implementation**:
+- Mood: metaattr010val054-060 (indicativo through gerundio)
+- Tense: metaattr019val096+ (presente through specialized progressives)
+- Person: metaattr014val060-062 (prima-persona, seconda-persona, terza-persona)
+- Number: metaattr012val054-055 (singolare, plurale)
+- Form Type: metaattr022val107-109 (simple, compound, progressive)
 
+This architectural pattern serves as the foundation for understanding how regular verbs integrate with the Entity Meta Values system and demonstrates full coverage capabilities without restrictions or special behavioral patterns.
 **Form_Translations Coverage**: 137 form_translations total, all linking to single "to eat" translation. No restrictions apply - all forms covered.
 
 ---
@@ -1438,160 +1313,36 @@ value_id → metaattr013val056 (number_restriction: "plural-only")
 - **Translation Restrictions**: Translation 2 (reciprocal) restricted to plural forms only via translation-level `number_restriction`
 - **Agreement**: Participles require metaattr022val135 (agreement: "required") for gender/number matching
 
-**Simple Forms with Reflexive Pronouns (51 forms):**
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 201 | mi lavo | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val102 (reflexive_type: "direct-reflexive") | I wash myself | - |
-| 204 | ci laviamo | metaattr010val054 (mood: "indicativo") + metaattr019val096 (tense: "presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val102 (reflexive_type: "direct-reflexive") | we wash ourselves | we wash each other |
-| ... | ... | **[Pattern continues for all 51 simple reflexive forms using same metavalue architecture as Scenario A, plus metaattr021val102 (reflexive_type). Plural forms support both translations per number_restriction.]** | ... | ... |
-| 203 | si lava | indicativo | presente | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | he/she washes himself/herself | - |
-| 204 | ci laviamo | indicativo | presente | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | we wash ourselves | we wash each other |
-| 205 | vi lavate | indicativo | presente | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | you wash yourselves | you wash each other |
-| 206 | si lavano | indicativo | presente | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | they wash themselves | they wash each other |
-| 207 | mi lavavo | indicativo | imperfetto | prima-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | I was washing myself | - |
-| 208 | ti lavavi | indicativo | imperfetto | seconda-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | you were washing yourself | - |
-| 209 | si lavava | indicativo | imperfetto | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | he/she was washing himself/herself | - |
-| 210 | ci lavavamo | indicativo | imperfetto | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | we were washing ourselves | we were washing each other |
-| 211 | vi lavavate | indicativo | imperfetto | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | you were washing yourselves | you were washing each other |
-| 212 | si lavavano | indicativo | imperfetto | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | they were washing themselves | they were washing each other |
-| 213 | mi lavai | indicativo | passato-remoto | prima-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | I washed myself | - |
-| 214 | ti lavasti | indicativo | passato-remoto | seconda-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | you washed yourself | - |
-| 215 | si lavò | indicativo | passato-remoto | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | he/she washed himself/herself | - |
-| 216 | ci lavammo | indicativo | passato-remoto | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | we washed ourselves | we washed each other |
-| 217 | vi lavaste | indicativo | passato-remoto | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | you washed yourselves | you washed each other |
-| 218 | si lavarono | indicativo | passato-remoto | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | they washed themselves | they washed each other |
-| 219 | mi laverò | indicativo | futuro-semplice | prima-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | I will wash myself | - |
-| 220 | ti laverai | indicativo | futuro-semplice | seconda-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | you will wash yourself | - |
-| 221 | si laverà | indicativo | futuro-semplice | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | he/she will wash himself/herself | - |
-| 222 | ci laveremo | indicativo | futuro-semplice | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | we will wash ourselves | we will wash each other |
-| 223 | vi laverete | indicativo | futuro-semplice | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | you will wash yourselves | you will wash each other |
-| 224 | si laveranno | indicativo | futuro-semplice | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | they will wash themselves | they will wash each other |
-| 225 | mi lavi | congiuntivo | congiuntivo-presente | prima-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) I wash myself | - |
-| 226 | ti lavi | congiuntivo | congiuntivo-presente | seconda-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) you wash yourself | - |
-| 227 | si lavi | congiuntivo | congiuntivo-presente | terza-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) he/she wash himself/herself | - |
-| 228 | ci laviamo | congiuntivo | congiuntivo-presente | prima-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) we wash ourselves | (that) we wash each other |
-| 229 | vi laviate | congiuntivo | congiuntivo-presente | seconda-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) you wash yourselves | (that) you wash each other |
-| 230 | si lavino | congiuntivo | congiuntivo-presente | terza-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) they wash themselves | (that) they wash each other |
-| 231 | mi lavassi | congiuntivo | congiuntivo-imperfetto | prima-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) I washed myself | - |
-| 232 | ti lavassi | congiuntivo | congiuntivo-imperfetto | seconda-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) you washed yourself | - |
-| 233 | si lavasse | congiuntivo | congiuntivo-imperfetto | terza-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) he/she washed himself/herself | - |
-| 234 | ci lavassimo | congiuntivo | congiuntivo-imperfetto | prima-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) we washed ourselves | (that) we washed each other |
-| 235 | vi lavaste | congiuntivo | congiuntivo-imperfetto | seconda-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) you washed yourselves | (that) you washed each other |
-| 236 | si lavassero | congiuntivo | congiuntivo-imperfetto | terza-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | (that) they washed themselves | (that) they washed each other |
-| 237 | mi laverei | condizionale | condizionale-presente | prima-persona | singolare | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | I would wash myself | - |
-| 238 | ti laveresti | condizionale | condizionale-presente | seconda-persona | singolare | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | you would wash yourself | - |
-| 239 | si laverebbe | condizionale | condizionale-presente | terza-persona | singolare | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | he/she would wash himself/herself | - |
-| 240 | ci laveremmo | condizionale | condizionale-presente | prima-persona | plurale | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | we would wash ourselves | we would wash each other |
-| 241 | vi lavereste | condizionale | condizionale-presente | seconda-persona | plurale | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | you would wash yourselves | you would wash each other |
-| 242 | si laverebbero | condizionale | condizionale-presente | terza-persona | plurale | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | they would wash themselves | they would wash each other |
-| 243 | lavati | imperativo | imperativo-presente | seconda-persona | singolare | simple | imperativo-metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | wash yourself! | - |
-| 244 | si lavi | imperativo | imperativo-presente | terza-persona | singolare | simple | imperativo-metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | let him/her wash himself/herself! | - |
-| 245 | laviamoci | imperativo | imperativo-presente | prima-persona | plurale | simple | imperativo-metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | let's wash ourselves! | let's wash each other! |
-| 246 | lavatevi | imperativo | imperativo-presente | seconda-persona | plurale | simple | imperativo-metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | wash yourselves! | wash each other! |
-| 247 | si lavino | imperativo | imperativo-presente | terza-persona | plurale | simple | imperativo-metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | let them wash themselves! | let them wash each other! |
-| 248 | lavarsi | infinito | infinito-presente | - | - | simple | metaattr008val049 (mood: "infinito") + metaattr009val059 (tense: "infinito-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | to wash oneself | to wash each other |
-| 249 | lavantesi | participio | participio-presente | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val060 (tense: "participio-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | washing oneself | washing each other |
-| 250 | lavato/a/i/e | participio | participio-passato | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val061 (tense: "participio-passato") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | washed | washed |
-| 251 | lavandosi | gerundio | gerundio-presente | - | - | simple | metaattr008val051 (mood: "gerundio") + metaattr009val062 (tense: "gerundio-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val102 (verb_type: "direct-reflexive") | washing oneself | washing each other |
+**Architectural Pattern Summary**:
 
-**Compound Forms with essere + Agreement (49 forms):**
+"Lavarsi" demonstrates the **direct-reflexive** verb pattern with dual translation capabilities. This verb type showcases:
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 252 | mi sono lavato/a | indicativo | passato-prossimo | prima-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | I have washed myself | - |
-| 253 | ti sei lavato/a | indicativo | passato-prossimo | seconda-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | you have washed yourself | - |
-| 254 | si è lavato/a | indicativo | passato-prossimo | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | he/she has washed himself/herself | - |
-| 255 | ci siamo lavati/e | indicativo | passato-prossimo | prima-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | we have washed ourselves | we have washed each other |
-| 256 | vi siete lavati/e | indicativo | passato-prossimo | seconda-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | you have washed yourselves | you have washed each other |
-| 257 | si sono lavati/e | indicativo | passato-prossimo | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | they have washed themselves | they have washed each other |
-| 258 | mi ero lavato/a | indicativo | trapassato-prossimo | prima-persona | singolare | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | I had washed myself | - |
-| 259 | ti eri lavato/a | indicativo | trapassato-prossimo | seconda-persona | singolare | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | you had washed yourself | - |
-| 260 | si era lavato/a | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | he/she had washed himself/herself | - |
-| 261 | ci eravamo lavati/e | indicativo | trapassato-prossimo | prima-persona | plurale | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | we had washed ourselves | we had washed each other |
-| 262 | vi eravate lavati/e | indicativo | trapassato-prossimo | seconda-persona | plurale | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | you had washed yourselves | you had washed each other |
-| 263 | si erano lavati/e | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | they had washed themselves | they had washed each other |
-| 264 | mi fui lavato/a | indicativo | trapassato-remoto | prima-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | I had washed myself | - |
-| 265 | ti fosti lavato/a | indicativo | trapassato-remoto | seconda-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | you had washed yourself | - |
-| 266 | si fu lavato/a | indicativo | trapassato-remoto | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | he/she had washed himself/herself | - |
-| 267 | ci fummo lavati/e | indicativo | trapassato-remoto | prima-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | we had washed ourselves | we had washed each other |
-| 268 | vi foste lavati/e | indicativo | trapassato-remoto | seconda-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | you had washed yourselves | you had washed each other |
-| 269 | si furono lavati/e | indicativo | trapassato-remoto | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val066 (tense: "trapassato-remoto") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | they had washed themselves | they had washed each other |
-| 270 | mi sarò lavato/a | indicativo | futuro-anteriore | prima-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | I will have washed myself | - |
-| 271 | ti sarai lavato/a | indicativo | futuro-anteriore | seconda-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | you will have washed yourself | - |
-| 272 | si sarà lavato/a | indicativo | futuro-anteriore | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | he/she will have washed himself/herself | - |
-| 273 | ci saremo lavati/e | indicativo | futuro-anteriore | prima-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | we will have washed ourselves | we will have washed each other |
-| 274 | vi sarete lavati/e | indicativo | futuro-anteriore | seconda-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | you will have washed yourselves | you will have washed each other |
-| 275 | si saranno lavati/e | indicativo | futuro-anteriore | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | they will have washed themselves | they will have washed each other |
-| 276 | mi sia lavato/a | congiuntivo | congiuntivo-passato | prima-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) I have washed myself | - |
-| 277 | ti sia lavato/a | congiuntivo | congiuntivo-passato | seconda-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) you have washed yourself | - |
-| 278 | si sia lavato/a | congiuntivo | congiuntivo-passato | terza-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) he/she has washed himself/herself | - |
-| 279 | ci siamo lavati/e | congiuntivo | congiuntivo-passato | prima-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) we have washed ourselves | (that) we have washed each other |
-| 280 | vi siate lavati/e | congiuntivo | congiuntivo-passato | seconda-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) you have washed yourselves | (that) you have washed each other |
-| 281 | si siano lavati/e | congiuntivo | congiuntivo-passato | terza-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) they have washed themselves | (that) they have washed each other |
-| 282 | mi fossi lavato/a | congiuntivo | congiuntivo-trapassato | prima-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) I had washed myself | - |
-| 283 | ti fossi lavato/a | congiuntivo | congiuntivo-trapassato | seconda-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) you had washed yourself | - |
-| 284 | si fosse lavato/a | congiuntivo | congiuntivo-trapassato | terza-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) he/she had washed himself/herself | - |
-| 285 | ci fossimo lavati/e | congiuntivo | congiuntivo-trapassato | prima-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) we had washed ourselves | (that) we had washed each other |
-| 286 | vi foste lavati/e | congiuntivo | congiuntivo-trapassato | seconda-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) you had washed yourselves | (that) you had washed each other |
-| 287 | si fossero lavati/e | congiuntivo | congiuntivo-trapassato | terza-persona | plurale | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | (that) they had washed themselves | (that) they had washed each other |
-| 288 | mi sarei lavato/a | condizionale | condizionale-passato | prima-persona | singolare | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | I would have washed myself | - |
-| 289 | ti saresti lavato/a | condizionale | condizionale-passato | seconda-persona | singolare | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | you would have washed yourself | - |
-| 290 | si sarebbe lavato/a | condizionale | condizionale-passato | terza-persona | singolare | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | he/she would have washed himself/herself | - |
-| 291 | ci saremmo lavati/e | condizionale | condizionale-passato | prima-persona | plurale | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | we would have washed ourselves | we would have washed each other |
-| 292 | vi sareste lavati/e | condizionale | condizionale-passato | seconda-persona | plurale | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | you would have washed yourselves | you would have washed each other |
-| 293 | si sarebbero lavati/e | condizionale | condizionale-passato | terza-persona | plurale | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | they would have washed themselves | they would have washed each other |
-| 294 | sii lavato/a | imperativo | imperativo-passato | seconda-persona | singolare | compound | imperativo-passato, compound + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | have washed yourself! | - |
-| 295 | si sia lavato/a | imperativo | imperativo-passato | terza-persona | singolare | compound | imperativo-passato, compound + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | let him/her have washed himself/herself! | - |
-| 296 | siamoci lavati/e | imperativo | imperativo-passato | prima-persona | plurale | compound | imperativo-passato, compound + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | let's have washed ourselves! | let's have washed each other! |
-| 297 | siatevi lavati/e | imperativo | imperativo-passato | seconda-persona | plurale | compound | imperativo-passato, compound + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | have washed yourselves! | have washed each other! |
-| 298 | si siano lavati/e | imperativo | imperativo-passato | terza-persona | plurale | compound | imperativo-passato, compound + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | let them have washed themselves! | let them have washed each other! |
-| 299 | essendosi lavato/a/i/e | gerundio | gerundio-passato | - | - | compound | metaattr008val051 (mood: "gerundio") + metaattr009val071 (tense: "gerundio-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | having washed oneself | having washed each other |
-| 300 | essersi lavato/a/i/e | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val102 (verb_type: "direct-reflexive") + metaattr022val135 (agreement: "required") | to have washed oneself | to have washed each other |
+**Form Structure Coverage**:
+- **51 Simple Forms**: Standard are-conjugation pattern with integrated reflexive pronouns (mi, ti, si, ci, vi, si)
+- **49 Compound Forms**: Using auxiliary "essere" (to be) with past participle agreement requirements
+- **37 Progressive Forms**: Using auxiliary "stare" + reflexive pronoun + gerund for ongoing reflexive actions
+- **Total**: 137 forms with dual translation matrix creating 182 total form_translations
 
-**Progressive Forms with stare (35 forms):**
+**Dual Translation Architecture**:
+- **Translation 1 (Direct Reflexive)**: "to wash oneself" - applies to ALL 137 forms (universal coverage)
+- **Translation 2 (Reciprocal)**: "to wash each other" - applies to PLURAL forms only (45 form_translations)
+- **Translation Restriction Logic**: number_restriction metadata controls which translation applies to which forms
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 301 | mi sto lavando | indicativo | presente-progressivo | prima-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | I am washing myself | - |
-| 302 | ti stai lavando | indicativo | presente-progressivo | seconda-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | you are washing yourself | - |
-| 303 | si sta lavando | indicativo | presente-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | he/she is washing himself/herself | - |
-| 304 | ci stiamo lavando | indicativo | presente-progressivo | prima-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | we are washing ourselves | we are washing each other |
-| 305 | vi state lavando | indicativo | presente-progressivo | seconda-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | you are washing yourselves | you are washing each other |
-| 306 | si stanno lavando | indicativo | presente-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | they are washing themselves | they are washing each other |
-| 307 | mi stavo lavando | indicativo | passato-progressivo | prima-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | I was washing myself | - |
-| 308 | ti stavi lavando | indicativo | passato-progressivo | seconda-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | you were washing yourself | - |
-| 309 | si stava lavando | indicativo | passato-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | he/she was washing himself/herself | - |
-| 310 | ci stavamo lavando | indicativo | passato-progressivo | prima-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | we were washing ourselves | we were washing each other |
-| 311 | vi stavate lavando | indicativo | passato-progressivo | seconda-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | you were washing yourselves | you were washing each other |
-| 312 | si stavano lavando | indicativo | passato-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | they were washing themselves | they were washing each other |
-| 313 | mi starò lavando | indicativo | futuro-progressivo | prima-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | I will be washing myself | - |
-| 314 | ti starai lavando | indicativo | futuro-progressivo | seconda-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | you will be washing yourself | - |
-| 315 | si starà lavando | indicativo | futuro-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | he/she will be washing himself/herself | - |
-| 316 | ci staremo lavando | indicativo | futuro-progressivo | prima-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | we will be washing ourselves | we will be washing each other |
-| 317 | vi starete lavando | indicativo | futuro-progressivo | seconda-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | you will be washing yourselves | you will be washing each other |
-| 318 | si staranno lavando | indicativo | futuro-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | they will be washing themselves | they will be washing each other |
-| 319 | mi stia lavando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | singolare | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | (that) I be washing myself | - |
-| 320 | ti stia lavando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | singolare | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | (that) you be washing yourself | - |
-| 321 | si stia lavando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | singolare | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | (that) he/she be washing himself/herself | - |
-| 322 | ci stiamo lavando | congiuntivo | congiuntivo-presente-progressivo | prima-persona | plurale | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | (that) we be washing ourselves | (that) we be washing each other |
-| 323 | vi stiate lavando | congiuntivo | congiuntivo-presente-progressivo | seconda-persona | plurale | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | (that) you be washing yourselves | (that) you be washing each other |
-| 324 | si stiano lavando | congiuntivo | congiuntivo-presente-progressivo | terza-persona | plurale | progressive | metaattr008val046 (mood: "congiuntivo") + metaattr009val075 (tense: "congiuntivo-presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val102 (verb_type: "direct-reflexive") | (that) they be washing themselves | (that) they be washing each other |
-| 325 | mi stessi lavando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | (that) I were washing myself | - |
-| 326 | ti stessi lavando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | (that) you were washing yourself | - |
-| 327 | si stesse lavando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | singolare | progressive | congiuntivo-imperfetto-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | (that) he/she were washing himself/herself | - |
-| 328 | ci stessimo lavando | congiuntivo | congiuntivo-imperfetto-progressivo | prima-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | (that) we were washing ourselves | (that) we were washing each other |
-| 329 | vi steste lavando | congiuntivo | congiuntivo-imperfetto-progressivo | seconda-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | (that) you were washing yourselves | (that) you were washing each other |
-| 330 | si stessero lavando | congiuntivo | congiuntivo-imperfetto-progressivo | terza-persona | plurale | progressive | congiuntivo-imperfetto-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | (that) they were washing themselves | (that) they were washing each other |
-| 331 | mi starei lavando | condizionale | condizionale-progressivo | prima-persona | singolare | progressive | condizionale-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | I would be washing myself | - |
-| 332 | ti staresti lavando | condizionale | condizionale-progressivo | seconda-persona | singolare | progressive | condizionale-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | you would be washing yourself | - |
-| 333 | si starebbe lavando | condizionale | condizionale-progressivo | terza-persona | singolare | progressive | condizionale-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | he/she would be washing himself/herself | - |
-| 334 | ci staremmo lavando | condizionale | condizionale-progressivo | prima-persona | plurale | progressive | condizionale-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | we would be washing ourselves | we would be washing each other |
-| 335 | vi stareste lavando | condizionale | condizionale-progressivo | seconda-persona | plurale | progressive | condizionale-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | you would be washing yourselves | you would be washing each other |
-| 336 | si starebbero lavando | condizionale | condizionale-progressivo | terza-persona | plurale | progressive | condizionale-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | they would be washing themselves | they would be washing each other |
-| 337 | standosi lavando | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive + metaattr021val102 (verb_type: "direct-reflexive") | being washing oneself | being washing each other |
+**Key Architectural Elements**:
+- **Reflexive Pronoun Integration**: Each form includes appropriate reflexive clitic (mi/ti/si/ci/vi/si)
+- **Auxiliary Usage**: "essere" for compounds with mandatory participle agreement
+- **Entity Meta Values Extension**: Standard metavalues PLUS metaattr021val102 (reflexive_type: "direct-reflexive")
+- **Dual Meaning Support**: Single verb supports both reflexive and reciprocal interpretations through translation-level restrictions
 
-**Form_Translations Coverage Analysis:**
+**Advanced Metadata Features**:
+- **Participle Agreement**: metaattr022val135 (agreement: "required") for gender/number matching in compound forms
+- **Number Restrictions**: Translation 2 limited to plural persons (noi, voi, loro) via translation-level metadata
+- **Behavioral Classification**: verb_type: "direct-reflexive" distinguishes from other verb patterns
+
+This pattern demonstrates how reflexive verbs extend the standard conjugation architecture while maintaining compatibility with the Entity Meta Values system and supporting complex semantic distinctions through translation-level restrictions.
+
+**Coverage Summary**:
 - **Translation 1 (Direct Reflexive)**: 137 form_translations (all forms covered)
 - **Translation 2 (Reciprocal)**: 45 form_translations (only plural forms: noi, voi, loro)
 - **Total Coverage**: 182 form_translations across both meanings
@@ -1654,63 +1405,37 @@ value_id → metaattr002val015 (auxiliary: "essere")
 value_id → metaattr020val100 (transitivity: "intransitive")
 ```
 
-#### Complete Form Inventory - Shared and Auxiliary-Specific (219 Total Forms)
 
-**Simple Forms - Shared Across Both Meanings (51 forms):**
+**Architectural Pattern Summary**:
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 401 | corro | indicativo | presente | prima-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | I run (sport) | I rush |
-| 402 | corri | indicativo | presente | seconda-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | you run (sport) | you rush |
-| 403 | corre | indicativo | presente | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | he/she runs (sport) | he/she rushes |
-| 404 | corriamo | indicativo | presente | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | we run (sport) | we rush |
-| 405 | correte | indicativo | presente | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | you run (sport) | you rush |
-| 406 | corrono | indicativo | presente | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | they run (sport) | they rush |
-| ... | (45 additional simple forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 448 | correre | infinito | infinito-presente | - | - | simple | metaattr008val049 (mood: "infinito") + metaattr009val059 (tense: "infinito-presente") + metaattr011val058 (variant_type: "simple") | to run (sport) | to rush to |
-| 449 | corrente | participio | participio-presente | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val060 (tense: "participio-presente") + metaattr011val058 (variant_type: "simple") | running | rushing |
-| 450 | corso | participio | participio-passato | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val061 (tense: "participio-passato") + metaattr011val058 (variant_type: "simple") | run | rushed |
-| 451 | correndo | gerundio | gerundio-presente | - | - | simple | metaattr008val051 (mood: "gerundio") + metaattr009val062 (tense: "gerundio-presente") + metaattr011val058 (variant_type: "simple") | running | rushing |
+"Correre" demonstrates the **dual-auxiliary** verb pattern where meaning determines auxiliary verb selection. This verb type showcases:
 
-**Compound Forms with avere - Translation 1 Only (49 forms):**
+**Form Structure Coverage**:
+- **51 Simple Forms**: Standard ere-conjugation shared across both translations
+- **98 Compound Forms**: Split between "avere" (49 forms) and "essere" (49 forms) based on meaning
+- **98 Progressive Forms**: Split between auxiliary patterns following same logic as compounds
+- **Total**: 219 distinct forms creating 270 total form_translations due to meaning-based auxiliary selection
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 452 | ho corso | indicativo | passato-prossimo | prima-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | I have run (sport) | - |
-| 453 | hai corso | indicativo | passato-prossimo | seconda-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | you have run (sport) | - |
-| 454 | ha corso | indicativo | passato-prossimo | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | he/she has run (sport) | - |
-| 455 | abbiamo corso | indicativo | passato-prossimo | prima-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | we have run (sport) | - |
-| 456 | avete corso | indicativo | passato-prossimo | seconda-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | you have run (sport) | - |
-| 457 | hanno corso | indicativo | passato-prossimo | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | they have run (sport) | - |
-| ... | (43 additional compound forms with avere) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 500 | aver corso | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") | to have run (sport) | - |
+**Dual Auxiliary Architecture**:
+- **Translation 1 (Sport/Exercise)**: "to run" - uses "avere" for compounds (I have run)
+- **Translation 2 (Movement/Direction)**: "to rush" - uses "essere" for compounds (I have rushed)
+- **Auxiliary Selection Logic**: Translation-level metavalues control which auxiliary applies (metaattr002val014 vs metaattr002val015)
+- **Shared Simple Forms**: All 51 simple forms work with both translations
 
-**Compound Forms with essere - Translation 2 Only (49 forms):**
+**Key Architectural Elements**:
+- **Translation-Level Auxiliary Metadata**: Each translation specifies its own auxiliary preference
+- **Meaning-Based Coverage**: Same verb forms express different semantic concepts through translation assignment
+- **Standard ere-conjugation**: Maintains regular conjugation patterns while supporting dual meanings
+- **Complete Auxiliary Integration**: Both "avere" and "essere" auxiliaries fully implemented
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 501 | sono corso/a | indicativo | passato-prossimo | prima-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr022val135 (agreement: "required") | - | I have rushed |
-| 502 | sei corso/a | indicativo | passato-prossimo | seconda-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr022val135 (agreement: "required") | - | you have rushed |
-| 503 | è corso/a | indicativo | passato-prossimo | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr022val135 (agreement: "required") | - | he/she has rushed |
-| 504 | siamo corsi/e | indicativo | passato-prossimo | prima-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr022val135 (agreement: "required") | - | we have rushed |
-| 505 | siete corsi/e | indicativo | passato-prossimo | seconda-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr022val135 (agreement: "required") | - | you have rushed |
-| 506 | sono corsi/e | indicativo | passato-prossimo | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr022val135 (agreement: "required") | - | they have rushed |
-| ... | (43 additional compound forms with essere) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 549 | essere corso/a/i/e | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") + metaattr022val135 (agreement: "required") | - | to have rushed |
+**Advanced Metadata Features**:
+- **Transitivity Differentiation**: Translation 1 marked as transitive, Translation 2 as intransitive
+- **Form Multiplication**: 219 forms × auxiliary variations = 270 total form_translations
+- **Semantic Precision**: Translation assignment captures subtle meaning differences in auxiliary selection
 
-**Progressive Forms - Shared Across Both Meanings (35 forms):**
+This pattern demonstrates how verb meaning drives auxiliary selection while maintaining full conjugation coverage across both semantic interpretations.
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 550 | sto correndo | indicativo | presente-progressivo | prima-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | I am running (sport) | I am rushing |
-| 551 | stai correndo | indicativo | presente-progressivo | seconda-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | you are running (sport) | you are rushing |
-| 552 | sta correndo | indicativo | presente-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | he/she is running (sport) | he/she is rushing |
-| ... | (32 additional progressive forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 584 | stando correndo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive | being running | being rushing |
-
-**Form_Translations Coverage Analysis:**
-- **Translation 1 (Sport - avere)**: 135 form_translations (51 simple + 49 avere compounds + 35 progressives)
-- **Translation 2 (Motion - essere)**: 135 form_translations (51 simple + 49 essere compounds + 35 progressives)  
+**Coverage Summary**:
 - **Total Coverage**: 270 form_translations across both meanings
 - **Critical Point**: 219 distinct forms, but 270 total form_translations due to shared simple/progressive forms
 
@@ -1786,62 +1511,43 @@ Modal verbs have unique auxiliary behavior:
   - "ho dovuto mangiare" (mangiare uses avere)
   - "sono dovuto andare" (andare uses essere)
 
-#### Complete Form Inventory (137 Total Forms - Database Stored Only)
 
-**Simple Forms - Core Modal Conjugations (51 forms):**
+**Architectural Pattern Summary**:
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 601 | devo | indicativo | presente | prima-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val123 (verb_type: "modal-verb") | I must | I owe |
-| 602 | devi | indicativo | presente | seconda-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val123 (verb_type: "modal-verb") | you must | you owe |
-| 603 | deve | indicativo | presente | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val123 (verb_type: "modal-verb") | he/she must | he/she owes |
-| 604 | dobbiamo | indicativo | presente | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val123 (verb_type: "modal-verb") | we must | we owe |
-| 605 | dovete | indicativo | presente | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val123 (verb_type: "modal-verb") | you must | you owe |  
-| 606 | devono | indicativo | presente | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val123 (verb_type: "modal-verb") | they must | they owe |
-| ... | (45 additional simple forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 648 | dovere | infinito | infinito-presente | - | - | simple | metaattr008val049 (mood: "infinito") + metaattr009val059 (tense: "infinito-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val123 (verb_type: "modal-verb") | to have to | to owe |
-| 649 | dovente | participio | participio-presente | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val060 (tense: "participio-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val123 (verb_type: "modal-verb") | having to | owing |
-| 650 | dovuto | participio | participio-passato | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val061 (tense: "participio-passato") + metaattr011val058 (variant_type: "simple") + metaattr021val123 (verb_type: "modal-verb") | had to | owed |
-| 651 | dovendo | gerundio | gerundio-presente | - | - | simple | metaattr008val051 (mood: "gerundio") + metaattr009val062 (tense: "gerundio-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val123 (verb_type: "modal-verb") | having to | owing |
+"Dovere" demonstrates the **modal-verb** pattern with dual semantic interpretations and unique auxiliary inheritance behavior. This verb type showcases:
 
-**Compound Forms with avere - Standalone Usage (49 forms):**
+**Form Structure Coverage**:
+- **51 Simple Forms**: Standard ere-conjugation for base modal meanings
+- **49 Compound Forms**: Using auxiliary "avere" for standalone modal usage
+- **37 Progressive Forms**: Using auxiliary "stare" for ongoing modal states
+- **Total**: 137 database-stored forms creating 274 total form_translations
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 652 | ho dovuto | indicativo | passato-prossimo | prima-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val123 (verb_type: "modal-verb") | I have had to | I have owed |
-| 653 | hai dovuto | indicativo | passato-prossimo | seconda-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val123 (verb_type: "modal-verb") | you have had to | you have owed |
-| ... | (47 additional compound forms with avere) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 700 | aver dovuto | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val123 (verb_type: "modal-verb") | to have had to | to have owed |
+**Modal Auxiliary Architecture**:
+- **Standalone Usage**: "ho dovuto" (I had to) - uses modal's own auxiliary (avere)
+- **Modal + Infinitive**: Inherits auxiliary from dependent verb
+  - "ho dovuto mangiare" (mangiare → avere)
+  - "sono dovuto andare" (andare → essere)
+- **Frontend Combinations**: Modal + infinitive constructions generated dynamically, not stored
 
-**Compound Forms with essere - Inherited from Infinitive (49 forms):**
+**Dual Semantic Coverage**:
+- **Translation 1 (Obligation)**: "to have to/must" - applies to ALL 137 forms
+- **Translation 2 (Debt)**: "to owe" - applies to ALL 137 forms
+- **Complete Coverage**: Both meanings support full conjugation landscape
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 701 | sono dovuto/a | indicativo | passato-prossimo | prima-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val123 (verb_type: "modal-verb") + metaattr022val135 (agreement: "required") | I have had to (motion context) | - |
-| 702 | sei dovuto/a | indicativo | passato-prossimo | seconda-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val123 (verb_type: "modal-verb") + metaattr022val135 (agreement: "required") | you have had to (motion context) | - |
-| ... | (47 additional compound forms with essere) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 749 | essere dovuto/a/i/e | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val123 (verb_type: "modal-verb") + metaattr022val135 (agreement: "required") | to have had to (motion context) | - |
+**Key Architectural Elements**:
+- **Modal Classification**: metaattr021val0XX (modal_type) distinguishes from other verb types
+- **Auxiliary Inheritance Logic**: Frontend handles auxiliary selection based on infinitive complement
+- **Semantic Flexibility**: Single verb form supports multiple modal interpretations
+- **Standard Conjugation**: Maintains regular ere-conjugation patterns despite modal behavior
 
-**Progressive Forms - Modal in Progressive Context (35 forms):**
+**Advanced Features**:
+- **Dynamic Auxiliary Selection**: System chooses auxiliary based on context (standalone vs. modal+infinitive)
+- **Frontend Integration**: Modal constructions built dynamically rather than pre-stored
+- **Complete Modal Coverage**: All 137 forms available for both semantic interpretations
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 750 | sto dovendo | indicativo | presente-progressivo | prima-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val123 (verb_type: "modal-verb") | I am having to | I am owing |
-| 751 | stai dovendo | indicativo | presente-progressivo | seconda-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val123 (verb_type: "modal-verb") | you are having to | you are owing |
-| ... | (33 additional progressive forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 784 | stando dovendo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive + metaattr021val123 (verb_type: "modal-verb") | being having to | being owing |
+This pattern demonstrates how modal verbs maintain standard conjugation architecture while supporting complex auxiliary inheritance and semantic multiplicity.
 
-**Modal Pattern Forms - Special Constructions (86 additional forms):**
-
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 785 | ho dovuto mangiare | compound-modal | passato-prossimo-modal | prima-persona | singolare | compound-modal | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val123 (verb_type: "modal-verb")-infinitive | I have had to eat | - |
-| 786 | sono dovuto/a andare | compound-modal | passato-prossimo-modal | prima-persona | singolare | compound-modal | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val123 (verb_type: "modal-verb")-infinitive + metaattr022val135 (agreement: "required") | I have had to go | - |
-| ... | (84 additional modal pattern forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 870 | starò dovendo fare | progressive-modal | futuro-progressivo-modal | prima-persona | singolare | progressive-modal | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val123 (verb_type: "modal-verb")-infinitive | I will be having to do | - |
-
-**Form_Translations Coverage Analysis:**
-**CORRECTED - Modal Constructions Frontend-Generated**:
+**Coverage Summary**:
 - **Translation 1 (Must/Have to)**: 137 form_translations (standard forms only)
 - **Translation 2 (Owe)**: 137 form_translations (standard forms only)  
 - **Total Coverage**: 274 form_translations across both meanings
@@ -1911,58 +1617,43 @@ Vigere is defective due to semantic constraints:
 - **Missing some compound tenses**: Certain temporal combinations are semantically impossible
 - **3rd person focus**: Only "it is in force", "they are in force" make semantic sense
 
-#### Complete Form Inventory - Only Existing Forms (67 Total Forms)
 
-**Simple Forms - Only 3rd Person and Infinitive/Participle/Gerund (15 forms):**
+**Architectural Pattern Summary**:
 
-| Form ID | Form Text | Entity Meta Values | Translation Coverage |
-|---------|-----------|-----------|---------------------|
-| 901 | vige | indicativo | presente | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | it is in force |
-| 902 | vigono | indicativo | presente | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | they are in force |
-| 903 | vigeva | indicativo | imperfetto | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | it was in force |
-| 904 | vigevano | indicativo | imperfetto | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | they were in force |
-| 905 | vigerà | indicativo | futuro-semplice | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | it will be in force |
-| 906 | vigeranno | indicativo | futuro-semplice | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | they will be in force |
-| 907 | viga | congiuntivo | congiuntivo-presente | terza-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | (that) it be in force |
-| 908 | vigano | congiuntivo | congiuntivo-presente | terza-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | (that) they be in force |
-| 909 | vigesse | congiuntivo | congiuntivo-imperfetto | terza-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | (that) it were in force |
-| 910 | vigessero | congiuntivo | congiuntivo-imperfetto | terza-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | (that) they were in force |
-| 911 | vigerebbe | condizionale | condizionale-presente | terza-persona | singolare | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | it would be in force |
-| 912 | vigerebbero | condizionale | condizionale-presente | terza-persona | plurale | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | they would be in force |
-| 913 | vigere | infinito | infinito-presente | - | - | simple | metaattr008val049 (mood: "infinito") + metaattr009val059 (tense: "infinito-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") | to be in force |
-| 914 | vigente | participio | participio-presente | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val060 (tense: "participio-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") | being in force |
-| 915 | vigendo | gerundio | gerundio-presente | - | - | simple | metaattr008val051 (mood: "gerundio") + metaattr009val062 (tense: "gerundio-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val126 (verb_type: "defective-verb") | being in force |
+"Vigere" demonstrates the **defective-verb** pattern where semantic constraints limit form availability. This verb type showcases:
 
-**Missing Simple Forms (36 forms that don't exist):**
-- **All 1st person forms**: (io) vigo, vigevo, etc. - semantically impossible
-- **All 2nd person forms**: (tu) vigi, vigevi, etc. - semantically impossible  
-- **All imperative forms**: viggi!, vigate! - cannot command legal force
-- **Passato remoto**: vigé, vigerono - rare/archaic usage
-- **Past participle**: viguto - does not exist (uses "vigente" as adjective instead)
+**Form Structure Coverage**:
+- **15 Simple Forms**: Only 3rd person (singular/plural) + impersonal forms (infinitive, participle, gerund)
+- **26 Compound Forms**: Limited to 3rd person variations with "essere" auxiliary
+- **26 Progressive Forms**: Limited to 3rd person + impersonal progressive constructions
+- **Total**: 67 forms (49.6% of standard 137-form paradigm)
 
-**Compound Forms - Limited to Existing Simple Forms (26 forms):**
+**Defective Architecture Rationale**:
+- **Semantic Constraints**: Laws/rules cannot "be in force" for specific persons (1st/2nd person impossible)
+- **Missing Imperatives**: Cannot command something to "be in force"
+- **3rd Person Focus**: Only "it is in force" and "they are in force" semantically valid
+- **Formal Register**: Legal/administrative contexts limit usage patterns
 
-| Form ID | Form Text | Entity Meta Values | Translation Coverage |
-|---------|-----------|-----------|---------------------|
-| 916 | è viguto | indicativo | passato-prossimo | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | it has been in force |
-| 917 | sono viguti | indicativo | passato-prossimo | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | they have been in force |
-| 918 | era viguto | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | it had been in force |
-| 919 | erano viguti | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | they had been in force |
-| ... | (22 additional limited compound forms) | ... | ... | ... | ... | ... | ... | ... |
-| 941 | essere viguto | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val126 (verb_type: "defective-verb") | to have been in force |
+**Key Architectural Elements**:
+- **Defective Classification**: metaattr021val126 (verb_type: "defective-verb") marks reduced form set
+- **Number Restrictions**: metaattr013val129 (number_restriction: "third-person-only") enforces person limitations
+- **Standard Conjugation**: Available forms follow regular ere-conjugation patterns
+- **Auxiliary Consistency**: Uses "essere" for available compound forms
 
-**Progressive Forms - Limited Context (26 forms):**
+**Advanced Metadata Features**:
+- **Validation Rules**: System expects reduced form count for defective-tagged verbs
+- **Restriction Metadata**: Form-level restrictions prevent impossible person/number combinations
+- **Register Marking**: metaattr018val069 (register: "formal") indicates specialized usage context
+- **Semantic Integrity**: Only linguistically and semantically valid forms are materialized
 
-| Form ID | Form Text | Entity Meta Values | Translation Coverage |
-|---------|-----------|-----------|---------------------|
-| 942 | sta vigendo | indicativo | presente-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | it is being in force |
-| 943 | stanno vigendo | indicativo | presente-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | they are being in force |
-| 944 | stava vigendo | indicativo | passato-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | it was being in force |
-| 945 | stavano vigendo | indicativo | passato-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val126 (verb_type: "defective-verb") + metaattr013val129 (number_restriction: "third-person-only") | they were being in force |
-| ... | (22 additional limited progressive forms) | ... | ... | ... | ... | ... | ... | ... |
-| 967 | stando vigendo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive + metaattr021val126 (verb_type: "defective-verb") | being being in force |
+**Coverage Architecture**:
+- **Expected Reduction**: 67/137 forms (49.6% coverage) is architecturally correct for defective verbs
+- **Quality over Quantity**: Fewer forms ensure semantic accuracy and linguistic integrity
+- **Systematic Gaps**: Missing forms follow predictable patterns based on semantic constraints
 
-**Form_Translations Coverage Analysis:**
+This pattern demonstrates how the system handles linguistically restricted verbs while maintaining architectural consistency and semantic accuracy.
+
+**Coverage Summary**:
 - **Single Translation**: 67 form_translations (only for linguistically valid forms)
 - **Missing Coverage**: 68 forms that don't exist (normal verb would have 135 total)  
 - **Coverage Percentage**: 49.6% of full conjugation paradigm
@@ -2046,66 +1737,42 @@ This verb demonstrates complex person restrictions:
 - **Different auxiliaries**: essere for impersonal, avere for transitive
 - **Form sharing**: Same forms, different translation coverage
 
-#### Complete Form Inventory (135 Total Forms)
 
-**Simple Forms - All Persons (51 forms):**
+**Architectural Pattern Summary**:
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 1001 | importo | indicativo | presente | prima-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | - | I import |
-| 1002 | importi | indicativo | presente | seconda-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | - | you import |
-| 1003 | importa | indicativo | presente | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | it matters | he/she imports |
-| 1004 | importiamo | indicativo | presente | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | - | we import |
-| 1005 | importate | indicativo | presente | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | - | you import |
-| 1006 | importano | indicativo | presente | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") | they matter | they import |
-| 1007 | importavo | indicativo | imperfetto | prima-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") | - | I was importing |
-| 1008 | importavi | indicativo | imperfetto | seconda-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") | - | you were importing |
-| 1009 | importava | indicativo | imperfetto | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") | it mattered | he/she was importing |
-| 1010 | importavamo | indicativo | imperfetto | prima-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") | - | we were importing |
-| 1011 | importavate | indicativo | imperfetto | seconda-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") | - | you were importing |
-| 1012 | importavano | indicativo | imperfetto | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") | they mattered | they were importing |
-| ... | (39 additional simple forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1048 | importare | infinito | infinito-presente | - | - | simple | metaattr008val049 (mood: "infinito") + metaattr009val059 (tense: "infinito-presente") + metaattr011val058 (variant_type: "simple") | to matter | to import |
-| 1049 | importante | participio | participio-presente | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val060 (tense: "participio-presente") + metaattr011val058 (variant_type: "simple") | mattering | importing |
-| 1050 | importato | participio | participio-passato | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val061 (tense: "participio-passato") + metaattr011val058 (variant_type: "simple") | mattered | imported |
-| 1051 | importando | gerundio | gerundio-presente | - | - | simple | metaattr008val051 (mood: "gerundio") + metaattr009val062 (tense: "gerundio-presente") + metaattr011val058 (variant_type: "simple") | mattering | importing |
+"Importare" demonstrates the **impersonal-verb** pattern with dual semantic interpretations requiring different person restrictions. This verb type showcases:
 
-**Compound Forms with essere - "To Matter" Translation (17 forms - 3rd person + infinitive/participles):**
+**Form Structure Coverage**:
+- **51 Simple Forms**: Standard are-conjugation available to all persons but with semantic restrictions per translation
+- **49 Compound Forms**: Split auxiliary usage - "essere" for impersonal, "avere" for transitive meanings
+- **35 Progressive Forms**: Available across persons with meaning-appropriate auxiliary selection
+- **Total**: 135 forms creating 160 total form_translations through selective translation coverage
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 1052 | è importato | indicativo | passato-prossimo | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | it has mattered | - |
-| 1053 | sono importati | indicativo | passato-prossimo | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | they have mattered | - |
-| 1054 | era importato | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | it had mattered | - |
-| 1055 | erano importati | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | they had mattered | - |
-| ... | (13 additional compound forms with essere - 3rd person only) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1068 | essere importato | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") | to have mattered | - |
+**Dual Semantic Architecture**:
+- **Translation 1 (Impersonal)**: "to matter" - restricted to 3rd person forms only (25 form_translations)
+- **Translation 2 (Transitive)**: "to import" - applies to ALL forms (135 form_translations)
+- **Person-Based Coverage**: Different translation availability creates semantic precision
 
-**Compound Forms with avere - "To Import" Translation (49 forms - all persons):**
+**Key Architectural Elements**:
+- **Impersonal Classification**: metaattr021val0XX (impersonal_type) marks specialized usage patterns
+- **Translation-Level Restrictions**: Translation 1 uses person restrictions while Translation 2 has universal coverage
+- **Dual Auxiliary Pattern**: Meaning determines auxiliary selection (essere vs avere)
+- **Selective Coverage Logic**: Same forms support different semantic interpretations through translation filtering
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 1069 | ho importato | indicativo | passato-prossimo | prima-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | - | I have imported |
-| 1070 | hai importato | indicativo | passato-prossimo | seconda-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | - | you have imported |
-| 1071 | ha importato | indicativo | passato-prossimo | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | - | he/she has imported |
-| 1072 | abbiamo importato | indicativo | passato-prossimo | prima-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | - | we have imported |
-| 1073 | avete importato | indicativo | passato-prossimo | seconda-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | - | you have imported |
-| 1074 | hanno importato | indicativo | passato-prossimo | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") | - | they have imported |
-| ... | (43 additional compound forms with avere) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1117 | aver importato | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") | - | to have imported |
+**Advanced Semantic Features**:
+- **Person Restriction Logic**: Only "it matters" and "they matter" semantically appropriate for impersonal usage
+- **Auxiliary Differentiation**: "essere" for states ("it matters"), "avere" for actions ("I import")
+- **Complete Transitive Coverage**: All 135 forms available for commercial/trade meaning
+- **Semantic Precision**: Form-translation restrictions ensure contextually appropriate usage
 
-**Progressive Forms - Restricted and Unrestricted (35 forms):**
+**Coverage Architecture**:
+- **Selective Application**: 25 (impersonal) + 135 (transitive) = 160 total form_translations
+- **Form Efficiency**: 135 forms serve dual semantic purposes through translation-level controls
+- **Meaning-Based Access**: Translation assignment determines which semantic interpretation applies
 
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 1118 | sto importando | indicativo | presente-progressivo | prima-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | - | I am importing |
-| 1119 | stai importando | indicativo | presente-progressivo | seconda-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | - | you are importing |
-| 1120 | sta importando | indicativo | presente-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | it is mattering | he/she is importing |
-| 1121 | stiamo importando | indicativo | presente-progressivo | prima-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | - | we are importing |
-| 1122 | state importando | indicativo | presente-progressivo | seconda-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | - | you are importing |
-| 1123 | stanno importando | indicativo | presente-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") | they are mattering | they are importing |
-| ... | (29 additional progressive forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1152 | stando importando | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive | being mattering | being importing |
+This pattern demonstrates how impersonal verbs maintain full conjugation capability while supporting semantic restrictions through selective translation coverage.
+
+**Coverage Summary**:
 
 **Form_Translations Coverage Analysis:**
 - **Translation 1 ("To Matter")**: 25 form_translations (3rd person forms + infinitive/participle/gerund forms)  
@@ -2119,152 +1786,54 @@ This verb demonstrates complex person restrictions:
 - **Total Coverage**: 160 form_translations across both meanings
 - **Shared Forms**: 135 forms exist, but different coverage patterns create semantic precision
 
-
-#### Dictionary Entry
-```sql
--- dictionary table
-id: 220e8400-e29b-41d4-a716-446655440000
-lemma: "piovere"  
-word_type: "verb"
-```
-
-#### Word-Level Metadata
-```sql
--- entity_type='word', entity_id=220e8400-e29b-41d4-a716-446655440000
-value_id → meta_values.value: "ere-conjugation"       (conjugation_type)
-value_id → meta_values.value: "meteorological-verb"  (verb_type)
-value_id → meta_values.value: "intransitive"          (transitivity)
-value_id → meta_values.value: "third-singular-only"   (number_restriction)
-value_id → meta_values.value: "freq-top500"           (frequency_tier)
-value_id → meta_values.value: "CEFR-A2"               (cefr_level)
-```
-
-#### Meta Attribute Integration for Weather Verb Status
-```sql  
--- meta_attributes contains: attribute_name="verb_type", category="grammatical"
--- meta_values contains: value="meteorological-verb", stable_id="meteorological_verb", attribute_id=<verb_type_attr_id>
--- entity_meta_values links: entity_type='word', entity_id=<piovere_id>, value_id=<weather_verb_value_id>
-
--- Ultra-restrictive person limitation
--- meta_attributes contains: attribute_name="number_restriction", category="morphological"  
--- meta_values contains: value="third-singular-only", stable_id="third_singular_restriction"
-```
-
-#### Translation 1: "to rain" (literal meteorological)
-```sql
--- word_translations table
-id: 330e8400-e29b-41d4-a716-446655440001
-word_id: 220e8400-e29b-41d4-a716-446655440000
-translation: "to rain"
-display_priority: 1
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=330e8400-e29b-41d4-a716-446655440001
-value_id → metaattr002val015 (auxiliary: "essere")
-value_id → metaattr021val125 (verb_type: "meteorological-verb")
-value_id → metaattr013val130 (number_restriction: "third-singular-only")
-```
-
-#### Translation 2: "to rain down" (metaphorical usage)
-```sql
--- word_translations table
-id: 330e8400-e29b-41d4-a716-446655440002
-word_id: 220e8400-e29b-41d4-a716-446655440000
-translation: "to rain down"
-display_priority: 2
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=330e8400-e29b-41d4-a716-446655440002
-value_id → metaattr002val015 (auxiliary: "essere")
-value_id → metaattr020val100 (transitivity: "intransitive")
-value_id → metaattr013val131 (number_restriction: "third-person-only")
-```
-
-#### Weather Verb Restrictions Explained
-Weather verbs have the most restrictive person limitations:
-- **Translation 1 (Literal weather)**: `third-singular-only` restriction - Only "it rains" (3rd person singular)
-- **Translation 2 (Metaphorical usage)**: `third-person-only` restriction covers BOTH singular AND plural - "it rains down" AND "they rain down" for things falling like rain
-- **Key Architecture**: Forms exist regardless; restrictions control translation assignment coverage
-- **No personal subjects**: Cannot say "I rain", "you rain" - semantically impossible
-- **Subject types**: Translation 1 (atmospheric), Translation 2 (inanimate objects falling)
-
-#### Complete Form Inventory (39 Total Forms for Translation 1, 78 for Translation 2)
-
-**Simple Forms - Third Person Singular Only for Literal Weather (17 forms):**
-
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 1201 | piove | indicativo | presente | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it rains | - |
-| 1202 | pioveva | indicativo | imperfetto | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it was raining | - |
-| 1203 | piovve | indicativo | passato-remoto | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it rained | - |
-| 1204 | pioverà | indicativo | futuro-semplice | terza-persona | singolare | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it will rain | - |
-| 1205 | piova | congiuntivo | congiuntivo-presente | terza-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | (that) it rain | - |
-| 1206 | piovesse | congiuntivo | congiuntivo-imperfetto | terza-persona | singolare | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val056 (tense: "congiuntivo-imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | (that) it rained | - |
-| 1207 | pioverebbe | condizionale | condizionale-presente | terza-persona | singolare | simple | metaattr008val047 (mood: "condizionale") + metaattr009val057 (tense: "condizionale-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it would rain | - |
-| 1208 | piovere | infinito | infinito-presente | - | - | simple | metaattr008val049 (mood: "infinito") + metaattr009val059 (tense: "infinito-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") | to rain | to rain down |
-| 1209 | piovente | participio | participio-presente | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val060 (tense: "participio-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") | raining | raining down |
-| 1210 | piovuto | participio | participio-passato | - | - | simple | metaattr008val050 (mood: "participio") + metaattr009val061 (tense: "participio-passato") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") | rained | rained down |
-| 1211 | piovendo | gerundio | gerundio-presente | - | - | simple | metaattr008val051 (mood: "gerundio") + metaattr009val062 (tense: "gerundio-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") | raining | raining down |
-
-**Simple Forms - Third Person Plural for Metaphorical Usage Only (6 additional forms):**
-
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 1212 | piovono | indicativo | presente | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val051 (tense: "presente") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val129 (number_restriction: "third-person-only") | - | they rain down |
-| 1213 | piovevano | indicativo | imperfetto | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val052 (tense: "imperfetto") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val129 (number_restriction: "third-person-only") | - | they were raining down |
-| 1214 | piovvero | indicativo | passato-remoto | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val053 (tense: "passato-remoto") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val129 (number_restriction: "third-person-only") | - | they rained down |
-| 1215 | pioveranno | indicativo | futuro-semplice | terza-persona | plurale | simple | metaattr008val045 (mood: "indicativo") + metaattr009val054 (tense: "futuro-semplice") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val129 (number_restriction: "third-person-only") | - | they will rain down |
-| 1216 | piovano | congiuntivo | congiuntivo-presente | terza-persona | plurale | simple | metaattr008val046 (mood: "congiuntivo") + metaattr009val055 (tense: "congiuntivo-presente") + metaattr011val058 (variant_type: "simple") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val129 (number_restriction: "third-person-only") | - | (that) they rain down |
-| ... | (Additional metaphorical plural forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-
-**Compound Forms with essere - Singular Only for Literal Weather (11 forms):**
-
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 1218 | è piovuto | indicativo | passato-prossimo | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it has rained | - |
-| 1219 | era piovuto | indicativo | trapassato-prossimo | terza-persona | singolare | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it had rained | - |
-| 1220 | sarà piovuto | indicativo | futuro-anteriore | terza-persona | singolare | compound | metaattr008val045 (mood: "indicativo") + metaattr009val065 (tense: "futuro-anteriore") + metaattr011val059 (variant_type: "compound") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it will have rained | - |
-| 1221 | sia piovuto | congiuntivo | congiuntivo-passato | terza-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val067 (tense: "congiuntivo-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | (that) it has rained | - |
-| 1222 | fosse piovuto | congiuntivo | congiuntivo-trapassato | terza-persona | singolare | compound | metaattr008val046 (mood: "congiuntivo") + metaattr009val068 (tense: "congiuntivo-trapassato") + metaattr011val059 (variant_type: "compound") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | (that) it had rained | - |
-| 1223 | sarebbe piovuto | condizionale | condizionale-passato | terza-persona | singolare | compound | metaattr008val047 (mood: "condizionale") + metaattr009val069 (tense: "condizionale-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it would have rained | - |
-| ... | (5 additional compound singular forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1228 | essere piovuto | infinito | infinito-passato | - | - | compound | metaattr008val049 (mood: "infinito") + metaattr009val070 (tense: "infinito-passato") + metaattr011val059 (variant_type: "compound") + metaattr021val125 (verb_type: "meteorological-verb") | to have rained | to have rained down |
-
-**Compound Forms - Plural for Metaphorical Usage (11 additional forms):**
-
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 1229 | sono piovuti | indicativo | passato-prossimo | terza-persona | plurale | compound | metaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val129 (number_restriction: "third-person-only") | - | they have rained down |
-| 1230 | erano piovuti | indicativo | trapassato-prossimo | terza-persona | plurale | compound | trametaattr008val045 (mood: "indicativo") + metaattr009val063 (tense: "passato-prossimo") + metaattr011val059 (variant_type: "compound") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val129 (number_restriction: "third-person-only") | - | they had rained down |
-| ... | (9 additional compound plural forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-
-**Progressive Forms - Highly Limited (11 forms):**
-
-| Form ID | Form Text | Entity Meta Values | Translation 1 Coverage | Translation 2 Coverage |
-|---------|-----------|-----------|----------------------|----------------------|
-| 1240 | sta piovendo | indicativo | presente-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it is raining | - |
-| 1241 | stava piovendo | indicativo | passato-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it was raining | - |
-| 1242 | starà piovendo | indicativo | futuro-progressivo | terza-persona | singolare | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val074 (tense: "futuro-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val130 (number_restriction: "third-singular-only") | it will be raining | - |
-| ... | (5 additional progressive singular forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1246 | stanno piovendo | indicativo | presente-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val072 (tense: "presente-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val129 (number_restriction: "third-person-only") | - | they are raining down |
-| 1247 | stavano piovendo | indicativo | passato-progressivo | terza-persona | plurale | progressive | metaattr008val045 (mood: "indicativo") + metaattr009val073 (tense: "passato-progressivo") + metaattr011val060 (variant_type: "progressive") + metaattr021val125 (verb_type: "meteorological-verb") + metaattr013val129 (number_restriction: "third-person-only") | - | they were raining down |
-| ... | (3 additional progressive plural forms) | ... | ... | ... | ... | ... | ... | ... | ... |
-| 1250 | stando piovendo | gerundio | gerundio-progressivo | - | - | progressive | gerundio-progressivo, progressive + metaattr021val125 (verb_type: "meteorological-verb") | being raining | being raining down |
-
-**Form_Translations Coverage Analysis:**
-- **Translation 1 ("To Rain" - Literal)**: 39 form_translations
-  - Simple forms: 17 (3rd singular + non-finite)
-  - Compound forms: 11 (3rd singular + infinitive)
-  - Progressive forms: 11 (3rd singular + non-finite)
-- **Translation 2 ("To Rain Down" - Metaphorical)**: 28 form_translations  
-  - Simple forms: 12 (3rd person both singular/plural + non-finite)
-  - Compound forms: 11 (3rd person both numbers + infinitive)
-  - Progressive forms: 5 (3rd person both numbers + non-finite)
-- **Total Coverage**: 67 form_translations across both meanings
-- **Most Restrictive**: Weather verbs have the smallest form coverage in the system
-
 ---
 
+### 8.7 Scenario G: Irregular Verb - "andare" (to go) - Complete Form Inventory
+
+**📋 Complete Section**: [Section 8.7: Complete Forms for "andare"](./section-8-7-andare-complete-forms.md) - **ALL 137 individual conjugations with irregular form patterns**
+
+**Architectural Pattern Summary**:
+
+"Andare" demonstrates the **irregular-verb** pattern where multiple stems and unpredictable form changes occur throughout the conjugation paradigm. This verb type showcases:
+
+**Form Structure Coverage**:
+- **51 Simple Forms**: Highly irregular with stem alternations (and-, vad-, v-) across persons and tenses
+- **49 Compound Forms**: Using auxiliary "essere" (to be) with standard past participle "andato"
+- **37 Progressive Forms**: Using auxiliary "stare" + gerund "andando" for ongoing movement actions
+- **Total**: 137 forms with extensive irregularity markers throughout the paradigm
+
+**Irregular Pattern Architecture**:
+- **Stem Alternation**: Multiple irregular stems within single tenses (vado/vai/va vs andiamo/andate/vanno)
+- **Suppletive Forms**: Future and conditional use "andr-" stem instead of infinitive-based forms
+- **Irregular Present**: All persons show irregularities (vado, vai, va, andiamo, andate, vanno)
+- **Mixed Patterns**: Some tenses regular (imperfect: andavo), others completely irregular (future: andrò)
+
+**Key Architectural Elements**:
+- **Irregularity Classification**: metaattr021val0XX (verb_type: "irregular") marks non-standard conjugation pattern
+- **Form-Level Irregularity Markers**: Each irregular form tagged with metaattr022val0XX (irregularity: "stem-change/suppletive")
+- **Standard Auxiliary Usage**: Despite irregularities, follows standard intransitive pattern with "essere"
+- **Complete Coverage**: All 137 forms materialized despite irregular patterns
+
+**Advanced Irregularity Features**:
+- **Stem Distribution Mapping**: System tracks which stems apply to which tense/person combinations
+- **Suppletive Future Handling**: "andrò" forms treated as lexical items rather than rule-derived
+- **Irregularity Inheritance**: Compound forms maintain base form irregularities where applicable
+- **Educational Tagging**: Each form marked with appropriate learning difficulty indicators
+
+**Irregular Verb Architecture Benefits**:
+- **Complete Materialization**: No rule-based generation for unpredictable forms
+- **Stem Variation Support**: Multiple stems handled through explicit form storage
+- **Exception-Free System**: All forms pre-validated and stored, eliminating runtime irregularity handling
+- **Learning Support**: Full irregularity documentation supports pedagogical applications
+
+This pattern demonstrates how the materialization-centric architecture elegantly handles even the most irregular Italian verbs by storing all forms explicitly rather than attempting complex rule systems.
+
+**Coverage Summary**:
+- **Single Translation**: 137 form_translations (all forms covered with "to go")
+- **Complete Irregularity Coverage**: All irregular stems and patterns fully materialized
+- **Auxiliary Consistency**: Standard "essere" auxiliary despite irregular conjugation patterns
+
+---
 ## Updated Coverage Calculations Summary
 
 ### Complete Form_Translation Coverage Matrix
@@ -2277,6 +1846,7 @@ Weather verbs have the most restrictive person limitations:
 | Modal | dovere | 137** | 137 (all standard forms) | 137 (all standard forms) | 274 |
 | Defective | vigere | 67 | 67 (existing forms only) | - | 67 |
 | Impersonal | importare | 135 | 25 (3rd person only) | 135 (all forms) | 160 |
+| Irregular | andare | 137 | 137 (all forms) | - | 137 |
 
 **Mathematical Explanations:**
 - *Dual Auxiliary Corrected: All verbs have same 137 base forms (51 simple + 49 compound + 37 progressive). Each translation covers ALL forms but uses different auxiliaries for compound forms only.
@@ -2292,23 +1862,4 @@ Weather verbs have the most restrictive person limitations:
 | Modal | verb_type: "modal-verb" | Derived from translations | None (modal behavior is frontend-handled) | entity_meta_values |
 | Defective | verb_type: "defective-verb" | Derived from translations | number_restriction: "missing-first-second-person" | entity_meta_values |
 | Impersonal | verb_type: "impersonal-verb" | Derived from translations (mixed) | number_restriction: "third-person-only" | entity_meta_values |
-
-This comprehensive expansion demonstrates how the Misti verb forms architecture handles the full spectrum of Italian verb complexity through systematic form materialization, metadata integration, and coverage validation.
-
----
-
-## Architecture Summary
-
-The Misti verb forms system represents a sophisticated **materialization-centric architecture** that pre-computes and stores every verb form students need, rather than generating them on demand. This approach prioritizes accuracy, performance, and pedagogical control over computational elegance.
-
-**Key Architectural Principles**:
-
-1. **Complete Materialization**: All forms (simple, compound, progressive) are pre-stored with complete metadata
-2. **Translation-Centric Design**: Auxiliary selection and usage constraints are specified at the meaning level, not the word level
-3. **Normalized Tagging**: All metadata stored via entity_meta_values system, eliminating array-based storage
-4. **Dual Translation Requirement**: Reflexive verbs must have both direct reflexive and reciprocal translations
-5. **Restriction-Aware Coverage**: Form_translations respect number/person restrictions from meta attributes
-6. **Universal Terminology**: Language-agnostic internal representation enables multi-language interfaces
-7. **Validation-First**: Comprehensive compliance checking ensures data quality at all architectural layers
-
-This system successfully handles the full complexity of Italian verb conjugation while maintaining the flexibility needed for effective language learning applications.
+| Irregular | verb_type: "irregular" | Derived from translations (intransitive) | Form-level irregularity markers | entity_meta_values |
