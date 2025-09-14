@@ -48,8 +48,8 @@ value_id → metaattr020val099 (transitivity: "transitive")
 All forms use the consolidated Entity Meta Values architecture:
 - **Mood**: metaattr010val054 (indicativo), metaattr010val055 (congiuntivo), metaattr010val056 (condizionale), metaattr010val057 (imperativo), metaattr010val058 (infinito), metaattr010val059 (participio), metaattr010val060 (gerundio)
 - **Tense**: metaattr019val096 (presente), metaattr019val097 (imperfetto), metaattr019val098 (passato-remoto), metaattr019val099 (futuro-semplice), etc.
-- **Person**: metaattr014val060 (prima-persona), metaattr014val061 (seconda-persona), metaattr014val062 (terza-persona), metaattr014val063 (none)
-- **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale), metaattr012val056 (none)
+- **Person**: metaattr014val060 (prima-persona), metaattr014val061 (seconda-persona), metaattr014val062 (terza-persona)
+- **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale)
 - **Verb Form Type**: metaattr022val107 (simple), metaattr022val108 (compound), metaattr022val109 (progressive)
 
 ### Simple Forms (51 forms)
@@ -103,10 +103,10 @@ All forms use the consolidated Entity Meta Values architecture:
 | 045 | mangiamo | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | let's eat! |
 | 046 | mangiate | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | eat! |
 | 047 | mangino | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | let them eat! |
-| 048 | mangiare | metaattr010val058 (mood: "infinito") + metaattr019val106 (tense: "infinito-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | to eat |
-| 049 | mangiante | metaattr010val059 (mood: "participio") + metaattr019val107 (tense: "participio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | eating |
-| 050 | mangiato | metaattr010val059 (mood: "participio") + metaattr019val108 (tense: "participio-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | eaten |
-| 051 | mangiando | metaattr010val060 (mood: "gerundio") + metaattr019val109 (tense: "gerundio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | eating |
+| 048 | mangiare | metaattr010val058 (mood: "infinito") + metaattr019val106 (tense: "infinito-presente") + metaattr022val107 (verb_form_type: "simple") | to eat |
+| 049 | mangiante | metaattr010val059 (mood: "participio") + metaattr019val107 (tense: "participio-presente") + metaattr022val107 (verb_form_type: "simple") | eating |
+| 050 | mangiato | metaattr010val059 (mood: "participio") + metaattr019val108 (tense: "participio-passato") + metaattr022val107 (verb_form_type: "simple") | eaten |
+| 051 | mangiando | metaattr010val060 (mood: "gerundio") + metaattr019val109 (tense: "gerundio-presente") + metaattr022val107 (verb_form_type: "simple") | eating |
 
 ### Compound Forms with avere auxiliary (49 forms)
 
@@ -159,8 +159,8 @@ All forms use the consolidated Entity Meta Values architecture:
 | 096 | abbiamo mangiato | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | let's have eaten! |
 | 097 | abbiate mangiato | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | have eaten! |
 | 098 | abbiano mangiato | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | let them have eaten! |
-| 099 | avendo mangiato | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val108 (verb_form_type: "compound") | having eaten |
-| 100 | aver mangiato | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val108 (verb_form_type: "compound") | to have eaten |
+| 099 | avendo mangiato | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato") + metaattr022val108 (verb_form_type: "compound") | having eaten |
+| 100 | aver mangiato | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato") + metaattr022val108 (verb_form_type: "compound") | to have eaten |
 
 ### Progressive Forms with stare auxiliary (37 forms)
 
@@ -202,7 +202,7 @@ All forms use the consolidated Entity Meta Values architecture:
 | 134 | staremmo mangiando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | we would be eating |
 | 135 | stareste mangiando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | you would be eating |
 | 136 | starebbero mangiando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | they would be eating |
-| 137 | stando mangiando | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val109 (verb_form_type: "progressive") | being eating |
+| 137 | stando mangiando | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo") + metaattr022val109 (verb_form_type: "progressive") | being eating |
 
 ## Form_Translations Coverage
 

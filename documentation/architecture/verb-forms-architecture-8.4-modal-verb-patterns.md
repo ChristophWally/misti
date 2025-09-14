@@ -38,6 +38,7 @@ display_priority: 1
 -- entity_meta_values for this translation
 -- entity_type='word_translation', entity_id=770e8400-e29b-41d4-a716-446655440001
 value_id → metaattr002val014 (auxiliary: "avere")
+value_id → metaattr020val100 (transitivity: "intransitive")
 value_id → metaattr021val115 (verb_type: "modal")
 ```
 
@@ -52,8 +53,8 @@ display_priority: 2
 -- entity_meta_values for this translation
 -- entity_type='word_translation', entity_id=770e8400-e29b-41d4-a716-446655440002
 value_id → metaattr002val014 (auxiliary: "avere")
-value_id → metaattr021val115 (verb_type: "modal")
 value_id → metaattr020val099 (transitivity: "transitive")
+value_id → metaattr021val114 (verb_type: "normal")
 ```
 
 ## Complete Form Inventory (137 Total Forms)
@@ -62,8 +63,8 @@ value_id → metaattr020val099 (transitivity: "transitive")
 All forms use the consolidated Entity Meta Values architecture:
 - **Mood**: metaattr010val054 (indicativo), metaattr010val055 (congiuntivo), metaattr010val056 (condizionale), metaattr010val057 (imperativo), metaattr010val058 (infinito), metaattr010val059 (participio), metaattr010val060 (gerundio)
 - **Tense**: metaattr019val096 (presente), metaattr019val097 (imperfetto), metaattr019val098 (passato-remoto), metaattr019val099 (futuro-semplice), etc.
-- **Person**: metaattr014val060 (prima-persona), metaattr014val061 (seconda-persona), metaattr014val062 (terza-persona), metaattr014val063 (none)
-- **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale), metaattr012val056 (none)
+- **Person**: metaattr014val060 (prima-persona), metaattr014val061 (seconda-persona), metaattr014val062 (terza-persona)
+- **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale)
 - **Verb Form Type**: metaattr022val107 (simple), metaattr022val108 (compound), metaattr022val109 (progressive)
 
 ### Simple Forms (51 forms)
@@ -118,10 +119,10 @@ All forms use the consolidated Entity Meta Values architecture:
 | 676 | dobbiamo | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | let's have to! (rare) | let's owe! (rare) |
 | 677 | dovete | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | must! (rare) | owe! (rare) |
 | 678 | devano | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | let them have to! (rare) | let them owe! (rare) |
-| 679 | dovere | metaattr010val058 (mood: "infinito") + metaattr019val106 (tense: "infinito-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | to have to/must | to owe |
-| 680 | dovente | metaattr010val059 (mood: "participio") + metaattr019val107 (tense: "participio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | having to | owing |
-| 681 | dovuto | metaattr010val059 (mood: "participio") + metaattr019val108 (tense: "participio-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | had to | owed |
-| 682 | dovendo | metaattr010val060 (mood: "gerundio") + metaattr019val109 (tense: "gerundio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") | having to | owing |
+| 679 | dovere | metaattr010val058 (mood: "infinito") + metaattr019val106 (tense: "infinito-presente")  + metaattr022val107 (verb_form_type: "simple") | to have to/must | to owe |
+| 680 | dovente | metaattr010val059 (mood: "participio") + metaattr019val107 (tense: "participio-presente")  + metaattr022val107 (verb_form_type: "simple") | having to | owing |
+| 681 | dovuto | metaattr010val059 (mood: "participio") + metaattr019val108 (tense: "participio-passato")  + metaattr022val107 (verb_form_type: "simple") | had to | owed |
+| 682 | dovendo | metaattr010val060 (mood: "gerundio") + metaattr019val109 (tense: "gerundio-presente")  + metaattr022val107 (verb_form_type: "simple") | having to | owing |
 
 ### Compound Forms with avere auxiliary (49 forms)
 
@@ -174,8 +175,8 @@ All forms use the consolidated Entity Meta Values architecture:
 | 727 | abbiamo dovuto | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | let's have had to! (rare) | let's have owed! (rare) |
 | 728 | abbiate dovuto | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | have had to! (rare) | have owed! (rare) |
 | 729 | abbiano dovuto | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | let them have had to! (rare) | let them have owed! (rare) |
-| 730 | avendo dovuto | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val108 (verb_form_type: "compound") | having had to | having owed |
-| 731 | aver dovuto | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val108 (verb_form_type: "compound") | to have had to | to have owed |
+| 730 | avendo dovuto | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato")  + metaattr022val108 (verb_form_type: "compound") | having had to | having owed |
+| 731 | aver dovuto | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato")  + metaattr022val108 (verb_form_type: "compound") | to have had to | to have owed |
 
 ### Progressive Forms with stare auxiliary (37 forms)
 
@@ -217,7 +218,7 @@ All forms use the consolidated Entity Meta Values architecture:
 | 765 | staremmo dovendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | we would be having to | we would be owing |
 | 766 | stareste dovendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | you would be having to | you would be owing |
 | 767 | starebbero dovendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | they would be having to | they would be owing |
-| 768 | stando dovendo | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val109 (verb_form_type: "progressive") | being having to | being owing |
+| 768 | stando dovendo | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo")  + metaattr022val109 (verb_form_type: "progressive") | being having to | being owing |
 
 ## Form_Translations Coverage
 

@@ -48,8 +48,8 @@ value_id → metaattr021val126 (verb_type: "defective")
 All forms use the consolidated Entity Meta Values architecture:
 - **Mood**: metaattr010val054 (indicativo), metaattr010val055 (congiuntivo), metaattr010val056 (condizionale), metaattr010val057 (imperativo), metaattr010val058 (infinito), metaattr010val059 (participio), metaattr010val060 (gerundio)
 - **Tense**: metaattr019val096 (presente), metaattr019val097 (imperfetto), metaattr019val098 (passato-remoto), metaattr019val099 (futuro-semplice), etc.
-- **Person**: metaattr014val060 (prima-persona), metaattr014val061 (seconda-persona), metaattr014val062 (terza-persona), metaattr014val063 (none)
-- **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale), metaattr012val056 (none)
+- **Person**: metaattr014val060 (prima-persona), metaattr014val061 (seconda-persona), metaattr014val062 (terza-persona)
+- **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale)
 - **Verb Form Type**: metaattr022val107 (simple), metaattr022val108 (compound), metaattr022val109 (progressive)
 - **Verb Type**: metaattr021val126 (defective)
 - **Semantic Restriction**: metaattr013val129 (restriction: "third-person-only")
@@ -73,10 +73,10 @@ All forms use the consolidated Entity Meta Values architecture:
 | 1013 | vigerent | metaattr010val055 (mood: "congiuntivo") + metaattr019val103 (tense: "congiuntivo-imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") + metaattr013val129 (restriction: "third-person-only") | (that) they were in force |
 | 1014 | vigerebbe | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") + metaattr013val129 (restriction: "third-person-only") | it would be in force |
 | 1015 | vigerebbero | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") + metaattr013val129 (restriction: "third-person-only") | they would be in force |
-| 1016 | vigere | metaattr010val058 (mood: "infinito") + metaattr019val106 (tense: "infinito-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") | to be in force |
-| 1017 | viguisse | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") | to have been in force |
-| 1018 | vigens | metaattr010val059 (mood: "participio") + metaattr019val107 (tense: "participio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") | being in force |
-| 1019 | vigendo | metaattr010val060 (mood: "gerundio") + metaattr019val109 (tense: "gerundio-presente") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") | being in force |
+| 1016 | vigere | metaattr010val058 (mood: "infinito") + metaattr019val106 (tense: "infinito-presente")  + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") | to be in force |
+| 1017 | viguisse | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato")  + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") | to have been in force |
+| 1018 | vigens | metaattr010val059 (mood: "participio") + metaattr019val107 (tense: "participio-presente")  + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") | being in force |
+| 1019 | vigendo | metaattr010val060 (mood: "gerundio") + metaattr019val109 (tense: "gerundio-presente")  + metaattr022val107 (verb_form_type: "simple") + metaattr021val126 (verb_type: "defective") | being in force |
 
 ### Compound Forms with essere auxiliary (24 forms - Limited to 3rd person)
 
@@ -96,10 +96,10 @@ All forms use the consolidated Entity Meta Values architecture:
 | 1031 | fossero viguti | metaattr010val055 (mood: "congiuntivo") + metaattr019val115 (tense: "congiuntivo-trapassato") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") + metaattr013val129 (restriction: "third-person-only") | (that) they had been in force |
 | 1032 | sarebbe viguto | metaattr010val056 (mood: "condizionale") + metaattr019val116 (tense: "condizionale-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") + metaattr013val129 (restriction: "third-person-only") | it would have been in force |
 | 1033 | sarebbero viguti | metaattr010val056 (mood: "condizionale") + metaattr019val116 (tense: "condizionale-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") + metaattr013val129 (restriction: "third-person-only") | they would have been in force |
-| 1034 | essere viguto | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato") + metaattr014val063 (person: "none") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") | to have been in force |
-| 1035 | essere viguti | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato") + metaattr014val063 (person: "none") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") | to have been in force |
-| 1036 | essendo viguto | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato") + metaattr014val063 (person: "none") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") | having been in force |
-| 1037 | essendo viguti | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato") + metaattr014val063 (person: "none") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") | having been in force |
+| 1034 | essere viguto | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato")  + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") | to have been in force |
+| 1035 | essere viguti | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato")  + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") | to have been in force |
+| 1036 | essendo viguto | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato")  + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") | having been in force |
+| 1037 | essendo viguti | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato")  + metaattr022val108 (verb_form_type: "compound") + metaattr021val126 (verb_type: "defective") | having been in force |
 
 ### Progressive Forms with stare auxiliary (24 forms - Limited to 3rd person)
 
@@ -117,7 +117,7 @@ All forms use the consolidated Entity Meta Values architecture:
 | 1047 | stessero vigendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val126 (verb_type: "defective") + metaattr013val129 (restriction: "third-person-only") | (that) they were being in force |
 | 1048 | starebbe vigendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val126 (verb_type: "defective") + metaattr013val129 (restriction: "third-person-only") | it would be being in force |
 | 1049 | starebbero vigendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val126 (verb_type: "defective") + metaattr013val129 (restriction: "third-person-only") | they would be being in force |
-| 1050 | stando vigendo | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo") + metaattr014val063 (person: "none") + metaattr012val056 (number: "none") + metaattr022val109 (verb_form_type: "progressive") + metaattr021val126 (verb_type: "defective") | being being in force |
+| 1050 | stando vigendo | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo")  + metaattr022val109 (verb_form_type: "progressive") + metaattr021val126 (verb_type: "defective") | being being in force |
 
 ## Missing Forms Documentation
 

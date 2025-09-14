@@ -450,7 +450,51 @@ Agreement variants are stored as separate `word_forms` entries:
 
 Each form has appropriate gender/number tags for correct selection.
 
-### 4.3 Translation-level Auxiliary Assignments
+### 4.3 Compound Form Storage Rules
+
+#### Base Male Form Storage Architecture
+Compound forms with essere auxiliary are stored using **base masculine form only** to eliminate gender/number agreement complications at the storage level.
+
+**Storage Rules**:
+- **Store**: "sono andato" (not "sono andato/a")
+- **Store**: "è lavato" (not "è lavato/a")
+- **Store**: "siamo andati" (not "siamo andati/e")
+- **Store**: "sarà corso" (not "sarà corso/a")
+
+#### Agreement Elimination Strategy
+The system removes "/a", "/e" suffixes from stored compound forms:
+- **Database Storage**: Base masculine form only
+- **Frontend Display**: Agreement handled at display/presentation level, not storage level
+- **User Interface**: Agreement logic applies appropriate endings based on subject gender/number
+
+#### Examples in Practice
+**essere Compound Storage**:
+```sql
+-- Stored in word_forms.form_text
+"sono andato"    -- NOT "sono andato/a"
+"sei partito"    -- NOT "sei partito/a"
+"siamo usciti"   -- NOT "siamo usciti/e"
+"sono arrivate"  -- Exception: explicitly feminine plural contexts
+```
+
+**Frontend Agreement Logic**:
+```javascript
+// Display logic applies agreement at runtime
+if (subject.gender === 'feminine') {
+  displayForm = baseForm.replace(/o$/, 'a');  // andato → andata
+  displayForm = displayForm.replace(/i$/, 'e'); // andati → andate
+}
+```
+
+#### Benefits of Base Male Form Storage
+- **Storage Efficiency**: Single form per tense/person/number combination
+- **Data Consistency**: Eliminates agreement variant proliferation in database
+- **Agreement Flexibility**: Frontend can apply any agreement rule without schema changes
+- **Reduced Complexity**: Compound form materialization simplified
+
+This storage architecture ensures compound forms are stored consistently while maintaining full agreement capabilities through frontend logic.
+
+### 4.4 Translation-level Auxiliary Assignments
 
 The auxiliary assignment architecture works as follows:
 
@@ -479,7 +523,7 @@ The system enforces:
 3. Auxiliary should be consistent with transitivity metadata
 4. Reflexive verbs (`usage: "direct-reflexive"`) must use `"essere"`
 
-### 4.4 Progressive Tense Patterns (stare usage)
+### 4.5 Progressive Tense Patterns (stare usage)
 
 Progressive forms use **stare** as auxiliary, never avere/essere:
 
@@ -1311,7 +1355,7 @@ value_id → metaattr013val056 (number_restriction: "plural-only")
 **Reflexive Metadata Architecture**: Each form includes reflexive clitic integration with same metavalue stable_ids as Scenario A, plus:
 - **Reflexive Type**: metaattr021val102 (verb_type: "direct-reflexive") for Translation 1, metaattr021val103 (verb_type: "reciprocal") context for Translation 2
 - **Translation Restrictions**: Translation 2 (reciprocal) restricted to plural forms only via translation-level `number_restriction`
-- **Agreement**: Participles require metaattr022val135 (agreement: "required") for gender/number matching
+- **Agreement**: Participles require gender/number agreement matching with essere auxiliary
 
 
 **Architectural Pattern Summary**:
@@ -1336,7 +1380,7 @@ value_id → metaattr013val056 (number_restriction: "plural-only")
 - **Dual Meaning Support**: Single verb supports both reflexive and reciprocal interpretations through translation-level restrictions
 
 **Advanced Metadata Features**:
-- **Participle Agreement**: metaattr022val135 (agreement: "required") for gender/number matching in compound forms
+- **Participle Agreement**: Gender/number agreement required for compound forms with essere auxiliary
 - **Number Restrictions**: Translation 2 limited to plural persons (noi, voi, loro) via translation-level metadata
 - **Behavioral Classification**: verb_type: "direct-reflexive" distinguishes from other verb patterns
 
@@ -1413,8 +1457,8 @@ value_id → metaattr020val100 (transitivity: "intransitive")
 **Form Structure Coverage**:
 - **51 Simple Forms**: Standard ere-conjugation shared across both translations
 - **98 Compound Forms**: Split between "avere" (49 forms) and "essere" (49 forms) based on meaning
-- **98 Progressive Forms**: Split between auxiliary patterns following same logic as compounds
-- **Total**: 219 distinct forms creating 270 total form_translations due to meaning-based auxiliary selection
+- **37 Progressive Forms**: Single set shared across both translations
+- **Total**: 186 distinct forms creating 274 total form_translations due to meaning-based auxiliary selection
 
 **Dual Auxiliary Architecture**:
 - **Translation 1 (Sport/Exercise)**: "to run" - uses "avere" for compounds (I have run)
@@ -1436,8 +1480,8 @@ value_id → metaattr020val100 (transitivity: "intransitive")
 This pattern demonstrates how verb meaning drives auxiliary selection while maintaining full conjugation coverage across both semantic interpretations.
 
 **Coverage Summary**:
-- **Total Coverage**: 270 form_translations across both meanings
-- **Critical Point**: 219 distinct forms, but 270 total form_translations due to shared simple/progressive forms
+- **Total Coverage**: 274 form_translations across both meanings
+- **Critical Point**: 186 distinct forms, but 274 total form_translations due to shared simple/progressive forms
 
 ---
 
@@ -1745,12 +1789,12 @@ This verb demonstrates complex person restrictions:
 **Form Structure Coverage**:
 - **51 Simple Forms**: Standard are-conjugation available to all persons but with semantic restrictions per translation
 - **49 Compound Forms**: Split auxiliary usage - "essere" for impersonal, "avere" for transitive meanings
-- **35 Progressive Forms**: Available across persons with meaning-appropriate auxiliary selection
-- **Total**: 135 forms creating 160 total form_translations through selective translation coverage
+- **37 Progressive Forms**: Available across persons with meaning-appropriate auxiliary selection
+- **Total**: 137 forms creating 162 total form_translations through selective translation coverage
 
 **Dual Semantic Architecture**:
 - **Translation 1 (Impersonal)**: "to matter" - restricted to 3rd person forms only (25 form_translations)
-- **Translation 2 (Transitive)**: "to import" - applies to ALL forms (135 form_translations)
+- **Translation 2 (Transitive)**: "to import" - applies to ALL forms (137 form_translations)
 - **Person-Based Coverage**: Different translation availability creates semantic precision
 
 **Key Architectural Elements**:
@@ -1762,12 +1806,12 @@ This verb demonstrates complex person restrictions:
 **Advanced Semantic Features**:
 - **Person Restriction Logic**: Only "it matters" and "they matter" semantically appropriate for impersonal usage
 - **Auxiliary Differentiation**: "essere" for states ("it matters"), "avere" for actions ("I import")
-- **Complete Transitive Coverage**: All 135 forms available for commercial/trade meaning
+- **Complete Transitive Coverage**: All 137 forms available for commercial/trade meaning
 - **Semantic Precision**: Form-translation restrictions ensure contextually appropriate usage
 
 **Coverage Architecture**:
-- **Selective Application**: 25 (impersonal) + 135 (transitive) = 160 total form_translations
-- **Form Efficiency**: 135 forms serve dual semantic purposes through translation-level controls
+- **Selective Application**: 25 (impersonal) + 137 (transitive) = 162 total form_translations
+- **Form Efficiency**: 137 forms serve dual semantic purposes through translation-level controls
 - **Meaning-Based Access**: Translation assignment determines which semantic interpretation applies
 
 This pattern demonstrates how impersonal verbs maintain full conjugation capability while supporting semantic restrictions through selective translation coverage.
@@ -1779,12 +1823,12 @@ This pattern demonstrates how impersonal verbs maintain full conjugation capabil
   - Simple forms: 15 (only 3rd person + non-finite)
   - Compound forms: 17 (essere auxiliary, 3rd person only)
   - Progressive forms: 8 (only 3rd person + non-finite)
-- **Translation 2 ("To Import")**: 135 form_translations (all forms covered)
-  - Simple forms: 51 (all persons)  
+- **Translation 2 ("To Import")**: 137 form_translations (all forms covered)
+  - Simple forms: 51 (all persons)
   - Compound forms: 49 (avere auxiliary, all persons)
-  - Progressive forms: 35 (all persons)
-- **Total Coverage**: 160 form_translations across both meanings
-- **Shared Forms**: 135 forms exist, but different coverage patterns create semantic precision
+  - Progressive forms: 37 (all persons)
+- **Total Coverage**: 162 form_translations across both meanings
+- **Shared Forms**: 137 forms exist, but different coverage patterns create semantic precision
 
 ---
 
@@ -1842,14 +1886,14 @@ This pattern demonstrates how the materialization-centric architecture elegantly
 |-----------|----------|-------------|----------------------|----------------------|----------------------|
 | Normal | mangiare | 137 | 137 (all forms) | - | 137 |
 | Reflexive | lavarsi | 137 | 137 (all forms) | 45 (plural only) | 182 |
-| Dual Auxiliary | correre | 137* | 137 (all forms) | 137 (all forms) | 274 |
+| Dual Auxiliary | correre | 186 | 137 (all forms) | 137 (all forms) | 274 |
 | Modal | dovere | 137** | 137 (all standard forms) | 137 (all standard forms) | 274 |
 | Defective | vigere | 67 | 67 (existing forms only) | - | 67 |
-| Impersonal | importare | 135 | 25 (3rd person only) | 135 (all forms) | 160 |
+| Impersonal | importare | 137 | 25 (3rd person only) | 137 (all forms) | 162 |
 | Irregular | andare | 137 | 137 (all forms) | - | 137 |
 
 **Mathematical Explanations:**
-- *Dual Auxiliary Corrected: All verbs have same 137 base forms (51 simple + 49 compound + 37 progressive). Each translation covers ALL forms but uses different auxiliaries for compound forms only.
+- *Dual Auxiliary Corrected: correre has 186 total forms (51 simple + 49 compound with avere + 49 compound with essere + 37 progressive). Dual auxiliary creates additional compound forms with both avere and essere auxiliaries.
 - **Modal Corrected: Only standard 137 forms stored in database. Modal constructions (dovere + infinitive) are frontend-generated, NOT stored as separate forms.
 
 ### Meta Attribute Integration Patterns
