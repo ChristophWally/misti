@@ -48,8 +48,8 @@ value_id → metaattr020val099 (transitivity: "transitive")
 All forms use the consolidated Entity Meta Values architecture:
 - **Mood**: metaattr010val054 (indicativo), metaattr010val055 (congiuntivo), metaattr010val056 (condizionale), metaattr010val057 (imperativo), metaattr010val058 (infinito), metaattr010val059 (participio), metaattr010val060 (gerundio)
 - **Tense**: metaattr019val096 (presente), metaattr019val097 (imperfetto), metaattr019val098 (passato-remoto), metaattr019val099 (futuro-semplice), etc.
-- **Person**: metaattr014val060 (prima-persona), metaattr014val061 (seconda-persona), metaattr014val062 (terza-persona), metaattr014val063 (none)
-- **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale), metaattr012val056 (none)
+- **Person**: metaattr014val060 (prima-persona), metaattr014val061 (seconda-persona), metaattr014val062 (terza-persona)
+- **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale)
 - **Verb Form Type**: metaattr022val107 (simple), metaattr022val108 (compound), metaattr022val109 (progressive)
 
 ### Simple Forms (51 forms)
