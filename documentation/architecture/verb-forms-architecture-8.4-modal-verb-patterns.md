@@ -54,7 +54,6 @@ display_priority: 2
 -- entity_type='word_translation', entity_id=770e8400-e29b-41d4-a716-446655440002
 value_id → metaattr002val014 (auxiliary: "avere")
 value_id → metaattr020val099 (transitivity: "transitive")
-value_id → metaattr021val114 (verb_type: "normal")
 ```
 
 ## Complete Form Inventory (137 Total Forms)
