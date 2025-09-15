@@ -39,7 +39,7 @@ display_priority: 1
 -- entity_type='word_translation', entity_id=880e8400-e29b-41d4-a716-446655440001
 value_id → metaattr002val015 (auxiliary: "essere")
 value_id → metaattr020val100 (transitivity: "intransitive")
-value_id → metaattr021val120 (verb_type: "irregular")
+value_id → metaattr021val114 (verb_type: "normal")
 ```
 
 ## Complete Form Inventory (137 Total Forms)
@@ -213,9 +213,10 @@ All forms use the consolidated Entity Meta Values architecture:
 
 Section 8.7 establishes the architectural pattern for irregular verbs in the Misti system:
 
-1. **Selective Irregularity Marking**: Only truly irregular forms receive the metaattr005 (irregularity: "irregular") attribute
+1. **Form-Level Irregularity Marking**: Only truly irregular forms receive the metaattr005val066 (irregularity: "irregular") attribute at form level
 2. **Pattern Consistency**: Regular patterns within irregular verbs follow standard metavalue structures
 3. **Auxiliary Specification**: essere auxiliary properly specified at translation level for motion verbs
 4. **Complete Form Generation**: Every grammatically possible form exists, with appropriate irregularity markers
+5. **Architectural Rule**: Irregularity is a form-level property, not translation-level - irregular forms are marked individually
 
-This complete inventory demonstrates how the existing attribute system handles irregular verbs without requiring new metadata architecture, using selective application of the irregularity marker only where linguistically appropriate.
+This complete inventory demonstrates how the existing attribute system handles irregular verbs by marking individual irregular forms rather than classifying the entire verb as irregular at the translation level.

@@ -93,11 +93,11 @@ The Misti system uses a **multi-dimensional approach** to verb classification, r
 #### Behavioral Pattern Classification (verb_type)
 This dimension captures **special behavioral patterns** that affect how verbs conjugate, what forms they have, or how they function grammatically:
 
-- **modal-verb** - Verbs that can take bare infinitives (dovere, potere, volere)
-- **dual-auxiliary-verb** - Verbs that use different auxiliaries based on meaning (correre, saltare)
-- **defective-verb** - Verbs missing certain persons/numbers (vigere, urgere)  
-- **impersonal-verb** - Verbs primarily used in 3rd person (importare, bisognare)
-- **direct-reflexive** - Inherently reflexive verbs (svegliarsi, pentirsi)
+- **metaattr021val[ID] (verb_type: "modal")** - Verbs that can take bare infinitives (dovere, potere, volere)
+- **metaattr021val[ID] (verb_type: "dual-auxiliary")** - Verbs that use different auxiliaries based on meaning (correre, saltare)
+- **metaattr021val[ID] (verb_type: "defective")** - Verbs missing certain persons/numbers (vigere, urgere)
+- **metaattr021val[ID] (verb_type: "impersonal")** - Verbs primarily used in 3rd person (importare, bisognare)
+- **metaattr021val[ID] (verb_type: "reflexive")** - Inherently reflexive verbs (svegliarsi, pentirsi)
 
 #### Grammatical Property Classification (transitivity)
 This dimension captures **grammatical argument structure** independent of behavioral patterns:
@@ -117,16 +117,16 @@ This separation is **linguistically accurate** because:
 #### Examples of Multi-Dimensional Classification:
 ```sql
 -- Modal verb that can be transitive in some uses
-verb_type: "modal-verb"
-transitivity: "transitive"
+verb_type: metaattr021val[ID] (verb_type: "modal")
+transitivity: metaattr020val[ID] (transitivity: "transitive")
 
--- Weather verb that is grammatically intransitive  
-verb_type: "meteorological-verb"
-transitivity: "intransitive"
+-- Weather verb that is grammatically intransitive
+verb_type: metaattr021val[ID] (verb_type: "meteorological")
+transitivity: metaattr020val[ID] (transitivity: "intransitive")
 
 -- Dual auxiliary verb that can be used both ways
-verb_type: "dual-auxiliary-verb" 
-transitivity: "ambitransitive"
+verb_type: metaattr021val[ID] (verb_type: "dual-auxiliary")
+transitivity: metaattr020val[ID] (transitivity: "ambitransitive")
 ```
 
 **IMPORTANT**: The `verb_type` attribute does **not** contain values like "transitive-verb" or "intransitive-verb" as these would inappropriately mix behavioral and grammatical dimensions.
@@ -206,24 +206,23 @@ These classifications drive materialization priority - high-frequency, low-CEFR 
 
 Special behavioral markers are applied to verbs requiring non-standard handling:
 
-#### direct-reflexive
+#### metaattr021val[ID] (verb_type: "reflexive")
 - **Purpose**: Marks verbs that require reflexive pronouns and dual translation system
 - **Examples**: lavarsi (to wash oneself/each other), alzarsi (to get up/help each other up)
 - **Impact**: Forms include inherent clitics (mi lavo, ti lavi, si lava) with both direct reflexive and reciprocal meanings
 - **Required Translations**: Every reflexive verb must have both direct reflexive and reciprocal translations
 
-#### modal-verb  
+#### metaattr021val[ID] (verb_type: "modal")
 - **Purpose**: Identifies modal auxiliaries
 - **Examples**: potere (can), dovere (must), volere (want)
 - **Impact**: Can take infinitive complements, auxiliary selection varies
 
-#### impersonal-verb
+#### metaattr021val[ID] (verb_type: "impersonal")
 - **Purpose**: Verbs that only occur in 3rd person
 - **Examples**: bisognare (to be necessary), importare (to matter)
 - **Impact**: Only 3rd person forms are materialized
 
-
-#### defective-verb
+#### metaattr021val[ID] (verb_type: "defective")
 - **Purpose**: Verbs missing certain forms
 - **Examples**: solere (to be accustomed), vigere (to be in force)
 - **Impact**: Only forms that actually exist are materialized
@@ -234,7 +233,8 @@ Special behavioral markers are applied to verbs requiring non-standard handling:
 
 ### 3.1 All 7 Moods with Their Tenses Explained
 
-#### Indicativo (Indicative Mood)
+### Indicativo (Indicative Mood)
+
 The indicative expresses factual, objective reality.
 
 **Simple Tenses**:
@@ -254,7 +254,8 @@ The indicative expresses factual, objective reality.
 - `passato-progressivo` - Ongoing past (stavo parlando = I was speaking)
 - `futuro-progressivo` - Ongoing future (starò parlando = I will be speaking)
 
-#### Congiuntivo (Subjunctive Mood)
+### Congiuntivo (Subjunctive Mood)
+
 The subjunctive expresses subjectivity, doubt, emotion, and hypothetical situations.
 
 **Simple Tenses**:
@@ -268,7 +269,8 @@ The subjunctive expresses subjectivity, doubt, emotion, and hypothetical situati
 **Progressive Tenses**:
 - `congiuntivo-presente-progressivo` - Ongoing subjunctive (che io stia parlando = that I am speaking)
 
-#### Condizionale (Conditional Mood)
+### Condizionale (Conditional Mood)
+
 The conditional expresses hypothetical situations, polite requests, and uncertain information.
 
 **Simple Tenses**:
@@ -280,7 +282,8 @@ The conditional expresses hypothetical situations, polite requests, and uncertai
 **Progressive Tenses**:
 - `condizionale-presente-progressivo` - Ongoing hypothetical (starei parlando = I would be speaking)
 
-#### Imperativo (Imperative Mood)
+### Imperativo (Imperative Mood)
+
 The imperative expresses commands, requests, and instructions.
 
 **Simple Tenses**:
@@ -289,7 +292,8 @@ The imperative expresses commands, requests, and instructions.
 **Compound Tenses**:
 - `imperativo-passato` - Perfect command (abbi parlato! = have spoken! - rare)
 
-#### Infinito (Infinitive Mood)
+### Infinito (Infinitive Mood)
+
 The infinitive provides the basic, unconjugated verb form.
 
 **Simple Tenses**:
@@ -298,14 +302,16 @@ The infinitive provides the basic, unconjugated verb form.
 **Compound Tenses**:
 - `infinito-passato` - Perfect infinitive (aver parlato = to have spoken)
 
-#### Participio (Participle Mood)
+### Participio (Participle Mood)
+
 Participles function as adjectives and building blocks for compound tenses.
 
 **Simple Tenses**:
 - `participio-presente` - Present participle (parlante = speaking)
 - `participio-passato` - Past participle (parlato = spoken)
 
-#### Gerundio (Gerund Mood)
+### Gerundio (Gerund Mood)
+
 Gerunds express ongoing actions and function adverbially.
 
 **Simple Tenses**:
@@ -502,9 +508,9 @@ The auxiliary assignment architecture works as follows:
 Translation auxiliary assignment via entity_meta_values:
 ```sql
 -- entity_type='word_translation', entity_id=<translation_id>
-value_id → metaattr002val014 (auxiliary: "avere")
+value_id → metaattr002val[ID] (auxiliary: "avere")
 -- OR
-value_id → metaattr002val015 (auxiliary: "essere")
+value_id → metaattr002val[ID] (auxiliary: "essere")
 ```
 
 #### Assignment Logic per Translation
@@ -521,7 +527,7 @@ The system enforces:
 1. Every translation **must** specify an auxiliary
 2. Auxiliary must be exactly `"avere"` or `"essere"`  
 3. Auxiliary should be consistent with transitivity metadata
-4. Reflexive verbs (`usage: "direct-reflexive"`) must use `"essere"`
+4. Reflexive verbs (`usage: "reflexive"`) must use `"essere"`
 
 ### 4.5 Progressive Tense Patterns (stare usage)
 
@@ -563,8 +569,8 @@ Reciprocal verbs express mutual actions and have special constraints:
 Reciprocal translations are marked via entity_meta_values:
 ```sql
 -- entity_type='word_translation', entity_id=<translation_id>
-value_id → metaattr021val103 (verb_type: "reciprocal")
-value_id → metaattr013val056 (number_restriction: "plural-only")
+value_id → metaattr021val[ID] (verb_type: "reciprocal")
+value_id → metaattr013val[ID] (number_restriction: "plural-only")
 ```
 
 #### Number Restrictions Implementation
@@ -619,14 +625,14 @@ Defective verbs miss certain forms entirely:
 - `concernere` (to concern) - missing many finite forms
 
 **Implementation Approach**:
-- Tag as `defective-verb` at word level
+- Tag as `metaattr021val[ID] (verb_type: "defective")` at word level
 - Only materialize forms that linguistically exist
 - Validation system expects fewer forms for defective verbs
 
 ### 5.3 Impersonal Verbs
 
 #### Impersonal Verb Classification
-- **Marker**: `impersonal-verb` tags
+- **Marker**: `metaattr021val[ID] (verb_type: "impersonal")` tags
 - **Constraint**: Only 3rd person singular forms are valid
 - **Examples**: bisognare, importare
 
@@ -665,7 +671,7 @@ Every reflexive verb **must have both** direct reflexive AND reciprocal translat
 
 #### Translation Storage Requirements
 Each reflexive verb must store:
-1. **Direct Reflexive Translation**: `usage: "direct-reflexive"`, covers all persons (io, tu, lui/lei, noi, voi, loro)
+1. **Direct Reflexive Translation**: `usage: "reflexive"`, covers all persons (io, tu, lui/lei, noi, voi, loro)
 2. **Reciprocal Translation**: `usage: "reciprocal"`, `plurality: "plural-only"`, covers only plural persons (noi, voi, loro)
 
 #### Base Clitic Forms Storage
@@ -870,7 +876,7 @@ word_translations (
    - `transitivity`: `transitive`, `intransitive`, or `ambitransitive`
 
 2. **Usage Constraint Metadata** (optional but critical for reflexive verbs):
-   - `verb_type`: `direct-reflexive` or `reciprocal` (for reflexive verbs)
+   - `verb_type`: `reflexive` or `reciprocal` (for reflexive verbs)
    - `number_restriction`: `plural-only`, `singular-only`, `third-person-only`, `third-singular-only`
 
 3. **Optional Descriptive Metadata**:
@@ -884,40 +890,40 @@ word_translations (
 ```sql
 -- Translation: "to eat"
 -- entity_type='word_translation', entity_id=<translation_id>
-value_id → metaattr002val014 (auxiliary: "avere")
-value_id → metaattr020val099 (transitivity: "transitive")
-value_id → metaattr007val038 (frequency_tier: "top500")
-value_id → metaattr003val033 (cefr_level: "A1")
+value_id → metaattr002val[ID] (auxiliary: "avere")
+value_id → metaattr020val[ID] (transitivity: "transitive")
+value_id → metaattr007val[ID] (frequency_tier: "top500")
+value_id → metaattr003val[ID] (cefr_level: "A1")
 ```
 
 **Example 2: Direct Reflexive Translation (lavarsi)**
 ```sql
 -- Translation: "to wash oneself"
 -- entity_type='word_translation', entity_id=<translation_id>
-value_id → metaattr002val015 (auxiliary: "essere")
-value_id → metaattr020val100 (transitivity: "intransitive")
-value_id → metaattr021val102 (verb_type: "direct-reflexive")
-value_id → metaattr003val032 (cefr_level: "A2")
+value_id → metaattr002val[ID] (auxiliary: "essere")
+value_id → metaattr020val[ID] (transitivity: "intransitive")
+value_id → metaattr021val[ID] (verb_type: "reflexive")
+value_id → metaattr003val[ID] (cefr_level: "A2")
 ```
 
 **Example 3: Reciprocal Translation (lavarsi)**
 ```sql
 -- Translation: "to wash each other"
 -- entity_type='word_translation', entity_id=<translation_id>
-value_id → metaattr002val015 (auxiliary: "essere")
-value_id → metaattr020val100 (transitivity: "intransitive")
-value_id → metaattr021val103 (verb_type: "reciprocal")
-value_id → metaattr013val056 (number_restriction: "plural-only")
-value_id → metaattr003val031 (cefr_level: "B1")
+value_id → metaattr002val[ID] (auxiliary: "essere")
+value_id → metaattr020val[ID] (transitivity: "intransitive")
+value_id → metaattr021val[ID] (verb_type: "reciprocal")
+value_id → metaattr013val[ID] (number_restriction: "plural-only")
+value_id → metaattr003val[ID] (cefr_level: "B1")
 ```
 
 **Example 4: Ambitransitive Translation (correre)**
 ```sql
 -- Translation: "to run (single meaning usable both transitively and intransitively)"
 -- entity_type='word_translation', entity_id=<translation_id>
-value_id → metaattr002val014 (auxiliary: "avere")
-value_id → metaattr020val101 (transitivity: "ambitransitive")
-value_id → metaattr007val037 (frequency_tier: "top1000")
+value_id → metaattr002val[ID] (auxiliary: "avere")
+value_id → metaattr020val[ID] (transitivity: "ambitransitive")
+value_id → metaattr007val[ID] (frequency_tier: "top1000")
 ```
 
 #### How Translation Metadata Drives Form-Translation Assignment
@@ -926,7 +932,7 @@ The entity_meta_values relationships for translations **directly control**:
 
 1. **Auxiliary Selection**: Translation's `auxiliary` metaval determines which compound forms are generated
 2. **Number Filtering**: `number_restriction` metavals filter which persons/numbers get form_translations
-3. **Usage Context**: `verb_type` metavals (direct-reflexive vs reciprocal) affect form assignment logic
+3. **Usage Context**: `verb_type` metavals (reflexive vs reciprocal) affect form assignment logic
 4. **Display Priority**: Multiple translations with different metavals create layered meaning systems
 
 #### Translation-to-Form Relationship Architecture
@@ -1054,8 +1060,8 @@ entity_meta_values (
 #### Core vs Optional Metadata Categories
 **Core metadata** (stored for all entities):
 - **Form-level**: tense, mood, person, number, verb_form_type
-- **Translation-level**: auxiliary, transitivity, usage (direct-reflexive/reciprocal), number restrictions
-- **Word-level**: conjugation_type, cefr_level, frequency_tier + metaattr021val102 (verb_type: "direct-reflexive") status
+- **Translation-level**: auxiliary, transitivity, usage (reflexive/reciprocal), number restrictions
+- **Word-level**: conjugation_type, cefr_level, frequency_tier + reflexive status
 
 **Optional tags** (stored selectively):
 - **optional_tag_word**: Word-level descriptive tags
@@ -1063,7 +1069,7 @@ entity_meta_values (
 - **optional_tag_translation**: Translation-level descriptive tags
 
 #### Translation Tags via entity_meta_values
-Translation metadata (auxiliary type + metaattr021val102 (verb_type: "direct-reflexive")/reciprocal usage, number restrictions) are **also** stored in the normalized system:
+Translation metadata (auxiliary type + reflexive/reciprocal usage, number restrictions) are **also** stored in the normalized system:
 
 ```sql
 -- Translation with reciprocal usage + number restriction
@@ -1149,15 +1155,44 @@ The system enforces referential integrity:
 
 **Auxiliary Consistency** (via normalized metadata):
 - Forms with compound verb_form_type must link to translations with matching auxiliary metadata
-- Translations with "direct-reflexive" verb_type must have "essere" auxiliary metadata
+- Translations with "reflexive" verb_type must have "essere" auxiliary metadata
 
 **Semantic Validation**:
 - Translations with "reciprocal" usage and "plural-only" restriction can only link to plural-person forms
-- Verbs with "impersonal-verb" metadata can only have forms with "terza-persona" + "singolare" metadata
+- Verbs with "impersonal" metadata can only have forms with "terza-persona" + "singolare" metadata
 - Building block forms (participles, gerunds) must exist before compound form materialization
 - Metadata propagation rules are enforced through the entity_meta_values propagation fields
 
 This comprehensive relationship system ensures data integrity while providing maximum flexibility for pedagogical and linguistic requirements.
+
+### 7.6 Irregular Form Tagging Architecture
+
+The Misti system uses a **bottom-up irregular tagging approach** where irregularity is identified at the form level and propagates upward to flag words as irregular.
+
+#### Form-Level Irregular Tagging
+Irregular forms are tagged individually using form-level metadata:
+```sql
+-- entity_type='form', entity_id=<irregular_form_id>
+value_id → metaattr005val[ID] (irregularity: "stem-change")
+value_id → metaattr005val[ID] (irregularity: "suppletive")
+value_id → metaattr005val[ID] (irregularity: "consonant-change")
+```
+
+#### Propagation to Word Level
+When any form of a verb is tagged as irregular, the word automatically inherits irregular status:
+
+**Automatic Propagation Logic**:
+1. **Form Analysis**: System scans all forms for irregularity markers
+2. **Word-Level Propagation**: If ANY form has irregular tagging, word gets `metaattr021val[ID] (verb_type: "irregular")`
+3. **Complete Coverage**: Ensures all irregular verbs are properly flagged regardless of which specific forms are irregular
+
+#### Architectural Benefits
+- **Precision**: Only actually irregular forms are tagged, not entire conjugations
+- **Flexibility**: New irregular patterns can be tagged without changing word-level categories
+- **Educational Value**: Students can see exactly which forms are irregular vs regular
+- **Database Integrity**: Word-level irregular flags are derived from form-level evidence
+
+This bottom-up approach ensures that irregular classification is based on actual morphological evidence rather than linguistic assumptions.
 
 ### 7.5 Word Structure and Dictionary Table Architecture
 
@@ -1179,27 +1214,27 @@ dictionary (
 Word-level metavalues are stored via `entity_meta_values` where `entity_type='word'` and `entity_id=dictionary.id`. These metavalues fundamentally control how verb forms are generated and structured:
 
 **Core Conjugation Metavalues**:
-- `value_id → metaattr001val001` (conjugation_class: "are-conjugation")
-- `value_id → metaattr001val002` (conjugation_class: "ere-conjugation") 
-- `value_id → metaattr001val003` (conjugation_class: "ire-conjugation")
-- `value_id → metaattr001val004` (conjugation_class: "ire-isc-conjugation")
+- `value_id → metaattr001val[ID]` (conjugation_class: "are-conjugation")
+- `value_id → metaattr001val[ID]` (conjugation_class: "ere-conjugation") 
+- `value_id → metaattr001val[ID]` (conjugation_class: "ire-conjugation")
+- `value_id → metaattr001val[ID]` (conjugation_class: "ire-isc-conjugation")
 
 **Behavioral Pattern Metavalues**:
-- `value_id → metaattr021val123` (verb_type: "modal-verb") - Affects auxiliary selection and form compatibility
-- `value_id → metaattr021val124` (verb_type: "impersonal-verb") - Restricts person/number generation
-- `value_id → metaattr021val125` (verb_type: "meteorological-verb") - Limits to 3rd singular forms
-- `value_id → metaattr021val126` (verb_type: "defective-verb") - Excludes certain forms from generation
-- `value_id → metaattr021val102` (verb_type: "direct-reflexive") - Requires reflexive pronoun integration
+- `value_id → metaattr021val[ID]` (verb_type: "modal") - Affects auxiliary selection and form compatibility
+- `value_id → metaattr021val[ID]` (verb_type: "impersonal") - Restricts person/number generation
+- `value_id → metaattr021val[ID]` (verb_type: "meteorological") - Limits to 3rd singular forms
+- `value_id → metaattr021val[ID]` (verb_type: "defective") - Excludes certain forms from generation
+- `value_id → metaattr021val[ID]` (verb_type: "reflexive") - Requires reflexive pronoun integration
 
 **Form Restriction Metavalues**:
-- `value_id → metaattr013val129` (number_restriction: "third-person-only") - Limits person generation
-- `value_id → metaattr013val130` (number_restriction: "third-singular-only") - Most restrictive
-- `value_id → metaattr013val056` (number_restriction: "plural-only") - For reciprocal meanings
+- `value_id → metaattr013val[ID]` (number_restriction: "third-person-only") - Limits person generation
+- `value_id → metaattr013val[ID]` (number_restriction: "third-singular-only") - Most restrictive
+- `value_id → metaattr013val[ID]` (number_restriction: "plural-only") - For reciprocal meanings
 
 **Pedagogical Metavalues**:
-- `value_id → metaattr003val031` (cefr_level: "B1") - Affects form prioritization in learning contexts
-- `value_id → metaattr007val037` (frequency_tier: "top1000") - Influences form presentation order
-- `value_id → metaattr018val069` (register: "formal") - Affects contextual form selection
+- `value_id → metaattr003val[ID]` (cefr_level: "B1") - Affects form prioritization in learning contexts
+- `value_id → metaattr007val[ID]` (frequency_tier: "top1000") - Influences form presentation order
+- `value_id → metaattr018val[ID]` (register: "formal") - Affects contextual form selection
 
 #### Metavalue Propagation from Word to Forms
 
@@ -1218,673 +1253,125 @@ This word-level architecture ensures that every verb's complete conjugation para
 This section provides comprehensive form inventories showing EVERY form and form_translation for major verb categories in the Misti system. Each scenario demonstrates complete metadata structures, coverage matrices, and architectural patterns.
 
 ### Navigation:
-- [8.1 Regular Verb Patterns - "mangiare"](#81-scenario-a-normal-verb---mangiare-to-eat---complete-form-inventory)
-- [8.2 Reflexive Verb Patterns - "lavarsi"](#82-scenario-b-reflexive-verb---lavarsi-to-wash-oneselfeach-other---complete-form-inventory)
-- [8.3 Dual Auxiliary Verb Patterns - "correre"](#83-scenario-c-dual-auxiliary-verb---correre-to-run---complete-form-inventory)
-- [8.4 Modal Verb Patterns - "dovere"](#84-scenario-d-modal-verb---dovere-to-have-to---complete-form-inventory)
-- [8.5 Defective Verb Patterns - "vigere"](#85-scenario-e-defective-verb---vigere-to-be-in-force---complete-form-inventory)
-- [8.6 Impersonal Verb Patterns - "importare"](#86-scenario-f-impersonal-verb---importare-to-matter---complete-form-inventory)
-- [8.7 Irregular Verb Patterns - "andare"](#87-scenario-g-irregular-verb---andare-to-go---complete-form-inventory)
+- [8.1 Regular Verb Patterns - "mangiare"](#81-regular-verb---mangiare-to-eat)
+- [8.2 Reflexive Verb Patterns - "lavarsi"](#82-reflexive-verb---lavarsi-to-wash-oneselfeach-other)
+- [8.3 Dual Auxiliary Verb Patterns - "correre"](#83-dual-auxiliary-verb---correre-to-run)
+- [8.4 Modal Verb Patterns - "dovere"](#84-modal-verb---dovere-to-have-to)
+- [8.5 Defective Verb Patterns - "vigere"](#85-defective-verb---vigere-to-be-in-force)
+- [8.6 Impersonal Verb Patterns - "importare"](#86-impersonal-verb---importare-to-matter)
+- [8.7 Irregular Verb Patterns - "andare"](#87-irregular-verb---andare-to-go)
 
-### 8.1 Scenario A: Normal Verb - "mangiare" (to eat) - Complete Form Inventory
+### 8.1 Regular Verb - "mangiare" (to eat)
+**📋 Complete Details**: [Section 8.1: Regular Verb Patterns - "mangiare"](./verb-forms-architecture-8.1-regular-verb-patterns.md)
 
-**📋 Complete Section**: [Section 8.1: Regular Verb Patterns - "mangiare"](./verb-forms-architecture-8.1-regular-verb-patterns.md) - **ALL 137 individual conjugations**
+**Dictionary Entry**: `lemma: "mangiare", word_type: "verb"`
 
-#### Dictionary Entry
-```sql
--- dictionary table
-id: 550e8400-e29b-41d4-a716-446655440000
-lemma: "mangiare"
-word_type: "verb"
-```
+**Required Attribution Architecture**:
+- **Word Level**: metaattr001val[ID] (conjugation_type: "are-conjugation"), metaattr003val[ID] (cefr_level: "A1"), metaattr007val[ID] (frequency_tier: "top100")
+- **Translation Level**: metaattr002val[ID] (auxiliary: "avere"), metaattr020val[ID] (transitivity: "transitive")
+- **Form Level**: metaattr010val[ID] (mood), metaattr019val[ID] (tense), metaattr014val[ID] (person), metaattr012val[ID] (number), metaattr022val[ID] (form_type)
 
-#### Word-Level Metadata (via entity_meta_values)
-```sql
--- entity_type='word', entity_id=550e8400-e29b-41d4-a716-446655440000
-value_id → meta_values.value: "are-conjugation"    (conjugation_type)
-value_id → meta_values.value: "freq-top100"        (frequency_tier)
-value_id → meta_values.value: "CEFR-A1"            (cefr_level)
-value_id → meta_values.value: "transitive"         (transitivity)
-```
-
-#### Translation: "to eat" (primary meaning)
-```sql
--- word_translations table
-id: 660e8400-e29b-41d4-a716-446655440001
-word_id: 550e8400-e29b-41d4-a716-446655440000
-translation: "to eat"
-display_priority: 1
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=660e8400-e29b-41d4-a716-446655440001
-value_id → metaattr002val014 (auxiliary: "avere")
-value_id → metaattr020val099 (transitivity: "transitive")
-```
-
-#### Complete Form Inventory (137 Total Forms)
-
-**Metadata Architecture**: Each form's Entity Meta Values use real metavalue stable_ids:
-- **Mood**: metaattr010val054 (indicativo), metaattr010val055 (congiuntivo), metaattr010val056 (condizionale), metaattr010val057 (imperativo), metaattr010val058 (infinito), metaattr010val059 (participio), metaattr010val060 (gerundio)
-- **Tense**: metaattr019val096 (presente), metaattr019val097 (imperfetto), metaattr019val098 (passato-remoto), metaattr019val099 (futuro-semplice), etc.
-- **Person**: metaattr014val060 (prima-persona), metaattr014val061 (seconda-persona), metaattr014val062 (terza-persona)
-- **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale)
-- **Verb Form Type**: metaattr022val107 (simple), metaattr022val108 (compound), metaattr022val109 (progressive)
-
-**Architectural Pattern Summary**:
-
-"Mangiare" represents the standard **are-conjugation** pattern serving as the architectural baseline for regular Italian verbs. This verb type demonstrates:
-
-**Form Structure Coverage**:
-- **51 Simple Forms**: Standard conjugation across all 7 moods and 26 tenses where applicable
-- **49 Compound Forms**: Using auxiliary "avere" (to have) for all compound tenses
-- **37 Progressive Forms**: Using auxiliary "stare" (to be) + gerund for ongoing actions
-- **Total**: 137 forms covering complete conjugation landscape
-
-**Key Architectural Elements**:
-- **Entity Meta Values Integration**: Each form tagged with mood, tense, person, number, and verb_form_type metavalues
-- **Universal Translation Coverage**: Single translation ("to eat") applies to all 137 forms with no restrictions
-- **Standard Auxiliary Usage**: "avere" for compounds, "stare" for progressives - typical transitive verb pattern
-- **Complete Person/Number Matrix**: All 6 person-number combinations present across applicable tenses
-
-**Metadata Implementation**:
-- Mood: metaattr010val054-060 (indicativo through gerundio)
-- Tense: metaattr019val096+ (presente through specialized progressives)
-- Person: metaattr014val060-062 (prima-persona, seconda-persona, terza-persona)
-- Number: metaattr012val054-055 (singolare, plurale)
-- Form Type: metaattr022val107-109 (simple, compound, progressive)
-
-This architectural pattern serves as the foundation for understanding how regular verbs integrate with the Entity Meta Values system and demonstrates full coverage capabilities without restrictions or special behavioral patterns.
-**Form_Translations Coverage**: 137 form_translations total, all linking to single "to eat" translation. No restrictions apply - all forms covered.
+**Key Architectural Pattern**: Standard are-conjugation baseline pattern with universal form coverage and single translation.
+**Coverage**: 137 total forms (51 simple, 49 compound, 37 progressive)
 
 ---
 
-### 8.2 Scenario B: Reflexive Verb - "lavarsi" (to wash oneself/each other) - Complete Form Inventory
+### 8.2 Reflexive Verb - "lavarsi" (to wash oneself/each other)
+**📋 Complete Details**: [Section 8.2: Reflexive Verb Patterns - "lavarsi"](./verb-forms-architecture-8.2-reflexive-verb-patterns.md)
 
-**📋 Complete Section**: [Section 8.2: Reflexive Verb Patterns - "lavarsi"](./verb-forms-architecture-8.2-reflexive-verb-patterns.md) - **ALL 137 individual conjugations with reflexive pronouns**
+**Dictionary Entry**: `lemma: "lavarsi", word_type: "verb"`
 
-#### Dictionary Entry
-```sql
--- dictionary table
-id: 770e8400-e29b-41d4-a716-446655440000
-lemma: "lavarsi"
-word_type: "verb"
-```
+**Required Attribution Architecture**:
+- **Word Level**: metaattr001val[ID] (conjugation_type: "are-conjugation"), metaattr021val[ID] (verb_type: "reflexive"), metaattr003val[ID] (cefr_level: "A2")
+- **Translation Level**: metaattr002val[ID] (auxiliary: "essere"), metaattr021val[ID] (verb_type: "reflexive"/"reciprocal"), metaattr013val[ID] (number_restriction: "plural-only" for reciprocal)
+- **Form Level**: Standard form metadata plus reflexive clitic integration
 
-#### Word-Level Metadata
-```sql
--- entity_type='word', entity_id=770e8400-e29b-41d4-a716-446655440000
-value_id → meta_values.value: "are-conjugation"  (conjugation_type)
-value_id → meta_values.value: "direct-reflexive" (verb_type)
-value_id → meta_values.value: "intransitive"     (transitivity)
-value_id → meta_values.value: "freq-top200"      (frequency_tier)
-value_id → meta_values.value: "CEFR-A2"          (cefr_level)
-```
-
-#### Translation 1: Direct Reflexive "to wash oneself"
-```sql
--- word_translations table
-id: 880e8400-e29b-41d4-a716-446655440001
-word_id: 770e8400-e29b-41d4-a716-446655440000
-translation: "to wash oneself"
-display_priority: 1
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=880e8400-e29b-41d4-a716-446655440001
-value_id → metaattr002val015 (auxiliary: "essere")
-value_id → metaattr021val102 (verb_type: "direct-reflexive")
-value_id → metaattr020val100 (transitivity: "intransitive")
-```
-
-#### Translation 2: Reciprocal "to wash each other" (MANDATORY)
-```sql
--- word_translations table  
-id: 880e8400-e29b-41d4-a716-446655440002
-word_id: 770e8400-e29b-41d4-a716-446655440000
-translation: "to wash each other"
-display_priority: 2
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=880e8400-e29b-41d4-a716-446655440002
-value_id → metaattr002val015 (auxiliary: "essere")
-value_id → metaattr021val103 (verb_type: "reciprocal")
-value_id → metaattr013val056 (number_restriction: "plural-only")
-```
-
-#### Complete Form Inventory with Integrated Clitics (137 Total Forms)
-
-**Reflexive Metadata Architecture**: Each form includes reflexive clitic integration with same metavalue stable_ids as Scenario A, plus:
-- **Reflexive Type**: metaattr021val102 (verb_type: "direct-reflexive") for Translation 1, metaattr021val103 (verb_type: "reciprocal") context for Translation 2
-- **Translation Restrictions**: Translation 2 (reciprocal) restricted to plural forms only via translation-level `number_restriction`
-- **Agreement**: Participles require gender/number agreement matching with essere auxiliary
-
-
-**Architectural Pattern Summary**:
-
-"Lavarsi" demonstrates the **direct-reflexive** verb pattern with dual translation capabilities. This verb type showcases:
-
-**Form Structure Coverage**:
-- **51 Simple Forms**: Standard are-conjugation pattern with integrated reflexive pronouns (mi, ti, si, ci, vi, si)
-- **49 Compound Forms**: Using auxiliary "essere" (to be) with past participle agreement requirements
-- **37 Progressive Forms**: Using auxiliary "stare" + reflexive pronoun + gerund for ongoing reflexive actions
-- **Total**: 137 forms with dual translation matrix creating 182 total form_translations
-
-**Dual Translation Architecture**:
-- **Translation 1 (Direct Reflexive)**: "to wash oneself" - applies to ALL 137 forms (universal coverage)
-- **Translation 2 (Reciprocal)**: "to wash each other" - applies to PLURAL forms only (45 form_translations)
-- **Translation Restriction Logic**: number_restriction metadata controls which translation applies to which forms
-
-**Key Architectural Elements**:
-- **Reflexive Pronoun Integration**: Each form includes appropriate reflexive clitic (mi/ti/si/ci/vi/si)
-- **Auxiliary Usage**: "essere" for compounds with mandatory participle agreement
-- **Entity Meta Values Extension**: Standard metavalues PLUS metaattr021val102 (reflexive_type: "direct-reflexive")
-- **Dual Meaning Support**: Single verb supports both reflexive and reciprocal interpretations through translation-level restrictions
-
-**Advanced Metadata Features**:
-- **Participle Agreement**: Gender/number agreement required for compound forms with essere auxiliary
-- **Number Restrictions**: Translation 2 limited to plural persons (noi, voi, loro) via translation-level metadata
-- **Behavioral Classification**: verb_type: "direct-reflexive" distinguishes from other verb patterns
-
-This pattern demonstrates how reflexive verbs extend the standard conjugation architecture while maintaining compatibility with the Entity Meta Values system and supporting complex semantic distinctions through translation-level restrictions.
-
-**Coverage Summary**:
-- **Translation 1 (Direct Reflexive)**: 137 form_translations (all forms covered)
-- **Translation 2 (Reciprocal)**: 45 form_translations (only plural forms: noi, voi, loro)
-- **Total Coverage**: 182 form_translations across both meanings
+**Key Architectural Pattern**: Direct-reflexive pattern with dual translations - universal reflexive meaning plus plural-restricted reciprocal meaning.
+**Coverage**: 182 total form_translations (137 reflexive + 45 reciprocal)
 
 ---
 
-### 8.3 Scenario C: Dual Auxiliary Verb - "correre" (to run) - Complete Form Inventory
+### 8.3 Dual Auxiliary Verb - "correre" (to run)
+**📋 Complete Details**: [Section 8.3: Dual Auxiliary Verb Patterns - "correre"](./verb-forms-architecture-8.3-dual-auxiliary-verb-patterns.md)
 
-**📋 Complete Section**: [Section 8.3: Dual Auxiliary Verb Patterns - "correre"](./verb-forms-architecture-8.3-dual-auxiliary-verb-patterns.md) - **ALL 186 individual conjugations with dual auxiliary patterns**
+**Dictionary Entry**: `lemma: "correre", word_type: "verb"`
 
-**ARCHITECTURAL NOTE**: All tables in Scenarios C-G follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
-- **Removed Columns**: Mood, Tense, Person, Number, Variant Type
-- **Consolidated Format**: metaattr010val0XX (mood) + metaattr019val0XX (tense) + metaattr014val0XX (person) + metaattr012val0XX (number) + metaattr022val0XX (verb_form_type) + additional type-specific metavalues
-- **Form Coverage**: All forms exist regardless of restrictions; restrictions control translation assignments only  
+**Required Attribution Architecture**:
+- **Word Level**: metaattr001val[ID] (conjugation_type: "ere-conjugation"), metaattr003val[ID] (cefr_level: "B1"), metaattr007val[ID] (frequency_tier: "top500")
+- **Translation Level**: metaattr002val[ID] (auxiliary: "avere"/"essere"), metaattr020val[ID] (transitivity: "transitive"/"intransitive")
+- **Form Level**: Standard form metadata with shared simple/progressive forms across translations
 
-#### Dictionary Entry
-```sql
--- dictionary table
-id: 990e8400-e29b-41d4-a716-446655440000
-lemma: "correre"
-word_type: "verb"
-```
-
-#### Word-Level Metadata
-```sql
--- entity_type='word', entity_id=990e8400-e29b-41d4-a716-446655440000
-value_id → meta_values.value: "ere-conjugation" (conjugation_type)
-value_id → meta_values.value: "freq-top500"     (frequency_tier)
-value_id → meta_values.value: "CEFR-B1"         (cefr_level)
--- Note: Word-level transitivity is derived from translations
--- Translation 1: "transitive" + Translation 2: "intransitive" → displays as "trans./intrans."
--- Translation with "ambitransitive" → displays as "ambitrans."
-```
-
-#### Translation 1: "to run" (sport/exercise - transitive with avere)
-```sql
--- word_translations table
-id: aa0e8400-e29b-41d4-a716-446655440001
-word_id: 990e8400-e29b-41d4-a716-446655440000
-translation: "to run (sport)"
-display_priority: 1
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=aa0e8400-e29b-41d4-a716-446655440001
-value_id → metaattr002val014 (auxiliary: "avere")
-value_id → metaattr020val099 (transitivity: "transitive")
-```
-
-#### Translation 2: "to rush to" (motion with destination - intransitive with essere)
-```sql
--- word_translations table
-id: aa0e8400-e29b-41d4-a716-446655440002
-word_id: 990e8400-e29b-41d4-a716-446655440000
-translation: "to rush to"
-display_priority: 2
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=aa0e8400-e29b-41d4-a716-446655440002
-value_id → metaattr002val015 (auxiliary: "essere")
-value_id → metaattr020val100 (transitivity: "intransitive")
-```
-
-
-**Architectural Pattern Summary**:
-
-"Correre" demonstrates the **dual-auxiliary** verb pattern where meaning determines auxiliary verb selection. This verb type showcases:
-
-**Form Structure Coverage**:
-- **51 Simple Forms**: Standard ere-conjugation shared across both translations
-- **98 Compound Forms**: Split between "avere" (49 forms) and "essere" (49 forms) based on meaning
-- **37 Progressive Forms**: Single set shared across both translations
-- **Total**: 186 distinct forms creating 274 total form_translations due to meaning-based auxiliary selection
-
-**Dual Auxiliary Architecture**:
-- **Translation 1 (Sport/Exercise)**: "to run" - uses "avere" for compounds (I have run)
-- **Translation 2 (Movement/Direction)**: "to rush" - uses "essere" for compounds (I have rushed)
-- **Auxiliary Selection Logic**: Translation-level metavalues control which auxiliary applies (metaattr002val014 vs metaattr002val015)
-- **Shared Simple Forms**: All 51 simple forms work with both translations
-
-**Key Architectural Elements**:
-- **Translation-Level Auxiliary Metadata**: Each translation specifies its own auxiliary preference
-- **Meaning-Based Coverage**: Same verb forms express different semantic concepts through translation assignment
-- **Standard ere-conjugation**: Maintains regular conjugation patterns while supporting dual meanings
-- **Complete Auxiliary Integration**: Both "avere" and "essere" auxiliaries fully implemented
-
-**Advanced Metadata Features**:
-- **Transitivity Differentiation**: Translation 1 marked as transitive, Translation 2 as intransitive
-- **Form Multiplication**: 219 forms × auxiliary variations = 270 total form_translations
-- **Semantic Precision**: Translation assignment captures subtle meaning differences in auxiliary selection
-
-This pattern demonstrates how verb meaning drives auxiliary selection while maintaining full conjugation coverage across both semantic interpretations.
-
-**Coverage Summary**:
-- **Total Coverage**: 274 form_translations across both meanings
-- **Critical Point**: 186 distinct forms, but 274 total form_translations due to shared simple/progressive forms
+**Key Architectural Pattern**: Dual-auxiliary pattern where meaning determines auxiliary selection - shared forms with different auxiliary assignments.
+**Coverage**: 274 total form_translations (186 distinct forms with dual auxiliary assignments)
 
 ---
 
-### 8.4 Scenario D: Modal Verb - "dovere" (to have to) - Complete Form Inventory
+### 8.4 Modal Verb - "dovere" (to have to)
+**📋 Complete Details**: [Section 8.4: Modal Verb Patterns - "dovere"](./verb-forms-architecture-8.4-modal-verb-patterns.md)
 
-**📋 Complete Section**: [Section 8.4: Modal Verb Patterns - "dovere"](./verb-forms-architecture-8.4-modal-verb-patterns.md) - **ALL 137 individual conjugations with dual modal meanings**
+**Dictionary Entry**: `lemma: "dovere", word_type: "verb"`
 
-**ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
-- **Removed Columns**: Mood, Tense, Person, Number, Variant Type
-- **Consolidated Format**: metaattr010val0XX (mood) + metaattr019val0XX (tense) + metaattr014val0XX (person) + metaattr012val0XX (number) + metaattr022val0XX (verb_form_type) + metaattr021val0XX (modal_type)
-- **Modal Specifics**: All forms exist; auxiliary choice depends on infinitive complement
+**Required Attribution Architecture**:
+- **Word Level**: metaattr001val[ID] (conjugation_type: "ere-conjugation"), metaattr021val[ID] (verb_type: "modal"), metaattr003val[ID] (cefr_level: "A1")
+- **Translation Level**: metaattr002val[ID] (auxiliary: "avere"), metaattr021val[ID] (verb_type: "modal")
+- **Form Level**: Standard form metadata with modal auxiliary inheritance behavior
 
-#### Dictionary Entry
-```sql
--- dictionary table  
-id: bb0e8400-e29b-41d4-a716-446655440000
-lemma: "dovere"
-word_type: "verb"
-```
-
-#### Word-Level Metadata
-```sql
--- entity_type='word', entity_id=bb0e8400-e29b-41d4-a716-446655440000
-value_id → meta_values.value: "ere-conjugation"    (conjugation_type)
-value_id → meta_values.value: "modal-verb"         (verb_type)
-value_id → meta_values.value: "transitive"         (transitivity)
-value_id → meta_values.value: "freq-top50"         (frequency_tier)
-value_id → meta_values.value: "CEFR-A1"            (cefr_level)
-```
-
-#### Meta Attribute Integration
-The meta attribute `modal-verb` is stored in `entity_meta_values`:
-```sql
--- meta_attributes contains: attribute_name="verb_type", category="grammatical"
--- meta_values contains: value="modal-verb", stable_id="modal_verb", attribute_id=<verb_type_attr_id>
--- entity_meta_values links: entity_type='word', entity_id=<dovere_id>, value_id=<modal_verb_value_id>
-```
-
-#### Translation 1: "must/to have to" (obligation)
-```sql
--- word_translations table
-id: cc0e8400-e29b-41d4-a716-446655440001  
-word_id: bb0e8400-e29b-41d4-a716-446655440000
-translation: "must/to have to"
-display_priority: 1
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=cc0e8400-e29b-41d4-a716-446655440001
-value_id → metaattr002val014 (auxiliary: "avere")
-value_id → metaattr021val123 (verb_type: "modal-verb")
-```
-
-#### Translation 2: "to owe" (debt/obligation)
-```sql
--- word_translations table
-id: cc0e8400-e29b-41d4-a716-446655440002
-word_id: bb0e8400-e29b-41d4-a716-446655440000
-translation: "to owe"
-display_priority: 2  
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=cc0e8400-e29b-41d4-a716-446655440002
-value_id → metaattr002val014 (auxiliary: "avere")
-value_id → metaattr020val099 (transitivity: "transitive")
-```
-
-#### Modal-Specific Architecture Pattern
-Modal verbs have unique auxiliary behavior:
-- **Standalone usage**: Always use their own assigned auxiliary (dovere → avere)
-- **Modal + infinitive usage**: Inherit auxiliary from the dependent infinitive
-  - "ho dovuto mangiare" (mangiare uses avere)
-  - "sono dovuto andare" (andare uses essere)
-
-
-**Architectural Pattern Summary**:
-
-"Dovere" demonstrates the **modal-verb** pattern with dual semantic interpretations and unique auxiliary inheritance behavior. This verb type showcases:
-
-**Form Structure Coverage**:
-- **51 Simple Forms**: Standard ere-conjugation for base modal meanings
-- **49 Compound Forms**: Using auxiliary "avere" for standalone modal usage
-- **37 Progressive Forms**: Using auxiliary "stare" for ongoing modal states
-- **Total**: 137 database-stored forms creating 274 total form_translations
-
-**Modal Auxiliary Architecture**:
-- **Standalone Usage**: "ho dovuto" (I had to) - uses modal's own auxiliary (avere)
-- **Modal + Infinitive**: Inherits auxiliary from dependent verb
-  - "ho dovuto mangiare" (mangiare → avere)
-  - "sono dovuto andare" (andare → essere)
-- **Frontend Combinations**: Modal + infinitive constructions generated dynamically, not stored
-
-**Dual Semantic Coverage**:
-- **Translation 1 (Obligation)**: "to have to/must" - applies to ALL 137 forms
-- **Translation 2 (Debt)**: "to owe" - applies to ALL 137 forms
-- **Complete Coverage**: Both meanings support full conjugation landscape
-
-**Key Architectural Elements**:
-- **Modal Classification**: metaattr021val0XX (modal_type) distinguishes from other verb types
-- **Auxiliary Inheritance Logic**: Frontend handles auxiliary selection based on infinitive complement
-- **Semantic Flexibility**: Single verb form supports multiple modal interpretations
-- **Standard Conjugation**: Maintains regular ere-conjugation patterns despite modal behavior
-
-**Advanced Features**:
-- **Dynamic Auxiliary Selection**: System chooses auxiliary based on context (standalone vs. modal+infinitive)
-- **Frontend Integration**: Modal constructions built dynamically rather than pre-stored
-- **Complete Modal Coverage**: All 137 forms available for both semantic interpretations
-
-This pattern demonstrates how modal verbs maintain standard conjugation architecture while supporting complex auxiliary inheritance and semantic multiplicity.
-
-**Coverage Summary**:
-- **Translation 1 (Must/Have to)**: 137 form_translations (standard forms only)
-- **Translation 2 (Owe)**: 137 form_translations (standard forms only)  
-- **Total Coverage**: 274 form_translations across both meanings
-- **Modal Constructions**: "ho dovuto mangiare" etc. are frontend combinations, not stored forms
+**Key Architectural Pattern**: Modal-verb pattern with dual semantics and auxiliary inheritance - standalone uses "avere", modal+infinitive inherits auxiliary from dependent verb.
+**Coverage**: 274 total form_translations (137 forms × 2 meanings)
 
 ---
 
-### 8.5 Scenario E: Defective Verb - "vigere" (to be in force) - Complete Form Inventory
+### 8.5 Defective Verb - "vigere" (to be in force)
+**📋 Complete Details**: [Section 8.5: Defective Verb Patterns - "vigere"](./verb-forms-architecture-8.5-defective-verb-patterns.md)
 
-**📋 Complete Section**: [Section 8.5: Defective Verb Patterns - "vigere"](./verb-forms-architecture-8.5-defective-verb-patterns.md) - **ALL 67 existing forms with semantic restriction patterns**
+**Dictionary Entry**: `lemma: "vigere", word_type: "verb"`
 
-**ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
-- **Removed Columns**: Mood, Tense, Person, Number, Variant Type  
-- **Consolidated Format**: metaattr010val0XX (mood) + metaattr019val0XX (tense) + metaattr014val0XX (person) + metaattr012val0XX (number) + metaattr022val0XX (verb_form_type) + metaattr021val0XX (defective_type)
-- **Defective Specifics**: Only certain forms exist; missing forms are semantically/historically impossible
+**Required Attribution Architecture**:
+- **Word Level**: metaattr001val[ID] (conjugation_type: "ere-conjugation"), metaattr021val[ID] (verb_type: "defective"), metaattr013val[ID] (number_restriction: "third-person-only")
+- **Translation Level**: metaattr002val[ID] (auxiliary: "essere"), metaattr018val[ID] (register: "formal")
+- **Form Level**: Standard form metadata with semantic restrictions preventing 1st/2nd person forms
 
-#### Dictionary Entry
-```sql
--- dictionary table
-id: dd0e8400-e29b-41d4-a716-446655440000
-lemma: "vigere"  
-word_type: "verb"
-```
-
-#### Word-Level Metadata
-```sql
--- entity_type='word', entity_id=dd0e8400-e29b-41d4-a716-446655440000
-value_id → meta_values.value: "ere-conjugation"    (conjugation_type)
-value_id → meta_values.value: "defective-verb"     (verb_type)
-value_id → meta_values.value: "intransitive"       (transitivity)
-value_id → meta_values.value: "freq-rare"          (frequency_tier)
-value_id → meta_values.value: "CEFR-C1"            (cefr_level)
-value_id → meta_values.value: "missing-first-second-person" (number_restriction)
-```
-
-#### Meta Attribute Integration for Defective Status
-```sql
--- meta_attributes contains: attribute_name="verb_type", category="grammatical"  
--- meta_values contains: value="defective-verb", stable_id="defective_verb", attribute_id=<verb_type_attr_id>
--- entity_meta_values links: entity_type='word', entity_id=<vigere_id>, value_id=<defective_verb_value_id>
-
--- Additional restriction metadata
--- meta_attributes contains: attribute_name="number_restriction", category="morphological"
--- meta_values contains: value="missing-first-second-person", stable_id="missing_first_second_person"
-```
-
-#### Translation: "to be in force/to be valid" (legal/formal)
-```sql
--- word_translations table
-id: ee0e8400-e29b-41d4-a716-446655440001
-word_id: dd0e8400-e29b-41d4-a716-446655440000
-translation: "to be in force/to be valid" 
-display_priority: 1
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=ee0e8400-e29b-41d4-a716-446655440001
-value_id → metaattr002val015 (auxiliary: "essere")
-value_id → metaattr020val100 (transitivity: "intransitive")
-value_id → metaattr021val126 (verb_type: "defective-verb")
-value_id → metaattr018val069 (register: "formal")
-```
-
-#### Defective Limitations Explanation
-Vigere is defective due to semantic constraints:
-- **Missing persons**: 1st and 2nd person forms don't exist (laws/rules don't "be in force" for specific people)
-- **Missing imperative**: Cannot command someone to "be in force"  
-- **Missing some compound tenses**: Certain temporal combinations are semantically impossible
-- **3rd person focus**: Only "it is in force", "they are in force" make semantic sense
-
-
-**Architectural Pattern Summary**:
-
-"Vigere" demonstrates the **defective-verb** pattern where semantic constraints limit form availability. This verb type showcases:
-
-**Form Structure Coverage**:
-- **15 Simple Forms**: Only 3rd person (singular/plural) + impersonal forms (infinitive, participle, gerund)
-- **26 Compound Forms**: Limited to 3rd person variations with "essere" auxiliary
-- **26 Progressive Forms**: Limited to 3rd person + impersonal progressive constructions
-- **Total**: 67 forms (49.6% of standard 137-form paradigm)
-
-**Defective Architecture Rationale**:
-- **Semantic Constraints**: Laws/rules cannot "be in force" for specific persons (1st/2nd person impossible)
-- **Missing Imperatives**: Cannot command something to "be in force"
-- **3rd Person Focus**: Only "it is in force" and "they are in force" semantically valid
-- **Formal Register**: Legal/administrative contexts limit usage patterns
-
-**Key Architectural Elements**:
-- **Defective Classification**: metaattr021val126 (verb_type: "defective-verb") marks reduced form set
-- **Number Restrictions**: metaattr013val129 (number_restriction: "third-person-only") enforces person limitations
-- **Standard Conjugation**: Available forms follow regular ere-conjugation patterns
-- **Auxiliary Consistency**: Uses "essere" for available compound forms
-
-**Advanced Metadata Features**:
-- **Validation Rules**: System expects reduced form count for defective-tagged verbs
-- **Restriction Metadata**: Form-level restrictions prevent impossible person/number combinations
-- **Register Marking**: metaattr018val069 (register: "formal") indicates specialized usage context
-- **Semantic Integrity**: Only linguistically and semantically valid forms are materialized
-
-**Coverage Architecture**:
-- **Expected Reduction**: 67/137 forms (49.6% coverage) is architecturally correct for defective verbs
-- **Quality over Quantity**: Fewer forms ensure semantic accuracy and linguistic integrity
-- **Systematic Gaps**: Missing forms follow predictable patterns based on semantic constraints
-
-This pattern demonstrates how the system handles linguistically restricted verbs while maintaining architectural consistency and semantic accuracy.
-
-**Coverage Summary**:
-- **Single Translation**: 67 form_translations (only for linguistically valid forms)
-- **Missing Coverage**: 68 forms that don't exist (normal verb would have 135 total)  
-- **Coverage Percentage**: 49.6% of full conjugation paradigm
-- **Validation Rule**: System expects reduced form count for defective-verb tagged entries
+**Key Architectural Pattern**: Defective-verb pattern with semantic constraints limiting forms to 3rd person only - laws/rules cannot "be in force" for specific people.
+**Coverage**: 67 total forms (49.6% of standard paradigm - semantically restricted)
 
 ---
 
-### 8.6 Scenario F: Impersonal Verb - "importare" (to matter) - Complete Form Inventory
+### 8.6 Impersonal Verb - "importare" (to matter)
+**📋 Complete Details**: [Section 8.6: Impersonal Verb Patterns - "importare"](./verb-forms-architecture-8.6-impersonal-verb-patterns.md)
 
-**📋 Complete Section**: [Section 8.6: Impersonal Verb Patterns - "importare"](./verb-forms-architecture-8.6-impersonal-verb-patterns.md) - **ALL 274 individual conjugations with dual semantic patterns**
+**Dictionary Entry**: `lemma: "importare", word_type: "verb"`
 
-**ARCHITECTURAL NOTE**: All tables follow the same consolidated Entity Meta Values architecture as Scenarios A-B:
-- **Removed Columns**: Mood, Tense, Person, Number, Variant Type
-- **Consolidated Format**: metaattr010val0XX (mood) + metaattr019val0XX (tense) + metaattr014val0XX (person) + metaattr012val0XX (number) + metaattr022val0XX (verb_form_type) + metaattr021val0XX (impersonal_type)  
-- **Impersonal Specifics**: Forms exist across all persons; usage restrictions control semantic appropriateness
+**Required Attribution Architecture**:
+- **Word Level**: metaattr001val[ID] (conjugation_type: "are-conjugation"), metaattr021val[ID] (verb_type: "impersonal"), metaattr003val[ID] (cefr_level: "B1")
+- **Translation Level**: metaattr002val[ID] (auxiliary: "essere"/"avere"), metaattr013val[ID] (number_restriction: "third-person-only" for impersonal), metaattr020val[ID] (transitivity: "transitive" for import)
+- **Form Level**: Standard form metadata with selective translation coverage based on semantic appropriateness
 
-#### Dictionary Entry  
-```sql
--- dictionary table
-id: ff0e8400-e29b-41d4-a716-446655440000
-lemma: "importare"
-word_type: "verb"
-```
-
-#### Word-Level Metadata
-```sql
--- entity_type='word', entity_id=ff0e8400-e29b-41d4-a716-446655440000
-value_id → meta_values.value: "are-conjugation"      (conjugation_type)
-value_id → meta_values.value: "impersonal-verb"      (verb_type)
-value_id → meta_values.value: "freq-top1000"         (frequency_tier)
-value_id → meta_values.value: "CEFR-B1"              (cefr_level)
--- Note: Word-level transitivity derived from translations
--- Translation 1: "impersonal-verb" (essere) + Translation 2: "transitive" (avere)
--- → displays as "impers./trans."
-```
-
-#### Meta Attribute Integration for Impersonal Status  
-```sql
--- meta_attributes contains: attribute_name="verb_type", category="grammatical"
--- meta_values contains: value="impersonal-verb", stable_id="impersonal_verb", attribute_id=<verb_type_attr_id>
--- entity_meta_values links: entity_type='word', entity_id=<importare_id>, value_id=<impersonal_verb_value_id>
-
--- Person restriction metadata  
--- meta_attributes contains: attribute_name="number_restriction", category="morphological"
--- meta_values contains: value="third-person-only", stable_id="third_person_restriction"
-```
-
-#### Translation 1: "to matter" (impersonal usage - 3rd person only)
-```sql
--- word_translations table
-id: 110e8400-e29b-41d4-a716-446655440001
-word_id: ff0e8400-e29b-41d4-a716-446655440000
-translation: "to matter"
-display_priority: 1
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=110e8400-e29b-41d4-a716-446655440001
-value_id → metaattr002val015 (auxiliary: "essere")
-value_id → metaattr021val124 (verb_type: "impersonal-verb")
-value_id → metaattr013val129 (number_restriction: "third-person-only")
-```
-
-#### Translation 2: "to import" (personal usage - all persons)
-```sql
--- word_translations table  
-id: 110e8400-e29b-41d4-a716-446655440002
-word_id: ff0e8400-e29b-41d4-a716-446655440000
-translation: "to import"
-display_priority: 2
-
--- entity_meta_values for this translation
--- entity_type='word_translation', entity_id=110e8400-e29b-41d4-a716-446655440002
-value_id → metaattr002val014 (auxiliary: "avere")
-value_id → metaattr020val099 (transitivity: "transitive")
-```
-
-#### Dual Meaning Architecture Analysis
-This verb demonstrates complex person restrictions:
-- **"To matter" usage**: Only 3rd person ("it matters", "they matter") 
-- **"To import" usage**: All persons ("I import", "you import", etc.)
-- **Different auxiliaries**: essere for impersonal, avere for transitive
-- **Form sharing**: Same forms, different translation coverage
-
-
-**Architectural Pattern Summary**:
-
-"Importare" demonstrates the **impersonal-verb** pattern with dual semantic interpretations requiring different person restrictions. This verb type showcases:
-
-**Form Structure Coverage**:
-- **51 Simple Forms**: Standard are-conjugation available to all persons but with semantic restrictions per translation
-- **49 Compound Forms**: Split auxiliary usage - "essere" for impersonal, "avere" for transitive meanings
-- **37 Progressive Forms**: Available across persons with meaning-appropriate auxiliary selection
-- **Total**: 137 forms creating 162 total form_translations through selective translation coverage
-
-**Dual Semantic Architecture**:
-- **Translation 1 (Impersonal)**: "to matter" - restricted to 3rd person forms only (25 form_translations)
-- **Translation 2 (Transitive)**: "to import" - applies to ALL forms (137 form_translations)
-- **Person-Based Coverage**: Different translation availability creates semantic precision
-
-**Key Architectural Elements**:
-- **Impersonal Classification**: metaattr021val0XX (impersonal_type) marks specialized usage patterns
-- **Translation-Level Restrictions**: Translation 1 uses person restrictions while Translation 2 has universal coverage
-- **Dual Auxiliary Pattern**: Meaning determines auxiliary selection (essere vs avere)
-- **Selective Coverage Logic**: Same forms support different semantic interpretations through translation filtering
-
-**Advanced Semantic Features**:
-- **Person Restriction Logic**: Only "it matters" and "they matter" semantically appropriate for impersonal usage
-- **Auxiliary Differentiation**: "essere" for states ("it matters"), "avere" for actions ("I import")
-- **Complete Transitive Coverage**: All 137 forms available for commercial/trade meaning
-- **Semantic Precision**: Form-translation restrictions ensure contextually appropriate usage
-
-**Coverage Architecture**:
-- **Selective Application**: 25 (impersonal) + 137 (transitive) = 162 total form_translations
-- **Form Efficiency**: 137 forms serve dual semantic purposes through translation-level controls
-- **Meaning-Based Access**: Translation assignment determines which semantic interpretation applies
-
-This pattern demonstrates how impersonal verbs maintain full conjugation capability while supporting semantic restrictions through selective translation coverage.
-
-**Coverage Summary**:
-
-**Form_Translations Coverage Analysis:**
-- **Translation 1 ("To Matter")**: 25 form_translations (3rd person forms + infinitive/participle/gerund forms)  
-  - Simple forms: 15 (only 3rd person + non-finite)
-  - Compound forms: 17 (essere auxiliary, 3rd person only)
-  - Progressive forms: 8 (only 3rd person + non-finite)
-- **Translation 2 ("To Import")**: 137 form_translations (all forms covered)
-  - Simple forms: 51 (all persons)
-  - Compound forms: 49 (avere auxiliary, all persons)
-  - Progressive forms: 37 (all persons)
-- **Total Coverage**: 162 form_translations across both meanings
-- **Shared Forms**: 137 forms exist, but different coverage patterns create semantic precision
+**Key Architectural Pattern**: Impersonal-verb pattern with dual semantics - "to matter" (3rd person only) vs "to import" (all persons) using different auxiliaries.
+**Coverage**: 162 total form_translations (25 impersonal + 137 transitive)
 
 ---
 
-### 8.7 Scenario G: Irregular Verb - "andare" (to go) - Complete Form Inventory
+### 8.7 Irregular Verb - "andare" (to go)
+**📋 Complete Details**: [Section 8.7: Irregular Verb Patterns - "andare"](./verb-forms-architecture-8.7-irregular-verb-patterns.md)
 
-**📋 Complete Section**: [Section 8.7: Irregular Verb Patterns - "andare"](./verb-forms-architecture-8.7-irregular-verb-patterns.md) - **ALL 137 individual conjugations with irregular form patterns**
+**Dictionary Entry**: `lemma: "andare", word_type: "verb"`
 
-**Architectural Pattern Summary**:
+**Required Attribution Architecture**:
+- **Word Level**: metaattr001val[ID] (conjugation_type: "ere-conjugation"), metaattr021val[ID] (verb_type: "irregular"), metaattr003val[ID] (cefr_level: "A1")
+- **Translation Level**: metaattr002val[ID] (auxiliary: "essere"), metaattr020val[ID] (transitivity: "intransitive")
+- **Form Level**: Standard form metadata plus irregularity markers for stem alternations and suppletive forms
 
-"Andare" demonstrates the **irregular-verb** pattern where multiple stems and unpredictable form changes occur throughout the conjugation paradigm. This verb type showcases:
-
-**Form Structure Coverage**:
-- **51 Simple Forms**: Highly irregular with stem alternations (and-, vad-, v-) across persons and tenses
-- **49 Compound Forms**: Using auxiliary "essere" (to be) with standard past participle "andato"
-- **37 Progressive Forms**: Using auxiliary "stare" + gerund "andando" for ongoing movement actions
-- **Total**: 137 forms with extensive irregularity markers throughout the paradigm
-
-**Irregular Pattern Architecture**:
-- **Stem Alternation**: Multiple irregular stems within single tenses (vado/vai/va vs andiamo/andate/vanno)
-- **Suppletive Forms**: Future and conditional use "andr-" stem instead of infinitive-based forms
-- **Irregular Present**: All persons show irregularities (vado, vai, va, andiamo, andate, vanno)
-- **Mixed Patterns**: Some tenses regular (imperfect: andavo), others completely irregular (future: andrò)
-
-**Key Architectural Elements**:
-- **Irregularity Classification**: metaattr021val0XX (verb_type: "irregular") marks non-standard conjugation pattern
-- **Form-Level Irregularity Markers**: Each irregular form tagged with metaattr022val0XX (irregularity: "stem-change/suppletive")
-- **Standard Auxiliary Usage**: Despite irregularities, follows standard intransitive pattern with "essere"
-- **Complete Coverage**: All 137 forms materialized despite irregular patterns
-
-**Advanced Irregularity Features**:
-- **Stem Distribution Mapping**: System tracks which stems apply to which tense/person combinations
-- **Suppletive Future Handling**: "andrò" forms treated as lexical items rather than rule-derived
-- **Irregularity Inheritance**: Compound forms maintain base form irregularities where applicable
-- **Educational Tagging**: Each form marked with appropriate learning difficulty indicators
-
-**Irregular Verb Architecture Benefits**:
-- **Complete Materialization**: No rule-based generation for unpredictable forms
-- **Stem Variation Support**: Multiple stems handled through explicit form storage
-- **Exception-Free System**: All forms pre-validated and stored, eliminating runtime irregularity handling
-- **Learning Support**: Full irregularity documentation supports pedagogical applications
-
-This pattern demonstrates how the materialization-centric architecture elegantly handles even the most irregular Italian verbs by storing all forms explicitly rather than attempting complex rule systems.
-
-**Coverage Summary**:
-- **Single Translation**: 137 form_translations (all forms covered with "to go")
-- **Complete Irregularity Coverage**: All irregular stems and patterns fully materialized
-- **Auxiliary Consistency**: Standard "essere" auxiliary despite irregular conjugation patterns
+**Key Architectural Pattern**: Irregular-verb pattern with multiple stems and unpredictable changes - materialized forms rather than rule-based generation.
+**Coverage**: 137 total forms (complete irregular paradigm with stem alternations)
 
 ---
 ## Updated Coverage Calculations Summary
 
 ### Complete Form_Translation Coverage Matrix
 
-| Verb Type | Scenario | Total Forms | Translation 1 Coverage | Translation 2 Coverage | Total Form_Translations |
-|-----------|----------|-------------|----------------------|----------------------|----------------------|
-| Normal | mangiare | 137 | 137 (all forms) | - | 137 |
+| Verb Pattern | Example | Total Forms | Translation 1 Coverage | Translation 2 Coverage | Total Form_Translations |
+|--------------|---------|-------------|----------------------|----------------------|----------------------|
+| Regular | mangiare | 137 | 137 (all forms) | - | 137 |
 | Reflexive | lavarsi | 137 | 137 (all forms) | 45 (plural only) | 182 |
 | Dual Auxiliary | correre | 186 | 137 (all forms) | 137 (all forms) | 274 |
 | Modal | dovere | 137** | 137 (all standard forms) | 137 (all standard forms) | 274 |
@@ -1898,12 +1385,12 @@ This pattern demonstrates how the materialization-centric architecture elegantly
 
 ### Meta Attribute Integration Patterns
 
-| Verb Type | Behavioral Pattern (verb_type) | Grammatical Property (transitivity) | Additional Restrictions | Storage Location |
-|-----------|----------------------|---------------------|----------------------|-----------------|
-| Normal | None | Derived from translations | None | entity_meta_values |
-| Reflexive | verb_type: "direct-reflexive" | Derived from translations (intransitive) | verb_type: "direct-reflexive"/"reciprocal" | entity_meta_values |
+| Verb Pattern | Behavioral Pattern (verb_type) | Grammatical Property (transitivity) | Additional Restrictions | Storage Location |
+|--------------|----------------------|---------------------|----------------------|-----------------|
+| Regular | None | Derived from translations | None | entity_meta_values |
+| Reflexive | metaattr021val[ID] (verb_type: "reflexive") | Derived from translations (intransitive) | metaattr021val[ID] (verb_type: "reflexive"/"reciprocal") | entity_meta_values |
 | Dual Auxiliary | None (derived from translations) | Derived from translations (mixed) | Translation auxiliaries differ | entity_meta_values |
-| Modal | verb_type: "modal-verb" | Derived from translations | None (modal behavior is frontend-handled) | entity_meta_values |
-| Defective | verb_type: "defective-verb" | Derived from translations | number_restriction: "missing-first-second-person" | entity_meta_values |
-| Impersonal | verb_type: "impersonal-verb" | Derived from translations (mixed) | number_restriction: "third-person-only" | entity_meta_values |
-| Irregular | verb_type: "irregular" | Derived from translations (intransitive) | Form-level irregularity markers | entity_meta_values |
+| Modal | metaattr021val[ID] (verb_type: "modal") | Derived from translations | None (modal behavior is frontend-handled) | entity_meta_values |
+| Defective | metaattr021val[ID] (verb_type: "defective") | Derived from translations | metaattr013val[ID] (number_restriction: "third-person-only") | entity_meta_values |
+| Impersonal | metaattr021val[ID] (verb_type: "impersonal") | Derived from translations (mixed) | metaattr013val[ID] (number_restriction: "third-person-only") | entity_meta_values |
+| Irregular | metaattr021val[ID] (verb_type: "irregular") | Derived from translations (intransitive) | Form-level irregularity markers | entity_meta_values |
