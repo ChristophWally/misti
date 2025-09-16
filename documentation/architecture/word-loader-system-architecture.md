@@ -438,26 +438,44 @@ graph TD
 
 **💡 Field Requirements Note**: While the function accepts optional fields, **comprehensive word seeding** requires all fields to ensure complete lexical entries. Only `audio_filename` and `options` are truly optional for production use.
 
+### 🎨 **New Translation Format Guidelines**
+
+#### **📝 Semantic Grouping with Pipe Separators**
+- **Format**: `"translation": "primary meaning|secondary meaning|tertiary meaning"`
+- **Example**: `"to run|to dash|to sprint"` (motion verbs grouped by intensity)
+- **Principle**: Group semantically related meanings using linguistic relationships
+
+#### **📋 Usage Notes Instead of Context**
+- **❌ Old Format**: `"to run (sport)"`, `"to run (quickly)"`
+- **✅ New Format**: `"to run|to dash"` with `"usage_notes": "Athletic or rapid movement"`
+- **Field**: Use `usage_notes` field for contextual information
+
+#### **🔗 Linguistic Relationship Types**
+- **Metonymy**: Related by association (`"hand"` → `"worker"`)
+- **Metaphor**: Related by analogy (`"run"` → `"operate"`)
+- **Specialization**: General → specific (`"drink"` → `"drink alcohol"`)
+- **Generalization**: Specific → general (`"dog"` → `"animal"`)
+
 ---
 
 ## 4.2 Word-Level Attributes (Complete Reference)
 
 ### 4.2.1 Core Grammatical Attributes
 
-#### **`metaattr004` - Conjugation Type** *(Required for Verbs)*
-**Source Level**: `word` | **When to Use**: All Italian verbs must specify their conjugation pattern
+#### **🔧 `metaattr004` - Conjugation Type** *(Required for Verbs)*
+**📍 Source Level**: `word` | **🎯 When to Use**: All Italian verbs must specify their conjugation pattern
 
 ```json
 {"attribute_stable_id": "metaattr004", "value": "are"}
 ```
 
-**Available Values**:
-- `"are"` - First conjugation: parlare, amare, studiare (largest group, ~4000 verbs)
-- `"ere"` - Second conjugation: credere, vendere, mettere (many irregularities)
-- `"ire"` - Third conjugation: dormire, partire, sentire (regular pattern)
-- `"ire-isc"` - Third conjugation with -isc- infix: finire, pulire, costruire
+**🎨 Available Values**:
+- 🔹 `"are"` - First conjugation: `parlare`, `amare`, `studiare` (largest group, ~4000 verbs)
+- 🔸 `"ere"` - Second conjugation: `credere`, `vendere`, `mettere` (many irregularities)
+- 🔻 `"ire"` - Third conjugation: `dormire`, `partire`, `sentire` (regular pattern)
+- ⭐ `"ire-isc"` - Third conjugation with -isc- infix: `finire`, `pulire`, `costruire`
 
-**Usage Guidelines**: Based on infinitive ending and morphological pattern. Use `-isc` variant only for verbs that actually insert -isc- in present tense forms (finisco, finisci, finisce).
+**📋 Usage Guidelines**: Based on infinitive ending and morphological pattern. Use `-isc` variant only for verbs that actually insert -isc- in present tense forms (`finisco`, `finisci`, `finisce`).
 
 #### **`metaattr017` - Reflexive** *(Required for Reflexive Verbs)*
 **Source Level**: `word` | **When to Use**: Verbs requiring reflexive pronouns (lavarsi vs lavare)
@@ -517,12 +535,13 @@ graph TD
 - `"top5000"` - Comprehensive vocabulary: sussurrare, sbirciare
 - `"top10000"` - Full vocabulary range: archaic and specialized terms
 
-**Frequency Tier Sources**:
-- Italian National Corpus (CORIS/CODIS) analysis
-- Newspaper and media frequency studies (La Repubblica, Corriere della Sera)
-- Spoken Italian corpus analysis (C-ORAL-ROM)
-- Academic Italian frequency lists (De Mauro, Sabatini-Coletti)
-- Statistical analysis of contemporary Italian texts
+**📊 Frequency Tier Sources**:
+- 🏛️ **Italian National Corpus (CORIS/CODIS)** - Academic corpus analysis
+- 📰 **Newspaper and media studies** - La Repubblica, Corriere della Sera frequency analysis
+- 🗣️ **Spoken Italian corpus (C-ORAL-ROM)** - Conversational language patterns
+- 📚 **Academic frequency lists** - De Mauro, Sabatini-Coletti lexicographic research
+- 🌐 **PAISÀ Corpus** - Large web corpus of contemporary Italian texts (Creative Commons licensed) with lemma, POS, and frequency counts in descending order
+- 📈 **Statistical analysis** - Contemporary Italian text frequency analysis
 
 **Materialization Priority**: High-frequency + low-CEFR verbs receive complete 137-form sets first (top100 + A1 = highest priority).
 
@@ -530,22 +549,26 @@ graph TD
 
 ### 4.2.3 Behavioral Pattern Attributes
 
-#### **`metaattr013` - Number Restriction** *(When Applicable)*
-**Source Level**: `word` | **When to Use**: Verbs with grammatical or semantic constraints
+#### **🚧 `metaattr013` - Number Restriction** *(When Applicable)*
+**📍 Source Level**: `word` | **🎯 When to Use**: Verbs with grammatical or semantic constraints
 
 ```json
 {"attribute_stable_id": "metaattr013", "value": "third-person-only"}
 ```
 
-**Available Values & Usage**:
-- `"plural-only"` - Semantic plural requirement (some reciprocal meanings)
-- `"singular-only"` - Semantic singular requirement (rare)
-- `"third-person-only"` - Impersonal verbs: importare, bisognare, servire
-- `"third-singular-only"` - Weather verbs: piovere, nevicare, grandinare
-- `"missing-first-second-person"` - Defective verbs: vigere, urgere
-- `"missing-imperative"` - Defective verbs: solere (cannot form commands)
+**🎨 Available Values & Implementation Status**:
+- ✅ `"plural-only"` - Semantic plural requirement (reciprocal meanings) - **IMPLEMENTED**
+- ⚠️ `"singular-only"` - Semantic singular requirement (rare) - **NOT IMPLEMENTED**
+- ✅ `"third-person-only"` - Impersonal verbs: `importare`, `bisognare`, `servire` - **IMPLEMENTED**
+- ⚠️ `"third-singular-only"` - Weather verbs: `piovere`, `nevicare`, `grandinare` - **NOT IMPLEMENTED**
+- ⚠️ `"missing-first-second-person"` - Defective verbs: `vigere`, `urgere` - **NOT IMPLEMENTED**
+- ⚠️ `"missing-imperative"` - Defective verbs: `solere` (cannot form commands) - **NOT IMPLEMENTED**
 
-**Usage Guidelines**: Apply based on semantic and grammatical constraints. Impersonal verbs describe states/conditions without specific agents. Weather verbs are semantically restricted to third person singular.
+**📋 Usage Guidelines**: Apply based on semantic and grammatical constraints. Impersonal verbs describe states/conditions without specific agents. Weather verbs are semantically restricted to third person singular.
+
+**⚡ Function Implementation Notes**:
+- ✅ **Implemented**: `plural-only` (reciprocal validation), `third-person-only` (impersonal validation)
+- ⚠️ **Missing**: Specific validations for weather verbs, defective verb restrictions, and imperative limitations need to be added to the `load_lexical_entry` function
 
 ---
 
@@ -843,10 +866,17 @@ Vowels:
 /u/    - u (luna)
 ```
 
-#### **Stress Placement Rules**:
-- **Penultimate stress** (default): `/parˈlare/`
-- **Ultimate stress** (marked): `/parleˈrɔ/`
-- **Antepenultimate stress** (rare): `/ˈmediko/`
+#### **🎯 Italian Stress Placement Rules**:
+- 🔹 **Penultimate stress** (default ~80%): `/parˈlare/`, `/korˈrere/`, `/dorˈmire/`
+- 🔸 **Ultimate stress** (oxytone): `/perˈke/`, `/ʧitˈta/`, `/kaˈfe/` - requires written accent
+- 🔻 **Antepenultimate stress** (proparoxytone): `/ˈmediko/`, `/ˈtavola/`, `/ˈfaʧile/`
+- ⭐ **Pre-antepenultimate** (rare): `/ˈabitano/`, `/ˈtelefono/` (verb forms)
+
+#### **🎼 Stress Pattern Guidelines**:
+- **Default assumption**: Place stress on penultimate syllable unless indicated otherwise
+- **Written accents**: Only required for ultimate stress (città, perché, caffè)
+- **Infinitives**: Most follow penultimate pattern (`parlare`, `correre`, `dormire`)
+- **Irregular stress**: Some verbs have antepenultimate stress in 3rd person plural forms
 
 ### 5.2 Phonetic Format Standards
 
@@ -939,8 +969,9 @@ select public.load_lexical_entry($$
   "translations": [
     {
       "key": "speak",
-      "translation": "to speak",
+      "translation": "to speak|to talk",
       "display_priority": 1,
+      "usage_notes": "General speech and communication",
       "tags": [
         {"attribute_stable_id": "metaattr002", "value": "avere"},
         {"attribute_stable_id": "metaattr020", "value": "transitive"}
@@ -1285,8 +1316,9 @@ The function ensures **safe re-execution**:
   "translations": [
     {
       "key": "wash_self",
-      "translation": "to wash oneself",
+      "translation": "to wash|to clean",
       "display_priority": 1,
+      "usage_notes": "Direct reflexive action on oneself",
       "tags": [
         {"attribute_stable_id": "metaattr002", "value": "essere"},
         {"attribute_stable_id": "metaattr021", "value": "direct-reflexive"},
@@ -1295,8 +1327,9 @@ The function ensures **safe re-execution**:
     },
     {
       "key": "wash_each_other",
-      "translation": "to wash each other",
+      "translation": "to wash each other|to help wash",
       "display_priority": 2,
+      "usage_notes": "Reciprocal action between multiple people",
       "tags": [
         {"attribute_stable_id": "metaattr002", "value": "essere"},
         {"attribute_stable_id": "metaattr021", "value": "reciprocal"},
