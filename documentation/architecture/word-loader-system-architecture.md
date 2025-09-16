@@ -425,113 +425,366 @@ graph TD
 {
   "italian": "string (required)",
   "word_type": "string (required)",
-  "ipa": "string (optional)",
-  "phonetic": "string (optional)",
+  "ipa": "string (required for comprehensive seeding)",
+  "phonetic": "string (required for comprehensive seeding)",
   "audio_filename": "string (optional)",
-  "word_tags": ["array (optional)"],
-  "translations": ["array (optional)"],
-  "forms": ["array (optional)"],
-  "form_translations": ["array (optional)"],
-  "options": {object (optional)}
+  "word_tags": "array (required for verbs)",
+  "translations": "array (required - minimum 1 translation)",
+  "forms": "array (required for verbs - complete conjugation)",
+  "form_translations": "array (required - complete coverage matrix)",
+  "options": "object (optional)"
 }
 ```
 
-### 4.2 Word Tags Schema
+**💡 Field Requirements Note**: While the function accepts optional fields, **comprehensive word seeding** requires all fields to ensure complete lexical entries. Only `audio_filename` and `options` are truly optional for production use.
+
+---
+
+## 4.2 Word-Level Attributes (Complete Reference)
+
+### 4.2.1 Core Grammatical Attributes
+
+#### **`metaattr004` - Conjugation Type** *(Required for Verbs)*
+**Source Level**: `word` | **When to Use**: All Italian verbs must specify their conjugation pattern
 
 ```json
-{
-  "word_tags": [
-    {
-      "attribute_stable_id": "metaattr004",
-      "value": "are",
-      "derived_from": "loader"
-    }
-  ]
-}
+{"attribute_stable_id": "metaattr004", "value": "are"}
 ```
 
-**Available Word-Level Attributes**:
-- `metaattr004` (conjugation_type): `"are"`, `"ere"`, `"ire"`, `"ire-isc"`
-- `metaattr003` (cefr_level): `"A1"`, `"A2"`, `"B1"`, `"B2"`, `"C1"`, `"C2"`
-- `metaattr007` (frequency_tier): `"top100"`, `"top500"`, `"top1000"`, `"top2500"`, `"top5000"`
-- `metaattr013` (number_restriction): `"plural-only"`, `"third-person-only"`, etc.
+**Available Values**:
+- `"are"` - First conjugation: parlare, amare, studiare (largest group, ~4000 verbs)
+- `"ere"` - Second conjugation: credere, vendere, mettere (many irregularities)
+- `"ire"` - Third conjugation: dormire, partire, sentire (regular pattern)
+- `"ire-isc"` - Third conjugation with -isc- infix: finire, pulire, costruire
 
-### 4.3 Translations Schema
+**Usage Guidelines**: Based on infinitive ending and morphological pattern. Use `-isc` variant only for verbs that actually insert -isc- in present tense forms (finisco, finisci, finisce).
+
+#### **`metaattr017` - Reflexive** *(Required for Reflexive Verbs)*
+**Source Level**: `word` | **When to Use**: Verbs requiring reflexive pronouns (lavarsi vs lavare)
 
 ```json
-{
-  "translations": [
-    {
-      "key": "speak",
-      "translation": "to speak",
-      "display_priority": 1,
-      "frequency_estimate": 0.95,
-      "tags": [
-        {
-          "attribute_stable_id": "metaattr002",
-          "value": "avere"
-        },
-        {
-          "attribute_stable_id": "metaattr020",
-          "value": "transitive"
-        }
-      ]
-    }
-  ]
-}
+{"attribute_stable_id": "metaattr017", "value": "reflexive"}
 ```
 
-**Available Translation-Level Attributes**:
-- `metaattr002` (auxiliary): `"avere"`, `"essere"`
-- `metaattr020` (transitivity): `"transitive"`, `"intransitive"`, `"ambitransitive"`
-- `metaattr021` (verb_type): `"modal-verb"`, `"direct-reflexive"`, `"reciprocal"`
-- `metaattr018` (register): `"formal"`, `"casual"`, `"neutral"`
+**Available Values**:
+- `"reflexive"` - Requires reflexive pronouns: lavarsi, alzarsi, vestirsi
 
-### 4.4 Forms Schema
+**Usage Guidelines**: Apply to verbs that are inherently reflexive and require clitic pronouns (mi, ti, si, ci, vi, si) as part of their core meaning.
+
+---
+
+### 4.2.2 Learning & Pedagogical Attributes
+
+#### **`metaattr003` - CEFR Level** *(Required for Learning Applications)*
+**Source Level**: `word` | **When to Use**: All vocabulary for learning progression
 
 ```json
-{
-  "forms": [
-    {
-      "form_text": "parlo",
-      "form_type": "conjugation",
-      "ipa": "/ˈparlo/",
-      "phonetic": "PAR-lo",
-      "tags": [
-        {
-          "attribute_stable_id": "metaattr010",
-          "value": "indicativo"
-        },
-        {
-          "attribute_stable_id": "metaattr019",
-          "value": "presente"
-        },
-        {
-          "attribute_stable_id": "metaattr014",
-          "value": "prima-persona"
-        },
-        {
-          "attribute_stable_id": "metaattr012",
-          "value": "singolare"
-        },
-        {
-          "attribute_stable_id": "metaattr022",
-          "value": "simple"
-        }
-      ]
-    }
-  ]
-}
+{"attribute_stable_id": "metaattr003", "value": "A1"}
 ```
 
-**Required Form-Level Attributes for Verbs**:
-- `metaattr010` (mood): `"indicativo"`, `"congiuntivo"`, `"condizionale"`, etc.
-- `metaattr019` (tense): `"presente"`, `"imperfetto"`, `"passato-prossimo"`, etc.
-- `metaattr014` (person): `"prima-persona"`, `"seconda-persona"`, `"terza-persona"`
-- `metaattr012` (number): `"singolare"`, `"plurale"`
-- `metaattr022` (verb_form_type): `"simple"`, `"compound"`, `"progressive"`
+**Available Values & Usage**:
+- `"A1"` - Absolute beginner: essere, avere, parlare, mangiare (survival vocabulary)
+- `"A2"` - Elementary: credere, alzarsi, preferire (personal information)
+- `"B1"` - Intermediate: accorgersi, convincere, costruire (familiar topics)
+- `"B2"` - Upper-intermediate: distinguere, manifestare (complex topics)
+- `"C1"` - Advanced: conciliare, rivendicare (sophisticated communication)
+- `"C2"` - Proficiency: pervadere, scaturire (near-native competence)
+- `"native"` - Native speaker vocabulary: highly specialized terms
+- `"academic"` - Academic terminology: dissertare, postulare
+- `"business"` - Business vocabulary: fatturare, commercializzare
+- `"literary"` - Literary usage: tramontare, dileguare
+- `"regional"` - Regional/dialectal: specific geographic usage
+- `"specialized"` - Technical/domain-specific: terms for specific fields
 
-### 4.5 Form Translations Schema
+**CEFR Level Sources**:
+- Common European Framework standards and guidelines
+- Italian language textbook analysis (Nuovo Espresso, Bravissimo series)
+- Teacher and linguist expert assessment
+- Learning progression research from language schools
+
+#### **`metaattr007` - Frequency Tier** *(Required for Learning Priority)*
+**Source Level**: `word` | **When to Use**: All vocabulary for usage-based learning
+
+```json
+{"attribute_stable_id": "metaattr007", "value": "top100"}
+```
+
+**Available Values & Usage**:
+- `"top100"` - Most essential: essere, avere, fare, dire, andare
+- `"top500"` - High frequency: parlare, vedere, sapere, dare
+- `"top1000"` - Common vocabulary: credere, portare, lasciare
+- `"top2500"` - Extended vocabulary: costruire, nascondere
+- `"top5000"` - Comprehensive vocabulary: sussurrare, sbirciare
+- `"top10000"` - Full vocabulary range: archaic and specialized terms
+
+**Frequency Tier Sources**:
+- Italian National Corpus (CORIS/CODIS) analysis
+- Newspaper and media frequency studies (La Repubblica, Corriere della Sera)
+- Spoken Italian corpus analysis (C-ORAL-ROM)
+- Academic Italian frequency lists (De Mauro, Sabatini-Coletti)
+- Statistical analysis of contemporary Italian texts
+
+**Materialization Priority**: High-frequency + low-CEFR verbs receive complete 137-form sets first (top100 + A1 = highest priority).
+
+---
+
+### 4.2.3 Behavioral Pattern Attributes
+
+#### **`metaattr013` - Number Restriction** *(When Applicable)*
+**Source Level**: `word` | **When to Use**: Verbs with grammatical or semantic constraints
+
+```json
+{"attribute_stable_id": "metaattr013", "value": "third-person-only"}
+```
+
+**Available Values & Usage**:
+- `"plural-only"` - Semantic plural requirement (some reciprocal meanings)
+- `"singular-only"` - Semantic singular requirement (rare)
+- `"third-person-only"` - Impersonal verbs: importare, bisognare, servire
+- `"third-singular-only"` - Weather verbs: piovere, nevicare, grandinare
+- `"missing-first-second-person"` - Defective verbs: vigere, urgere
+- `"missing-imperative"` - Defective verbs: solere (cannot form commands)
+
+**Usage Guidelines**: Apply based on semantic and grammatical constraints. Impersonal verbs describe states/conditions without specific agents. Weather verbs are semantically restricted to third person singular.
+
+---
+
+## 4.3 Translation-Level Attributes (Complete Reference)
+
+### 4.3.1 Core Grammatical Attributes
+
+#### **`metaattr002` - Auxiliary** *(Required for All Verbs)*
+**Source Level**: `translation` | **When to Use**: Every verb translation must specify auxiliary
+
+```json
+{"attribute_stable_id": "metaattr002", "value": "avere"}
+```
+
+**Available Values**:
+- `"avere"` - Transitive actions, creation, general activities: ho parlato, ho mangiato
+- `"essere"` - Motion, state changes, existence changes, reflexive actions: sono andato, mi sono lavato
+
+**Usage Guidelines**:
+- **Avere**: Transitive verbs, activities without state change (parlare, mangiare, lavorare)
+- **Essere**: Motion with destination (andare, venire), state changes (diventare, morire), reflexive verbs (lavarsi)
+- **Validation**: Must align with transitivity - transitive typically uses avere, intransitive typically uses essere
+
+#### **`metaattr020` - Transitivity** *(Required for All Verbs)*
+**Source Level**: `translation` | **When to Use**: Every verb translation must specify object-taking capability
+
+```json
+{"attribute_stable_id": "metaattr020", "value": "transitive"}
+```
+
+**Available Values**:
+- `"transitive"` - Takes direct objects: mangiare una mela, vedere qualcosa
+- `"intransitive"` - Cannot take direct objects: andare, dormire, esistere
+- `"ambitransitive"` - Single meaning usable both ways: correre (una gara) / correre (velocemente)
+
+**Usage Guidelines**: Based on whether the specific translation meaning can take direct objects. Same verb can have different transitivity for different meanings.
+
+---
+
+### 4.3.2 Semantic Classification Attributes
+
+#### **`metaattr021` - Verb Type** *(When Applicable)*
+**Source Level**: `translation` | **When to Use**: Special behavioral patterns or semantic restrictions
+
+```json
+{"attribute_stable_id": "metaattr021", "value": "modal-verb"}
+```
+
+**Available Values & Usage**:
+- `"modal-verb"` - Auxiliary modals: dovere (must), potere (can), volere (want), sapere (know how)
+- `"direct-reflexive"` - Action on oneself: mi lavo (I wash myself)
+- `"reciprocal"` - Mutual action: ci laviamo (we wash each other) - **must combine with plural-only restriction**
+- `"impersonal-verb"` - No specific subject: importare (matter), bisognare (need), servire (be needed)
+- `"defective-verb"` - Missing some forms: vigere (be in force), solere (be accustomed)
+- `"meteorological-verb"` - Weather phenomena: piovere (rain), nevicare (snow) - third singular only
+
+**Deprecated Values** *(Do Not Use)*:
+- `"transitive-verb"`, `"intransitive-verb"`, `"intransitive"` - Use `transitivity` attribute instead
+
+**Usage Guidelines**:
+- **Modal verbs**: Can take bare infinitives, auxiliary selection varies based on dependent verb
+- **Reflexive/Reciprocal**: Reflexive verbs must have both direct-reflexive AND reciprocal translations
+- **Impersonal**: Describes states/conditions without specific agents, typically third person only
+
+---
+
+### 4.3.3 Contextual Attributes
+
+#### **`metaattr018` - Register** *(When Applicable)*
+**Source Level**: `translation` | **When to Use**: Sociolinguistic appropriateness varies
+
+```json
+{"attribute_stable_id": "metaattr018", "value": "formal"}
+```
+
+**Available Values**:
+- `"formal"` - Academic, professional, official contexts: dissertare, postulare
+- `"casual"` - Colloquial, everyday conversation: chiacchierare, sgridare
+- `"neutral"` - Standard register, neither formal nor informal: parlare, dire
+- `"mixed"` - Appropriate in both formal and informal contexts: essere, avere
+
+**Usage Guidelines**: Apply when translation appropriateness varies by social context. Most common verbs are neutral/mixed.
+
+#### **`metaattr008` - Gender Usage** *(When Applicable)*
+**Source Level**: `translation` | **When to Use**: Gender-specific meanings
+
+```json
+{"attribute_stable_id": "metaattr008", "value": "male-only"}
+```
+
+**Available Values**:
+- `"male-only"` - Translation only for male subjects: Some appearance terms
+- `"female-only"` - Translation only for female subjects: Some appearance terms
+
+**Usage Guidelines**: Rare attribute for gendered interpretations of certain adjectives/verbs.
+
+---
+
+## 4.4 Form-Level Attributes (Complete Reference)
+
+### 4.4.1 Core Grammatical Tags (Required for All Verb Forms)
+
+#### **`metaattr010` - Mood** *(Required)*
+**Source Level**: `form` | **When to Use**: All conjugated verb forms
+
+```json
+{"attribute_stable_id": "metaattr010", "value": "indicativo"}
+```
+
+**Available Values & Usage**:
+- `"indicativo"` - Factual statements: parlo, parlavo, ho parlato
+- `"congiuntivo"` - Doubt, emotion, opinion: che parli, che parlassi
+- `"condizionale"` - Hypothetical situations: parlerei, avrei parlato
+- `"imperativo"` - Commands: parla!, parlate!
+- `"infinito"` - Unconjugated forms: parlare, aver parlato
+- `"participio"` - Verbal adjectives: parlante, parlato
+- `"gerundio"` - Verbal nouns: parlando, avendo parlato
+
+#### **`metaattr019` - Tense** *(Required)*
+**Source Level**: `form` | **When to Use**: All conjugated verb forms
+
+```json
+{"attribute_stable_id": "metaattr019", "value": "presente"}
+```
+
+**Available Values** (Complete List):
+**Indicative Tenses**:
+- `"presente"` - Present: parlo, parli, parla
+- `"imperfetto"` - Imperfect: parlavo, parlavi, parlava
+- `"passato-remoto"` - Simple past: parlai, parlasti, parlò
+- `"futuro-semplice"` - Simple future: parlerò, parlerai, parlerà
+- `"passato-prossimo"` - Present perfect: ho parlato, hai parlato
+- `"trapassato-prossimo"` - Past perfect: avevo parlato
+- `"futuro-anteriore"` - Future perfect: avrò parlato
+- `"trapassato-remoto"` - Past anterior: ebbi parlato
+
+**Subjunctive Tenses**:
+- `"congiuntivo-presente"` - Present subjunctive: che parli
+- `"congiuntivo-imperfetto"` - Imperfect subjunctive: che parlassi
+- `"congiuntivo-passato"` - Present perfect subjunctive: che abbia parlato
+- `"congiuntivo-trapassato"` - Past perfect subjunctive: che avessi parlato
+
+**Conditional Tenses**:
+- `"condizionale-presente"` - Present conditional: parlerei
+- `"condizionale-passato"` - Past conditional: avrei parlato
+
+**Progressive Tenses**:
+- `"presente-progressivo"` - Present progressive: sto parlando
+- `"imperfetto-progressivo"` - Past progressive: stavo parlando
+- `"futuro-progressivo"` - Future progressive: starò parlando
+- `"congiuntivo-presente-progressivo"` - Subjunctive progressive: che stia parlando
+- `"condizionale-presente-progressivo"` - Conditional progressive: starei parlando
+
+**Non-finite Tenses**:
+- `"infinito-presente"` - Present infinitive: parlare
+- `"infinito-passato"` - Past infinitive: aver parlato
+- `"participio-presente"` - Present participle: parlante
+- `"participio-passato"` - Past participle: parlato
+- `"gerundio-presente"` - Present gerund: parlando
+- `"gerundio-passato"` - Past gerund: avendo parlato
+
+**Imperative Tenses**:
+- `"imperativo-presente"` - Present imperative: parla!, parlate!
+- `"imperativo-passato"` - Past imperative: abbi parlato! (rare)
+
+#### **`metaattr014` - Person** *(Required for Finite Forms)*
+**Source Level**: `form` | **When to Use**: All conjugated forms with subject agreement
+
+```json
+{"attribute_stable_id": "metaattr014", "value": "prima-persona"}
+```
+
+**Available Values**:
+- `"prima-persona"` - First person: io, noi
+- `"seconda-persona"` - Second person: tu, voi
+- `"terza-persona"` - Third person: lui/lei, loro
+
+**Usage Guidelines**: Not applicable to infinitive, participle, or gerund forms which are non-finite.
+
+#### **`metaattr012` - Number** *(Required for Finite Forms)*
+**Source Level**: `form` | **When to Use**: All conjugated forms with subject agreement
+
+```json
+{"attribute_stable_id": "metaattr012", "value": "singolare"}
+```
+
+**Available Values**:
+- `"singolare"` - Singular: io, tu, lui/lei
+- `"plurale"` - Plural: noi, voi, loro
+
+#### **`metaattr022` - Verb Form Type** *(Required)*
+**Source Level**: `form` | **When to Use**: All verb forms must specify construction method
+
+```json
+{"attribute_stable_id": "metaattr022", "value": "simple"}
+```
+
+**Available Values**:
+- `"simple"` - Single-word forms: parlo, parlavo, parlerò
+- `"compound"` - Auxiliary + participle: ho parlato, sono andato
+- `"progressive"` - Stare + gerund: sto parlando, stavo parlando
+
+**Usage Guidelines**:
+- **Simple**: Most finite forms and all non-finite forms except perfect infinitive/gerund
+- **Compound**: All perfect tenses using avere/essere + past participle
+- **Progressive**: All continuous tenses using stare + present gerund
+
+---
+
+### 4.4.2 Special Form Attributes
+
+#### **`metaattr002` - Auxiliary** *(Required for Compound Forms)*
+**Source Level**: `form` | **When to Use**: All compound tense forms must specify which auxiliary used
+
+```json
+{"attribute_stable_id": "metaattr002", "value": "avere"}
+```
+
+**Available Values**:
+- `"avere"` - Compound forms with avere: ho parlato, avevo mangiato
+- `"essere"` - Compound forms with essere: sono andato, era partito
+
+**Usage Guidelines**: **Must match translation-level auxiliary assignment**. Form-level auxiliary specifies which auxiliary appears in the actual stored form text.
+
+#### **`metaattr005` - Form Irregular** *(When Applicable)*
+**Source Level**: `form` | **When to Use**: Forms that deviate from expected conjugation pattern
+
+```json
+{"attribute_stable_id": "metaattr005", "value": "irregular"}
+```
+
+**Available Values**:
+- `"irregular"` - Deviates from pattern: vado (andare), sono (essere), faccio (fare)
+
+**Usage Guidelines**: Apply to forms with stem changes, suppletion, or other unpredictable variations from standard conjugation patterns.
+
+---
+
+## 4.5 Form Translations Schema
 
 ```json
 {
@@ -547,10 +800,12 @@ graph TD
 ```
 
 **Assignment Methods**:
-- `"manual"`: Human-verified assignments (highest confidence)
-- `"automatic-comprehensive"`: Systematic rule-based assignment
-- `"automatic-auxiliary"`: Based on auxiliary matching
-- `"automatic-semantic"`: Semantic similarity matching
+- `"manual"` - Human-verified assignments (highest confidence: 0.95-1.0)
+- `"automatic-comprehensive"` - Systematic rule-based assignment (confidence: 0.90-0.95)
+- `"automatic-auxiliary"` - Based on auxiliary matching (confidence: 0.85-0.90)
+- `"automatic-semantic"` - Semantic similarity matching (confidence: 0.70-0.85)
+
+**💡 Coverage Requirements**: Complete form_translations matrix required - every form must link to appropriate translations based on semantic compatibility and grammatical constraints.
 
 ---
 
