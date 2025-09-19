@@ -91,16 +91,12 @@ The following metadata attributes are **universally applied** across all word ty
 
 #### 2.3 Irregularity Pattern System
 
-**Attribute**: `metaattr005` - **Irregular Pattern** (form-level, propagates to word-level)
+**Attribute**: `metaattr005` - **Irregular Forms** (form-level, propagates to word-level)
 
 **Purpose**: Identifies morphological irregularities that learners need to memorize rather than derive from standard patterns.
 
 **Values**:
-- `irregular` - Non-standard forms or patterns (word-level inheritance)
-- `stem-change` - Stem alternations (form-level)
-- `suppletive` - Completely different forms (form-level)
-- `consonant-change` - Consonant modifications (form-level)
-- `vowel-change` - Vowel alternations (form-level)
+- `irregular` - Form deviates from conjugation pattern (metaattr005val032)
 
 **Architecture**: Irregularities are identified at the **form level** and automatically propagate to mark the entire word as irregular, ensuring comprehensive coverage while maintaining precision.
 
