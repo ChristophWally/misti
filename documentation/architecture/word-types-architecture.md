@@ -9,11 +9,12 @@
 ## Table of Contents
 
 1. [Architecture Overview](#1-architecture-overview)
-2. [Currently Implemented Word Types](#2-currently-implemented-word-types)
-3. [Newly Architected Word Types](#3-newly-architected-word-types)
-4. [Planned Word Types](#4-planned-word-types)
-5. [Cross-Cutting Architectural Decisions](#5-cross-cutting-architectural-decisions)
-6. [Implementation Roadmap](#6-implementation-roadmap)
+2. [Universal Metadata System](#2-universal-metadata-system)
+3. [Currently Implemented Word Types](#3-currently-implemented-word-types)
+4. [Newly Architected Word Types](#4-newly-architected-word-types)
+5. [Planned Word Types](#5-planned-word-types)
+6. [Cross-Cutting Architectural Decisions](#6-cross-cutting-architectural-decisions)
+7. [Implementation Roadmap](#7-implementation-roadmap)
 
 ---
 
@@ -46,21 +47,90 @@ dictionary              -- Base Italian words (lemmas)
 
 ---
 
-## 2. Currently Implemented Word Types
+## 2. Universal Metadata System
 
-### 2.1 VERB (1,408 words in PAISA Top 10K)
+### Core Attributes Applied to All Word Types
+
+The following metadata attributes are **universally applied** across all word types in the Misti dictionary system. These provide consistent categorization and learning support regardless of the specific word type.
+
+#### 2.1 CEFR Level Classification
+
+**Attribute**: `metaattr003` - **CEFR Level**
+
+**Purpose**: Indicates the proficiency level at which learners typically encounter this word, based on the Common European Framework of Reference for Languages.
+
+**Values**:
+- `A1` - Absolute beginner level (basic survival vocabulary)
+- `A2` - Elementary level (extended basic vocabulary)
+- `B1` - Intermediate level (complex situations and topics)
+- `B2` - Upper-intermediate level (nuanced expression)
+- `C1` - Advanced level (sophisticated communication)
+- `C2` - Proficiency level (near-native usage)
+- `native` - Native speaker vocabulary
+- `academic` - Academic/scholarly contexts
+- `literary` - Literary and poetic usage
+- `specialized` - Technical or domain-specific terms
+
+**Application**: All words receive CEFR classification to support progressive learning and level-appropriate content delivery.
+
+#### 2.2 Frequency Tier Classification
+
+**Attribute**: `metaattr007` - **Frequency Tier**
+
+**Purpose**: Ranks words by usage frequency in contemporary Italian, helping prioritize learning based on practical utility.
+
+**Values**:
+- `top100` - Most essential 100 words
+- `top500` - Essential 500 words
+- `top1000` - Important 1000 words
+- `top2500` - Common 2500 words
+- `top5000` - Extended vocabulary (5000 words)
+- `top10000` - Comprehensive vocabulary coverage
+
+**Application**: Frequency tiers drive presentation order in learning interfaces and help students focus on high-impact vocabulary first.
+
+#### 2.3 Irregularity Pattern System
+
+**Attribute**: `metaattr005` - **Irregular Pattern** (form-level, propagates to word-level)
+
+**Purpose**: Identifies morphological irregularities that learners need to memorize rather than derive from standard patterns.
+
+**Values**:
+- `irregular` - Non-standard forms or patterns (word-level inheritance)
+- `stem-change` - Stem alternations (form-level)
+- `suppletive` - Completely different forms (form-level)
+- `consonant-change` - Consonant modifications (form-level)
+- `vowel-change` - Vowel alternations (form-level)
+
+**Architecture**: Irregularities are identified at the **form level** and automatically propagate to mark the entire word as irregular, ensuring comprehensive coverage while maintaining precision.
+
+**Application**: Irregular words receive special handling in learning interfaces, with explicit memorization support and pattern recognition exercises.
+
+### Universal Metadata Integration
+
+These universal attributes integrate seamlessly with word-type-specific metadata through the normalized `entity_meta_values` system:
+
+- **Storage Location**: All universal metadata stored via `entity_meta_values` table with appropriate `entity_type` ('word', 'form', etc.)
+- **Inheritance Rules**: Word-level universal attributes (CEFR, frequency) automatically propagate to all forms and translations
+- **Display Priority**: Universal attributes appear prominently in all learning interfaces as "essential tags"
+- **Filter Integration**: All universal attributes are available in Advanced Filters for targeted vocabulary practice
+
+---
+
+## 3. Currently Implemented Word Types
+
+### 3.1 VERB
 
 **Implementation Status**: ✅ **Fully Implemented**
 
 **Architecture Summary**:
 The verb system represents the most complex word type implementation, serving as the template for sophisticated form handling.
 
+> **📋 Detailed Technical Documentation**: For comprehensive details on verb forms, conjugation patterns, auxiliary systems, and form-translation architecture, see the [Verb Forms System Architecture](./verb-forms-system-architecture.md) documentation.
+
 **Word-Level Metadata**:
 - `metaattr004` - **Conjugation Type**: `are`, `ere`, `ire`, `ire-isc`
-- `metaattr003` - **CEFR Level**: `A1`-`C2`, `native`, `academic`, `literary`, `specialized`
-- `metaattr007` - **Frequency Tier**: `top100`, `top500`, `top1000`, `top2500`, `top5000`, `top10000`
 - `metaattr017` - **Reflexive**: `reflexive` (for inherently reflexive verbs)
-- `metaattr005` - **Irregular Pattern**: `irregular` (for non-standard conjugations)
 
 **Translation-Level Metadata**:
 - `metaattr002` - **Auxiliary Verb**: `avere`, `essere` (for compound tenses)
@@ -91,7 +161,7 @@ Complete conjugation paradigms are stored in `word_forms` table (~100-140 forms 
 
 ---
 
-### 2.2 NOUN (3,326 words in PAISA Top 10K)
+### 3.2 NOUN
 
 **Implementation Status**: ✅ **Fully Implemented**
 
@@ -103,8 +173,6 @@ The noun system focuses on gender, number, and article generation with support f
 - `metaattr012` - **Number**: `singolare`, `plurale` (for words with inherent number restrictions)
 - `metaattr013` - **Number Restriction**: `solo-singolare`, `solo-plurale` (for defective nouns)
 - `metaattr026` - **Plural Formation**: `plural-e`, `plural-i`, `invariable`, `irregular`
-- `metaattr003` - **CEFR Level**: Standard proficiency levels
-- `metaattr007` - **Frequency Tier**: Usage frequency classification
 
 **Translation-Level Metadata**:
 - `metaattr018` - **Register**: Formality level for specific meanings
@@ -141,7 +209,7 @@ calculateArticle(word, gender, isPlural) {
 
 ---
 
-### 2.3 ADJECTIVE (1,909 words in PAISA Top 10K)
+### 3.3 ADJECTIVE
 
 **Implementation Status**: ✅ **Fully Implemented**
 
@@ -151,8 +219,6 @@ The adjective system handles agreement patterns, position preferences, and grada
 **Word-Level Metadata**:
 - `metaattr009` - **Gradable**: `analytical-gradability`, `full-gradability`, `non-gradable`
 - `metaattr011` - **Word Gender**: `masculine`, `feminine`, `common-gender` (for agreement)
-- `metaattr003` - **CEFR Level**: Proficiency classification
-- `metaattr007` - **Frequency Tier**: Usage frequency
 - `position` - **Position**: `before`, `after`, `before/after` (relative to noun)
 
 **Translation-Level Metadata**:
@@ -170,7 +236,7 @@ Minimal forms storage - agreement forms are typically calculated on frontend bas
 
 ---
 
-### 2.4 ADVERB (168 words in PAISA Top 10K)
+### 3.4 ADVERB
 
 **Implementation Status**: ✅ **Fully Implemented**
 
@@ -179,8 +245,6 @@ The adverb system classifies by semantic type and position, with most adverbs be
 
 **Word-Level Metadata**:
 - `metaattr001` - **Adverb Type**: `manner`, `time`, `place`, `quantity`, `frequency`, `affirmation`, `doubt`, `negation`, `interrogative`, `evaluation`, `emphasis`
-- `metaattr003` - **CEFR Level**: Proficiency classification
-- `metaattr007` - **Frequency Tier**: Usage frequency
 - `position` - **Position**: `before`, `after`, `before/after` (sentence position preferences)
 
 **Translation-Level Metadata**:
@@ -214,9 +278,9 @@ const adverbTypeMap = {
 
 ---
 
-## 3. Newly Architected Word Types
+## 4. Newly Architected Word Types
 
-### 3.1 PREPOSITION (19 words in PAISA Top 10K)
+### 4.1 PREPOSITION
 
 **Implementation Status**: 🔄 **Architecture Complete - Ready for Implementation**
 
@@ -290,11 +354,11 @@ Unlike noun phrases like "a causa di", these compounds function as unified prepo
 
 ---
 
-## 4. Planned Word Types
+## 5. Planned Word Types
 
 *The following word types have initial architectural planning but are not yet implemented.*
 
-### 4.1 DETERMINER (46 words in PAISA Top 10K)
+### 5.1 DETERMINER
 
 **Implementation Status**: 📋 **Planned**
 
@@ -326,7 +390,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-### 4.2 CONJUNCTION (14 words in PAISA Top 10K)
+### 5.2 CONJUNCTION
 
 **Implementation Status**: 📋 **Planned**
 
@@ -353,7 +417,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-### 4.3 PRONOUN (45 words in PAISA Top 10K)
+### 5.3 PRONOUN
 
 **Implementation Status**: 📋 **Planned - High Complexity**
 
@@ -383,7 +447,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-### 4.4 MODAL VERBS (5 words in PAISA Top 10K)
+### 5.4 MODAL VERBS
 
 **Implementation Status**: 📋 **Planned - Extend Existing VERB System**
 
@@ -402,7 +466,7 @@ Extend existing verb architecture rather than create new word type.
 
 ---
 
-### 4.5 PROPER NOUN (1,210 words in PAISA Top 10K)
+### 5.5 PROPER NOUN
 
 **Implementation Status**: 📋 **Planned**
 
@@ -427,7 +491,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 4.6 WH-WORDS (8 words in PAISA Top 10K)
+### 5.6 WH-WORDS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -439,7 +503,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 4.7 PARTICLE NE (2 words in PAISA Top 10K)
+### 5.7 PARTICLE NE
 
 **Implementation Status**: 📋 **Planned**
 
@@ -457,7 +521,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 4.8 INTERJECTIONS (5 words in PAISA Top 10K)
+### 5.8 INTERJECTIONS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -469,7 +533,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 4.9 ABBREVIATIONS (4 words in PAISA Top 10K)
+### 5.9 ABBREVIATIONS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -481,7 +545,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 4.10 INDEFINITE PRONOUNS (1 word in PAISA Top 10K)
+### 5.10 INDEFINITE PRONOUNS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -500,9 +564,9 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-## 5. Cross-Cutting Architectural Decisions
+## 6. Cross-Cutting Architectural Decisions
 
-### 5.1 Forms Storage Decision Matrix
+### 6.1 Forms Storage Decision Matrix
 
 **When to Store Forms**:
 - ✅ **Unpredictable changes**: Verb conjugations, pronoun declensions
@@ -519,7 +583,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 - ✅ **Compound prepositions**: Store as forms for searchability
 - ✅ **Variant spellings**: Store common variants, calculate rare ones
 
-### 5.2 Metadata Level Decisions
+### 6.2 Metadata Level Decisions
 
 **Word-Level Metadata** (inherent to Italian lemma):
 - Conjugation type, gender, CEFR level, frequency tier
@@ -534,7 +598,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 - Agreement markers for adjectives/determiners
 - Contraction type for prepositions
 
-### 5.3 Translation Strategy Patterns
+### 6.3 Translation Strategy Patterns
 
 **Multiple Translation Handling**:
 - Primary translation (display_priority = 1) for basic meaning
@@ -553,7 +617,7 @@ const semanticRoles = {
 };
 ```
 
-### 5.4 Frontend Display Strategies
+### 6.4 Frontend Display Strategies
 
 **Essential vs. Detailed Tags**:
 - **Essential**: Displayed prominently, crucial for learning (gender, CEFR, frequency)
@@ -575,7 +639,7 @@ const wordTypeColors = {
 
 ---
 
-## 6. Implementation Roadmap
+## 7. Implementation Roadmap
 
 ### Phase 1: Core Function Words (Immediate Priority)
 **Goal**: Handle the grammatical backbone of Italian
