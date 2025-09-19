@@ -402,19 +402,19 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
       // NUMBER RESTRICTION MAPPING (essential) - Replaces PLURAL_ONLY
       else if (isAttribute(tag, ATTRIBUTES.NUMBER_RESTRICTION)) {
-        if (isValue(tag, VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE)) {
+        if (isValue(tag, VALUES.NUMBER_RESTRICTION_SINGULAR_ONLY)) {
           essential.push({
-            tag: 'number-restriction-solo-singolare',
-            display: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE].display,
-            class: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE].class,
-            description: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE].description
+            tag: 'number-restriction-singular-only',
+            display: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SINGULAR_ONLY].display,
+            class: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SINGULAR_ONLY].class,
+            description: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SINGULAR_ONLY].description
           })
-        } else if (isValue(tag, VALUES.NUMBER_RESTRICTION_SOLO_PLURALE)) {
+        } else if (isValue(tag, VALUES.NUMBER_RESTRICTION_PLURAL_ONLY)) {
           essential.push({
-            tag: 'number-restriction-solo-plurale',
-            display: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_PLURALE].display,
-            class: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_PLURALE].class,
-            description: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_PLURALE].description
+            tag: 'number-restriction-plural-only',
+            display: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_PLURAL_ONLY].display,
+            class: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_PLURAL_ONLY].class,
+            description: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_PLURAL_ONLY].description
           })
         }
       }

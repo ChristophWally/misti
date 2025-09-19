@@ -131,7 +131,7 @@ The verb system represents the most complex word type implementation, serving as
 **Translation-Level Metadata**:
 - `metaattr002` - **Auxiliary Verb**: `avere`, `essere` (for compound tenses)
 - `metaattr020` - **Transitivity**: `transitive`, `intransitive`, `ambitransitive`
-- `metaattr021` - **Reflexive Type**: `direct-reflexive`, `reciprocal` (for specific translation meanings)
+- `metaattr021` - **Reflexive Type**: `direct`, `reciprocal` (for specific translation meanings)
 - `metaattr018` - **Register**: `formal`, `casual`, `neutral`, `mixed`
 
 **Form-Level Metadata**:
@@ -167,8 +167,8 @@ The noun system focuses on gender, number, and article generation with support f
 **Word-Level Metadata**:
 - `metaattr011` - **Word Gender**: `masculine`, `feminine`, `common-gender`
 - `metaattr012` - **Number**: `singolare`, `plurale` (for words with inherent number restrictions)
-- `metaattr013` - **Number Restriction**: `solo-singolare`, `solo-plurale` (for defective nouns)
-- `metaattr026` - **Plural Formation**: `plural-e`, `plural-i`, `invariable`, `irregular`
+- `metaattr013` - **Number Restriction**: `singular only`, `plural only` (for defective nouns)
+- `metaattr026` - **Plural Formation**: `plural-e`, `plural-i`
 
 **Translation-Level Metadata**:
 - `metaattr018` - **Register**: Formality level for specific meanings
@@ -213,7 +213,7 @@ calculateArticle(word, gender, isPlural) {
 The adjective system handles agreement patterns, position preferences, and gradability.
 
 **Word-Level Metadata**:
-- `metaattr009` - **Gradable**: `analytical-gradability`, `full-gradability`, `non-gradable`
+- `metaattr009` - **Gradable**: `Analytical`, `Full`, `Non-gradable`
 - `metaattr011` - **Word Gender**: `masculine`, `feminine`, `common-gender` (for agreement)
 - `position` - **Position**: `before`, `after`, `before/after` (relative to noun)
 

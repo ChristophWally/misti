@@ -724,8 +724,8 @@ The architecture requires **strategic coverage** between forms and translations,
 
 #### Number Restrictions from Meta Attributes
 Meta attributes affect coverage requirements significantly:
-- **"solo-plurale" restriction**: Translations marked with plural-only constraints (like reciprocals) only receive form_translations for plural forms
-- **"solo-singolare" restriction**: Translations with singular-only constraints only get singular form_translations
+- **"plural-only" restriction**: Translations marked with plural-only constraints (like reciprocals) only receive form_translations for plural forms
+- **"singular-only" restriction**: Translations with singular-only constraints only get singular form_translations
 - **No restriction**: Translations get form_translations for all appropriate forms
 
 #### Coverage Matrix Complexity
@@ -770,7 +770,7 @@ Coverage calculations must account for number restrictions from meta attributes:
 - **Progressive forms**: ~30 forms (same for all meanings)
 - **Total per translation**: ~130 form_translations
 
-**For a reciprocal translation ("solo-plurale" restriction)**:
+**For a reciprocal translation ("plural-only" restriction)**:
 - **Simple forms**: ~17 forms (only plural persons: noi, voi, loro)
 - **Compound forms**: ~16 forms per auxiliary pattern (only plurals)
 - **Progressive forms**: ~10 forms (only plural persons)
@@ -1173,9 +1173,7 @@ The Misti system uses a **bottom-up irregular tagging approach** where irregular
 Irregular forms are tagged individually using form-level metadata:
 ```sql
 -- entity_type='form', entity_id=<irregular_form_id>
-value_id → metaattr005val[ID] (irregularity: "stem-change")
-value_id → metaattr005val[ID] (irregularity: "suppletive")
-value_id → metaattr005val[ID] (irregularity: "consonant-change")
+value_id → metaattr005val032 (irregularity: "irregular")
 ```
 
 #### Propagation to Word Level
@@ -1359,7 +1357,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 **Required Attribution Architecture**:
 - **Word Level**: metaattr001val[ID] (conjugation_type: "ere-conjugation"), metaattr021val[ID] (verb_type: "irregular"), metaattr003val[ID] (cefr_level: "A1")
 - **Translation Level**: metaattr002val[ID] (auxiliary: "essere"), metaattr020val[ID] (transitivity: "intransitive")
-- **Form Level**: Standard form metadata plus irregularity markers for stem alternations and suppletive forms
+- **Form Level**: Standard form metadata plus irregularity markers for irregular forms
 
 **Key Architectural Pattern**: Irregular-verb pattern with multiple stems and unpredictable changes - materialized forms rather than rule-based generation.
 **Coverage**: 137 total forms (complete irregular paradigm with stem alternations)

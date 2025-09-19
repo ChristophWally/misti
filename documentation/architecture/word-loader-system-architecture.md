@@ -289,7 +289,7 @@ begin
     join meta_attributes a_refl on a_refl.id=v_refl.attribute_id and a_refl.stable_id='metaattr021' and v_refl.value='reciprocal'
     join entity_meta_values te_nr on te_nr.entity_type='word_translation' and te_nr.entity_id=wt.id
     join meta_values v_nr on v_nr.id=te_nr.value_id
-    join meta_attributes a_nr on a_nr.id=v_nr.attribute_id and a_nr.stable_id='metaattr013' and v_nr.value in ('plural-only','solo-plurale')
+    join meta_attributes a_nr on a_nr.id=v_nr.attribute_id and a_nr.stable_id='metaattr013' and v_nr.value in ('plural-only','singular-only')
     join form_translations ftx on ftx.word_translation_id=wt.id
     join word_forms f on f.id=ftx.form_id
     join entity_meta_values fe on fe.entity_type='form' and fe.entity_id=f.id
@@ -405,9 +405,11 @@ graph TD
 - Respects priority override settings
 
 #### **Step 7: Form-Translation Linking**
-- Creates the many-to-many relationships
+- Creates the many-to-many relationships between forms and translations
 - Resolves translation references by key, text, or UUID
-- Assigns confidence scores and methods
+- **REQUIRES COMPLETE COVERAGE**: Every form must link to every semantically appropriate translation
+- **ENFORCES AUXILIARY CONSISTENCY**: Form auxiliary must match translation auxiliary
+- Assigns assignment methods (confidence handled automatically)
 
 #### **Step 8: Constraint Validation (Strict Mode)**
 - Validates reciprocal plural-only rules
@@ -430,13 +432,20 @@ graph TD
   "audio_filename": "string (optional)",
   "word_tags": "array (required for verbs)",
   "translations": "array (required - minimum 1 translation)",
-  "forms": "array (required for verbs - complete conjugation)",
+  "forms": "array (required for verbs - EVERY SINGLE FORM across ALL moods/tenses)",
   "form_translations": "array (required - complete coverage matrix)",
   "options": "object (optional)"
 }
 ```
 
 **💡 Field Requirements Note**: While the function accepts optional fields, **comprehensive word seeding** requires all fields to ensure complete lexical entries. Only `audio_filename` and `options` are truly optional for production use.
+
+**🚨 CRITICAL**: The `form_translations` array must contain **EVERY valid form-word_translation combination** respecting:
+1. **Auxiliary compatibility** between form and word_translation
+2. **Semantic appropriateness** of the form-translation pairing
+3. **Grammatical restrictions** specific to the verb (e.g., third-person-only verbs)
+
+This is NOT simply N×M entries - it's all valid combinations based on auxiliary matching, semantic compatibility, and verb-specific restrictions.
 
 ### 🎨 **New Translation Format Guidelines**
 
@@ -540,8 +549,56 @@ graph TD
 - 📰 **Newspaper and media studies** - La Repubblica, Corriere della Sera frequency analysis
 - 🗣️ **Spoken Italian corpus (C-ORAL-ROM)** - Conversational language patterns
 - 📚 **Academic frequency lists** - De Mauro, Sabatini-Coletti lexicographic research
-- 🌐 **PAISÀ Corpus** - Large web corpus of contemporary Italian texts (Creative Commons licensed) with lemma, POS, and frequency counts in descending order
+- ⭐ **PAISÀ Corpus Top 10K** - `paisa_top10k_with_pos.xlsx` (280KB) - Authoritative frequency rankings with lemma, POS tags, and precise frequency counts from large web corpus of contemporary Italian texts (Creative Commons licensed)
 - 📈 **Statistical analysis** - Contemporary Italian text frequency analysis
+
+**🎯 Primary Frequency Source**: The **PAISÀ Top 10K** file provides the definitive ranking system for frequency tier assignments, with each lemma positioned according to actual usage frequency in contemporary Italian web texts.
+
+---
+
+## **🚨 MANDATORY: Complete Verb Form Generation**
+
+### **📋 ALL Forms Required**
+When seeding verbs, you **MUST** generate **EVERY SINGLE FORM** across all grammatical categories:
+
+**Required Moods & Tenses**:
+- **Infinito**: presente, passato
+- **Participio**: presente, passato
+- **Gerundio**: presente, passato
+- **Indicativo**: presente, imperfetto, passato remoto, futuro semplice, passato prossimo, trapassato prossimo, futuro anteriore
+- **Congiuntivo**: presente, imperfetto, passato, trapassato
+- **Condizionale**: presente, passato
+- **Imperativo**: presente
+
+**Required Persons & Numbers** (for finite forms):
+- Prima persona: singolare, plurale
+- Seconda persona: singolare, plurale
+- Terza persona: singolare, plurale
+
+### **🎯 Total Form Count**
+A complete Italian verb conjugation typically contains **~100-140 forms** depending on:
+- Irregular variations
+- Auxiliary requirements (avere vs essere)
+- Defective restrictions (missing persons/moods)
+
+### **⚡ Form-Translation Matrix**
+If your verb has **N forms** and **M translations**, you need **N×M form_translation entries**:
+- 100 forms × 3 translations = **300 form_translation entries**
+- **NO SHORTCUTS** - every form must map to every semantically appropriate translation
+
+#### **📋 Using PAISA for Frequency Tier Assignment**:
+```
+Rank 1-100     → frequency_tier: "top100"
+Rank 101-500   → frequency_tier: "top500"
+Rank 501-1000  → frequency_tier: "top1000"
+Rank 1001-2500 → frequency_tier: "top2500"
+Rank 2501-5000 → frequency_tier: "top5000"
+Rank 5001-10000→ frequency_tier: "top10000"
+```
+
+**File Location**: `/documentation/architecture/paisa_top10k_with_pos.xlsx`
+**Content**: Ranked Italian lemmas with POS tags from PAISÀ web corpus analysis
+**Usage**: Reference lemma position in file to determine appropriate frequency_tier value
 
 **Materialization Priority**: High-frequency + low-CEFR verbs receive complete 137-form sets first (top100 + A1 = highest priority).
 
@@ -558,17 +615,23 @@ graph TD
 
 **🎨 Available Values & Implementation Status**:
 - ✅ `"plural-only"` - Semantic plural requirement (reciprocal meanings) - **IMPLEMENTED**
-- ⚠️ `"singular-only"` - Semantic singular requirement (rare) - **NOT IMPLEMENTED**
+- ✅ `"singular-only"` - Semantic singular requirement (rare) - **IMPLEMENTED**
 - ✅ `"third-person-only"` - Impersonal verbs: `importare`, `bisognare`, `servire` - **IMPLEMENTED**
-- ⚠️ `"third-singular-only"` - Weather verbs: `piovere`, `nevicare`, `grandinare` - **NOT IMPLEMENTED**
-- ⚠️ `"missing-first-second-person"` - Defective verbs: `vigere`, `urgere` - **NOT IMPLEMENTED**
-- ⚠️ `"missing-imperative"` - Defective verbs: `solere` (cannot form commands) - **NOT IMPLEMENTED**
+- ✅ `"third-singular-only"` - Weather verbs: `piovere`, `nevicare`, `grandinare` - **IMPLEMENTED**
+- ✅ `"missing-first-second-person"` - Defective verbs: `vigere`, `urgere` - **IMPLEMENTED**
+- ✅ `"missing-imperative"` - Defective verbs: `solere` (cannot form commands) - **IMPLEMENTED**
 
 **📋 Usage Guidelines**: Apply based on semantic and grammatical constraints. Impersonal verbs describe states/conditions without specific agents. Weather verbs are semantically restricted to third person singular.
 
-**⚡ Function Implementation Notes**:
-- ✅ **Implemented**: `plural-only` (reciprocal validation), `third-person-only` (impersonal validation)
-- ⚠️ **Missing**: Specific validations for weather verbs, defective verb restrictions, and imperative limitations need to be added to the `load_lexical_entry` function
+**⚡ Function Implementation Status**: **ALL RESTRICTIONS IMPLEMENTED**
+- ✅ **Weather verbs**: `third-singular-only` validation prevents non-third-person or non-singular forms
+- ✅ **Defective verbs**: `missing-first-second-person` validation prevents first/second person forms
+- ✅ **Defective verbs**: `missing-imperative` validation prevents imperative mood forms
+- ✅ **Semantic restrictions**: `singular-only` validation prevents plural forms for semantically singular words
+- ✅ **Reciprocal verbs**: `plural-only` validation prevents singular forms for reciprocal meanings
+- ✅ **Impersonal verbs**: `third-person-only` validation prevents non-third-person forms
+
+**🚀 Production Ready**: Complete behavioral restriction coverage ensures grammatically correct Italian verb form validation
 
 ---
 
@@ -809,26 +872,71 @@ graph TD
 
 ## 4.5 Form Translations Schema
 
+**🚨 CRITICAL REQUIREMENTS**:
+
+### **📋 Complete Form-Translation Coverage Matrix**
+**MANDATORY**: Every single form must have translations for every semantically appropriate translation. This is a **hard requirement** - no exceptions.
+
+### **🔧 Form Translation Structure**
 ```json
 {
   "form_translations": [
     {
-      "form_text": "parlo",
-      "translation_key": "speak",
-      "assignment_method": "automatic-comprehensive",
-      "confidence": 0.95
+      "form_text": "credo",
+      "translation_text": "I believe",
+      "assignment_method": "automatic-comprehensive"
+    },
+    {
+      "form_text": "credo",
+      "translation_text": "I trust",
+      "assignment_method": "automatic-comprehensive"
+    },
+    {
+      "form_text": "ho creduto",
+      "translation_text": "I have believed",
+      "assignment_method": "automatic-comprehensive"
     }
   ]
 }
 ```
 
-**Assignment Methods**:
-- `"manual"` - Human-verified assignments (highest confidence: 0.95-1.0)
-- `"automatic-comprehensive"` - Systematic rule-based assignment (confidence: 0.90-0.95)
-- `"automatic-auxiliary"` - Based on auxiliary matching (confidence: 0.85-0.90)
-- `"automatic-semantic"` - Semantic similarity matching (confidence: 0.70-0.85)
+### **⚡ Key Field Requirements**:
+- **`form_text`**: Exact Italian form ("credo", "ho creduto", etc.)
+- **`translation_text`**: **ACTUAL English translation** ("I believe", "you trust", "we have thought")
+- **`assignment_method`**: Assignment type (defaults to "automatic-comprehensive")
+- **NO `confidence` field needed** - confidence scoring is handled automatically
 
-**💡 Coverage Requirements**: Complete form_translations matrix required - every form must link to appropriate translations based on semantic compatibility and grammatical constraints.
+### **🎯 Auxiliary Consistency Rule**
+**CRITICAL**: Form-level auxiliary must match the word_translation's auxiliary attribute:
+- Forms with `auxiliary="avere"` can ONLY link to word_translations with `auxiliary="avere"`
+- Forms with `auxiliary="essere"` can ONLY link to word_translations with `auxiliary="essere"`
+- The auxiliary is determined by the word_translation entity, not the form_translation entry
+- This is enforced in strict mode and will cause validation errors if violated
+
+**Example**:
+- `"ho finito"` (avere form) → can link to `"to finish"` (avere translation) → `"I have finished"`
+- `"sono finito"` (essere form) → can link to `"to end"` (essere translation) → `"I have ended"`
+- `"ho finito"` (avere form) → **CANNOT** link to `"to end"` (essere translation) ❌
+
+### **📊 Complete Coverage Requirements**
+**EVERY form must link to EVERY compatible word_translation**:
+- **Auxiliary Compatibility**: Form auxiliary must match word_translation auxiliary
+- **Semantic Appropriateness**: Form must be semantically compatible with translation meaning
+- **Restriction Compliance**: Forms must respect verb restrictions (person, number, mood)
+
+**Example Coverage Calculation**:
+- Verb has 2 translations: `"to finish"` (avere) + `"to end"` (essere)
+- Verb has 50 avere forms + 50 essere forms = 100 total forms
+- Coverage: 50 avere forms × 1 avere translation + 50 essere forms × 1 essere translation = **100 form_translation entries**
+- **NOT** 100 × 2 = 200, because auxiliary compatibility prevents cross-linking
+
+### **🔗 Translation Resolution Methods**
+The function resolves word_translations using (in priority order):
+1. **`word_translation_id`** - Direct UUID reference to word_translations table
+2. **`translation_key`** - Key from translations array in payload
+3. **`translation_text`** - Direct text matching against word_translations.translation
+
+**💡 Recommendation**: Use `translation_key` to reference specific word_translations, with `translation_text` providing the actual English form translation.
 
 ---
 
