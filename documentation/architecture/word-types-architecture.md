@@ -884,64 +884,18 @@ INSERT INTO dictionary (italian, word_type) VALUES
 
 ## Translation-Level Metadata
 
-### Critical Analysis: Context Metadata vs. Semantic Role Approach
+**Use existing word_translations structure**:
 
-**ARCHITECTURAL DECISION**: After analyzing Italian preposition usage patterns and linguistic research, we reject traditional "context metadata" tags in favor of systematic **semantic role-based translations** with detailed usage descriptions.
-
-**Evidence Against Context Metadata Tags**:
-- **Linguistic research**: Preposition usage is largely idiomatic and "best learned by memorization and practice" rather than systematic rules
-- **Database design**: Major lexical databases (WordNet) exclude prepositions from systematic metadata treatment
-- **Learning science**: Context-dependent learning through exposure is more effective than rule-based learning for prepositions
-- **Arbitrary patterns**: Verb-preposition collocations are largely idiomatic with no predictable patterns
-
-**Evidence For Semantic Role Approach**:
-- **Systematic patterns**: Cross-linguistic semantic roles (possession, spatial, temporal, instrumental, causal) are systematic and learnable
-- **Cognitive foundation**: Semantic roles map to conceptual metaphors and spatial/temporal cognition
-- **Multiple translation structure**: Already implemented and aligns with semantic role distinctions
-
-### Detailed Semantic Role-Based Translation System
-
-**Use existing word_translations structure with enhanced semantic role focus**:
-
-- **Multiple translations** for systematic semantic roles (not arbitrary contexts):
+- **Multiple translations** for different semantic roles:
   ```sql
-  -- Semantic role-based translations with detailed usage descriptions
-  INSERT INTO word_translations (word_id, translation, usage_notes, semantic_role) VALUES
-  (di_id, 'of', 'POSSESSIVE: ownership, belonging, characteristic properties | Examples: la casa di Marco (Marco''s house), il libro di storia (history book), la bellezza di Roma (the beauty of Rome)', 'possessive'),
-  (di_id, 'from', 'SPATIAL-ORIGIN: source location, point of departure | Examples: sono di Roma (I am from Rome), vengo di casa (I come from home), di qui a là (from here to there)', 'spatial_origin'),
-  (di_id, 'about', 'TOPICAL: subject matter, content focus | Examples: parlare di calcio (talk about soccer), libro di cucina (cookbook), pensare di te (think about you)', 'topical'),
-  (di_id, 'made of', 'MATERIAL: composition, substance | Examples: tavolo di legno (wooden table), anello di oro (gold ring), casa di pietra (stone house)', 'material'),
-  (di_id, 'in/during', 'TEMPORAL: time expressions, periods | Examples: di sera (in the evening), di mattina (in the morning), di notte (at night)', 'temporal');
+  -- Multiple semantic contexts via separate translations
+  INSERT INTO word_translations (word_id, translation, usage_notes) VALUES
+  (di_id, 'of', 'possession, partitive: la casa di Marco'),
+  (di_id, 'from', 'origin, source: sono di Roma'),
+  (di_id, 'about', 'topic, subject: parlare di calcio');
   ```
 
-- **Systematic semantic role categories** for Italian prepositions:
-
-  **1. SPATIAL ROLES** (Location, Direction, Origin):
-  - **Locative**: static position (in, on, at)
-  - **Directional**: movement toward target (to, into, onto)
-  - **Ablative**: movement from source (from, out of, off)
-  - **Proximal**: relative position (near, far, between)
-
-  **2. TEMPORAL ROLES** (Time Relations):
-  - **Point-in-time**: specific temporal location (at, on, during)
-  - **Duration**: time span (for, throughout, since)
-  - **Sequence**: temporal order (before, after, until)
-
-  **3. POSSESSIVE/RELATIONAL ROLES** (Ownership, Association):
-  - **Ownership**: direct possession (of, belonging to)
-  - **Partitive**: part-whole relations (some of, made of)
-  - **Characteristic**: inherent properties (of nature, of type)
-
-  **4. INSTRUMENTAL/CAUSAL ROLES** (Means, Reason):
-  - **Instrumental**: tool, method, means (with, by, through)
-  - **Causal**: reason, purpose, result (for, because of, due to)
-  - **Agentive**: actor in passive constructions (by)
-
-  **5. COMPARATIVE/SCALAR ROLES** (Measurement, Comparison):
-  - **Measure**: extent, degree (by, of amount)
-  - **Comparative**: relation between entities (than, compared to)
-
-- **Enhanced usage descriptions** with systematic semantic role information and **multiple examples per role**
+- **Usage notes**: Detailed semantic role descriptions in `usage_notes` field
 
 ## Form-Level Metadata
 
@@ -952,85 +906,21 @@ INSERT INTO dictionary (italian, word_type) VALUES
 
 ## Translation Strategy
 
-Handle semantic roles through the **existing translation system** with enhanced semantic role focus:
+Handle semantic roles through the **existing translation system**:
 
-1. **Semantic Role Translations**: Each systematic semantic role gets its own translation entry
-2. **Detailed Usage Descriptions**: Systematic semantic role information with multiple examples in `usage_notes` field
-3. **Frequency Estimates**: Prioritize most common semantic roles based on corpus frequency
-4. **Display Priority**: Primary translation for most frequent semantic role
-5. **NO Context Metadata Tags**: Reject arbitrary context tags in favor of systematic semantic role approach
+1. **Multiple Translations**: Each semantic role gets its own translation entry
+2. **Usage Notes**: Detailed context in the `usage_notes` field
+3. **Frequency Estimates**: Prioritize most common semantic roles
+4. **Display Priority**: Primary translation for most frequent use
 
-### Comprehensive Translation Examples for Core Italian Prepositions
-
-**Complete Translation Strategy for "di" (most complex preposition)**:
+**Example Translation Strategy for "di"**:
 ```sql
-INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate, semantic_role) VALUES
-(di_id, 'of', 1, 'POSSESSIVE: ownership, belonging, characteristic properties | Examples: la casa di Marco (Marco''s house), il colore di mare (sea color), la paura di volare (fear of flying), un uomo di 40 anni (a 40-year-old man)', 0.35, 'possessive'),
-(di_id, 'from', 2, 'SPATIAL-ORIGIN: source location, point of departure | Examples: sono di Roma (I am from Rome), vengo di casa (I come from home), di qui a là (from here to there), di sopra (from above)', 0.25, 'spatial_origin'),
-(di_id, 'made of', 3, 'MATERIAL: composition, substance, construction material | Examples: tavolo di legno (wooden table), anello di oro (gold ring), casa di pietra (stone house), vestito di seta (silk dress)', 0.15, 'material'),
-(di_id, 'about', 4, 'TOPICAL: subject matter, content focus | Examples: parlare di calcio (talk about soccer), libro di cucina (cookbook), pensare di te (think about you), discutere di politica (discuss politics)', 0.15, 'topical'),
-(di_id, 'in/during', 5, 'TEMPORAL: time expressions, periods | Examples: di sera (in the evening), di mattina (in the morning), di notte (at night), di giorno (during the day)', 0.10, 'temporal');
+INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate) VALUES
+(di_id, 'of', 1, 'possession, partitive relations', 0.4),
+(di_id, 'from', 2, 'origin, source location', 0.3),
+(di_id, 'about', 3, 'topic, subject matter', 0.2),
+(di_id, 'in', 4, 'temporal expressions: di sera', 0.1);
 ```
-
-**Translation Strategy for "a" (directional and locative)**:
-```sql
-INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate, semantic_role) VALUES
-(a_id, 'to', 1, 'DIRECTIONAL: movement toward target, destination | Examples: vado a scuola (I go to school), andare a casa (go home), venire a Roma (come to Rome), correre a casa (run home)', 0.40, 'directional'),
-(a_id, 'at', 2, 'LOCATIVE: static position, location | Examples: sono a casa (I am at home), a tavola (at the table), a scuola (at school), a teatro (at the theater)', 0.30, 'locative'),
-(a_id, 'in', 3, 'TEMPORAL-POINT: specific time expressions | Examples: alle otto (at eight o''clock), a mezzogiorno (at noon), a Natale (at Christmas), a primavera (in spring)', 0.20, 'temporal_point'),
-(a_id, 'by', 4, 'INSTRUMENTAL: manner, method | Examples: fatto a mano (made by hand), a piedi (on foot), a voce (by voice), a memoria (by memory)', 0.10, 'instrumental');
-```
-
-**Translation Strategy for "da" (origin and agent)**:
-```sql
-INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate, semantic_role) VALUES
-(da_id, 'from', 1, 'SPATIAL-ORIGIN: source location, starting point | Examples: vengo da Milano (I come from Milan), da qui a là (from here to there), da casa (from home), da sopra (from above)', 0.35, 'spatial_origin'),
-(da_id, 'since', 2, 'TEMPORAL-DURATION: starting time point | Examples: da ieri (since yesterday), da tre anni (for three years), da quando (since when), da bambino (since childhood)', 0.25, 'temporal_duration'),
-(da_id, 'by', 3, 'AGENTIVE: actor in passive constructions | Examples: fatto da me (made by me), scritto da Dante (written by Dante), creato da artista (created by artist)', 0.20, 'agentive'),
-(da_id, 'for', 4, 'PURPOSE: intended use, function | Examples: macchina da corsa (racing car), abito da sera (evening dress), camera da letto (bedroom)', 0.20, 'purpose');
-```
-
-**Translation Strategy for "in" (containment and temporal)**:
-```sql
-INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate, semantic_role) VALUES
-(in_id, 'in', 1, 'LOCATIVE-CONTAINMENT: within boundaries, inside | Examples: in cucina (in the kitchen), in Italia (in Italy), in macchina (in the car), in centro (in the center)', 0.50, 'locative_containment'),
-(in_id, 'to', 2, 'DIRECTIONAL-CONTAINMENT: movement into boundaries | Examples: andare in città (go to the city), entrare in casa (enter the house), mettere in borsa (put in bag)', 0.25, 'directional_containment'),
-(in_id, 'in/during', 3, 'TEMPORAL-PERIOD: time periods, seasons | Examples: in estate (in summer), in maggio (in May), in passato (in the past), in futuro (in the future)', 0.15, 'temporal_period'),
-(in_id, 'by', 4, 'INSTRUMENTAL-TRANSPORT: means of transportation | Examples: in treno (by train), in aereo (by plane), in macchina (by car), in bicicletta (by bicycle)', 0.10, 'instrumental_transport');
-```
-
-### Key Implementation Principles
-
-1. **Semantic Role Focus**: Each translation corresponds to a systematic semantic role, not arbitrary context
-2. **Rich Usage Descriptions**: Multiple examples showing the semantic role in action
-3. **Frequency-Based Prioritization**: Most common semantic roles appear first
-4. **Cross-Linguistic Systematicity**: Semantic roles are based on universal cognitive patterns
-5. **Educational Value**: Learners understand systematic meaning relationships rather than memorizing arbitrary contexts
-
-### Final Decision: Context Metadata Rejection
-
-**ARCHITECTURAL DECISION**: **REMOVE** context metadata tags for prepositions. **IMPLEMENT** semantic role-based translations instead.
-
-**Rationale**:
-- **Context metadata would be arbitrary**: Specific usage contexts (which verb takes which preposition) are largely idiomatic and unpredictable
-- **Semantic roles are systematic**: Spatial, temporal, possessive, instrumental, and causal roles follow cross-linguistic cognitive patterns
-- **Learning effectiveness**: Research shows context-dependent learning through exposure is more effective than rule-based learning for idiomatic patterns
-- **Database design alignment**: Approach aligns with major lexical databases that exclude prepositions from systematic metadata treatment
-- **Implementation efficiency**: Existing translation system already supports semantic role distinctions without additional metadata complexity
-
-**Implementation Strategy**:
-1. **NO context metadata attributes** (e.g., no `metaattr_context_type` or similar)
-2. **Enhanced usage descriptions** in `word_translations.usage_notes` with systematic semantic role information
-3. **Multiple translations** for different semantic roles with rich examples
-4. **Frequency-based prioritization** for most common semantic roles
-5. **Educational focus** on understanding systematic semantic relationships rather than memorizing arbitrary contexts
-
-**Benefits**:
-- **Cleaner architecture**: No arbitrary metadata to maintain
-- **Better learning outcomes**: Focus on systematic patterns rather than arbitrary rules
-- **Reduced complexity**: Single translation-based approach instead of dual metadata+translation system
-- **Linguistic accuracy**: Aligns with research on preposition learning and usage patterns
-- **Scalability**: Approach works for all prepositions without custom metadata schemas
 
 ## Forms Strategy
 
