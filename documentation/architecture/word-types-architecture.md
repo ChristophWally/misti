@@ -10,11 +10,12 @@
 
 1. [Architecture Overview](#1-architecture-overview)
 2. [Universal Metadata System](#2-universal-metadata-system)
-3. [Currently Implemented Word Types](#3-currently-implemented-word-types)
-4. [Newly Architected Word Types](#4-newly-architected-word-types)
-5. [Planned Word Types](#5-planned-word-types)
-6. [Cross-Cutting Architectural Decisions](#6-cross-cutting-architectural-decisions)
-7. [Implementation Roadmap](#7-implementation-roadmap)
+3. [Complete Meta Values Reference](#3-complete-meta-values-reference)
+4. [Currently Implemented Word Types](#4-currently-implemented-word-types)
+5. [Newly Architected Word Types](#5-newly-architected-word-types)
+6. [Planned Word Types](#6-planned-word-types)
+7. [Cross-Cutting Architectural Decisions](#7-cross-cutting-architectural-decisions)
+8. [Implementation Roadmap](#8-implementation-roadmap)
 
 ---
 
@@ -113,9 +114,362 @@ These universal attributes integrate seamlessly with word-type-specific metadata
 
 ---
 
-## 3. Currently Implemented Word Types
+## 3. Complete Meta Values Reference
 
-### 3.1 VERB
+This section provides comprehensive documentation of all metadata attributes and their values based on the actual database schema and usage patterns in the Misti dictionary system.
+
+### 3.1 Universal Attributes (Applied to All Word Types)
+
+#### CEFR Level (`metaattr003`)
+**Purpose**: Learning difficulty classification based on Common European Framework of Reference for Languages
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 24 words assigned (A1: 11, A2: 4, others: 1 each)
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `A1` | A1 | Beginner level - basic everyday expressions | 11 |
+| `A2` | A2 | Elementary level - basic personal information | 4 |
+| `B1` | B1 | Intermediate level - familiar topics | 1 |
+| `B2` | B2 | Upper intermediate level - complex topics | 1 |
+| `C1` | C1 | Advanced level - wide range of topics | 1 |
+| `C2` | C2 | Proficiency level - near-native competence | 1 |
+| `native` | NAT | Native speaker vocabulary | 1 |
+| `academic` | ACAD | Academic or specialized terminology | 1 |
+| `literary` | LIT | Literary or classical usage | 1 |
+| `specialized` | SPEC | Technical or domain-specific terms | 1 |
+| `business` | BIZ | Business and professional vocabulary | 1 |
+| `regional` | REG | Regional or dialectal usage | 1 |
+
+#### Frequency Tier (`metaattr007`)
+**Purpose**: Usage frequency ranking for learning priority
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 20 words assigned across all tiers
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `top100` | T100 | Most common 100 words | 7 |
+| `top500` | T500 | Most common 500 words | 7 |
+| `top1000` | T1K | Most common 1000 words | 3 |
+| `top2500` | T2.5K | Most common 2500 words | 1 |
+| `top5000` | T5K | Most common 5000 words | 1 |
+| `top10000` | T10K | Most common 10000 words | 1 |
+
+#### Irregular Forms (`metaattr005`)
+**Purpose**: Form deviates from conjugation pattern
+**Source Level**: form
+**Display Level**: word
+**Database Usage**: 137 forms marked as irregular
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `irregular` | irreg | Form deviates from conjugation pattern | 137 |
+
+### 3.2 Verb-Specific Attributes
+
+#### Auxiliary Verb (`metaattr002`)
+**Purpose**: Auxiliary verb for compound tenses
+**Source Level**: translation
+**Display Level**: word
+**Database Usage**: 23 translations assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `avere` | AVERE | Uses auxiliary verb avere: ho parlato | 13 |
+| `essere` | ESSERE | Uses auxiliary verb essere: sono andato | 10 |
+
+#### Conjugation Type (`metaattr004`)
+**Purpose**: Basic conjugation pattern family
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 13 words classified
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `are` | ARE | First conjugation: parlare, amare | 6 |
+| `ere` | ERE | Second conjugation: credere, vendere | 3 |
+| `ire` | IRE | Third conjugation: dormire, partire | 2 |
+| `ire-isc` | ISCO | Third conjugation with -isc-: finire, capire | 2 |
+
+#### Mood (`metaattr010`)
+**Purpose**: Primary grammatical categorization
+**Source Level**: form
+**Display Level**: form
+**Database Usage**: 606 forms assigned across all moods
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `indicativo` | IND | Indicative mood - statements of fact | 358 |
+| `congiuntivo` | CONG | Subjunctive mood - doubt, emotion, opinion | 133 |
+| `condizionale` | COND | Conditional mood - hypothetical situations | 60 |
+| `imperativo` | IMP | Imperative mood - commands | 29 |
+| `gerundio` | GER | Gerund mood - verbal noun | 9 |
+| `infinito` | INF | Infinitive mood - unconjugated verb form | 9 |
+| `participio` | PART | Participle mood - verbal adjective | 8 |
+
+#### Tense (`metaattr019`)
+**Purpose**: Specific temporal/aspectual identification
+**Source Level**: form
+**Display Level**: form
+**Database Usage**: 606 forms with detailed tense assignments
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `presente` | PRES | Present indicative: io parlo | 40 |
+| `presente-progressivo` | PPROG | Present progressive: io sto parlando | 36 |
+| `condizionale-presente` | CONDPRES | Present conditional: io parlerei | 36 |
+| `passato-prossimo` | PP | Present perfect: io ho parlato | 36 |
+| `passato-remoto` | PREM | Simple past: io parlai | 36 |
+| `imperfetto` | IMPF | Imperfect indicative: io parlavo | 36 |
+| `futuro-semplice` | FUT | Simple future: io parlerò | 36 |
+| `congiuntivo-presente` | CPRES | Present subjunctive: che io parli | 36 |
+| `congiuntivo-imperfetto` | CIMPF | Imperfect subjunctive: che io parlassi | 36 |
+| `imperativo-presente` | IMPPRES | Present imperative: parla!, parlate! | 31 |
+| `trapassato-prossimo` | TPP | Past perfect: io avevo parlato | 30 |
+| `imperfetto-progressivo` | IPROG | Past progressive: io stavo parlando | 30 |
+| `futuro-anteriore` | FA | Future perfect: io avrò parlato | 30 |
+| `condizionale-passato` | CONDPASS | Past conditional: io avrei parlato | 30 |
+| `congiuntivo-passato` | CPASS | Present perfect subjunctive: che io abbia parlato | 25 |
+| `trapassato-remoto` | TR | Past anterior: io ebbi parlato | 24 |
+| `congiuntivo-trapassato` | CTRAP | Past perfect subjunctive: che io avessi parlato | 24 |
+| `futuro-progressivo` | FPROG | Future progressive: io starò parlando | 24 |
+| `participio-passato` | PARTPASS | Past participle: parlato | 7 |
+| `gerundio-presente` | GERPRES | Present gerund: parlando | 6 |
+| `infinito-presente` | INFPRES | Present infinitive: parlare | 6 |
+| `infinito-passato` | INFPASS | Past infinitive: avere parlato | 5 |
+| `gerundio-passato` | GERPASS | Past gerund: avendo parlato | 5 |
+| `participio-presente` | PARTPRES | Present participle: parlante | 5 |
+
+#### Person (`metaattr014`)
+**Purpose**: Subject person classification
+**Source Level**: form
+**Display Level**: form
+**Database Usage**: 591 forms assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `seconda-persona` | 2P | Second person - tu, voi | 202 |
+| `terza-persona` | 3P | Third person - lui/lei, loro | 196 |
+| `prima-persona` | 1P | First person - io, noi | 193 |
+
+#### Transitivity (`metaattr020`)
+**Purpose**: Can take direct objects
+**Source Level**: translation
+**Display Level**: word
+**Database Usage**: 13 translations assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `transitive` | TRANS | Can take direct objects: vedere qualcosa | 5 |
+| `intransitive` | INTRANS | Cannot take direct objects: andare | 4 |
+| `ambitransitive` | AMBI | Can be used transitively or intransitively | 4 |
+
+#### Reflexive (`metaattr017`)
+**Purpose**: Requires reflexive pronouns (lavare vs lavarsi)
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 107 words assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `reflexive` | refl | Requires reflexive pronouns (lavare vs lavarsi) | 107 |
+
+#### Verb Type (`metaattr021`)
+**Purpose**: Comprehensive verb classification including reflexive, modal, impersonal, and grammatical types
+**Source Level**: translation
+**Display Level**: translation
+**Database Usage**: 3 translations assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `meteorological-verb` | - | Weather verbs: piovere (rain), nevicare (snow), grandinare (hail) - third person singular only | 1 |
+| `direct-reflexive` | DIR_REFL | Action on oneself: mi lavo (I wash myself) | 1 |
+| `reciprocal` | RECIP | Mutual action: ci laviamo (we wash each other) | 1 |
+| `modal-verb` | - | Modal auxiliary verbs: dovere (must), potere (can), volere (want), sapere (know how) | 0 |
+| `impersonal-verb` | - | Impersonal verbs: importare (matter), bisognare (need), servire (be needed) - used without specific subject | 0 |
+| `defective-verb` | - | Defective verbs: vigere (be in force), solere (be accustomed), vertere (turn) - missing some forms | 0 |
+
+#### Verb Form Type (`metaattr022`)
+**Purpose**: Construction method classification
+**Source Level**: form
+**Display Level**: form
+**Database Usage**: 629 forms assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `simple` | SIMP | Single-word forms: parlo, parlavo | 323 |
+| `compound` | COMP | Auxiliary + participle: ho parlato | 216 |
+| `progressive` | PROG | Stare + gerund: sto parlando | 90 |
+
+### 3.3 Noun-Specific Attributes
+
+#### Noun Gender (`metaattr011`)
+**Purpose**: Inherent grammatical gender of nouns
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 6 words assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `masculine` | M | Masculine grammatical gender (il tavolo) | 3 |
+| `feminine` | F | Feminine grammatical gender (la tavola) | 2 |
+| `common-gender` | C | Can be either masculine or feminine | 1 |
+
+#### Number (`metaattr012`)
+**Purpose**: Singular/plural distinction
+**Source Level**: form
+**Display Level**: word
+**Database Usage**: 603 forms assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `singolare` | SG | Singular number | 302 |
+| `plurale` | PL | Plural number | 301 |
+
+#### Number Restriction (`metaattr013`)
+**Purpose**: Grammatical restrictions on number, person, or mood usage
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 4 words with restrictions
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `plural-only` | SOLO_PL | Used only in plural form | 2 |
+| `singular-only` | SOLO_SG | Used only in singular form | 1 |
+| `third-singular-only` | - | Used only in third person singular (meteorological verbs like piovere) | 1 |
+| `third-person-only` | - | Used only in third person (impersonal verbs like importare) | 0 |
+| `missing-first-second-person` | - | Missing first and second person forms (defective verbs like vigere) | 0 |
+| `missing-imperative` | - | Cannot form imperative commands (defective verbs like solere) | 0 |
+
+#### Plural Formation (`metaattr026`)
+**Purpose**: Italian noun pluralization pattern classification for standard formations
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 5 words assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `plural-e` | PL_E | Feminine -a ending nouns → -e plural formation (casa → case) | 3 |
+| `plural-i` | PL_I | Masculine -o ending nouns → -i plural formation (libro → libri) | 2 |
+
+### 3.4 Adjective-Specific Attributes
+
+#### Form Pattern (`metaattr006`)
+**Purpose**: Agreement form variations for adjectives
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 4 words assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `form-4` | 4F | Full agreement: rosso/rossa/rossi/rosse | 2 |
+| `form-2` | 2F | Limited agreement: grande/grandi | 2 |
+
+#### Gradable (`metaattr009`)
+**Purpose**: Can form comparative/superlative forms
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 5 words assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `full-gradability` | GRAD_BOTH | Can form both analytical and synthetic comparatives: più bello, bellissimo | 3 |
+| `analytical-gradability` | ANALYT | Can form analytical comparatives with più/meno: più intelligente | 1 |
+| `non-gradable` | NONGRAD | Cannot form comparatives: morto, perfetto | 1 |
+
+#### Gender Usage (`metaattr008`)
+**Purpose**: Gender restriction for this specific meaning
+**Source Level**: translation
+**Display Level**: translation
+**Database Usage**: 3 translations assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `male-only` | M_ONLY | Translation only applies to males: handsome (bello) | 2 |
+| `female-only` | F_ONLY | Translation only applies to females | 1 |
+
+### 3.5 Adverb-Specific Attributes
+
+#### Adverb Type (`metaattr001`)
+**Purpose**: Semantic/syntactic categorization of adverbs
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 11 words assigned across all types
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `manner` | MAN | How something is done: velocemente, bene | 2 |
+| `negation` | NEG | Negative constructions: non, niente, nessuno | 1 |
+| `interrogative` | INTER | Questions: quando, dove, come | 1 |
+| `affirmation` | AFF | Confirmation: sì, certamente | 1 |
+| `quantity` | QUANT | How much: molto, poco | 1 |
+| `doubt` | DOUBT | Uncertainty: forse, probabilmente | 1 |
+| `emphasis` | EMPH | Amplification/certainty: assolutamente, certamente | 1 |
+| `evaluation` | EVAL | Speaker judgment/opinion: fortunatamente, purtroppo | 1 |
+| `place` | PLACE | Where something happens: qui, là | 1 |
+| `frequency` | FREQ | How often: spesso, mai | 1 |
+| `time` | TIME | When something happens: oggi, sempre | 1 |
+
+### 3.6 Universal Translation-Level Attributes
+
+#### Position (`metaattr016`)
+**Purpose**: Position preference for adjectives and adverbs
+**Source Level**: translation
+**Display Level**: translation
+**Database Usage**: 11 translations assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `before/after` | POS_BOTH | Can appear in either position | 5 |
+| `after` | AFTER | Typically appears after the noun/verb | 5 |
+| `before` | BEFORE | Typically appears before the noun/verb | 1 |
+
+#### Register (`metaattr018`)
+**Purpose**: Social context appropriateness
+**Source Level**: translation
+**Display Level**: translation
+**Database Usage**: 42 translations assigned
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `neutral` | R_NEUT | Standard register, neither formal nor informal | 36 |
+| `formal` | FORM | Appropriate for formal/academic contexts | 4 |
+| `casual` | CASU | Casual/colloquial usage | 2 |
+| `mixed` | MIX | Used in both formal and informal contexts | 0 |
+
+### 3.7 Optional Tags System
+
+#### Optional Tags (`metaattr_optional_tag`)
+**Purpose**: Unified optional contextual metadata tags applicable at any level - consolidates form, translation, and word optional tags
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: 47 different optional tags used
+
+**Most Used Optional Tags**:
+- `source-original-dictionary` (6 uses) - Migrated from word_translations.optional_tags array
+- `usage-primary` (6 uses) - Migrated from word_translations.optional_tags array
+- `semantic-type-aesthetic-quality` (4 uses) - Migrated from word_translations.optional_tags array
+- `test_translation` (3 uses) - Migrated from word_translations.optional_tags array
+- `voice:active` (2 uses) - Optional tag: voice:active
+- `formality:informal` (2 uses) - Optional tag: formality:informal
+- `certainty:high` (2 uses) - Optional tag: certainty:high
+
+**Tag Categories Include**:
+- **Confidence levels**: `confidence-high`, `confidence-medium`
+- **Contexts**: `academic_context`, `technical_context`, `context-meeting-people`, `context-leaving`
+- **Semantic domains**: `semantic-domain-architecture`, `semantic-domain-family`
+- **Semantic types**: `semantic-type-aesthetic-quality`, `semantic-type-emotional-positive`, `semantic-type-general-positive`, `semantic-type-quality-assessment`
+- **Topics**: `topic-abstract`, `topic-daily-life`, `topic-place`
+- **Testing/Development**: `test_translation`, `test_form`, `test_data`, `edge_case_testing`
+- **Quality markers**: `verified_quality`, `common_usage`, `regular_pattern`
+- **Voice and formality**: `voice:active`, `formality:informal`, `certainty:high`
+
+---
+
+## 4. Currently Implemented Word Types
+
+### 4.1 VERB
 
 **Implementation Status**: ✅ **Fully Implemented**
 
@@ -124,23 +478,22 @@ The verb system represents the most complex word type implementation, serving as
 
 > **📋 Detailed Technical Documentation**: For comprehensive details on verb forms, conjugation patterns, auxiliary systems, and form-translation architecture, see the [Verb Forms System Architecture](./verb-forms-system-architecture.md) documentation.
 
-**Word-Level Metadata**:
-- `metaattr004` - **Conjugation Type**: `are`, `ere`, `ire`, `ire-isc`
-- `metaattr017` - **Reflexive**: `reflexive` (for inherently reflexive verbs)
+**Word-Level Metadata** *(see [Section 3.2](#32-verb-specific-attributes) for complete value descriptions)*:
+- `metaattr004` - **Conjugation Type**: `are` (6 uses), `ere` (3 uses), `ire` (2 uses), `ire-isc` (2 uses)
+- `metaattr017` - **Reflexive**: `reflexive` (107 words) - for inherently reflexive verbs like "lavarsi"
 
-**Translation-Level Metadata**:
-- `metaattr002` - **Auxiliary Verb**: `avere`, `essere` (for compound tenses)
-- `metaattr020` - **Transitivity**: `transitive`, `intransitive`, `ambitransitive`
-- `metaattr021` - **Reflexive Type**: `direct`, `reciprocal` (for specific translation meanings)
-- `metaattr018` - **Register**: `formal`, `casual`, `neutral`, `mixed`
+**Translation-Level Metadata** *(see [Section 3.2](#32-verb-specific-attributes) for complete value descriptions)*:
+- `metaattr002` - **Auxiliary Verb**: `avere` (13 uses), `essere` (10 uses) - for compound tenses
+- `metaattr020` - **Transitivity**: `transitive` (5 uses), `intransitive` (4 uses), `ambitransitive` (4 uses)
+- `metaattr021` - **Verb Type**: `direct-reflexive` (1 use), `reciprocal` (1 use), `meteorological-verb` (1 use)
+- `metaattr018` - **Register**: `neutral` (36 uses), `formal` (4 uses), `casual` (2 uses) - see [Section 3.6](#36-universal-translation-level-attributes)
 
-**Form-Level Metadata**:
-- `metaattr010` - **Mood**: `indicativo`, `congiuntivo`, `condizionale`, `imperativo`, `infinito`, `participio`, `gerundio`
-- `metaattr019` - **Tense**: `presente`, `imperfetto`, `passato-remoto`, `futuro-semplice`, `passato-prossimo`, etc.
-- `metaattr014` - **Person**: `prima-persona`, `seconda-persona`, `terza-persona`
-- `metaattr012` - **Number**: `singolare`, `plurale`
-- `metaattr022` - **Verb Form Type**: `simple`, `compound`, `progressive`
-- `metaattr002` - **Auxiliary** (for compound forms): `avere`, `essere`
+**Form-Level Metadata** *(see [Section 3.2](#32-verb-specific-attributes) for complete value descriptions)*:
+- `metaattr010` - **Mood**: `indicativo` (358 forms), `congiuntivo` (133 forms), `condizionale` (60 forms), `imperativo` (29 forms), `gerundio` (9 forms), `infinito` (9 forms), `participio` (8 forms)
+- `metaattr019` - **Tense**: 27 distinct tenses from `presente` (40 forms) to specialized forms like `gerundio-passato` (5 forms)
+- `metaattr014` - **Person**: `seconda-persona` (202 forms), `terza-persona` (196 forms), `prima-persona` (193 forms)
+- `metaattr012` - **Number**: `singolare` (302 forms), `plurale` (301 forms) - see [Section 3.3](#33-noun-specific-attributes)
+- `metaattr022` - **Verb Form Type**: `simple` (323 forms), `compound` (216 forms), `progressive` (90 forms)
 
 **Forms Storage**:
 Complete conjugation paradigms are stored in `word_forms` table (~100-140 forms per verb), including:
@@ -157,22 +510,22 @@ Complete conjugation paradigms are stored in `word_forms` table (~100-140 forms 
 
 ---
 
-### 3.2 NOUN
+### 4.2 NOUN
 
 **Implementation Status**: ✅ **Fully Implemented**
 
 **Architecture Summary**:
 The noun system focuses on gender, number, and article generation with support for irregular plural formations.
 
-**Word-Level Metadata**:
-- `metaattr011` - **Word Gender**: `masculine`, `feminine`, `common-gender`
-- `metaattr012` - **Number**: `singolare`, `plurale` (for words with inherent number restrictions)
-- `metaattr013` - **Number Restriction**: `singular only`, `plural only` (for defective nouns)
-- `metaattr026` - **Plural Formation**: `plural-e`, `plural-i`
+**Word-Level Metadata** *(see [Section 3.3](#33-noun-specific-attributes) for complete value descriptions)*:
+- `metaattr011` - **Noun Gender**: `masculine` (3 words), `feminine` (2 words), `common-gender` (1 word) - inherent grammatical gender
+- `metaattr012` - **Number**: `singolare` (302 forms), `plurale` (301 forms) - applied at form level for agreement
+- `metaattr013` - **Number Restriction**: `plural-only` (2 words), `singular-only` (1 word) - for defective nouns
+- `metaattr026` - **Plural Formation**: `plural-e` (3 words), `plural-i` (2 words) - standard formation patterns
 
-**Translation-Level Metadata**:
-- `metaattr018` - **Register**: Formality level for specific meanings
-- Optional topic tags: `metaattr_opt_tag_word` with `topic-*` values
+**Translation-Level Metadata** *(see [Section 3.6](#36-universal-translation-level-attributes) for complete value descriptions)*:
+- `metaattr018` - **Register**: `neutral` (most common), `formal`, `casual` - formality level for specific meanings
+- `metaattr_optional_tag` - **Optional Topic Tags**: `topic-abstract`, `topic-daily-life`, `topic-place` and others - see [Section 3.7](#37-optional-tags-system)
 
 **Forms Storage**:
 Generally no forms stored - articles and plural forms are calculated on the frontend using algorithmic generation based on gender and phonetic rules.
@@ -205,21 +558,22 @@ calculateArticle(word, gender, isPlural) {
 
 ---
 
-### 3.3 ADJECTIVE
+### 4.3 ADJECTIVE
 
 **Implementation Status**: ✅ **Fully Implemented**
 
 **Architecture Summary**:
 The adjective system handles agreement patterns, position preferences, and gradability.
 
-**Word-Level Metadata**:
-- `metaattr009` - **Gradable**: `Analytical`, `Full`, `Non-gradable`
-- `metaattr011` - **Word Gender**: `masculine`, `feminine`, `common-gender` (for agreement)
-- `position` - **Position**: `before`, `after`, `before/after` (relative to noun)
+**Word-Level Metadata** *(see [Section 3.4](#34-adjective-specific-attributes) for complete value descriptions)*:
+- `metaattr009` - **Gradable**: `full-gradability` (3 words), `analytical-gradability` (1 word), `non-gradable` (1 word) - comparative/superlative capability
+- `metaattr006` - **Form Pattern**: `form-4` (2 words), `form-2` (2 words) - agreement variations (rosso/rossa/rossi/rosse vs grande/grandi)
+- `metaattr011` - **Noun Gender**: inherited for agreement purposes - see [Section 3.3](#33-noun-specific-attributes)
 
-**Translation-Level Metadata**:
-- `metaattr008` - **Gender Usage**: `male-only`, `female-only` (for gender-specific meanings)
-- `metaattr018` - **Register**: Formality level
+**Translation-Level Metadata** *(see [Section 3.4](#34-adjective-specific-attributes) and [Section 3.6](#36-universal-translation-level-attributes) for complete value descriptions)*:
+- `metaattr008` - **Gender Usage**: `male-only` (2 translations), `female-only` (1 translation) - gender-specific meanings like "handsome" (bello)
+- `metaattr016` - **Position**: `before/after` (5 uses), `after` (5 uses), `before` (1 use) - placement relative to noun
+- `metaattr018` - **Register**: `neutral`, `formal`, `casual` - formality level for specific meanings
 
 **Forms Storage**:
 Minimal forms storage - agreement forms are typically calculated on frontend based on regular patterns (alto/alta/alti/alte).
@@ -232,19 +586,19 @@ Minimal forms storage - agreement forms are typically calculated on frontend bas
 
 ---
 
-### 3.4 ADVERB
+### 4.4 ADVERB
 
 **Implementation Status**: ✅ **Fully Implemented**
 
 **Architecture Summary**:
 The adverb system classifies by semantic type and position, with most adverbs being invariable.
 
-**Word-Level Metadata**:
-- `metaattr001` - **Adverb Type**: `manner`, `time`, `place`, `quantity`, `frequency`, `affirmation`, `doubt`, `negation`, `interrogative`, `evaluation`, `emphasis`
-- `position` - **Position**: `before`, `after`, `before/after` (sentence position preferences)
+**Word-Level Metadata** *(see [Section 3.5](#35-adverb-specific-attributes) for complete value descriptions)*:
+- `metaattr001` - **Adverb Type**: 11 semantic categories with 11 words assigned - `manner` (2 uses), `negation`, `interrogative`, `affirmation`, `quantity`, `doubt`, `emphasis`, `evaluation`, `place`, `frequency`, `time` (1 use each)
 
-**Translation-Level Metadata**:
-- `metaattr018` - **Register**: Formality level for specific uses
+**Translation-Level Metadata** *(see [Section 3.6](#36-universal-translation-level-attributes) for complete value descriptions)*:
+- `metaattr016` - **Position**: `before/after`, `after`, `before` - sentence position preferences
+- `metaattr018` - **Register**: `neutral` (most common), `formal`, `casual` - formality level for specific uses
 
 **Forms Storage**:
 Generally no forms stored - adverbs are typically invariable in Italian.
@@ -274,9 +628,9 @@ const adverbTypeMap = {
 
 ---
 
-## 4. Newly Architected Word Types
+## 5. Newly Architected Word Types
 
-### 4.1 PREPOSITION
+### 5.1 PREPOSITION
 
 **Implementation Status**: 🔄 **Architecture Complete - Ready for Implementation**
 
@@ -350,11 +704,11 @@ Unlike noun phrases like "a causa di", these compounds function as unified prepo
 
 ---
 
-## 5. Planned Word Types
+## 6. Planned Word Types
 
 *The following word types have initial architectural planning but are not yet implemented.*
 
-### 5.1 DETERMINER
+### 6.1 DETERMINER
 
 **Implementation Status**: 📋 **Planned**
 
@@ -386,7 +740,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-### 5.2 CONJUNCTION
+### 6.2 CONJUNCTION
 
 **Implementation Status**: 📋 **Planned**
 
@@ -413,7 +767,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-### 5.3 PRONOUN
+### 6.3 PRONOUN
 
 **Implementation Status**: 📋 **Planned - High Complexity**
 
@@ -443,7 +797,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-### 5.4 MODAL VERBS
+### 6.4 MODAL VERBS
 
 **Implementation Status**: 📋 **Planned - Extend Existing VERB System**
 
@@ -462,7 +816,7 @@ Extend existing verb architecture rather than create new word type.
 
 ---
 
-### 5.5 PROPER NOUN
+### 6.5 PROPER NOUN
 
 **Implementation Status**: 📋 **Planned**
 
@@ -487,7 +841,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 5.6 WH-WORDS
+### 6.6 WH-WORDS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -499,7 +853,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 5.7 PARTICLE NE
+### 6.7 PARTICLE NE
 
 **Implementation Status**: 📋 **Planned**
 
@@ -517,7 +871,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 5.8 INTERJECTIONS
+### 6.8 INTERJECTIONS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -529,7 +883,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 5.9 ABBREVIATIONS
+### 6.9 ABBREVIATIONS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -541,7 +895,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 5.10 INDEFINITE PRONOUNS
+### 6.10 INDEFINITE PRONOUNS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -560,9 +914,9 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-## 6. Cross-Cutting Architectural Decisions
+## 7. Cross-Cutting Architectural Decisions
 
-### 6.1 Forms Storage Decision Matrix
+### 7.1 Forms Storage Decision Matrix
 
 **When to Store Forms**:
 - ✅ **Unpredictable changes**: Verb conjugations, pronoun declensions
@@ -579,7 +933,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 - ✅ **Compound prepositions**: Store as forms for searchability
 - ✅ **Variant spellings**: Store common variants, calculate rare ones
 
-### 6.2 Metadata Level Decisions
+### 7.2 Metadata Level Decisions
 
 **Word-Level Metadata** (inherent to Italian lemma):
 - Conjugation type, gender, CEFR level, frequency tier
@@ -594,7 +948,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 - Agreement markers for adjectives/determiners
 - Contraction type for prepositions
 
-### 6.3 Translation Strategy Patterns
+### 7.3 Translation Strategy Patterns
 
 **Multiple Translation Handling**:
 - Primary translation (display_priority = 1) for basic meaning
@@ -613,7 +967,7 @@ const semanticRoles = {
 };
 ```
 
-### 6.4 Frontend Display Strategies
+### 7.4 Frontend Display Strategies
 
 **Essential vs. Detailed Tags**:
 - **Essential**: Displayed prominently, crucial for learning (gender, CEFR, frequency)
@@ -635,7 +989,7 @@ const wordTypeColors = {
 
 ---
 
-## 7. Implementation Roadmap
+## 8. Implementation Roadmap
 
 ### Phase 1: Core Function Words (Immediate Priority)
 **Goal**: Handle the grammatical backbone of Italian
