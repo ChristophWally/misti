@@ -12,10 +12,9 @@
 2. [Universal Metadata System](#2-universal-metadata-system)
 3. [Complete Meta Values Reference](#3-complete-meta-values-reference)
 4. [Currently Implemented Word Types](#4-currently-implemented-word-types)
-5. [Newly Architected Word Types](#5-newly-architected-word-types)
-6. [Planned Word Types](#6-planned-word-types)
-7. [Cross-Cutting Architectural Decisions](#7-cross-cutting-architectural-decisions)
-8. [Implementation Roadmap](#8-implementation-roadmap)
+5. [Planned Word Types](#5-planned-word-types)
+6. [Cross-Cutting Architectural Decisions](#6-cross-cutting-architectural-decisions)
+7. [Implementation Roadmap](#7-implementation-roadmap)
 
 ---
 
@@ -628,11 +627,13 @@ const adverbTypeMap = {
 
 ---
 
-## 5. Newly Architected Word Types
+## 5. Planned Word Types
+
+*The following word types have initial architectural planning but are not yet implemented.*
 
 ### 5.1 PREPOSITION
 
-**Implementation Status**: 🔄 **Enhanced Architecture Complete - Ready for Implementation**
+**Implementation Status**: 📋 **Planned**
 
 **Architecture Summary**:
 Prepositions use an optimized approach: atomic storage for base forms, algorithmic calculation of contracted forms (following phonetic conditioning rules), and compound form recognition for multi-word prepositional expressions.
@@ -870,11 +871,7 @@ function displayPrepositionWithNoun(preposition, noun, gender, number) {
 
 ---
 
-## 6. Planned Word Types
-
-*The following word types have initial architectural planning but are not yet implemented.*
-
-### 6.1 DETERMINER
+### 5.2 DETERMINER
 
 **Implementation Status**: 📋 **Planned**
 
@@ -906,7 +903,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-### 6.2 CONJUNCTION
+### 5.3 CONJUNCTION
 
 **Implementation Status**: 📋 **Planned**
 
@@ -933,7 +930,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-### 6.3 PRONOUN
+### 5.4 PRONOUN
 
 **Implementation Status**: 📋 **Planned - High Complexity**
 
@@ -963,7 +960,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-### 6.4 MODAL VERBS
+### 5.5 MODAL VERBS
 
 **Implementation Status**: 📋 **Planned - Extend Existing VERB System**
 
@@ -982,7 +979,7 @@ Extend existing verb architecture rather than create new word type.
 
 ---
 
-### 6.5 PROPER NOUN
+### 5.6 PROPER NOUN
 
 **Implementation Status**: 📋 **Planned**
 
@@ -1007,7 +1004,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 6.6 WH-WORDS
+### 5.7 WH-WORDS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -1019,7 +1016,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 6.7 PARTICLE NE
+### 5.8 PARTICLE NE
 
 **Implementation Status**: 📋 **Planned**
 
@@ -1037,7 +1034,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 6.8 INTERJECTIONS
+### 5.9 INTERJECTIONS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -1049,7 +1046,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 6.9 ABBREVIATIONS
+### 5.10 ABBREVIATIONS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -1061,7 +1058,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
-### 6.10 INDEFINITE PRONOUNS
+### 5.11 INDEFINITE PRONOUNS
 
 **Implementation Status**: 📋 **Planned**
 
@@ -1080,9 +1077,9 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 
 ---
 
-## 7. Cross-Cutting Architectural Decisions
+## 6. Cross-Cutting Architectural Decisions
 
-### 7.1 Forms Storage Decision Matrix
+### 6.1 Forms Storage Decision Matrix
 
 **When to Store Forms**:
 - ✅ **Unpredictable changes**: Verb conjugations, pronoun declensions
@@ -1099,7 +1096,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 - ✅ **Compound prepositions**: Store as forms for searchability
 - ✅ **Variant spellings**: Store common variants, calculate rare ones
 
-### 7.2 Metadata Level Decisions
+### 6.2 Metadata Level Decisions
 
 **Word-Level Metadata** (inherent to Italian lemma):
 - Conjugation type, gender, CEFR level, frequency tier
@@ -1114,7 +1111,7 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 - Agreement markers for adjectives/determiners
 - Contraction type for prepositions
 
-### 7.3 Translation Strategy Patterns
+### 6.3 Translation Strategy Patterns
 
 **Multiple Translation Handling**:
 - Primary translation (display_priority = 1) for basic meaning
@@ -1133,7 +1130,7 @@ const semanticRoles = {
 };
 ```
 
-### 7.4 Frontend Display Strategies
+### 6.4 Frontend Display Strategies
 
 **Essential vs. Detailed Tags**:
 - **Essential**: Displayed prominently, crucial for learning (gender, CEFR, frequency)
@@ -1155,7 +1152,7 @@ const wordTypeColors = {
 
 ---
 
-## 8. Implementation Roadmap
+## 7. Implementation Roadmap
 
 ### Phase 1: Core Function Words (Immediate Priority)
 **Goal**: Handle the grammatical backbone of Italian
