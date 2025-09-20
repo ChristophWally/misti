@@ -878,11 +878,9 @@ INSERT INTO dictionary (italian, word_type) VALUES
 
 ## Word-Level Metadata
 
-**Optimized to use existing attributes where possible**:
+**Simplified metadata for prepositions based on their functional nature**:
 
-- **NEW: `metaattr027` - Preposition Type**: `articulated`, `invariable`
-- **EXISTING: `metaattr018` - Register**: `neutral`, `formal`, `casual` - formality level (see [Section 3.6](#36-universal-translation-level-attributes))
-- **EXISTING: `metaattr016` - Position**: `before_noun`, `after_verb`, `flexible` - positional preferences
+- **`metaattr027` - Preposition Type**: `articulated`, `invariable`
 
 ## Translation-Level Metadata
 
@@ -897,7 +895,6 @@ INSERT INTO dictionary (italian, word_type) VALUES
   (di_id, 'about', 'topic, subject: parlare di calcio');
   ```
 
-- **EXISTING: `metaattr018` - Register**: Handle formality levels at translation level
 - **Usage notes**: Detailed semantic role descriptions in `usage_notes` field
 
 ## Form-Level Metadata
