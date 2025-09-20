@@ -410,6 +410,41 @@ This section provides comprehensive documentation of all metadata attributes and
 | `frequency` | FREQ | How often: spesso, mai | 1 |
 | `time` | TIME | When something happens: oggi, sempre | 1 |
 
+#### Adverb Government (`metaattr055`)
+**Purpose**: Indicates which preposition (if any) the adverb governs in prepositional constructions
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: New attribute for systematic adverb-preposition patterns
+
+**SQL Requirements**:
+```sql
+-- ADD TO meta_attributes table
+INSERT INTO meta_attributes (id, stable_id, name, display_name, description, source_level, display_level)
+VALUES (
+  gen_random_uuid(),
+  'metaattr055',
+  'adverb_government',
+  'Adverb Government',
+  'Indicates which preposition (if any) the adverb governs in prepositional constructions',
+  'word',
+  'word'
+);
+
+-- ADD TO meta_values table
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description) VALUES
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr055'), 'metaattr055val001', 'governs_a', 'GOV_A', 'Forms constructions with preposition "a": davanti a, dietro a'),
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr055'), 'metaattr055val002', 'governs_di', 'GOV_DI', 'Forms constructions with preposition "di": prima di, dopo di'),
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr055'), 'metaattr055val003', 'governs_da', 'GOV_DA', 'Forms constructions with preposition "da": lontano da'),
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr055'), 'metaattr055val004', 'invariable', 'INVAR', 'Cannot form prepositional constructions: qui, là, oggi, ieri');
+```
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `governs_a` | GOV_A | Forms constructions with preposition "a": davanti a, dietro a | 0 |
+| `governs_di` | GOV_DI | Forms constructions with preposition "di": prima di, dopo di | 0 |
+| `governs_da` | GOV_DA | Forms constructions with preposition "da": lontano da | 0 |
+| `invariable` | INVAR | Cannot form prepositional constructions: qui, là, oggi, ieri | 0 |
+
 ### 3.6 Universal Translation-Level Attributes
 
 #### Position (`metaattr016`)
@@ -590,22 +625,48 @@ Minimal forms storage - agreement forms are typically calculated on frontend bas
 **Implementation Status**: ✅ **Fully Implemented**
 
 **Architecture Summary**:
-The adverb system classifies by semantic type and position, with most adverbs being invariable.
+The adverb system classifies by semantic type and position, with sophisticated support for adverb-preposition constructions that form systematic grammatical patterns in Italian.
 
 **Word-Level Metadata** *(see [Section 3.5](#35-adverb-specific-attributes) for complete value descriptions)*:
 - `metaattr001` - **Adverb Type**: 11 semantic categories with 11 words assigned - `manner` (2 uses), `negation`, `interrogative`, `affirmation`, `quantity`, `doubt`, `emphasis`, `evaluation`, `place`, `frequency`, `time` (1 use each)
+- `metaattr055` - **Adverb Government**: NEW systematic classification for prepositional constructions:
+  - `governs_a` - Spatial adverbs forming constructions with "a": davanti a, dietro a, accanto a, vicino a
+  - `governs_di` - Temporal adverbs forming constructions with "di": prima di, dopo di, invece di
+  - `governs_da` - Distance adverbs forming constructions with "da": lontano da, distante da
+  - `invariable` - Simple adverbs that cannot form prepositional constructions: qui, là, oggi, ieri
 
 **Translation-Level Metadata** *(see [Section 3.6](#36-universal-translation-level-attributes) for complete value descriptions)*:
 - `metaattr016` - **Position**: `before/after`, `after`, `before` - sentence position preferences
 - `metaattr018` - **Register**: `neutral` (most common), `formal`, `casual` - formality level for specific uses
 
+**Systematic Adverb-Preposition Patterns**:
+
+**Spatial Adverbs + "a"** (Physical Position/Direction):
+- davanti a (in front of), dietro a (behind), accanto a (next to)
+- vicino a (near to), intorno a (around), attorno a (around)
+- sopra a (above), sotto a (below), dentro a (inside)
+
+**Temporal Adverbs + "di"** (Time Relations):
+- prima di (before), dopo di (after), invece di (instead of)
+- prima di tutto (first of all), prima di dormire (before sleeping)
+
+**Distance Adverbs + "da"** (Separation/Origin):
+- lontano da (far from), distante da (distant from)
+- via da (away from), fuori da (outside of)
+
+**Educational Value**:
+These systematic patterns help learners understand that many apparent "compound prepositions" are actually predictable adverb + preposition constructions, making Italian prepositional phrases more learnable and systematic.
+
 **Forms Storage**:
-Generally no forms stored - adverbs are typically invariable in Italian.
+Generally no forms stored - adverbs are typically invariable in Italian. However, the systematic government patterns are captured through metadata for educational presentation.
 
 **Frontend Features**:
 - **Type Classification**: Clear semantic category display (manner, time, place, etc.)
+- **Government Pattern Display**: Shows which preposition (if any) the adverb governs
+- **Construction Examples**: Displays complete prepositional constructions (davanti a casa)
 - **Position Indicators**: Shows typical sentence position
 - **Frequency Emphasis**: High-frequency adverbs prominently displayed
+- **Pattern Education**: Helps users understand systematic construction rules
 
 **Current Filter Integration**:
 ```javascript
@@ -623,6 +684,14 @@ const adverbTypeMap = {
   'adverb-evaluation': 'evaluation', // bene, male
   'adverb-emphasis': 'emphasis'   // proprio, davvero
 };
+
+// NEW: Adverb government pattern integration
+const adverbGovernmentMap = {
+  'governs_a': 'spatial-constructions',     // davanti a, dietro a
+  'governs_di': 'temporal-constructions',   // prima di, dopo di
+  'governs_da': 'distance-constructions',   // lontano da
+  'invariable': 'simple-adverbs'           // qui, là, oggi
+};
 ```
 
 ---
@@ -636,7 +705,7 @@ const adverbTypeMap = {
 **Implementation Status**: 📋 **Planned**
 
 **Architecture Summary**:
-Prepositions use an optimized approach: atomic storage for base forms, algorithmic calculation of contracted forms (following phonetic conditioning rules), and compound form recognition for multi-word prepositional expressions.
+Prepositions use a clean atomic approach: storage for true prepositions only, algorithmic calculation of contracted forms (following phonetic conditioning rules), with previous "compound prepositions" now properly recognized as adverb + preposition constructions.
 
 ## What is a Preposition
 
@@ -732,20 +801,28 @@ The choice between regular and special contraction forms follows **predictable p
 - nel parco (regular: p-) vs nello stesso (special: s+consonant)
 - sui monti (regular: m-) vs sugli alberi (special: vowel, plural)
 
-### Compound Prepositions
-Many Italian "prepositions" are actually **compound forms** that function as unified prepositional units:
+### Adverb-Preposition Constructions (Formerly "Compound Prepositions")
 
-**Spatial Compounds**:
+**ARCHITECTURAL REVISION**: What were previously considered "compound prepositions" are now properly understood as **adverb + preposition constructions** that follow systematic patterns:
+
+**Spatial Adverb + "a" Constructions**:
 - davanti a (in front of), dietro a (behind), vicino a (near to)
-- accanto a (next to), intorno a (around), lontano da (far from)
+- accanto a (next to), intorno a (around)
+- *Pattern*: Spatial adverbs systematically govern the preposition "a"
 
-**Temporal Compounds**:
-- prima di (before), dopo di (after), fino a (until)
-- durante (during - single word), attraverso (through - single word)
+**Temporal Adverb + "di" Constructions**:
+- prima di (before), dopo di (after), invece di (instead of)
+- *Pattern*: Temporal adverbs systematically govern the preposition "di"
 
-**Other Compounds**:
-- insieme a (together with), invece di (instead of)
-- grazie a (thanks to), a causa di (because of)
+**Distance Adverb + "da" Constructions**:
+- lontano da (far from), distante da (distant from)
+- *Pattern*: Distance adverbs systematically govern the preposition "da"
+
+**True Single-Word Prepositions**:
+- durante (during), attraverso (through), grazie a (thanks to), a causa di (because of)
+- *Note*: These remain as true prepositional entries, not adverb constructions
+
+**Educational Benefit**: This systematic approach helps learners understand predictable patterns rather than memorizing apparent "compound prepositions" as arbitrary units.
 
 ## Storage Strategy
 
@@ -784,21 +861,26 @@ function contractPrepositionWithArticle(prep, article) {
 - ✅ **Reduced storage**: No need to store 30+ contraction forms per preposition
 - ✅ **Consistency**: Same logic for articles and preposition contractions
 
-**3. Compound Preposition Storage**:
-Store compound prepositions as forms when they represent unified semantic units:
+**3. No Adverb Construction Storage**:
+**REMOVED**: Do not store adverb + preposition constructions as preposition forms. These patterns are handled through the adverb government system:
+
 ```sql
--- Store compounds that function as single prepositional units
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(davanti_id, 'davanti a', 'compound'),
-(prima_id, 'prima di', 'compound'),
-(insieme_id, 'insieme a', 'compound');
+-- REMOVED: No longer store as preposition forms
+-- davanti a, prima di, lontano da are adverb constructions
+-- handled via metaattr055 (Adverb Government) system
+
+-- Store only true single-word prepositions
+INSERT INTO dictionary (italian, word_type) VALUES
+('durante', 'preposition'),    -- single word, not a construction
+('attraverso', 'preposition'), -- single word, not a construction
+('presso', 'preposition');     -- single word, not a construction
 ```
 
 ## Word-Level Metadata
 
 **Optimized to use existing attributes where possible**:
 
-- **NEW: `metaattr027` - Preposition Type**: `simple`, `compound`, `temporal`, `spatial`, `causal`, `instrumental`
+- **NEW: `metaattr027` - Preposition Type**: `articulated`, `invariable`
 - **EXISTING: `metaattr018` - Register**: `neutral`, `formal`, `casual` - formality level (see [Section 3.6](#36-universal-translation-level-attributes))
 - **EXISTING: `metaattr016` - Position**: `before_noun`, `after_verb`, `flexible` - positional preferences
 
@@ -848,8 +930,9 @@ INSERT INTO word_translations (word_id, translation, display_priority, usage_not
 **Recommended Implementation**:
 
 1. **No Contraction Storage**: Calculate dello/degli algorithmically
-2. **Compound Storage**: Store true compounds like "davanti a" as forms
+2. **No Adverb Construction Storage**: "davanti a", "prima di" etc. are handled via adverb government (metaattr055)
 3. **Frontend Generation**: Dynamic contraction calculation in UI
+4. **Clean Separation**: Prepositions handle only true prepositional words, adverb constructions handled separately
 
 **Contraction Algorithm Integration**:
 ```javascript
@@ -864,10 +947,82 @@ function displayPrepositionWithNoun(preposition, noun, gender, number) {
 
 **Frontend Features**:
 - **Dynamic Contraction Display**: Show appropriate contracted form based on following noun
-- **Compound Form Recognition**: Display compound prepositions as unified units
-- **Semantic Role Indicators**: Visual indicators for spatial, temporal, causal functions
+- **Clean Preposition Display**: Display only true prepositions without adverb constructions
+- **Semantic Role Indicators**: Visual indicators for possession, direction, temporal functions
 - **Usage Context Examples**: Show different semantic contexts for each translation
 - **Phonetic Rule Education**: Help users understand contraction patterns
+- **Construction Reference**: Link to adverb government patterns for "davanti a" type constructions
+
+## Systematic Adverb-Preposition Construction Patterns
+
+**ARCHITECTURAL INSIGHT**: What Italian learners often struggle with as "compound prepositions" are actually systematic adverb + preposition constructions that follow predictable patterns. This understanding transforms rote memorization into pattern recognition.
+
+### Pattern 1: Spatial Adverbs + "a"
+
+**Semantic Pattern**: Physical position and directional relationships
+
+**Core Examples**:
+- davanti a (in front of) - davanti (adverb) + a (preposition)
+- dietro a (behind) - dietro (adverb) + a (preposition)
+- accanto a (next to) - accanto (adverb) + a (preposition)
+- vicino a (near to) - vicino (adverb) + a (preposition)
+- intorno a (around) - intorno (adverb) + a (preposition)
+- sopra a (above) - sopra (adverb) + a (preposition)
+- sotto a (below) - sotto (adverb) + a (preposition)
+
+**Pattern Recognition**: Spatial concepts requiring a reference point naturally use "a" to indicate direction or relationship *to* something.
+
+**Usage**: "La macchina è davanti **a** casa" (The car is in front **of** the house)
+
+### Pattern 2: Temporal Adverbs + "di"
+
+**Semantic Pattern**: Time relationships and sequence
+
+**Core Examples**:
+- prima di (before) - prima (adverb) + di (preposition)
+- dopo di (after) - dopo (adverb) + di (preposition)
+- invece di (instead of) - invece (adverb) + di (preposition)
+
+**Pattern Recognition**: Temporal relationships often use "di" to indicate relationship *of* or *from* a time reference point.
+
+**Usage**: "Studia prima **di** dormire" (Study before **_** sleeping)
+
+### Pattern 3: Distance Adverbs + "da"
+
+**Semantic Pattern**: Separation, distance, and origin
+
+**Core Examples**:
+- lontano da (far from) - lontano (adverb) + da (preposition)
+- distante da (distant from) - distante (adverb) + da (preposition)
+- via da (away from) - via (adverb) + da (preposition)
+
+**Pattern Recognition**: Distance and separation concepts use "da" to indicate movement or measurement *from* a reference point.
+
+**Usage**: "Roma è lontano **da** Milano" (Rome is far **from** Milan)
+
+### Educational Benefits of Pattern Recognition
+
+**1. Reduced Memorization Load**:
+Instead of memorizing 20+ "compound prepositions," learners recognize 3 systematic patterns.
+
+**2. Productive Competence**:
+Understanding patterns allows learners to produce new constructions: "dentro a" (inside of), "fuori da" (outside from).
+
+**3. Cross-Linguistic Understanding**:
+Patterns reveal the logical structure of Italian spatial and temporal expressions.
+
+**4. Error Reduction**:
+Systematic understanding prevents common errors like *"davanti di"* or *"prima a"*.
+
+### Implementation in Misti Dictionary
+
+**Adverb Entries**: Each spatial/temporal adverb includes `metaattr055` (Adverb Government) indicating which preposition it governs.
+
+**Preposition Entries**: Clean preposition entries focus on core prepositional meanings without "compound" confusion.
+
+**Educational Display**: Frontend shows both the individual adverb meaning and its systematic prepositional construction pattern.
+
+**Advanced Learning**: Users can filter by government pattern to study systematic constructions.
 
 ---
 
