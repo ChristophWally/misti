@@ -632,12 +632,121 @@ const adverbTypeMap = {
 
 ### 5.1 PREPOSITION
 
-**Implementation Status**: 🔄 **Architecture Complete - Ready for Implementation**
+**Implementation Status**: 🔄 **Enhanced Architecture Complete - Ready for Implementation**
 
 **Architecture Summary**:
-Prepositions use a hybrid approach: atomic storage for base forms, explicit storage for contracted forms, and compound form recognition for multi-word prepositional expressions.
+Prepositions use an optimized approach: atomic storage for base forms, algorithmic calculation of contracted forms (following phonetic conditioning rules), and compound form recognition for multi-word prepositional expressions.
 
-**Storage Strategy**:
+## What is a Preposition
+
+**Linguistic Definition**: Italian prepositions (preposizioni) are short words that connect elements in a sentence to provide qualifying details about their relationship. They establish connections between nouns, pronouns, adjectives, adverbs, or verbs to indicate spatial, temporal, causal, instrumental, and other semantic relationships.
+
+**Grammatical Function**: Prepositions introduce complement phrases that answer questions like:
+- **Where?** (dove?) - in casa, su tavolo
+- **When?** (quando?) - di mattina, a mezzogiorno
+- **How?** (come?) - con attenzione, per telefono
+- **Why?** (perché?) - per amore, da paura
+- **From where?** (da dove?) - da Roma, di origine
+
+## Italian Preposition Examples
+
+### Core Simple Prepositions
+The fundamental Italian prepositions are: **di, a, da, in, con, su, per, tra, fra**
+
+#### DI (of/from/about)
+- **Possession**: "la casa di Marco" (Marco's house)
+- **Origin**: "sono di Roma" (I am from Rome)
+- **Material**: "tavolo di legno" (wooden table)
+- **Topic**: "parlare di calcio" (talk about soccer)
+
+#### A (to/at/in)
+- **Direction**: "vado a scuola" (I go to school)
+- **Location**: "sono a casa" (I am at home)
+- **Time**: "alle otto" (at eight o'clock)
+- **Manner**: "fatto a mano" (made by hand)
+
+#### DA (from/since/by)
+- **Origin**: "vengo da Milano" (I come from Milan)
+- **Time**: "da ieri" (since yesterday)
+- **Agent**: "fatto da me" (made by me)
+- **Purpose**: "macchina da corsa" (racing car)
+
+#### IN (in/to)
+- **Location**: "in cucina" (in the kitchen)
+- **Time**: "in estate" (in summer)
+- **Means**: "in treno" (by train)
+- **Condition**: "in pace" (in peace)
+
+#### CON (with)
+- **Accompaniment**: "con gli amici" (with friends)
+- **Instrument**: "scrivo con la penna" (I write with a pen)
+- **Manner**: "con attenzione" (with attention)
+
+#### SU (on/above/upon)
+- **Surface**: "sul tavolo" (on the table)
+- **Topic**: "libro su Roma" (book about Rome)
+- **Approximation**: "sui vent'anni" (about twenty years old)
+
+#### PER (for/through/by)
+- **Purpose**: "regalo per te" (gift for you)
+- **Duration**: "per tre ore" (for three hours)
+- **Means**: "per telefono" (by phone)
+- **Direction**: "per Roma" (toward Rome)
+
+#### TRA/FRA (between/among)
+- **Position**: "tra Roma e Napoli" (between Rome and Naples)
+- **Time**: "tra poco" (in a little while)
+- **Choice**: "scegliere tra due opzioni" (choose between two options)
+
+## Irregularities and Special Cases
+
+### Articulated Prepositions (Contractions)
+**Critical Pattern**: Di, a, da, in, and su **must contract** with definite articles when they appear together. This is **mandatory** in Italian, not optional.
+
+#### Phonetic Conditioning Rules
+The choice between regular and special contraction forms follows **predictable phonetic rules**:
+
+**Regular Forms** (with il/i):
+- Used before words that take regular articles (il/i)
+- Examples: "del tavolo" (di + il), "dei libri" (di + i)
+
+**Special Forms** (with lo/gli):
+- Used before words that take special articles (lo/gli)
+- **Triggers**: z-, s+consonant, gn-, ps-, x-, y-
+- **For plurals**: also before vowel-initial words
+- Examples: "dello zaino" (di + lo), "degli studenti" (di + gli)
+
+#### Complete Contraction Paradigm
+| Preposition | + il | + lo | + la | + i | + gli | + le |
+|-------------|------|------|------|-----|-------|------|
+| **di** | del | dello | della | dei | degli | delle |
+| **a** | al | allo | alla | ai | agli | alle |
+| **da** | dal | dallo | dalla | dai | dagli | dalle |
+| **in** | nel | nello | nella | nei | negli | nelle |
+| **su** | sul | sullo | sulla | sui | sugli | sulle |
+
+**Examples Demonstrating Phonetic Rules**:
+- del tavolo (regular: t-) vs dello zaino (special: z-)
+- dei libri (regular: l-) vs degli studenti (special: s+consonant)
+- nel parco (regular: p-) vs nello stesso (special: s+consonant)
+- sui monti (regular: m-) vs sugli alberi (special: vowel, plural)
+
+### Compound Prepositions
+Many Italian "prepositions" are actually **compound forms** that function as unified prepositional units:
+
+**Spatial Compounds**:
+- davanti a (in front of), dietro a (behind), vicino a (near to)
+- accanto a (next to), intorno a (around), lontano da (far from)
+
+**Temporal Compounds**:
+- prima di (before), dopo di (after), fino a (until)
+- durante (during - single word), attraverso (through - single word)
+
+**Other Compounds**:
+- insieme a (together with), invece di (instead of)
+- grazie a (thanks to), a causa di (because of)
+
+## Storage Strategy
 
 **1. Atomic Base Storage**:
 Store only fundamental prepositional lemmas in the `dictionary` table:
@@ -645,62 +754,119 @@ Store only fundamental prepositional lemmas in the `dictionary` table:
 INSERT INTO dictionary (italian, word_type) VALUES
 ('di', 'preposition'), ('a', 'preposition'), ('da', 'preposition'),
 ('in', 'preposition'), ('con', 'preposition'), ('su', 'preposition'),
-('per', 'preposition'), ('senza', 'preposition'), ('durante', 'preposition');
+('per', 'preposition'), ('tra', 'preposition'), ('fra', 'preposition');
 ```
 
-**2. Contracted Forms Storage**:
-Store contracted forms with articles in `word_forms` table:
+**2. Algorithmic Contraction Calculation**:
+**Recommended Approach**: Calculate contracted forms dynamically using the same phonetic rules as article generation.
+
+```javascript
+// Algorithmic contraction generation
+function getContractedPreposition(prep, noun, gender, number) {
+  const article = calculateArticle(noun, gender, number);
+  return contractPrepositionWithArticle(prep, article);
+}
+
+function contractPrepositionWithArticle(prep, article) {
+  const contractions = {
+    'di': { 'il': 'del', 'lo': 'dello', 'la': 'della', 'i': 'dei', 'gli': 'degli', 'le': 'delle' },
+    'a': { 'il': 'al', 'lo': 'allo', 'la': 'alla', 'i': 'ai', 'gli': 'agli', 'le': 'alle' },
+    // ... other prepositions
+  };
+  return contractions[prep]?.[article] || (prep + ' ' + article);
+}
+```
+
+**Rationale for Algorithmic Approach**:
+- ✅ **Predictable patterns**: Follows same rules as article selection
+- ✅ **Educational value**: Users learn the systematic nature of contractions
+- ✅ **Reduced storage**: No need to store 30+ contraction forms per preposition
+- ✅ **Consistency**: Same logic for articles and preposition contractions
+
+**3. Compound Preposition Storage**:
+Store compound prepositions as forms when they represent unified semantic units:
 ```sql
--- Forms for "di" + definite articles
+-- Store compounds that function as single prepositional units
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(di_id, 'di', 'base'),
-(di_id, 'del', 'contracted'),    -- di + il
-(di_id, 'della', 'contracted'),  -- di + la
-(di_id, 'dello', 'contracted'),  -- di + lo (special form)
-(di_id, 'dei', 'contracted'),    -- di + i
-(di_id, 'delle', 'contracted'),  -- di + le
-(di_id, 'degli', 'contracted');  -- di + gli (special form)
+(davanti_id, 'davanti a', 'compound'),
+(prima_id, 'prima di', 'compound'),
+(insieme_id, 'insieme a', 'compound');
 ```
 
-**3. Prepositional Compound Forms**:
-Store true prepositional compounds as forms of the semantic head:
+## Word-Level Metadata
+
+**Optimized to use existing attributes where possible**:
+
+- **NEW: `metaattr027` - Preposition Type**: `simple`, `compound`, `temporal`, `spatial`, `causal`, `instrumental`
+- **EXISTING: `metaattr018` - Register**: `neutral`, `formal`, `casual` - formality level (see [Section 3.6](#36-universal-translation-level-attributes))
+- **EXISTING: `metaattr016` - Position**: `before_noun`, `after_verb`, `flexible` - positional preferences
+
+## Translation-Level Metadata
+
+**Use existing word_translations structure**:
+
+- **Multiple translations** for different semantic roles:
+  ```sql
+  -- Multiple semantic contexts via separate translations
+  INSERT INTO word_translations (word_id, translation, usage_notes) VALUES
+  (di_id, 'of', 'possession, partitive: la casa di Marco'),
+  (di_id, 'from', 'origin, source: sono di Roma'),
+  (di_id, 'about', 'topic, subject: parlare di calcio');
+  ```
+
+- **EXISTING: `metaattr018` - Register**: Handle formality levels at translation level
+- **Usage notes**: Detailed semantic role descriptions in `usage_notes` field
+
+## Form-Level Metadata
+
+**Simplified approach leveraging existing attributes**:
+
+- **EXISTING: `metaattr022` - Verb Form Type** → **`metaattr022` - Form Type**: Extend to handle `simple`, `compound`, `contracted`
+- **For compound forms only**: Gender/number agreement using existing `metaattr011` (gender) + `metaattr012` (number)
+
+## Translation Strategy
+
+Handle semantic roles through the **existing translation system**:
+
+1. **Multiple Translations**: Each semantic role gets its own translation entry
+2. **Usage Notes**: Detailed context in the `usage_notes` field
+3. **Frequency Estimates**: Prioritize most common semantic roles
+4. **Display Priority**: Primary translation for most frequent use
+
+**Example Translation Strategy for "di"**:
 ```sql
--- Compound prepositional forms
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(davanti_id, 'davanti a', 'prep_compound'),
-(prima_id, 'prima di', 'prep_compound'),
-(dietro_id, 'dietro a', 'prep_compound'),
-(vicino_id, 'vicino a', 'prep_compound');
+INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate) VALUES
+(di_id, 'of', 1, 'possession, partitive relations', 0.4),
+(di_id, 'from', 2, 'origin, source location', 0.3),
+(di_id, 'about', 3, 'topic, subject matter', 0.2),
+(di_id, 'in', 4, 'temporal expressions: di sera', 0.1);
 ```
 
-**Word-Level Metadata**:
-- `metaattr027` - **Preposition Structure**: `simple`, `compound_capable`, `contracted_capable`, `invariable`
-- `metaattr028` - **Semantic Domain**: `spatial`, `temporal`, `causal`, `instrumental`, `partitive`, `benefactive`
-- `metaattr029` - **Government Pattern**: `noun_phrase`, `infinitive`, `both`, `sentence`
+## Forms Strategy
 
-**Translation-Level Metadata**:
-- `metaattr030` - **Usage Context**: `literal_spatial`, `figurative_spatial`, `temporal_point`, `temporal_duration`, `causal_direct`, `instrumental`
+**Recommended Implementation**:
 
-**Form-Level Metadata** (for contracted/compound forms):
-- `metaattr031` - **Contraction Type**: `base_form`, `definite_contraction`, `special_phonetic`
-- `metaattr032` - **Article Agreement**: `masculine_singular`, `feminine_singular`, `masculine_plural`, `feminine_plural`, `special_masculine`, `special_plural`
+1. **No Contraction Storage**: Calculate dello/degli algorithmically
+2. **Compound Storage**: Store true compounds like "davanti a" as forms
+3. **Frontend Generation**: Dynamic contraction calculation in UI
 
-**True Prepositional Compounds** (to be stored as `prep_compound` forms):
-- **Spatial**: davanti a, dietro a, vicino a, lontano da, accanto a, intorno a
-- **Temporal**: prima di, dopo di, fino a
-- **Other**: insieme a, invece di
-
-**Rationale for Compound Forms**:
-Unlike noun phrases like "a causa di", these compounds function as unified prepositional units with distinct translations that cannot be compositionally derived from their parts:
-- "davanti" = "in front/ahead" + "a" = "to/at" ≠ "davanti a" = "in front of"
-- Users will search for "davanti a" as a unit
-- Each needs its own specific translation
+**Contraction Algorithm Integration**:
+```javascript
+// Integrate with existing article generation logic
+function displayPrepositionWithNoun(preposition, noun, gender, number) {
+  if (canContract(preposition)) {
+    return getContractedForm(preposition, noun, gender, number);
+  }
+  return preposition + ' ' + getArticle(noun, gender, number);
+}
+```
 
 **Frontend Features**:
-- **Contracted Forms Display**: Show all contraction variants (del, della, dello, etc.)
-- **Compound Form Recognition**: Display compound prepositions with clear derivation
+- **Dynamic Contraction Display**: Show appropriate contracted form based on following noun
+- **Compound Form Recognition**: Display compound prepositions as unified units
 - **Semantic Role Indicators**: Visual indicators for spatial, temporal, causal functions
 - **Usage Context Examples**: Show different semantic contexts for each translation
+- **Phonetic Rule Education**: Help users understand contraction patterns
 
 ---
 
