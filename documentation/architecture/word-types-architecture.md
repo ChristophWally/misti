@@ -13,6 +13,15 @@
 3. [Complete Meta Values Reference](#3-complete-meta-values-reference)
 4. [Currently Implemented Word Types](#4-currently-implemented-word-types)
 5. [Planned Word Types](#5-planned-word-types)
+   - 5.1 [Preposition](#51-preposition)
+     - 5.1.1 [What is a Preposition](#511-what-is-a-preposition)
+     - 5.1.2 [Italian Preposition Examples](#512-italian-preposition-examples)
+     - 5.1.3 [Irregularities and Special Cases](#513-irregularities-and-special-cases)
+     - 5.1.4 [Storage Strategy](#514-storage-strategy)
+     - 5.1.5 [Word-Level Metadata](#515-word-level-metadata)
+     - 5.1.6 [Translation Metadata and Strategy](#516-translation-metadata-and-strategy)
+     - 5.1.7 [Form Metadata and Strategy](#517-form-metadata-and-strategy)
+     - 5.1.8 [Systematic Adverb-Preposition Construction Patterns](#518-systematic-adverb-preposition-construction-patterns)
 6. [Cross-Cutting Architectural Decisions](#6-cross-cutting-architectural-decisions)
 7. [Implementation Roadmap](#7-implementation-roadmap)
 
@@ -707,7 +716,7 @@ const adverbGovernmentMap = {
 **Architecture Summary**:
 Prepositions use a clean atomic approach: storage for true prepositions only, algorithmic calculation of contracted forms (following phonetic conditioning rules), with previous "compound prepositions" now properly recognized as adverb + preposition constructions.
 
-## What is a Preposition
+#### 5.1.1 What is a Preposition
 
 **Linguistic Definition**: Italian prepositions (preposizioni) are short words that connect elements in a sentence to provide qualifying details about their relationship. They establish connections between nouns, pronouns, adjectives, adverbs, or verbs to indicate spatial, temporal, causal, instrumental, and other semantic relationships.
 
@@ -718,62 +727,62 @@ Prepositions use a clean atomic approach: storage for true prepositions only, al
 - **Why?** (perché?) - per amore, da paura
 - **From where?** (da dove?) - da Roma, di origine
 
-## Italian Preposition Examples
+#### 5.1.2 Italian Preposition Examples
 
-### Core Simple Prepositions
+##### 5.1.2.1 Core Simple Prepositions
 The fundamental Italian prepositions are: **di, a, da, in, con, su, per, tra, fra**
 
-#### DI (of/from/about)
+###### DI (of/from/about)
 - **Possession**: "la casa di Marco" (Marco's house)
 - **Origin**: "sono di Roma" (I am from Rome)
 - **Material**: "tavolo di legno" (wooden table)
 - **Topic**: "parlare di calcio" (talk about soccer)
 
-#### A (to/at/in)
+###### A (to/at/in)
 - **Direction**: "vado a scuola" (I go to school)
 - **Location**: "sono a casa" (I am at home)
 - **Time**: "alle otto" (at eight o'clock)
 - **Manner**: "fatto a mano" (made by hand)
 
-#### DA (from/since/by)
+###### DA (from/since/by)
 - **Origin**: "vengo da Milano" (I come from Milan)
 - **Time**: "da ieri" (since yesterday)
 - **Agent**: "fatto da me" (made by me)
 - **Purpose**: "macchina da corsa" (racing car)
 
-#### IN (in/to)
+###### IN (in/to)
 - **Location**: "in cucina" (in the kitchen)
 - **Time**: "in estate" (in summer)
 - **Means**: "in treno" (by train)
 - **Condition**: "in pace" (in peace)
 
-#### CON (with)
+###### CON (with)
 - **Accompaniment**: "con gli amici" (with friends)
 - **Instrument**: "scrivo con la penna" (I write with a pen)
 - **Manner**: "con attenzione" (with attention)
 
-#### SU (on/above/upon)
+###### SU (on/above/upon)
 - **Surface**: "sul tavolo" (on the table)
 - **Topic**: "libro su Roma" (book about Rome)
 - **Approximation**: "sui vent'anni" (about twenty years old)
 
-#### PER (for/through/by)
+###### PER (for/through/by)
 - **Purpose**: "regalo per te" (gift for you)
 - **Duration**: "per tre ore" (for three hours)
 - **Means**: "per telefono" (by phone)
 - **Direction**: "per Roma" (toward Rome)
 
-#### TRA/FRA (between/among)
+###### TRA/FRA (between/among)
 - **Position**: "tra Roma e Napoli" (between Rome and Naples)
 - **Time**: "tra poco" (in a little while)
 - **Choice**: "scegliere tra due opzioni" (choose between two options)
 
-## Irregularities and Special Cases
+#### 5.1.3 Irregularities and Special Cases
 
-### Articulated Prepositions (Contractions)
+##### 5.1.3.1 Articulated Prepositions (Contractions)
 **Critical Pattern**: Di, a, da, in, and su **must contract** with definite articles when they appear together. This is **mandatory** in Italian, not optional.
 
-#### Phonetic Conditioning Rules
+###### 5.1.3.1.1 Phonetic Conditioning Rules
 The choice between regular and special contraction forms follows **predictable phonetic rules**:
 
 **Regular Forms** (with il/i):
@@ -786,7 +795,7 @@ The choice between regular and special contraction forms follows **predictable p
 - **For plurals**: also before vowel-initial words
 - Examples: "dello zaino" (di + lo), "degli studenti" (di + gli)
 
-#### Complete Contraction Paradigm
+###### 5.1.3.1.2 Complete Contraction Paradigm
 | Preposition | + il | + lo | + la | + i | + gli | + le |
 |-------------|------|------|------|-----|-------|------|
 | **di** | del | dello | della | dei | degli | delle |
@@ -801,7 +810,7 @@ The choice between regular and special contraction forms follows **predictable p
 - nel parco (regular: p-) vs nello stesso (special: s+consonant)
 - sui monti (regular: m-) vs sugli alberi (special: vowel, plural)
 
-### Adverb-Preposition Constructions (Formerly "Compound Prepositions")
+##### 5.1.3.2 Adverb-Preposition Constructions (Formerly "Compound Prepositions")
 
 **ARCHITECTURAL REVISION**: What were previously considered "compound prepositions" are now properly understood as **adverb + preposition constructions** that follow systematic patterns:
 
@@ -824,18 +833,48 @@ The choice between regular and special contraction forms follows **predictable p
 
 **Educational Benefit**: This systematic approach helps learners understand predictable patterns rather than memorizing apparent "compound prepositions" as arbitrary units.
 
-## Storage Strategy
+#### 5.1.4 Storage Strategy
 
 **1. Atomic Base Storage**:
-Store only fundamental prepositional lemmas in the `dictionary` table:
+Store only fundamental prepositional lemmas in the `dictionary` table with pronunciation columns:
 ```sql
-INSERT INTO dictionary (italian, word_type) VALUES
-('di', 'preposition'), ('a', 'preposition'), ('da', 'preposition'),
-('in', 'preposition'), ('con', 'preposition'), ('su', 'preposition'),
-('per', 'preposition'), ('tra', 'preposition'), ('fra', 'preposition');
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('di', 'preposition', 'DEE', '/di/'),
+('a', 'preposition', 'AH', '/a/'),
+('da', 'preposition', 'DAH', '/da/'),
+('in', 'preposition', 'EEN', '/in/'),
+('con', 'preposition', 'KOHN', '/kon/'),
+('su', 'preposition', 'SOO', '/su/'),
+('per', 'preposition', 'PEHR', '/per/'),
+('tra', 'preposition', 'TRAH', '/tra/'),
+('fra', 'preposition', 'FRAH', '/fra/');
 ```
 
-**2. Algorithmic Contraction Calculation**:
+**2. Form Type Column (Database Column)**:
+All preposition contraction forms must have their `form_type` column filled in the `word_forms` table. This is a DATABASE COLUMN, not metadata:
+```sql
+-- Example: contracted forms get "prep contraction" as form_type
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(di_word_id, 'del', 'prep contraction'),
+(di_word_id, 'dello', 'prep contraction'),
+(di_word_id, 'della', 'prep contraction');
+```
+
+**3. Pronunciation Columns**:
+**BOTH** `dictionary` table (base words) AND `word_forms` table (forms) must have pronunciation columns filled:
+
+**Dictionary Table (Base Words)**:
+- `phonetic_pronunciation` - Simplified pronunciation guide (e.g., "DEE", "AH", "DAH")
+- `ipa_pronunciation` - International Phonetic Alphabet notation (e.g., "/di/", "/a/", "/da/")
+
+**Word_Forms Table (Contracted Forms)**:
+- `phonetic_pronunciation` - Simplified pronunciation guide (e.g., "DEL", "DEL-lo")
+- `ipa_pronunciation` - International Phonetic Alphabet notation (e.g., "/del/", "/ˈdello/")
+
+**4. Gender/Number Scope**:
+All contracted forms must receive gender/number tags using the metadata system (`metaattr011` for gender, `metaattr012` for number).
+
+**5. Algorithmic Contraction Calculation**:
 **Recommended Approach**: Calculate contracted forms dynamically using the same phonetic rules as article generation.
 
 ```javascript
@@ -861,7 +900,7 @@ function contractPrepositionWithArticle(prep, article) {
 - ✅ **Reduced storage**: No need to store 30+ contraction forms per preposition
 - ✅ **Consistency**: Same logic for articles and preposition contractions
 
-**3. No Adverb Construction Storage**:
+**6. No Adverb Construction Storage**:
 **REMOVED**: Do not store adverb + preposition constructions as preposition forms. These patterns are handled through the adverb government system:
 
 ```sql
@@ -876,17 +915,24 @@ INSERT INTO dictionary (italian, word_type) VALUES
 ('presso', 'preposition');     -- single word, not a construction
 ```
 
-## Word-Level Metadata
+#### 5.1.5 Word-Level Metadata
 
 **Simplified metadata for prepositions based on their functional nature**:
 
 - **`metaattr027` - Preposition Type**: `articulated`, `invariable`
 
-## Translation-Level Metadata
+#### 5.1.6 Translation Metadata and Strategy
 
 **Educational Translation Framework**: Prepositions require rich, contextual descriptions that illuminate the semantic relationships they express. The focus is on comprehensive usage_notes that provide deep educational value through detailed explanations of when and why each translation applies in specific contexts.
 
-### Comprehensive Translation Documentation Strategy
+##### 5.1.6.1 Translation Implementation Strategy
+
+Handle semantic roles through the **existing translation system**:
+
+1. **Multiple Translations**: Each semantic role gets its own translation entry
+2. **Usage Notes**: Detailed context in the `usage_notes` field
+3. **Frequency Estimates**: Prioritize most common semantic roles
+4. **Display Priority**: Primary translation for most frequent use
 
 **Core Principle**: Each preposition translation entry should include:
 - **Primary English translation** with frequency ranking
@@ -895,9 +941,9 @@ INSERT INTO dictionary (italian, word_type) VALUES
 - **Contrastive explanations** distinguishing when to use this translation vs. others
 - **Common learner confusion points** with clarification
 
-### Core Preposition Translation Patterns
+##### 5.1.6.2 Core Preposition Translation Patterns
 
-#### DI - The Master Connector (6+ Major Translation Meanings)
+###### DI - The Master Connector (6+ Major Translation Meanings)
 
 **Translation Priority Order** (based on frequency and learner importance):
 
@@ -1008,7 +1054,7 @@ For learners, the key insight is that DI's meaning depends heavily on the semant
 - **Time Expressions** → "in/during" (mostly fixed phrases)
 - **Quantity** → "some/any" (with articles)
 
-#### A - Direction, Location, and Method (5+ Major Translation Meanings)
+###### A - Direction, Location, and Method (5+ Major Translation Meanings)
 
 **Translation Priority Order**:
 
@@ -1089,7 +1135,7 @@ A's meaning depends on whether it indicates:
 - **Purpose/function** → "for"
 - **State** → "in/at"
 
-#### DA - Origin, Agency, and Separation (5+ Major Translation Meanings)
+###### DA - Origin, Agency, and Separation (5+ Major Translation Meanings)
 
 **Translation Priority Order**:
 
@@ -1168,7 +1214,7 @@ DA's meaning depends on the type of relationship:
 - **Characteristic purpose** → "for"
 - **Role/capacity** → "as"
 
-#### IN - Containment, State, and Method (4+ Major Translation Meanings)
+###### IN - Containment, State, and Method (4+ Major Translation Meanings)
 
 **Translation Priority Order**:
 
@@ -1246,9 +1292,9 @@ IN's meaning depends on the context:
 - **Enclosed transport/method** → "by"
 - **Direction toward containment** → "into"
 
-### Extended Preposition Coverage
+##### 5.1.6.3 Extended Preposition Coverage
 
-#### CON - Accompaniment and Instrumentality (3+ Major Translations)
+###### CON - Accompaniment and Instrumentality (3+ Major Translations)
 
 ##### 1. **"with"** - Accompaniment and Instrumentality (Primary: 80% usage)
 - **Accompaniment**: "vado **con** gli amici" → "I go **with** friends"
@@ -1263,7 +1309,7 @@ IN's meaning depends on the context:
 - **Manner**: "**con** calma" → "**in** a calm manner" / "calmly"
 - **State**: "**con** fretta" → "**in** a hurry"
 
-#### SU - Surface and Topic (3+ Major Translations)
+###### SU - Surface and Topic (3+ Major Translations)
 
 ##### 1. **"on"/"upon"** - Surface and Position (Primary: 60% usage)
 - **Physical Surface**: "**sul** tavolo" → "**on** the table"
@@ -1278,7 +1324,7 @@ IN's meaning depends on the context:
 - **Approximation**: "**sui** vent'anni" → "**around** twenty years old"
 - **Estimation**: "costa **sui** cento euro" → "costs **around** a hundred euros"
 
-#### PER - Purpose and Duration (4+ Major Translations)
+###### PER - Purpose and Duration (4+ Major Translations)
 
 ##### 1. **"for"** - Purpose and Intended Recipient (Primary: 50% usage)
 - **Purpose**: "regalo **per** te" → "gift **for** you"
@@ -1298,7 +1344,7 @@ IN's meaning depends on the context:
 - **Cause**: "**per** la pioggia" → "**because of** the rain"
 - **Reason**: "**per** motivi di salute" → "**for** health reasons"
 
-#### TRA/FRA - Position and Time (2+ Major Translations)
+###### TRA/FRA - Position and Time (2+ Major Translations)
 
 ##### 1. **"between"/"among"** - Position and Choice (Primary: 70% usage)
 - **Physical Position**: "**tra** Roma e Napoli" → "**between** Rome and Naples"
@@ -1310,7 +1356,7 @@ IN's meaning depends on the context:
 - **Time Period**: "**tra** due ore" → "**in** two hours"
 - **Duration**: "finire **tra** un'ora" → "finish **in** an hour"
 
-### Comprehensive Implementation Strategy
+##### 5.1.6.4 Comprehensive Implementation Strategy
 
 **Database Translation Structure**:
 ```sql
@@ -1380,21 +1426,12 @@ INSERT INTO word_translations (word_id, translation, display_priority, usage_not
 - **Fixed Expression Alerts**: Identification of idiomatic temporal expressions
 - **Translation Strategy Guides**: Meta-cognitive strategies for choosing correct translation
 
-## Form-Level Metadata
+#### 5.1.7 Form Metadata and Strategy
 
 **Simplified approach leveraging existing attributes**:
 
 - **EXISTING: `metaattr022` - Verb Form Type** → **`metaattr022` - Form Type**: Extend to handle `simple`, `compound`, `contracted`
 - **For compound forms only**: Gender/number agreement using existing `metaattr011` (gender) + `metaattr012` (number)
-
-## Translation Strategy
-
-Handle semantic roles through the **existing translation system**:
-
-1. **Multiple Translations**: Each semantic role gets its own translation entry
-2. **Usage Notes**: Detailed context in the `usage_notes` field
-3. **Frequency Estimates**: Prioritize most common semantic roles
-4. **Display Priority**: Primary translation for most frequent use
 
 **Example Translation Strategy for "di"**:
 ```sql
@@ -1405,7 +1442,7 @@ INSERT INTO word_translations (word_id, translation, display_priority, usage_not
 (di_id, 'in', 4, 'temporal expressions: di sera', 0.1);
 ```
 
-## Forms Strategy
+##### 5.1.7.1 Forms Implementation Strategy
 
 **Recommended Implementation**:
 
@@ -1433,11 +1470,11 @@ function displayPrepositionWithNoun(preposition, noun, gender, number) {
 - **Phonetic Rule Education**: Help users understand contraction patterns
 - **Construction Reference**: Link to adverb government patterns for "davanti a" type constructions
 
-## Systematic Adverb-Preposition Construction Patterns
+#### 5.1.8 Systematic Adverb-Preposition Construction Patterns
 
 **ARCHITECTURAL INSIGHT**: What Italian learners often struggle with as "compound prepositions" are actually systematic adverb + preposition constructions that follow predictable patterns. This understanding transforms rote memorization into pattern recognition.
 
-### Pattern 1: Spatial Adverbs + "a"
+##### 5.1.8.1 Pattern 1: Spatial Adverbs + "a"
 
 **Semantic Pattern**: Physical position and directional relationships
 
@@ -1454,7 +1491,7 @@ function displayPrepositionWithNoun(preposition, noun, gender, number) {
 
 **Usage**: "La macchina è davanti **a** casa" (The car is in front **of** the house)
 
-### Pattern 2: Temporal Adverbs + "di"
+##### 5.1.8.2 Pattern 2: Temporal Adverbs + "di"
 
 **Semantic Pattern**: Time relationships and sequence
 
@@ -1467,7 +1504,7 @@ function displayPrepositionWithNoun(preposition, noun, gender, number) {
 
 **Usage**: "Studia prima **di** dormire" (Study before **_** sleeping)
 
-### Pattern 3: Distance Adverbs + "da"
+##### 5.1.8.3 Pattern 3: Distance Adverbs + "da"
 
 **Semantic Pattern**: Separation, distance, and origin
 
@@ -1480,7 +1517,7 @@ function displayPrepositionWithNoun(preposition, noun, gender, number) {
 
 **Usage**: "Roma è lontano **da** Milano" (Rome is far **from** Milan)
 
-### Educational Benefits of Pattern Recognition
+##### 5.1.8.4 Educational Benefits of Pattern Recognition
 
 **1. Reduced Memorization Load**:
 Instead of memorizing 20+ "compound prepositions," learners recognize 3 systematic patterns.
@@ -1494,7 +1531,7 @@ Patterns reveal the logical structure of Italian spatial and temporal expression
 **4. Error Reduction**:
 Systematic understanding prevents common errors like *"davanti di"* or *"prima a"*.
 
-### Implementation in Misti Dictionary
+##### 5.1.8.5 Implementation in Misti Dictionary
 
 **Adverb Entries**: Each spatial/temporal adverb includes `metaattr055` (Adverb Government) indicating which preposition it governs.
 
