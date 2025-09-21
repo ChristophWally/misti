@@ -16,12 +16,27 @@
    - 5.1 [Preposition](#51-preposition)
      - 5.1.1 [What is a Preposition](#511-what-is-a-preposition)
      - 5.1.2 [Italian Preposition Examples](#512-italian-preposition-examples)
+       - 5.1.2.1 [Core Simple Prepositions](#5121-core-simple-prepositions)
      - 5.1.3 [Irregularities and Special Cases](#513-irregularities-and-special-cases)
+       - 5.1.3.1 [Articulated Prepositions (Contractions)](#5131-articulated-prepositions-contractions)
+         - 5.1.3.1.1 [Phonetic Conditioning Rules](#51311-phonetic-conditioning-rules)
+         - 5.1.3.1.2 [Complete Contraction Paradigm](#51312-complete-contraction-paradigm)
+       - 5.1.3.2 [Adverb-Preposition Constructions](#5132-adverb-preposition-constructions-formerly-compound-prepositions)
      - 5.1.4 [Storage Strategy](#514-storage-strategy)
      - 5.1.5 [Word-Level Metadata](#515-word-level-metadata)
      - 5.1.6 [Translation Metadata and Strategy](#516-translation-metadata-and-strategy)
+       - 5.1.6.1 [Translation Implementation Strategy](#5161-translation-implementation-strategy)
+       - 5.1.6.2 [Core Preposition Translation Patterns](#5162-core-preposition-translation-patterns)
+       - 5.1.6.3 [Extended Preposition Coverage](#5163-extended-preposition-coverage)
+       - 5.1.6.4 [Comprehensive Implementation Strategy](#5164-comprehensive-implementation-strategy)
      - 5.1.7 [Form Metadata and Strategy](#517-form-metadata-and-strategy)
+       - 5.1.7.1 [Forms Implementation Strategy](#5171-forms-implementation-strategy)
      - 5.1.8 [Systematic Adverb-Preposition Construction Patterns](#518-systematic-adverb-preposition-construction-patterns)
+       - 5.1.8.1 [Pattern 1: Spatial Adverbs + "a"](#5181-pattern-1-spatial-adverbs--a)
+       - 5.1.8.2 [Pattern 2: Temporal Adverbs + "di"](#5182-pattern-2-temporal-adverbs--di)
+       - 5.1.8.3 [Pattern 3: Distance Adverbs + "da"](#5183-pattern-3-distance-adverbs--da)
+       - 5.1.8.4 [Educational Benefits of Pattern Recognition](#5184-educational-benefits-of-pattern-recognition)
+       - 5.1.8.5 [Implementation in Misti Dictionary](#5185-implementation-in-misti-dictionary)
 6. [Cross-Cutting Architectural Decisions](#6-cross-cutting-architectural-decisions)
 7. [Implementation Roadmap](#7-implementation-roadmap)
 
@@ -874,31 +889,31 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 **4. Gender/Number Scope**:
 All contracted forms must receive gender/number tags using the metadata system (`metaattr011` for gender, `metaattr012` for number).
 
-**5. Algorithmic Contraction Calculation**:
-**Recommended Approach**: Calculate contracted forms dynamically using the same phonetic rules as article generation.
+**5. Store All Contracted Forms Approach**:
+**Recommended Implementation**: Store every contracted form as separate database entries in the `word_forms` table.
 
-```javascript
-// Algorithmic contraction generation
-function getContractedPreposition(prep, noun, gender, number) {
-  const article = calculateArticle(noun, gender, number);
-  return contractPrepositionWithArticle(prep, article);
-}
-
-function contractPrepositionWithArticle(prep, article) {
-  const contractions = {
-    'di': { 'il': 'del', 'lo': 'dello', 'la': 'della', 'i': 'dei', 'gli': 'degli', 'le': 'delle' },
-    'a': { 'il': 'al', 'lo': 'allo', 'la': 'alla', 'i': 'ai', 'gli': 'agli', 'le': 'alle' },
-    // ... other prepositions
-  };
-  return contractions[prep]?.[article] || (prep + ' ' + article);
-}
+```sql
+-- Store all contracted forms as individual database entries
+INSERT INTO word_forms (word_id, form, form_type, gender, number) VALUES
+-- DI contractions
+(di_id, 'del', 'contracted', 'masculine', 'singular'),
+(di_id, 'dello', 'contracted', 'masculine', 'singular'),
+(di_id, 'della', 'contracted', 'feminine', 'singular'),
+(di_id, 'dei', 'contracted', 'masculine', 'plural'),
+(di_id, 'degli', 'contracted', 'masculine', 'plural'),
+(di_id, 'delle', 'contracted', 'feminine', 'plural'),
+-- A contractions
+(a_id, 'al', 'contracted', 'masculine', 'singular'),
+(a_id, 'allo', 'contracted', 'masculine', 'singular'),
+(a_id, 'alla', 'contracted', 'feminine', 'singular'),
+-- ... all other contracted forms
 ```
 
-**Rationale for Algorithmic Approach**:
-- ✅ **Predictable patterns**: Follows same rules as article selection
-- ✅ **Educational value**: Users learn the systematic nature of contractions
-- ✅ **Reduced storage**: No need to store 30+ contraction forms per preposition
-- ✅ **Consistency**: Same logic for articles and preposition contractions
+**Rationale for Store-All-Forms Approach**:
+- ✅ **Search optimization**: Each contracted form searchable independently
+- ✅ **Pronunciation support**: Individual IPA and phonetic data per form
+- ✅ **Complete coverage**: Guarantees all contracted forms are available
+- ✅ **Database consistency**: Uniform storage pattern across all word types
 
 **6. No Adverb Construction Storage**:
 **REMOVED**: Do not store adverb + preposition constructions as preposition forms. These patterns are handled through the adverb government system:
@@ -944,6 +959,9 @@ Handle semantic roles through the **existing translation system**:
 ##### 5.1.6.2 Core Preposition Translation Patterns
 
 ###### DI - The Master Connector (6+ Major Translation Meanings)
+
+<details>
+<summary><strong>Detailed Translation Guide for DI (Click to expand)</strong></summary>
 
 **Translation Priority Order** (based on frequency and learner importance):
 
@@ -1054,7 +1072,12 @@ For learners, the key insight is that DI's meaning depends heavily on the semant
 - **Time Expressions** → "in/during" (mostly fixed phrases)
 - **Quantity** → "some/any" (with articles)
 
+</details>
+
 ###### A - Direction, Location, and Method (5+ Major Translation Meanings)
+
+<details>
+<summary><strong>Detailed Translation Guide for A (Click to expand)</strong></summary>
 
 **Translation Priority Order**:
 
@@ -1135,7 +1158,12 @@ A's meaning depends on whether it indicates:
 - **Purpose/function** → "for"
 - **State** → "in/at"
 
+</details>
+
 ###### DA - Origin, Agency, and Separation (5+ Major Translation Meanings)
+
+<details>
+<summary><strong>Detailed Translation Guide for DA (Click to expand)</strong></summary>
 
 **Translation Priority Order**:
 
@@ -1214,7 +1242,12 @@ DA's meaning depends on the type of relationship:
 - **Characteristic purpose** → "for"
 - **Role/capacity** → "as"
 
+</details>
+
 ###### IN - Containment, State, and Method (4+ Major Translation Meanings)
+
+<details>
+<summary><strong>Detailed Translation Guide for IN (Click to expand)</strong></summary>
 
 **Translation Priority Order**:
 
@@ -1291,6 +1324,8 @@ IN's meaning depends on the context:
 - **Time periods** → "in/during"
 - **Enclosed transport/method** → "by"
 - **Direction toward containment** → "into"
+
+</details>
 
 ##### 5.1.6.3 Extended Preposition Coverage
 
@@ -1428,10 +1463,12 @@ INSERT INTO word_translations (word_id, translation, display_priority, usage_not
 
 #### 5.1.7 Form Metadata and Strategy
 
-**Simplified approach leveraging existing attributes**:
+**Distinct preposition form approach using dedicated attributes**:
 
-- **EXISTING: `metaattr022` - Verb Form Type** → **`metaattr022` - Form Type**: Extend to handle `simple`, `compound`, `contracted`
+- **NEW: `metaattr023` - Preposition Form Type**: Handle `simple`, `compound`, `contracted` forms specifically for prepositions
 - **For compound forms only**: Gender/number agreement using existing `metaattr011` (gender) + `metaattr012` (number)
+
+**Note**: Preposition form types are kept completely separate from verb form types (`metaattr022`) to maintain clear grammatical distinctions and avoid confusion between these different word categories.
 
 **Example Translation Strategy for "di"**:
 ```sql
@@ -1446,19 +1483,21 @@ INSERT INTO word_translations (word_id, translation, display_priority, usage_not
 
 **Recommended Implementation**:
 
-1. **No Contraction Storage**: Calculate dello/degli algorithmically
+1. **Store All Contractions**: Store every contracted form (del, dello, della, dei, degli, delle, etc.) as individual database entries
 2. **No Adverb Construction Storage**: "davanti a", "prima di" etc. are handled via adverb government (metaattr055)
-3. **Frontend Generation**: Dynamic contraction calculation in UI
+3. **Database-Driven Display**: Retrieve contracted forms directly from word_forms table
 4. **Clean Separation**: Prepositions handle only true prepositional words, adverb constructions handled separately
 
-**Contraction Algorithm Integration**:
+**Database-Driven Form Retrieval**:
 ```javascript
-// Integrate with existing article generation logic
-function displayPrepositionWithNoun(preposition, noun, gender, number) {
-  if (canContract(preposition)) {
-    return getContractedForm(preposition, noun, gender, number);
-  }
-  return preposition + ' ' + getArticle(noun, gender, number);
+// Retrieve contracted forms directly from database
+async function getPrepositionForm(preposition, gender, number) {
+  const contractedForm = await database.query(`
+    SELECT form FROM word_forms
+    WHERE word_id = ? AND gender = ? AND number = ? AND form_type = 'contracted'
+  `, [preposition.id, gender, number]);
+
+  return contractedForm || preposition.base_form;
 }
 ```
 
