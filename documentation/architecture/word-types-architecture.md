@@ -1642,28 +1642,119 @@ Determiners are a fundamental class of words that introduce and modify nouns, pr
 
 #### 5.2.3 Forms Architecture Strategy
 
-**Articles as Separate Base Words**:
-Each article form represents a distinct dictionary entry to maximize searchability and learning clarity:
+**Universal Pattern for ALL Determiner Categories**:
+The forms architecture follows a consistent pattern across all six determiner categories:
+- **Different semantic content** (gender, person, function) = **separate dictionary entries**
+- **Number variations (singular → plural)** = **forms of the base word**
+- **Phonetic variations (elision, contractions)** = **forms of the base word**
+
+**Articles - Dictionary Entries vs Forms**:
+Articles are organized by semantic function and phonetic context:
 
 ```sql
--- Definite articles as separate words
+-- Dictionary entries: Different semantic contexts
 INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
-('il', 'DETERMINER', 'DET'),
-('la', 'DETERMINER', 'DET'),
-('lo', 'DETERMINER', 'DET'),
-('i', 'DETERMINER', 'DET'),
-('le', 'DETERMINER', 'DET'),
-('gli', 'DETERMINER', 'DET');
+('il', 'DETERMINER', 'DET'),    -- General masculine context
+('la', 'DETERMINER', 'DET'),    -- Feminine context
+('lo', 'DETERMINER', 'DET');    -- Special masculine context (s+cons, z, etc.)
+
+-- Forms: Number variations of base words
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(il_id, 'i', 'plural'),         -- plural form of 'il'
+(la_id, 'le', 'plural'),        -- plural form of 'la'
+(lo_id, 'gli', 'plural');       -- plural form of 'lo'
 ```
 
-**Plural Forms Strategy**:
-Plural articles stored as forms of their singular counterparts:
-- `i` → form of `il` (masculine singular to plural)
-- `le` → form of `la` (feminine singular to plural)
-- `gli` → form of `lo` (masculine singular to plural, includes l' plural)
+**Demonstratives - Gender = Entries, Number = Forms**:
+Different genders require separate entries, plurals are forms:
 
-**Contraction Handling for l'**:
-The elided form `l'` requires three separate form entries to maintain search accuracy:
+```sql
+-- Dictionary entries: Different genders (semantic content)
+INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
+('questo', 'DETERMINER', 'DET'), -- Masculine "this"
+('questa', 'DETERMINER', 'DET'), -- Feminine "this"
+('quello', 'DETERMINER', 'DET'), -- Masculine "that"
+('quella', 'DETERMINER', 'DET'); -- Feminine "that"
+
+-- Forms: Number variations only
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(questo_id, 'questi', 'plural'), -- plural form of 'questo'
+(questa_id, 'queste', 'plural'), -- plural form of 'questa'
+(quello_id, 'quelli', 'plural'), -- plural form of 'quello'
+(quella_id, 'quelle', 'plural'); -- plural form of 'quella'
+```
+
+**Possessives - Person = Entries, Gender/Number = Forms**:
+Different persons require separate entries, gender/number variations are forms:
+
+```sql
+-- Dictionary entries: Different persons (semantic content)
+INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
+('mio', 'DETERMINER', 'DET'),    -- First person singular
+('tuo', 'DETERMINER', 'DET'),    -- Second person singular
+('suo', 'DETERMINER', 'DET'),    -- Third person singular
+('nostro', 'DETERMINER', 'DET'), -- First person plural
+('vostro', 'DETERMINER', 'DET'), -- Second person plural
+('loro', 'DETERMINER', 'DET');   -- Third person plural
+
+-- Forms: Gender and number variations
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(mio_id, 'mia', 'feminine'),     -- feminine form of 'mio'
+(mio_id, 'miei', 'plural'),      -- masculine plural form of 'mio'
+(mio_id, 'mie', 'feminine_plural'); -- feminine plural form of 'mio'
+```
+
+**Indefinite Articles - Context = Entries, Contractions = Forms**:
+Different phonetic contexts require separate entries:
+
+```sql
+-- Dictionary entries: Different phonetic contexts (semantic content)
+INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
+('un', 'DETERMINER', 'DET'),     -- General masculine
+('uno', 'DETERMINER', 'DET'),    -- Special masculine (s+cons, z, etc.)
+('una', 'DETERMINER', 'DET');    -- General feminine
+
+-- Forms: Phonetic variations (contractions)
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(una_id, "un'", 'elision');      -- elided form of 'una' before vowels
+```
+
+**Quantifiers - Semantic Function = Entries, Gender/Number = Forms**:
+Different semantic functions require separate entries:
+
+```sql
+-- Dictionary entries: Different semantic functions
+INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
+('molto', 'DETERMINER', 'DET'),  -- "much/many" concept
+('poco', 'DETERMINER', 'DET'),   -- "little/few" concept
+('tutto', 'DETERMINER', 'DET');  -- "all" concept
+
+-- Forms: Gender and number variations
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(molto_id, 'molta', 'feminine'),   -- feminine form of 'molto'
+(molto_id, 'molti', 'plural'),     -- masculine plural form of 'molto'
+(molto_id, 'molte', 'feminine_plural'); -- feminine plural form of 'molto'
+```
+
+**Interrogatives - Function = Entries, Number = Forms**:
+Different interrogative functions require separate entries:
+
+```sql
+-- Dictionary entries: Different interrogative functions
+INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
+('quale', 'DETERMINER', 'DET'),  -- "which" concept
+('quanto', 'DETERMINER', 'DET'), -- "how much/many" concept masculine
+('quanta', 'DETERMINER', 'DET'); -- "how much/many" concept feminine
+
+-- Forms: Number variations only
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(quale_id, 'quali', 'plural'),     -- plural form of 'quale'
+(quanto_id, 'quanti', 'plural'),   -- plural form of 'quanto'
+(quanta_id, 'quante', 'plural');   -- plural form of 'quanta'
+```
+
+**Phonetic Contraction Handling (l', un')**:
+Elided forms require multiple form entries to maintain search accuracy:
 
 ```sql
 -- l' as form of three different articles
@@ -1671,19 +1762,14 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 (il_id, "l'", 'elision', ['before_vowel', 'masculine', 'singular']),
 (la_id, "l'", 'elision', ['before_vowel', 'feminine', 'singular']),
 (lo_id, "l'", 'elision', ['before_vowel', 'masculine', 'singular']);
-```
 
-**Possessive Inflection Strategy**:
-Store base possessive forms with complete gender/number agreement paradigms:
-
-```sql
--- Complete paradigm for "mio"
+-- un' as form of una before vowels
 INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
-(mio_id, 'mio', 'base', ['masculine', 'singular']),
-(mio_id, 'mia', 'agreement', ['feminine', 'singular']),
-(mio_id, 'miei', 'agreement', ['masculine', 'plural']),
-(mio_id, 'mie', 'agreement', ['feminine', 'plural']);
+(una_id, "un'", 'elision', ['before_vowel', 'feminine', 'singular']);
 ```
+
+**Key Principle Applied Universally**:
+**Plurals are ALWAYS forms of the base word** across ALL six determiner categories. This ensures consistency and predictable architecture throughout the determiner system.
 
 **Searchability Priority**: Every visible word form gets a searchable entry to support learner lookup patterns and educational discovery.
 
@@ -1801,33 +1887,58 @@ INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
 
 #### 5.2.7 Form Metadata and Strategy
 
-**Gender/Number System Reuse**:
-Determiners use the same gender/number metadata system as adjectives for consistency:
+**Correct Form Relationships Based on Universal Pattern**:
+Form relationships follow the corrected universal pattern across all determiner categories:
 
 ```sql
--- Reuse existing gender/number attributes
+-- Articles: Number forms of base entries
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(il_id, 'i', 'plural'),           -- 'i' is form of base word 'il'
+(la_id, 'le', 'plural'),          -- 'le' is form of base word 'la'
+(lo_id, 'gli', 'plural');         -- 'gli' is form of base word 'lo'
+
+-- Demonstratives: Number forms of gender base entries
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(questo_id, 'questi', 'plural'),  -- 'questi' is form of base word 'questo'
+(questa_id, 'queste', 'plural');  -- 'queste' is form of base word 'questa'
+
+-- Possessives: Gender/number forms of person base entries
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(mio_id, 'mia', 'feminine'),      -- 'mia' is form of base word 'mio'
+(mio_id, 'miei', 'plural'),       -- 'miei' is form of base word 'mio'
+(mio_id, 'mie', 'feminine_plural'); -- 'mie' is form of base word 'mio'
+```
+
+**Gender/Number System Reuse**:
+Forms use the same gender/number metadata system as adjectives for consistency:
+
+```sql
+-- Reuse existing gender/number attributes for forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(questa_form_id, 'metaattr011', 'uuid-feminine'),  -- Gender
-(questa_form_id, 'metaattr012', 'uuid-singular');  -- Number
+(i_form_id, 'metaattr011', 'uuid-masculine'),  -- Gender
+(i_form_id, 'metaattr012', 'uuid-plural'),     -- Number
+(mia_form_id, 'metaattr011', 'uuid-feminine'), -- Gender
+(mia_form_id, 'metaattr012', 'uuid-singular'); -- Number
 ```
 
 **Multiple Contraction Handling**:
-Forms like `l'` that can derive from multiple base words require special metadata:
+Phonetic contractions like `l'` that derive from multiple base words require multiple form entries:
 
 ```sql
+-- Each contraction creates a separate form entry for each base word
 INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
-(il_id, "l'", 'elision', ['masculine_source', 'before_vowel']),
-(la_id, "l'", 'elision', ['feminine_source', 'before_vowel']),
-(lo_id, "l'", 'elision', ['lo_source', 'before_vowel']);
+(il_id, "l'", 'elision', ['before_vowel', 'masculine']),
+(la_id, "l'", 'elision', ['before_vowel', 'feminine']),
+(lo_id, "l'", 'elision', ['before_vowel', 'masculine_special']);
 ```
 
 **Possessive Agreement Patterns**:
-Possessives agree with the possessed noun, not the possessor:
-- `il mio libro` (masculine because libro is masculine)
-- `la mia casa` (feminine because casa is feminine)
+Possessives agree with the possessed noun, not the possessor. The base word represents the person (semantic content), while forms represent the agreement:
+- `il mio libro` → base: mio (1st person), form: mio (masculine because libro is masculine)
+- `la mia casa` → base: mio (1st person), form: mia (feminine because casa is feminine)
 
 **Form Search Auto-Display**:
-When users search for any determiner form, auto-display related forms to show complete paradigms and improve learning outcomes.
+When users search for any determiner form, auto-display the base word and complete paradigm to reinforce the universal pattern and improve learning outcomes.
 
 #### 5.2.8 Educational Architecture Insights
 
@@ -1861,46 +1972,83 @@ When users search for any determiner form, auto-display related forms to show co
 <summary><strong>Complete SQL Implementation Examples</strong></summary>
 
 ```sql
--- 1. Base determiner words
+-- 1. Base determiner words (following universal pattern)
 INSERT INTO dictionary (word_text, word_type, pos_tag, ipa_pronunciation) VALUES
+-- Articles: Different semantic contexts = separate entries
 ('il', 'DETERMINER', 'DET', '/il/'),
+('la', 'DETERMINER', 'DET', '/la/'),
+('lo', 'DETERMINER', 'DET', '/lo/'),
+
+-- Demonstratives: Different genders = separate entries
 ('questo', 'DETERMINER', 'DET', '/ˈkwes.to/'),
-('mio', 'DETERMINER', 'DET', '/ˈmi.o/');
+('questa', 'DETERMINER', 'DET', '/ˈkwes.ta/'),
+('quello', 'DETERMINER', 'DET', '/ˈkwel.lo/'),
+('quella', 'DETERMINER', 'DET', '/ˈkwel.la/'),
 
--- 2. Complete form paradigms
-INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
--- questo paradigm
-(questo_id, 'questo', 'base', ['masculine', 'singular']),
-(questo_id, 'questa', 'agreement', ['feminine', 'singular']),
-(questo_id, 'questi', 'agreement', ['masculine', 'plural']),
-(questo_id, 'queste', 'agreement', ['feminine', 'plural']),
+-- Possessives: Different persons = separate entries
+('mio', 'DETERMINER', 'DET', '/ˈmi.o/'),
+('tuo', 'DETERMINER', 'DET', '/ˈtu.o/'),
+('suo', 'DETERMINER', 'DET', '/ˈsu.o/');
 
--- mio paradigm
-(mio_id, 'mio', 'base', ['masculine', 'singular']),
-(mio_id, 'mia', 'agreement', ['feminine', 'singular']),
-(mio_id, 'miei', 'agreement', ['masculine', 'plural']),
-(mio_id, 'mie', 'agreement', ['feminine', 'plural']);
+-- 2. Forms: Number variations and contractions only
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+-- Article plurals (number variations)
+(il_id, 'i', 'plural'),
+(la_id, 'le', 'plural'),
+(lo_id, 'gli', 'plural'),
 
--- 3. Metadata assignments
+-- Article contractions (phonetic variations)
+(il_id, "l'", 'elision'),
+(la_id, "l'", 'elision'),
+(lo_id, "l'", 'elision'),
+
+-- Demonstrative plurals (number variations)
+(questo_id, 'questi', 'plural'),
+(questa_id, 'queste', 'plural'),
+(quello_id, 'quelli', 'plural'),
+(quella_id, 'quelle', 'plural'),
+
+-- Possessive gender/number variations (forms only)
+(mio_id, 'mia', 'feminine'),
+(mio_id, 'miei', 'plural'),
+(mio_id, 'mie', 'feminine_plural'),
+(tuo_id, 'tua', 'feminine'),
+(tuo_id, 'tuoi', 'plural'),
+(tuo_id, 'tue', 'feminine_plural');
+
+-- 3. Metadata assignments (base words only)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
--- Type classifications
+-- Type classifications for all base words
 (il_id, 'metaattr028', 'uuid-definite'),
+(la_id, 'metaattr028', 'uuid-definite'),
+(lo_id, 'metaattr028', 'uuid-definite'),
 (questo_id, 'metaattr028', 'uuid-demonstrative'),
+(questa_id, 'metaattr028', 'uuid-demonstrative'),
+(quello_id, 'metaattr028', 'uuid-demonstrative'),
+(quella_id, 'metaattr028', 'uuid-demonstrative'),
 (mio_id, 'metaattr028', 'uuid-possessive'),
+(tuo_id, 'metaattr028', 'uuid-possessive'),
+(suo_id, 'metaattr028', 'uuid-possessive'),
 
--- Person for possessives
+-- Person metadata for possessives
 (mio_id, 'metaattr029', 'uuid-first'),
+(tuo_id, 'metaattr029', 'uuid-second'),
+(suo_id, 'metaattr029', 'uuid-third'),
 
 -- CEFR levels
 (il_id, 'metaattr003', 'uuid-A1'),
+(la_id, 'metaattr003', 'uuid-A1'),
 (questo_id, 'metaattr003', 'uuid-A1'),
+(questa_id, 'metaattr003', 'uuid-A1'),
 (mio_id, 'metaattr003', 'uuid-A1');
 
 -- 4. Translation examples with context
 INSERT INTO word_translations (word_id, translation_text, usage_notes, example_usage) VALUES
 (il_id, 'the', 'Definite article for masculine singular nouns', 'il libro (the book)'),
+(la_id, 'the', 'Definite article for feminine singular nouns', 'la casa (the house)'),
 (questo_id, 'this', 'Near demonstrative, masculine singular', 'questo tavolo (this table)'),
-(mio_id, 'my', 'First person possessive, agrees with possessed noun', 'il mio amico (my friend)');
+(questa_id, 'this', 'Near demonstrative, feminine singular', 'questa sedia (this chair)'),
+(mio_id, 'my', 'First person possessive, masculine form', 'il mio amico (my friend)');
 ```
 </details>
 
@@ -1919,28 +2067,54 @@ function handleDeterminerSearch(searchTerm) {
         };
     }
 
-    // Agreement paradigm display
+    // Base word with forms display
     if (searchTerm === 'questa') {
         return {
+            baseWord: 'questa',
+            forms: ['queste'],
+            wordType: 'base_entry',
+            explanation: "'questa' is a base word (feminine demonstrative); 'queste' is its plural form"
+        };
+    }
+
+    // Form with base word display
+    if (searchTerm === 'questi') {
+        return {
             baseWord: 'questo',
-            fullParadigm: ['questo', 'questa', 'questi', 'queste'],
-            agreement: 'feminine_singular',
-            relatedForms: true
+            formType: 'plural',
+            relatedForms: true,
+            explanation: "'questi' is the plural form of base word 'questo'"
         };
     }
 }
 
-// Auto-display related forms
-function showDeterminerParadigm(baseWordId) {
-    return `
-        <div class="paradigm-display">
-            <h4>Complete Forms</h4>
-            <div class="agreement-grid">
-                <div>Masculine: questo, questi</div>
-                <div>Feminine: questa, queste</div>
+// Auto-display base word and forms (corrected architecture)
+function showDeterminerParadigm(baseWordId, determinerType) {
+    if (determinerType === 'demonstrative') {
+        // For gender-based entries like demonstratives
+        return `
+            <div class="paradigm-display">
+                <h4>Base Words and Forms</h4>
+                <div class="architecture-grid">
+                    <div><strong>Base:</strong> questo → <strong>Form:</strong> questi</div>
+                    <div><strong>Base:</strong> questa → <strong>Form:</strong> queste</div>
+                </div>
+                <p class="architecture-note">Gender = separate entries, Number = forms</p>
             </div>
-        </div>
-    `;
+        `;
+    } else if (determinerType === 'possessive') {
+        // For person-based entries like possessives
+        return `
+            <div class="paradigm-display">
+                <h4>Base Word and Forms</h4>
+                <div class="architecture-grid">
+                    <div><strong>Base:</strong> mio (1st person)</div>
+                    <div><strong>Forms:</strong> mia, miei, mie</div>
+                </div>
+                <p class="architecture-note">Person = separate entries, Gender/Number = forms</p>
+            </div>
+        `;
+    }
 }
 ```
 </details>
