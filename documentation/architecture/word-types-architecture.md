@@ -934,10 +934,10 @@ INSERT INTO word_forms (word_id, form, form_type, gender, number) VALUES
 -- handled via metaattr055 (Adverb Government) system
 
 -- Store only true single-word prepositions
-INSERT INTO dictionary (italian, word_type) VALUES
-('durante', 'preposition'),    -- single word, not a construction
-('attraverso', 'preposition'), -- single word, not a construction
-('presso', 'preposition');     -- single word, not a construction
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('durante', 'preposition', 'du-RAN-te', '/duˈran.te/'),    -- single word, not a construction
+('attraverso', 'preposition', 'at-tra-VER-so', '/attraˈver.so/'), -- single word, not a construction
+('presso', 'preposition', 'PRES-so', '/ˈpres.so/');     -- single word, not a construction
 ```
 
 #### 5.1.5 Word-Level Metadata
@@ -1652,13 +1652,13 @@ The forms architecture follows a consistent pattern across all six determiner ca
 Articles are organized by semantic function and phonetic context:
 
 ```sql
--- Dictionary entries: Different semantic contexts
-INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
-('il', 'DETERMINER', 'DET'),    -- General masculine context
-('la', 'DETERMINER', 'DET'),    -- Feminine context
-('lo', 'DETERMINER', 'DET');    -- Special masculine context (s+cons, z, etc.)
+-- Dictionary entries: Only base words (different semantic contexts)
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('il', 'determiner', 'il', '/il/'),    -- General masculine context
+('la', 'determiner', 'la', '/la/'),    -- Feminine context
+('lo', 'determiner', 'lo', '/lo/');    -- Special masculine context (s+cons, z, etc.)
 
--- Forms: Number variations of base words
+-- Forms: Number variations of base words (i, le, gli are ONLY forms)
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 (il_id, 'i', 'plural'),         -- plural form of 'il'
 (la_id, 'le', 'plural'),        -- plural form of 'la'
@@ -1670,11 +1670,11 @@ Different genders require separate entries, plurals are forms:
 
 ```sql
 -- Dictionary entries: Different genders (semantic content)
-INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
-('questo', 'DETERMINER', 'DET'), -- Masculine "this"
-('questa', 'DETERMINER', 'DET'), -- Feminine "this"
-('quello', 'DETERMINER', 'DET'), -- Masculine "that"
-('quella', 'DETERMINER', 'DET'); -- Feminine "that"
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('questo', 'determiner', 'KWES-to', '/ˈkwes.to/'), -- Masculine "this"
+('questa', 'determiner', 'KWES-ta', '/ˈkwes.ta/'), -- Feminine "this"
+('quello', 'determiner', 'KWEL-lo', '/ˈkwel.lo/'), -- Masculine "that"
+('quella', 'determiner', 'KWEL-la', '/ˈkwel.la/'); -- Feminine "that"
 
 -- Forms: Number variations only
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
@@ -1689,13 +1689,13 @@ Different persons require separate entries, gender/number variations are forms:
 
 ```sql
 -- Dictionary entries: Different persons (semantic content)
-INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
-('mio', 'DETERMINER', 'DET'),    -- First person singular
-('tuo', 'DETERMINER', 'DET'),    -- Second person singular
-('suo', 'DETERMINER', 'DET'),    -- Third person singular
-('nostro', 'DETERMINER', 'DET'), -- First person plural
-('vostro', 'DETERMINER', 'DET'), -- Second person plural
-('loro', 'DETERMINER', 'DET');   -- Third person plural
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('mio', 'determiner', 'MEE-o', '/ˈmi.o/'),    -- First person singular
+('tuo', 'determiner', 'TOO-o', '/ˈtu.o/'),    -- Second person singular
+('suo', 'determiner', 'SOO-o', '/ˈsu.o/'),    -- Third person singular
+('nostro', 'determiner', 'NOS-tro', '/ˈnos.tro/'), -- First person plural
+('vostro', 'determiner', 'VOS-tro', '/ˈvos.tro/'), -- Second person plural
+('loro', 'determiner', 'LO-ro', '/ˈlo.ro/');   -- Third person plural
 
 -- Forms: Gender and number variations
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
@@ -1709,10 +1709,10 @@ Different phonetic contexts require separate entries:
 
 ```sql
 -- Dictionary entries: Different phonetic contexts (semantic content)
-INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
-('un', 'DETERMINER', 'DET'),     -- General masculine
-('uno', 'DETERMINER', 'DET'),    -- Special masculine (s+cons, z, etc.)
-('una', 'DETERMINER', 'DET');    -- General feminine
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('un', 'determiner', 'un', '/un/'),     -- General masculine
+('uno', 'determiner', 'OO-no', '/ˈu.no/'),    -- Special masculine (s+cons, z, etc.)
+('una', 'determiner', 'OO-na', '/ˈu.na/');    -- General feminine
 
 -- Forms: Phonetic variations (contractions)
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
@@ -1724,10 +1724,10 @@ Different semantic functions require separate entries:
 
 ```sql
 -- Dictionary entries: Different semantic functions
-INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
-('molto', 'DETERMINER', 'DET'),  -- "much/many" concept
-('poco', 'DETERMINER', 'DET'),   -- "little/few" concept
-('tutto', 'DETERMINER', 'DET');  -- "all" concept
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('molto', 'determiner', 'MOL-to', '/ˈmol.to/'),  -- "much/many" concept
+('poco', 'determiner', 'PO-ko', '/ˈpo.ko/'),   -- "little/few" concept
+('tutto', 'determiner', 'TUT-to', '/ˈtut.to/');  -- "all" concept
 
 -- Forms: Gender and number variations
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
@@ -1741,10 +1741,10 @@ Different interrogative functions require separate entries:
 
 ```sql
 -- Dictionary entries: Different interrogative functions
-INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
-('quale', 'DETERMINER', 'DET'),  -- "which" concept
-('quanto', 'DETERMINER', 'DET'), -- "how much/many" concept masculine
-('quanta', 'DETERMINER', 'DET'); -- "how much/many" concept feminine
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('quale', 'determiner', 'KWA-le', '/ˈkwa.le/'),  -- "which" concept
+('quanto', 'determiner', 'KWAN-to', '/ˈkwan.to/'), -- "how much/many" concept masculine
+('quanta', 'determiner', 'KWAN-ta', '/ˈkwan.ta/'); -- "how much/many" concept feminine
 
 -- Forms: Number variations only
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
@@ -1782,16 +1782,16 @@ Given the irregular patterns, phonetic conditioning, and high frequency of deter
 - `base` - Primary citation form
 - `agreement` - Gender/number agreement variants
 - `elision` - Contracted forms (l', un', etc.)
-- `irregular_plural` - Non-standard plural formations
+- `plural` - Plural formations (use irregular metadata attribute for non-standard patterns)
 
 **Pronunciation Columns for All Entries**:
-All determiner entries include IPA pronunciation to support proper learning:
+All determiner entries include both pronunciation columns to support proper learning:
 
 ```sql
-INSERT INTO dictionary (word_text, ipa_pronunciation, word_type) VALUES
-('gli', '/ʎi/', 'DETERMINER'),
-('l''', '/l/', 'DETERMINER'),
-('uno', '/ˈu.no/', 'DETERMINER');
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('gli', 'determiner', 'lee', '/ʎi/'),
+('l''', 'determiner', 'l', '/l/'),
+('uno', 'determiner', 'OO-no', '/ˈu.no/');
 ```
 
 **Multiple Form Relationships**:
@@ -1973,22 +1973,22 @@ When users search for any determiner form, auto-display the base word and comple
 
 ```sql
 -- 1. Base determiner words (following universal pattern)
-INSERT INTO dictionary (word_text, word_type, pos_tag, ipa_pronunciation) VALUES
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
 -- Articles: Different semantic contexts = separate entries
-('il', 'DETERMINER', 'DET', '/il/'),
-('la', 'DETERMINER', 'DET', '/la/'),
-('lo', 'DETERMINER', 'DET', '/lo/'),
+('il', 'determiner', 'il', '/il/'),
+('la', 'determiner', 'la', '/la/'),
+('lo', 'determiner', 'lo', '/lo/'),
 
 -- Demonstratives: Different genders = separate entries
-('questo', 'DETERMINER', 'DET', '/ˈkwes.to/'),
-('questa', 'DETERMINER', 'DET', '/ˈkwes.ta/'),
-('quello', 'DETERMINER', 'DET', '/ˈkwel.lo/'),
-('quella', 'DETERMINER', 'DET', '/ˈkwel.la/'),
+('questo', 'determiner', 'KWES-to', '/ˈkwes.to/'),
+('questa', 'determiner', 'KWES-ta', '/ˈkwes.ta/'),
+('quello', 'determiner', 'KWEL-lo', '/ˈkwel.lo/'),
+('quella', 'determiner', 'KWEL-la', '/ˈkwel.la/'),
 
 -- Possessives: Different persons = separate entries
-('mio', 'DETERMINER', 'DET', '/ˈmi.o/'),
-('tuo', 'DETERMINER', 'DET', '/ˈtu.o/'),
-('suo', 'DETERMINER', 'DET', '/ˈsu.o/');
+('mio', 'determiner', 'MEE-o', '/ˈmi.o/'),
+('tuo', 'determiner', 'TOO-o', '/ˈtu.o/'),
+('suo', 'determiner', 'SOO-o', '/ˈsu.o/');
 
 -- 2. Forms: Number variations and contractions only
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
