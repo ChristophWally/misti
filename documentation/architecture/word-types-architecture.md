@@ -37,6 +37,16 @@
        - 5.1.8.3 [Pattern 3: Distance Adverbs + "da"](#5183-pattern-3-distance-adverbs--da)
        - 5.1.8.4 [Educational Benefits of Pattern Recognition](#5184-educational-benefits-of-pattern-recognition)
        - 5.1.8.5 [Implementation in Misti Dictionary](#5185-implementation-in-misti-dictionary)
+   - 5.2 [Determiner](#52-determiner)
+     - 5.2.1 [What is a Determiner](#521-what-is-a-determiner)
+     - 5.2.2 [Italian Determiner Categories](#522-italian-determiner-categories)
+     - 5.2.3 [Forms Architecture Strategy](#523-forms-architecture-strategy)
+     - 5.2.4 [Storage Strategy](#524-storage-strategy)
+     - 5.2.5 [Word-Level Metadata](#525-word-level-metadata)
+     - 5.2.6 [Translation Metadata and Strategy](#526-translation-metadata-and-strategy)
+     - 5.2.7 [Form Metadata and Strategy](#527-form-metadata-and-strategy)
+     - 5.2.8 [Educational Architecture Insights](#528-educational-architecture-insights)
+     - 5.2.9 [Implementation Examples](#529-implementation-examples)
 6. [Cross-Cutting Architectural Decisions](#6-cross-cutting-architectural-decisions)
 7. [Implementation Roadmap](#7-implementation-roadmap)
 
@@ -934,7 +944,8 @@ INSERT INTO dictionary (italian, word_type) VALUES
 
 **Simplified metadata for prepositions based on their functional nature**:
 
-- **`metaattr027` - Preposition Type**: `articulated`, `invariable`
+- **No metadata attributes required**: Prepositions only have contracted forms, which use existing gender/number metadata when needed
+- **Form type in database only**: Form type (contracted) is stored in the database `form_type` column, not as metadata
 
 #### 5.1.6 Translation Metadata and Strategy
 
@@ -1463,12 +1474,11 @@ INSERT INTO word_translations (word_id, translation, display_priority, usage_not
 
 #### 5.1.7 Form Metadata and Strategy
 
-**Distinct preposition form approach using dedicated attributes**:
+**Contracted preposition metadata approach**:
 
-- **NEW: `metaattr023` - Preposition Form Type**: Handle `simple`, `compound`, `contracted` forms specifically for prepositions
-- **For compound forms only**: Gender/number agreement using existing `metaattr011` (gender) + `metaattr012` (number)
-
-**Note**: Preposition form types are kept completely separate from verb form types (`metaattr022`) to maintain clear grammatical distinctions and avoid confusion between these different word categories.
+- **For contracted forms only**: Gender/number agreement using existing `metaattr011` (gender) + `metaattr012` (number)
+- **Form type stored in database column**: Form type (contracted) is stored in the database `form_type` column, not in metadata
+- **No form type metadata needed**: Since only contracted forms exist for prepositions, no metadata attribute is required
 
 **Example Translation Strategy for "di"**:
 ```sql
@@ -1584,33 +1594,382 @@ Systematic understanding prevents common errors like *"davanti di"* or *"prima a
 
 ### 5.2 DETERMINER
 
-**Implementation Status**: 📋 **Planned**
+#### 5.2.1 What is a Determiner
 
-**Examples**: il, che, un, una, suo, questo, quello, due, loro, quale
+Determiners are a fundamental class of words that introduce and modify nouns, providing essential information about specificity, quantity, possession, and reference. In Italian, determiners form a complex system that agrees with nouns in gender and number, making them crucial for proper sentence construction and comprehension.
 
-**Architectural Challenges**:
-- Complex agreement patterns (gender, number, case-like behavior)
-- Multiple subcategories (definite, indefinite, demonstrative, possessive, quantitative)
-- Forms system needed for agreement (questo/questa/questi/queste)
+**Core Function**: Determiners specify which noun is being referenced and provide context about its definiteness, quantity, or relationship to the speaker. Unlike adjectives, which describe qualities, determiners establish the referential framework for nouns.
 
-**Planned Word-Level Metadata**:
-- `metaattr033` - **Determiner Type**: `definite`, `indefinite`, `demonstrative`, `possessive`, `quantitative`, `interrogative`
-- `metaattr034` - **Agreement Pattern**: `full_agreement`, `partial_agreement`, `invariant`
-- `metaattr035` - **Position**: `prenominal`, `postnominal`, `both`
+**Six Major Categories**:
+1. **Definite Articles** - Specify known, specific entities
+2. **Indefinite Articles** - Introduce new or non-specific entities
+3. **Demonstratives** - Indicate spatial or temporal reference
+4. **Possessives** - Express ownership or relationship
+5. **Quantifiers** - Specify amount, quantity, or degree
+6. **Interrogatives** - Form questions about identity or quantity
 
-**Planned Translation-Level Metadata**:
-- `metaattr036` - **Semantic Function**: `reference`, `quantity`, `possession`, `demonstration`
+#### 5.2.2 Italian Determiner Categories
 
-**Forms Strategy**:
-Store agreement paradigms similar to adjectives:
+**Definite Articles**:
+- **Masculine Singular**: il (general), lo (before s+consonant, z, gn, ps, x, y), l' (before vowels)
+- **Feminine Singular**: la (general), l' (before vowels)
+- **Masculine Plural**: i (from il), gli (from lo and l')
+- **Feminine Plural**: le (from la and l')
+
+**Indefinite Articles**:
+- **Masculine**: un (general), uno (before s+consonant, z, gn, ps, x, y)
+- **Feminine**: una (general), un' (before vowels)
+- **Usage**: Introduce new entities, express "a/an" meaning
+
+**Demonstratives**:
+- **questo system** (this/these): questo, questa, questi, queste
+- **quello system** (that/those): quello, quella, quelli, quelle
+- **codesto system** (that near you - regional): codesto, codesta, codesti, codeste
+
+**Possessives**:
+- **First Person**: mio/mia/miei/mie (my), nostro/nostra/nostri/nostre (our)
+- **Second Person**: tuo/tua/tuoi/tue (your), vostro/vostra/vostri/vostre (your plural)
+- **Third Person**: suo/sua/suoi/sue (his/her/its), loro (their - invariable)
+
+**Quantifiers**:
+- **Specific Amount**: alcuni/alcune (some), molti/molte (many), tutti/tutte (all)
+- **Degree**: poco/poca/pochi/poche (little/few), tanto/tanta/tanti/tante (much/many)
+- **Universal**: ogni (every - invariable), qualche (some - invariable)
+
+**Interrogatives**:
+- **Identity**: quale/quali (which), che (what - invariable)
+- **Quantity**: quanto/quanta/quanti/quante (how much/many)
+
+#### 5.2.3 Forms Architecture Strategy
+
+**Articles as Separate Base Words**:
+Each article form represents a distinct dictionary entry to maximize searchability and learning clarity:
+
 ```sql
--- Forms for "questo" (demonstrative)
+-- Definite articles as separate words
+INSERT INTO dictionary (word_text, word_type, pos_tag) VALUES
+('il', 'DETERMINER', 'DET'),
+('la', 'DETERMINER', 'DET'),
+('lo', 'DETERMINER', 'DET'),
+('i', 'DETERMINER', 'DET'),
+('le', 'DETERMINER', 'DET'),
+('gli', 'DETERMINER', 'DET');
+```
+
+**Plural Forms Strategy**:
+Plural articles stored as forms of their singular counterparts:
+- `i` → form of `il` (masculine singular to plural)
+- `le` → form of `la` (feminine singular to plural)
+- `gli` → form of `lo` (masculine singular to plural, includes l' plural)
+
+**Contraction Handling for l'**:
+The elided form `l'` requires three separate form entries to maintain search accuracy:
+
+```sql
+-- l' as form of three different articles
 INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
+(il_id, "l'", 'elision', ['before_vowel', 'masculine', 'singular']),
+(la_id, "l'", 'elision', ['before_vowel', 'feminine', 'singular']),
+(lo_id, "l'", 'elision', ['before_vowel', 'masculine', 'singular']);
+```
+
+**Possessive Inflection Strategy**:
+Store base possessive forms with complete gender/number agreement paradigms:
+
+```sql
+-- Complete paradigm for "mio"
+INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
+(mio_id, 'mio', 'base', ['masculine', 'singular']),
+(mio_id, 'mia', 'agreement', ['feminine', 'singular']),
+(mio_id, 'miei', 'agreement', ['masculine', 'plural']),
+(mio_id, 'mie', 'agreement', ['feminine', 'plural']);
+```
+
+**Searchability Priority**: Every visible word form gets a searchable entry to support learner lookup patterns and educational discovery.
+
+#### 5.2.4 Storage Strategy
+
+**Store ALL Determiner Forms (No Calculation)**:
+Given the irregular patterns, phonetic conditioning, and high frequency of determiners, all forms are stored in the database rather than calculated on-demand.
+
+**Form Type Column Requirements**:
+- `base` - Primary citation form
+- `agreement` - Gender/number agreement variants
+- `elision` - Contracted forms (l', un', etc.)
+- `irregular_plural` - Non-standard plural formations
+
+**Pronunciation Columns for All Entries**:
+All determiner entries include IPA pronunciation to support proper learning:
+
+```sql
+INSERT INTO dictionary (word_text, ipa_pronunciation, word_type) VALUES
+('gli', '/ʎi/', 'DETERMINER'),
+('l''', '/l/', 'DETERMINER'),
+('uno', '/ˈu.no/', 'DETERMINER');
+```
+
+**Multiple Form Relationships**:
+Forms can belong to multiple base words (l' → il, la, lo) using junction table approach:
+
+```sql
+CREATE TABLE form_base_relationships (
+    form_id UUID REFERENCES word_forms(id),
+    base_word_id UUID REFERENCES dictionary(id),
+    relationship_type TEXT,
+    conditions TEXT[]
+);
+```
+
+#### 5.2.5 Word-Level Metadata
+
+**metaattr028 - Determiner Type** (6 values):
+- `definite` - Definite articles (il, la, lo, etc.)
+- `indefinite` - Indefinite articles (un, una, uno)
+- `demonstrative` - Demonstratives (questo, quello, codesto)
+- `possessive` - Possessives (mio, tuo, suo, etc.)
+- `quantifier` - Quantifiers (alcuni, molti, tutto, etc.)
+- `interrogative` - Interrogative determiners (quale, quanto, che)
+
+**metaattr029 - Person** (possessives only, 3 values):
+- `first` - First person (mio, nostro)
+- `second` - Second person (tuo, vostro)
+- `third` - Third person (suo, loro)
+
+**Standard Universal Attributes**:
+- `metaattr003` - **CEFR Level**: A1-C2 classification
+- `metaattr007` - **Frequency Tier**: Usage frequency ranking
+- `metaattr008` - **Register**: formal, informal, literary, spoken
+
+<details>
+<summary><strong>Determiner Metadata Implementation Examples</strong></summary>
+
+```sql
+-- Definite article metadata
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(il_id, 'metaattr028', 'uuid-definite'),
+(il_id, 'metaattr003', 'uuid-A1'),
+(il_id, 'metaattr007', 'uuid-top100');
+
+-- Possessive metadata with person
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(mio_id, 'metaattr028', 'uuid-possessive'),
+(mio_id, 'metaattr029', 'uuid-first'),
+(mio_id, 'metaattr003', 'uuid-A1');
+
+-- Interrogative metadata
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(quale_id, 'metaattr028', 'uuid-interrogative'),
+(quale_id, 'metaattr003', 'uuid-A2');
+```
+</details>
+
+#### 5.2.6 Translation Metadata and Strategy
+
+**Context-Dependent Translation Approach**:
+Determiners require sophisticated translation handling due to significant structural differences between Italian and English systems.
+
+**Article Translation Challenges**:
+- **Definite Articles**: Italian has 7 forms (il, la, lo, l', i, gli, le) → English "the"
+- **Usage Contexts**: Italian uses definite articles with abstract nouns, body parts, and in many contexts where English omits articles
+- **Educational Priority**: Show when Italian requires articles but English doesn't
+
+**Possessive Disambiguation Strategy**:
+Italian third-person possessives require context for English translation:
+- `suo libro` → "his book" OR "her book" OR "its book"
+- `sua casa` → "his house" OR "her house" OR "its house"
+- Translation metadata must indicate ambiguity
+
+**Educational Translation Examples**:
+
+<details>
+<summary><strong>Article Translation Patterns</strong></summary>
+
+```sql
+-- Definite article with multiple usage contexts
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+(il_id, 'the', 'Used before masculine singular nouns starting with consonants'),
+(il_id, 'the', 'Required with abstract nouns: il coraggio (courage)'),
+(il_id, '(omitted)', 'English often omits where Italian requires: il calcio (soccer)');
+
+-- Possessive with disambiguation
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+(suo_id, 'his', 'When referring to masculine possessor'),
+(suo_id, 'her', 'When referring to feminine possessor'),
+(suo_id, 'its', 'When referring to non-human possessor');
+```
+</details>
+
+#### 5.2.7 Form Metadata and Strategy
+
+**Gender/Number System Reuse**:
+Determiners use the same gender/number metadata system as adjectives for consistency:
+
+```sql
+-- Reuse existing gender/number attributes
+INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
+(questa_form_id, 'metaattr011', 'uuid-feminine'),  -- Gender
+(questa_form_id, 'metaattr012', 'uuid-singular');  -- Number
+```
+
+**Multiple Contraction Handling**:
+Forms like `l'` that can derive from multiple base words require special metadata:
+
+```sql
+INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
+(il_id, "l'", 'elision', ['masculine_source', 'before_vowel']),
+(la_id, "l'", 'elision', ['feminine_source', 'before_vowel']),
+(lo_id, "l'", 'elision', ['lo_source', 'before_vowel']);
+```
+
+**Possessive Agreement Patterns**:
+Possessives agree with the possessed noun, not the possessor:
+- `il mio libro` (masculine because libro is masculine)
+- `la mia casa` (feminine because casa is feminine)
+
+**Form Search Auto-Display**:
+When users search for any determiner form, auto-display related forms to show complete paradigms and improve learning outcomes.
+
+#### 5.2.8 Educational Architecture Insights
+
+**Research-Based Design Principles**:
+1. **Explicit Form Storage**: L2 learners need to see all determiner variants explicitly rather than inferring patterns
+2. **Searchability Priority**: Students often search for the exact form they encounter in text
+3. **Contraction Transparency**: Make phonetic contractions (l', un') transparent and searchable
+4. **Agreement Visualization**: Show complete paradigms to reinforce gender/number agreement patterns
+
+**Searchability vs Learning Balance**:
+- Store high-frequency forms as separate entries (il, la, lo)
+- Link agreement forms to base words for paradigm learning
+- Provide cross-references between related forms
+- Enable both form-specific and paradigm-based searches
+
+**L2 Learning Challenges**:
+- **Article Selection**: Complex phonetic and morphological conditioning
+- **Possessive Agreement**: Agreement with possessed item, not possessor
+- **Contraction Recognition**: l' can represent multiple underlying forms
+- **Usage Contexts**: When to use/omit articles compared to English
+
+**Progressive Teaching Approach**:
+1. **A1**: Basic article forms (il, la, un, una)
+2. **A1-A2**: Demonstratives and possessives
+3. **A2-B1**: Complete article system including contractions
+4. **B1+**: Quantifiers and complex agreement patterns
+
+#### 5.2.9 Implementation Examples
+
+<details>
+<summary><strong>Complete SQL Implementation Examples</strong></summary>
+
+```sql
+-- 1. Base determiner words
+INSERT INTO dictionary (word_text, word_type, pos_tag, ipa_pronunciation) VALUES
+('il', 'DETERMINER', 'DET', '/il/'),
+('questo', 'DETERMINER', 'DET', '/ˈkwes.to/'),
+('mio', 'DETERMINER', 'DET', '/ˈmi.o/');
+
+-- 2. Complete form paradigms
+INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
+-- questo paradigm
 (questo_id, 'questo', 'base', ['masculine', 'singular']),
 (questo_id, 'questa', 'agreement', ['feminine', 'singular']),
 (questo_id, 'questi', 'agreement', ['masculine', 'plural']),
-(questo_id, 'queste', 'agreement', ['feminine', 'plural']);
+(questo_id, 'queste', 'agreement', ['feminine', 'plural']),
+
+-- mio paradigm
+(mio_id, 'mio', 'base', ['masculine', 'singular']),
+(mio_id, 'mia', 'agreement', ['feminine', 'singular']),
+(mio_id, 'miei', 'agreement', ['masculine', 'plural']),
+(mio_id, 'mie', 'agreement', ['feminine', 'plural']);
+
+-- 3. Metadata assignments
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+-- Type classifications
+(il_id, 'metaattr028', 'uuid-definite'),
+(questo_id, 'metaattr028', 'uuid-demonstrative'),
+(mio_id, 'metaattr028', 'uuid-possessive'),
+
+-- Person for possessives
+(mio_id, 'metaattr029', 'uuid-first'),
+
+-- CEFR levels
+(il_id, 'metaattr003', 'uuid-A1'),
+(questo_id, 'metaattr003', 'uuid-A1'),
+(mio_id, 'metaattr003', 'uuid-A1');
+
+-- 4. Translation examples with context
+INSERT INTO word_translations (word_id, translation_text, usage_notes, example_usage) VALUES
+(il_id, 'the', 'Definite article for masculine singular nouns', 'il libro (the book)'),
+(questo_id, 'this', 'Near demonstrative, masculine singular', 'questo tavolo (this table)'),
+(mio_id, 'my', 'First person possessive, agrees with possessed noun', 'il mio amico (my friend)');
 ```
+</details>
+
+<details>
+<summary><strong>Search Functionality Examples</strong></summary>
+
+```javascript
+// Search handling for determiner forms
+function handleDeterminerSearch(searchTerm) {
+    // Direct form match
+    if (searchTerm === "l'") {
+        return {
+            directMatches: ['il', 'la', 'lo'],
+            formType: 'elision',
+            explanation: "l' can be the contracted form of il, la, or lo before vowels"
+        };
+    }
+
+    // Agreement paradigm display
+    if (searchTerm === 'questa') {
+        return {
+            baseWord: 'questo',
+            fullParadigm: ['questo', 'questa', 'questi', 'queste'],
+            agreement: 'feminine_singular',
+            relatedForms: true
+        };
+    }
+}
+
+// Auto-display related forms
+function showDeterminerParadigm(baseWordId) {
+    return `
+        <div class="paradigm-display">
+            <h4>Complete Forms</h4>
+            <div class="agreement-grid">
+                <div>Masculine: questo, questi</div>
+                <div>Feminine: questa, queste</div>
+            </div>
+        </div>
+    `;
+}
+```
+</details>
+
+<details>
+<summary><strong>Translation Examples with Usage Notes</strong></summary>
+
+```sql
+-- Complex translation scenarios
+INSERT INTO word_translations (word_id, translation_text, usage_notes, register_notes) VALUES
+-- Definite articles with usage contexts
+(il_id, 'the', 'General masculine singular definite article', 'neutral'),
+(il_id, 'the', 'Required with abstract nouns in Italian', 'academic'),
+(il_id, '(often omitted)', 'English may omit where Italian requires', 'educational'),
+
+-- Possessive disambiguation
+(suo_id, 'his', 'When possessor is masculine', 'neutral'),
+(suo_id, 'her', 'When possessor is feminine', 'neutral'),
+(suo_id, 'its', 'When possessor is non-human', 'neutral'),
+
+-- Demonstrative with spatial reference
+(quello_id, 'that', 'Distant demonstrative', 'neutral'),
+(quello_id, 'that', 'Can indicate time distance: in quell\'epoca', 'literary'),
+
+-- Quantifier with degree
+(molto_id, 'much', 'With singular uncountable nouns', 'neutral'),
+(molti_id, 'many', 'With plural countable nouns', 'neutral');
+```
+</details>
 
 ---
 
