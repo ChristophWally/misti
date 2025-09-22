@@ -749,7 +749,7 @@ The Italian determiner system encompasses six distinct categories, each with spe
 
 **Educational Integration**: Progressive learning support from A1 basic articles to B1 advanced quantifier constructions, with frequency-based presentation prioritizing high-impact determiners.
 
-> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, form relationships, translation strategies, and educational integration, see [**Determiner Complete Implementation Guide**](documentation/architecture/word-types-architecture-6-determiner.md).
+> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, form relationships, translation strategies, and educational integration, see [**Determiner Complete Implementation Guide**](./word-types-architecture-6-determiner.md).
 
 The determiner documentation provides production-ready implementation specifications with complete metadata coverage, systematic form generation patterns, and sophisticated educational architecture designed for effective Italian language learning.
 
