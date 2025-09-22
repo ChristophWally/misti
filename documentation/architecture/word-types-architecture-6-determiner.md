@@ -118,7 +118,7 @@ Given the irregular patterns, phonetic conditioning, and high frequency of deter
 ### 3.2 Applicable Metadata Attributes
 
 **Core Determiner Metadata**:
-- **metaattr028** - Determiner Type (6 values: definite, indefinite, demonstrative, possessive, quantifier, interrogative)
+- **metaattr028** - Determiner Type (5 values: article, demonstrative, possessive, quantifier, interrogative)
 - **metaattr014** - Person (3 values, possessives only: prima-persona, seconda-persona, terza-persona)
 - **metaattr011** - Gender (3 values, form-level: masculine, feminine, common-gender)
   * **masculine (M)** - Forms that agree with masculine nouns: il, un, questo, mio, quanto, molto, tutto
@@ -199,9 +199,9 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Determiner type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(il_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite')),
-(la_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite')),
-(lo_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite'));
+(il_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(la_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(lo_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article'));
 
 -- CEFR levels (A1 - fundamental)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -224,23 +224,23 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 -- Form-level metadata for plural and elision forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
 -- Plural forms get determiner type, gender, and number metadata
-(i_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite')),
+(i_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
 (i_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (i_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(le_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite')),
+(le_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
 (le_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (le_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(gli_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite')),
+(gli_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
 (gli_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (gli_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
 -- Elision forms maintain determiner type and singular metadata
-(l_il_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite')),
+(l_il_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
 (l_il_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (l_il_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(l_la_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite')),
+(l_la_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
 (l_la_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (l_la_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(l_lo_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite')),
+(l_lo_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
 (l_lo_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (l_lo_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular'));
 
@@ -272,9 +272,9 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Determiner type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(un_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(uno_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(una_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'indefinite'));
+(un_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(uno_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(una_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article'));
 
 -- CEFR levels (A1 - fundamental)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -296,7 +296,7 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Form-level metadata for elision form
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(un_elision_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(un_elision_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
 (un_elision_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (un_elision_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular'));
 
@@ -845,7 +845,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 **Complete Metadata Architecture Summary**:
 
 **Required for ALL Determiner Base Words**:
-- **metaattr028** - Determiner Type (6 values: definite, indefinite, demonstrative, possessive, quantifier, interrogative)
+- **metaattr028** - Determiner Type (5 values: article, demonstrative, possessive, quantifier, interrogative)
 - **metaattr011** - Gender (3 values: masculine, feminine, common-gender)
 - **metaattr012** - Number (2 values: singular, plural)
 - **metaattr003** - CEFR Level (A1-C2 classification)
