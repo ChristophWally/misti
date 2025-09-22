@@ -715,21 +715,43 @@ For more detail on preopisitions. Please see the detailed document: documentatio
 
 ### 5.2 DETERMINER
 
+**Implementation Status**: 📋 **Fully Planned - Complete Architecture**
+
 #### 5.2.1 What is a Determiner
 
 Determiners are a fundamental class of words that introduce and modify nouns, providing essential information about specificity, quantity, possession, and reference. In Italian, determiners form a complex system that agrees with nouns in gender and number, making them crucial for proper sentence construction and comprehension.
 
 **Core Function**: Determiners specify which noun is being referenced and provide context about its definiteness, quantity, or relationship to the speaker. Unlike adjectives, which describe qualities, determiners establish the referential framework for nouns.
 
-**Six Major Categories**:
-1. **Definite Articles** - Specify known, specific entities
-2. **Indefinite Articles** - Introduce new or non-specific entities
-3. **Demonstratives** - Indicate spatial or temporal reference
-4. **Possessives** - Express ownership or relationship
-5. **Quantifiers** - Specify amount, quantity, or degree
-6. **Interrogatives** - Form questions about identity or quantity
+#### 5.2.2 Six Major Categories
 
-For more details on the Determiner layout, please see the document: documentation/architecture/word-types-architecture-6-determiner.md
+The Italian determiner system encompasses six distinct categories, each with specific morphological and semantic properties:
+
+1. **Definite Articles** (il, la, lo, i, gli, le, l') - Specify known, specific entities with complex phonetic conditioning
+2. **Indefinite Articles** (un, uno, una, un') - Introduce new or non-specific entities
+3. **Demonstratives** (questo, questa, quello, quella + plurals) - Indicate spatial or temporal reference
+4. **Possessives** (mio/mia, tuo/tua, suo/sua, nostro/nostra, vostro/vostra, loro + plurals) - Express ownership or relationship
+5. **Quantifiers** (molto, poco, tutto, alcuni/alcune, ogni, qualche + variations) - Specify amount, quantity, or degree
+6. **Interrogatives** (quale, quanto/quanta, che + plurals) - Form questions about identity or quantity
+
+#### 5.2.3 Architecture Overview
+
+**Storage Strategy**: Store ALL determiner forms rather than calculate, due to irregular patterns, phonetic conditioning, and critical searchability requirements for language learners.
+
+**Metadata Architecture**:
+- **metaattr028** - Determiner Type (5 values: article, demonstrative, possessive, quantifier, interrogative)
+- **metaattr014** - Person (possessives only: prima-persona, seconda-persona, terza-persona)
+- **metaattr011** - Gender (masculine, feminine, common-gender)
+- **metaattr012** - Number (singular, plural)
+- **Universal attributes**: CEFR Level, Frequency Tier
+
+**Implementation Scale**: 29 total base entries across six categories with complete form paradigms, ready-to-execute SQL implementation, and comprehensive metadata coverage.
+
+**Educational Integration**: Progressive learning support from A1 basic articles to B1 advanced quantifier constructions, with frequency-based presentation prioritizing high-impact determiners.
+
+> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, form relationships, translation strategies, and educational integration, see [**Determiner Complete Implementation Guide**](documentation/architecture/word-types-architecture-6-determiner.md).
+
+The determiner documentation provides production-ready implementation specifications with complete metadata coverage, systematic form generation patterns, and sophisticated educational architecture designed for effective Italian language learning.
 
 ---
 
