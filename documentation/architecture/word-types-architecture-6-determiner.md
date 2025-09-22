@@ -21,48 +21,25 @@
    - 3.3 [Form Type Requirements](#33-form-type-requirements)
    - 3.4 [Pronunciation Column Requirements](#34-pronunciation-column-requirements)
 
-4. [Forms Architecture Strategy](#4-forms-architecture-strategy)
-   - 4.1 [Universal Pattern for ALL Determiner Categories](#41-universal-pattern-for-all-determiner-categories)
-   - 4.2 [Articles - Dictionary Entries vs Forms](#42-articles---dictionary-entries-vs-forms)
-   - 4.3 [Demonstratives - Gender = Entries, Number = Forms](#43-demonstratives---gender--entries-number--forms)
-   - 4.4 [Possessives - Person = Entries, Gender/Number = Forms](#44-possessives---person--entries-gendernumber--forms)
-   - 4.5 [Indefinite Articles - Context = Entries, Contractions = Forms](#45-indefinite-articles---context--entries-contractions--forms)
-   - 4.6 [Quantifiers - Semantic Function = Entries, Gender/Number = Forms](#46-quantifiers---semantic-function--entries-gendernumber--forms)
-   - 4.7 [Interrogatives - Function = Entries, Number = Forms](#47-interrogatives---function--entries-number--forms)
-   - 4.8 [Phonetic Contraction Handling](#48-phonetic-contraction-handling)
+4. [Word-Level Implementation Architecture](#4-word-level-implementation-architecture)
+   - 4.1 [Definite Articles - Complete Implementation](#41-definite-articles---complete-implementation)
+   - 4.2 [Indefinite Articles - Complete Implementation](#42-indefinite-articles---complete-implementation)
+   - 4.3 [Demonstratives - Complete Implementation](#43-demonstratives---complete-implementation)
+   - 4.4 [Possessives - Complete Implementation](#44-possessives---complete-implementation)
+   - 4.5 [Quantifiers - Complete Implementation](#45-quantifiers---complete-implementation)
+   - 4.6 [Interrogatives - Complete Implementation](#46-interrogatives---complete-implementation)
 
-5. [Word-Level Metadata](#5-word-level-metadata)
-   - 5.1 [metaattr028 - Determiner Type](#51-metaattr028---determiner-type)
-   - 5.2 [metaattr014 - Person](#52-metaattr014---person)
-   - 5.3 [metaattr011 - Gender](#53-metaattr011---gender)
-   - 5.4 [metaattr012 - Number](#54-metaattr012---number)
-   - 5.5 [metaattr005 - Irregularity](#55-metaattr005---irregularity)
-   - 5.6 [Universal Attributes](#56-universal-attributes)
-   - 5.7 [Metadata Storage Examples](#57-metadata-storage-examples)
+5. [Translation and Form Architecture](#5-translation-and-form-architecture)
+   - 5.1 [Context-Dependent Translation Approach](#51-context-dependent-translation-approach)
+   - 5.2 [Article Translation Challenges](#52-article-translation-challenges)
+   - 5.3 [Possessive Disambiguation Strategy](#53-possessive-disambiguation-strategy)
+   - 5.4 [Form Relationships and Search](#54-form-relationships-and-search)
 
-6. [Translation Metadata and Strategy](#6-translation-metadata-and-strategy)
-   - 6.1 [Context-Dependent Translation Approach](#61-context-dependent-translation-approach)
-   - 6.2 [Article Translation Challenges](#62-article-translation-challenges)
-   - 6.3 [Possessive Disambiguation Strategy](#63-possessive-disambiguation-strategy)
-   - 6.4 [Educational Translation Examples](#64-educational-translation-examples)
-
-7. [Form Metadata and Strategy](#7-form-metadata-and-strategy)
-   - 7.1 [Correct Form Relationships](#71-correct-form-relationships)
-   - 7.2 [Gender/Number System Reuse](#72-gendernumber-system-reuse)
-   - 7.3 [Multiple Contraction Handling](#73-multiple-contraction-handling)
-   - 7.4 [Possessive Agreement Patterns](#74-possessive-agreement-patterns)
-   - 7.5 [Form Search Auto-Display](#75-form-search-auto-display)
-
-8. [Educational Architecture Insights](#8-educational-architecture-insights)
-   - 8.1 [Research-Based Design Principles](#81-research-based-design-principles)
-   - 8.2 [Searchability vs Learning Balance](#82-searchability-vs-learning-balance)
-   - 8.3 [L2 Learning Challenges](#83-l2-learning-challenges)
-   - 8.4 [Progressive Teaching Approach](#84-progressive-teaching-approach)
-
-9. [Complete Implementation Examples](#9-complete-implementation-examples)
-   - 9.1 [SQL Implementation Examples](#91-sql-implementation-examples)
-   - 9.2 [Search Functionality Examples](#92-search-functionality-examples)
-   - 9.3 [Translation Examples with Usage Notes](#93-translation-examples-with-usage-notes)
+6. [Educational Architecture Insights](#6-educational-architecture-insights)
+   - 6.1 [Research-Based Design Principles](#61-research-based-design-principles)
+   - 6.2 [Searchability vs Learning Balance](#62-searchability-vs-learning-balance)
+   - 6.3 [L2 Learning Challenges](#63-l2-learning-challenges)
+   - 6.4 [Progressive Teaching Approach](#64-progressive-teaching-approach)
 
 ---
 
@@ -170,20 +147,18 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 
 ---
 
-## 4. Forms Architecture Strategy
-
-### 4.1 Universal Pattern for ALL Determiner Categories
+## 4. Word-Level Implementation Architecture
 
 **Universal Pattern for ALL Determiner Categories**:
-The forms architecture follows a consistent pattern across all six determiner categories:
 - **Different semantic content** (gender, person, function) = **separate dictionary entries**
 - **Number variations (singular → plural)** = **forms of the base word**
 - **Phonetic variations (elision, contractions)** = **forms of the base word**
 
-### 4.2 Articles - Dictionary Entries vs Forms
+### 4.1 Definite Articles - Complete Implementation
 
-Articles are organized by semantic function and phonetic context:
+**Architecture Strategy**: Different phonetic contexts = separate entries, plurals = forms
 
+#### Dictionary Entries and Forms
 ```sql
 -- Dictionary entries: Only base words (different semantic contexts)
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
@@ -191,17 +166,82 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('la', 'determiner', 'LAH', '/la/'),    -- Feminine context
 ('lo', 'determiner', 'LOH', '/lo/');    -- Special masculine context (s+cons, z, etc.)
 
--- Forms: Number variations of base words (i, le, gli are ONLY forms)
+-- Forms: Number variations and contractions
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+-- Plural forms
 (il_id, 'i', 'plural', 'EE', '/i/'),         -- plural form of 'il'
-(la_id, 'le', 'plural', 'LEH', '/le/'),        -- plural form of 'la'
-(lo_id, 'gli', 'plural', 'LYEE', '/ʎi/');       -- plural form of 'lo'
+(la_id, 'le', 'plural', 'LEH', '/le/'),      -- plural form of 'la'
+(lo_id, 'gli', 'plural', 'LYEE', '/ʎi/'),    -- plural form of 'lo'
+-- Elision forms
+(il_id, "l'", 'elision', 'EL', '/l/'),       -- elided form before vowels
+(la_id, "l'", 'elision', 'EL', '/l/'),       -- elided form before vowels
+(lo_id, "l'", 'elision', 'EL', '/l/');       -- elided form before vowels
 ```
 
-### 4.3 Demonstratives - Gender = Entries, Number = Forms
+#### Complete Metadata Assignment
+```sql
+-- Determiner type classification
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(il_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite')),
+(la_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite')),
+(lo_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'definite'));
 
-Different genders require separate entries, plurals are forms:
+-- CEFR levels (A1 - fundamental)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(il_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
+(la_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
+(lo_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1'));
 
+-- Frequency tier (top 100 - most common words)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(il_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
+(la_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
+(lo_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100'));
+```
+
+### 4.2 Indefinite Articles - Complete Implementation
+
+**Architecture Strategy**: Different phonetic contexts = separate entries, contractions = forms
+
+#### Dictionary Entries and Forms
+```sql
+-- Dictionary entries: Different phonetic contexts
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('un', 'determiner', 'OON', '/un/'),         -- General masculine
+('uno', 'determiner', 'OO-no', '/ˈu.no/'),  -- Special masculine (s+cons, z, etc.)
+('una', 'determiner', 'OO-na', '/ˈu.na/');  -- General feminine
+
+-- Forms: Phonetic variations (contractions)
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+(una_id, "un'", 'elision', 'OON', '/un/');  -- elided form before vowels
+```
+
+#### Complete Metadata Assignment
+```sql
+-- Determiner type classification
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(un_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(uno_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(una_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'indefinite'));
+
+-- CEFR levels (A1 - fundamental)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(un_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
+(uno_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
+(una_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1'));
+
+-- Frequency tier (top 100)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(un_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
+(uno_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
+(una_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100'));
+```
+
+### 4.3 Demonstratives - Complete Implementation
+
+**Architecture Strategy**: Different genders = separate entries, plurals = forms
+
+#### Dictionary Entries and Forms
 ```sql
 -- Dictionary entries: Different genders (semantic content)
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
@@ -212,318 +252,249 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 
 -- Forms: Number variations only
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(questo_id, 'questi', 'plural', 'KWES-ti', '/ˈkwes.ti/'), -- plural form of 'questo'
-(questa_id, 'queste', 'plural', 'KWES-te', '/ˈkwes.te/'), -- plural form of 'questa'
-(quello_id, 'quelli', 'plural', 'KWEL-li', '/ˈkwel.li/'), -- plural form of 'quello'
-(quella_id, 'quelle', 'plural', 'KWEL-le', '/ˈkwel.le/'); -- plural form of 'quella'
+(questo_id, 'questi', 'plural', 'KWES-ti', '/ˈkwes.ti/'), -- plural form
+(questa_id, 'queste', 'plural', 'KWES-te', '/ˈkwes.te/'), -- plural form
+(quello_id, 'quelli', 'plural', 'KWEL-li', '/ˈkwel.li/'), -- plural form
+(quella_id, 'quelle', 'plural', 'KWEL-le', '/ˈkwel.le/'); -- plural form
 ```
 
-### 4.4 Possessives - Person = Entries, Gender/Number = Forms
+#### Complete Metadata Assignment
+```sql
+-- Determiner type classification
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(questo_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(questa_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(quello_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(quella_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative'));
 
-**CRITICAL ARCHITECTURE FIX**: Different persons require separate entries. **mia, tua, sua should be BASE WORDS, not forms**:
+-- Base gender metadata (inherent to word)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(questo_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(questa_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
+(quello_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(quella_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine'));
 
+-- CEFR levels (A1-A2)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(questo_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
+(questa_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
+(quello_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
+(quella_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2'));
+```
+
+### 4.4 Possessives - Complete Implementation
+
+**Architecture Strategy**: Different persons AND genders = separate entries, plurals = forms
+**CRITICAL**: mia, tua, sua are BASE WORDS representing person + gender semantic content
+
+#### Dictionary Entries and Forms
 ```sql
 -- Dictionary entries: Different persons AND genders (semantic content)
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
 -- First Person
-('mio', 'determiner', 'MEE-o', '/ˈmi.o/'),    -- First person masculine
-('mia', 'determiner', 'MEE-a', '/ˈmi.a/'),    -- First person feminine
-('nostro', 'determiner', 'NOS-tro', '/ˈnos.tro/'), -- First person plural masculine
-('nostra', 'determiner', 'NOS-tra', '/ˈnos.tra/'), -- First person plural feminine
+('mio', 'determiner', 'MEE-o', '/ˈmi.o/'),      -- 1st person masculine
+('mia', 'determiner', 'MEE-a', '/ˈmi.a/'),      -- 1st person feminine
+('nostro', 'determiner', 'NOS-tro', '/ˈnos.tro/'), -- 1st plural masculine
+('nostra', 'determiner', 'NOS-tra', '/ˈnos.tra/'), -- 1st plural feminine
 -- Second Person
-('tuo', 'determiner', 'TOO-o', '/ˈtu.o/'),    -- Second person masculine
-('tua', 'determiner', 'TOO-a', '/ˈtu.a/'),    -- Second person feminine
-('vostro', 'determiner', 'VOS-tro', '/ˈvos.tro/'), -- Second person plural masculine
-('vostra', 'determiner', 'VOS-tra', '/ˈvos.tra/'), -- Second person plural feminine
+('tuo', 'determiner', 'TOO-o', '/ˈtu.o/'),      -- 2nd person masculine
+('tua', 'determiner', 'TOO-a', '/ˈtu.a/'),      -- 2nd person feminine
+('vostro', 'determiner', 'VOS-tro', '/ˈvos.tro/'), -- 2nd plural masculine
+('vostra', 'determiner', 'VOS-tra', '/ˈvos.tra/'), -- 2nd plural feminine
 -- Third Person
-('suo', 'determiner', 'SOO-o', '/ˈsu.o/'),    -- Third person masculine
-('sua', 'determiner', 'SOO-a', '/ˈsu.a/'),    -- Third person feminine
-('loro', 'determiner', 'LO-ro', '/ˈlo.ro/');   -- Third person plural (invariable)
+('suo', 'determiner', 'SOO-o', '/ˈsu.o/'),      -- 3rd person masculine
+('sua', 'determiner', 'SOO-a', '/ˈsu.a/'),      -- 3rd person feminine
+('loro', 'determiner', 'LO-ro', '/ˈlo.ro/');     -- 3rd plural (invariable)
 
 -- Forms: Only number variations
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(mio_id, 'miei', 'plural', 'MEE-ei', '/ˈmi.ei/'),      -- plural form of 'mio'
-(mia_id, 'mie', 'plural', 'MEE-e', '/ˈmi.e/'),         -- plural form of 'mia'
-(tuo_id, 'tuoi', 'plural', 'TOO-oi', '/ˈtu.oi/'),      -- plural form of 'tuo'
-(tua_id, 'tue', 'plural', 'TOO-e', '/ˈtu.e/'),         -- plural form of 'tua'
-(suo_id, 'suoi', 'plural', 'SOO-oi', '/ˈsu.oi/'),      -- plural form of 'suo'
-(sua_id, 'sue', 'plural', 'SOO-e', '/ˈsu.e/'),         -- plural form of 'sua'
-(nostro_id, 'nostri', 'plural', 'NOS-tri', '/ˈnos.tri/'), -- plural form of 'nostro'
-(nostra_id, 'nostre', 'plural', 'NOS-tre', '/ˈnos.tre/'), -- plural form of 'nostra'
-(vostro_id, 'vostri', 'plural', 'VOS-tri', '/ˈvos.tri/'), -- plural form of 'vostro'
-(vostra_id, 'vostre', 'plural', 'VOS-tre', '/ˈvos.tre/'); -- plural form of 'vostra'
+(mio_id, 'miei', 'plural', 'MEE-ei', '/ˈmi.ei/'),
+(mia_id, 'mie', 'plural', 'MEE-e', '/ˈmi.e/'),
+(tuo_id, 'tuoi', 'plural', 'TOO-oi', '/ˈtu.oi/'),
+(tua_id, 'tue', 'plural', 'TOO-e', '/ˈtu.e/'),
+(suo_id, 'suoi', 'plural', 'SOO-oi', '/ˈsu.oi/'),
+(sua_id, 'sue', 'plural', 'SOO-e', '/ˈsu.e/'),
+(nostro_id, 'nostri', 'plural', 'NOS-tri', '/ˈnos.tri/'),
+(nostra_id, 'nostre', 'plural', 'NOS-tre', '/ˈnos.tre/'),
+(vostro_id, 'vostri', 'plural', 'VOS-tri', '/ˈvos.tri/'),
+(vostra_id, 'vostre', 'plural', 'VOS-tre', '/ˈvos.tre/');
 ```
 
-### 4.5 Indefinite Articles - Context = Entries, Contractions = Forms
-
-Different phonetic contexts require separate entries:
-
+#### Complete Metadata Assignment
 ```sql
--- Dictionary entries: Different phonetic contexts (semantic content)
-INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-('un', 'determiner', 'OON', '/un/'),     -- General masculine
-('uno', 'determiner', 'OO-no', '/ˈu.no/'),    -- Special masculine (s+cons, z, etc.)
-('una', 'determiner', 'OO-na', '/ˈu.na/');    -- General feminine
+-- Determiner type classification
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(mio_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(mia_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(tuo_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(tua_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(suo_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(sua_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(nostro_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(nostra_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(vostro_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(vostra_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(loro_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive'));
 
--- Forms: Phonetic variations (contractions)
-INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(una_id, "un'", 'elision', 'OON', '/un/');      -- elided form of 'una' before vowels
+-- Person metadata (critical for possessives)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+-- First person
+(mio_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'prima-persona')),
+(mia_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'prima-persona')),
+(nostro_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'prima-persona')),
+(nostra_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'prima-persona')),
+-- Second person
+(tuo_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
+(tua_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
+(vostro_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
+(vostra_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
+-- Third person
+(suo_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(sua_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(loro_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona'));
+
+-- Gender metadata for possessives (agreement pattern)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(mio_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(mia_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
+(tuo_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(tua_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
+(suo_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(sua_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
+(nostro_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(nostra_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
+(vostro_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(vostra_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
+(loro_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender'));
 ```
 
-### 4.6 Quantifiers - Semantic Function = Entries, Gender/Number = Forms
+### 4.5 Quantifiers - Complete Implementation
 
-Different semantic functions require separate entries:
+**Architecture Strategy**: Different semantic functions = separate entries, gender/number = forms
 
+#### Dictionary Entries and Forms
 ```sql
 -- Dictionary entries: Different semantic functions
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-('molto', 'determiner', 'MOL-to', '/ˈmol.to/'),  -- "much/many" concept
-('poco', 'determiner', 'PO-ko', '/ˈpo.ko/'),   -- "little/few" concept
-('tutto', 'determiner', 'TUT-to', '/ˈtut.to/');  -- "all" concept
+('molto', 'determiner', 'MOL-to', '/ˈmol.to/'),   -- "much/many" concept
+('poco', 'determiner', 'PO-ko', '/ˈpo.ko/'),     -- "little/few" concept
+('tutto', 'determiner', 'TUT-to', '/ˈtut.to/'),   -- "all" concept
+('alcuni', 'determiner', 'al-KU-ni', '/alˈku.ni/'), -- "some" plural masculine
+('alcune', 'determiner', 'al-KU-ne', '/alˈku.ne/'), -- "some" plural feminine
+('ogni', 'determiner', 'O-nyee', '/ˈoɲ.ɲi/'),     -- "every" (invariable)
+('qualche', 'determiner', 'kwal-KE', '/ˈkwal.ke/'); -- "some" (invariable)
 
 -- Forms: Gender and number variations
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(molto_id, 'molta', 'feminine', 'MOL-ta', '/ˈmol.ta/'),   -- feminine form of 'molto'
-(molto_id, 'molti', 'plural', 'MOL-ti', '/ˈmol.ti/'),     -- masculine plural form of 'molto'
-(molto_id, 'molte', 'plural', 'MOL-te', '/ˈmol.te/'); -- plural form of 'molto' (use gender metadata for feminine)
+(molto_id, 'molta', 'feminine', 'MOL-ta', '/ˈmol.ta/'),
+(molto_id, 'molti', 'plural', 'MOL-ti', '/ˈmol.ti/'),
+(molto_id, 'molte', 'plural', 'MOL-te', '/ˈmol.te/'),
+(poco_id, 'poca', 'feminine', 'PO-ka', '/ˈpo.ka/'),
+(poco_id, 'pochi', 'plural', 'PO-ki', '/ˈpo.ki/'),
+(poco_id, 'poche', 'plural', 'PO-ke', '/ˈpo.ke/'),
+(tutto_id, 'tutta', 'feminine', 'TUT-ta', '/ˈtut.ta/'),
+(tutto_id, 'tutti', 'plural', 'TUT-ti', '/ˈtut.ti/'),
+(tutto_id, 'tutte', 'plural', 'TUT-te', '/ˈtut.te/');
 ```
 
-### 4.7 Interrogatives - Function = Entries, Number = Forms
+#### Complete Metadata Assignment
+```sql
+-- Determiner type classification
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(molto_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(poco_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(tutto_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(alcuni_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(alcune_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(ogni_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(qualche_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier'));
 
-Different interrogative functions require separate entries:
+-- Gender for quantifiers with inherent gender
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(molto_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(poco_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(tutto_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(alcuni_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(alcune_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine'));
 
+-- CEFR levels
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(molto_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
+(poco_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
+(tutto_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
+(alcuni_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1')),
+(alcune_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1'));
+```
+
+### 4.6 Interrogatives - Complete Implementation
+
+**Architecture Strategy**: Different interrogative functions = separate entries, number = forms
+
+#### Dictionary Entries and Forms
 ```sql
 -- Dictionary entries: Different interrogative functions
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-('quale', 'determiner', 'KWA-le', '/ˈkwa.le/'),  -- "which" concept
-('quanto', 'determiner', 'KWAN-to', '/ˈkwan.to/'), -- "how much/many" concept masculine
-('quanta', 'determiner', 'KWAN-ta', '/ˈkwan.ta/'); -- "how much/many" concept feminine
+('quale', 'determiner', 'KWA-le', '/ˈkwa.le/'),   -- "which" concept
+('quanto', 'determiner', 'KWAN-to', '/ˈkwan.to/'), -- "how much/many" masculine
+('quanta', 'determiner', 'KWAN-ta', '/ˈkwan.ta/'), -- "how much/many" feminine
+('che', 'determiner', 'KE', '/ke/');              -- "what" (invariable)
 
 -- Forms: Number variations only
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(quale_id, 'quali', 'plural', 'KWA-li', '/ˈkwa.li/'),     -- plural form of 'quale'
-(quanto_id, 'quanti', 'plural', 'KWAN-ti', '/ˈkwan.ti/'),   -- plural form of 'quanto'
-(quanta_id, 'quante', 'plural', 'KWAN-te', '/ˈkwan.te/');   -- plural form of 'quanta'
+(quale_id, 'quali', 'plural', 'KWA-li', '/ˈkwa.li/'),
+(quanto_id, 'quanti', 'plural', 'KWAN-ti', '/ˈkwan.ti/'),
+(quanta_id, 'quante', 'plural', 'KWAN-te', '/ˈkwan.te/');
 ```
 
-### 4.8 Phonetic Contraction Handling
-
-Elided forms require multiple form entries to maintain search accuracy:
-
+#### Complete Metadata Assignment
 ```sql
--- l' as form of three different articles
-INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation, tags) VALUES
-(il_id, "l'", 'elision', 'EL', '/l/', ['before_vowel', 'masculine', 'singular']),
-(la_id, "l'", 'elision', 'EL', '/l/', ['before_vowel', 'feminine', 'singular']),
-(lo_id, "l'", 'elision', 'EL', '/l/', ['before_vowel', 'masculine', 'singular']);
+-- Determiner type classification
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(quale_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(quanto_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(quanta_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(che_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative'));
 
--- un' as form of una before vowels
-INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation, tags) VALUES
-(una_id, "un'", 'elision', 'OON', '/un/', ['before_vowel', 'feminine', 'singular']);
+-- Gender metadata
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(quale_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(quanto_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
+(quanta_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
+(che_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender'));
+
+-- CEFR levels
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(quale_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
+(quanto_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
+(quanta_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
+(che_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1'));
 ```
-
-**Key Principle Applied Universally**:
-**Plurals are ALWAYS forms of the base word** across ALL six determiner categories. This ensures consistency and predictable architecture throughout the determiner system.
 
 ---
 
-## 5. Word-Level Metadata
-
-### 5.1 metaattr028 - Determiner Type
-
-**6 values**:
-- `definite` - Definite articles (il, la, lo, etc.)
-- `indefinite` - Indefinite articles (un, una, uno)
-- `demonstrative` - Demonstratives (questo, quello, codesto)
-- `possessive` - Possessives (mio, tuo, suo, etc.)
-- `quantifier` - Quantifiers (alcuni, molti, tutto, etc.)
-- `interrogative` - Interrogative determiners (quale, quanto, che)
-
-### 5.2 metaattr014 - Person
-
-**3 values (possessives only)**:
-- `prima-persona` - First person (mio, mia, nostro, nostra)
-- `seconda-persona` - Second person (tuo, tua, vostro, vostra)
-- `terza-persona` - Third person (suo, sua, loro)
-
-### 5.3 metaattr011 - Gender
-
-**2 values (form-level)**:
-- `masculine` - Masculine forms
-- `feminine` - Feminine forms
-
-### 5.4 metaattr012 - Number
-
-**2 values (form-level)**:
-- `singular` - Singular forms
-- `plural` - Plural forms
-
-### 5.5 metaattr005 - Irregularity
-
-Applied if needed for irregular forms or patterns.
-
-### 5.6 Universal Attributes
-
-- `metaattr003` - **CEFR Level**: A1-C2 classification
-- `metaattr007` - **Frequency Tier**: Usage frequency ranking
-- `metaattr008` - **Register**: formal, informal, literary, spoken
-
-### 5.7 Metadata Storage Examples
-
-<details>
-<summary><strong>Comprehensive Entity Meta Values Examples</strong></summary>
-
-```sql
--- Definite Articles
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(il_id, 'metaattr028', 'uuid-definite'),
-(il_id, 'metaattr003', 'uuid-A1'),
-(il_id, 'metaattr007', 'uuid-top100'),
-(la_id, 'metaattr028', 'uuid-definite'),
-(la_id, 'metaattr003', 'uuid-A1'),
-(la_id, 'metaattr007', 'uuid-top100'),
-(lo_id, 'metaattr028', 'uuid-definite'),
-(lo_id, 'metaattr003', 'uuid-A1'),
-(lo_id, 'metaattr007', 'uuid-top100');
-
--- Indefinite Articles
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(un_id, 'metaattr028', 'uuid-indefinite'),
-(un_id, 'metaattr003', 'uuid-A1'),
-(un_id, 'metaattr007', 'uuid-top100'),
-(una_id, 'metaattr028', 'uuid-indefinite'),
-(una_id, 'metaattr003', 'uuid-A1'),
-(una_id, 'metaattr007', 'uuid-top100'),
-(uno_id, 'metaattr028', 'uuid-indefinite'),
-(uno_id, 'metaattr003', 'uuid-A1'),
-(uno_id, 'metaattr007', 'uuid-top100');
-
--- Demonstratives
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, 'metaattr028', 'uuid-demonstrative'),
-(questo_id, 'metaattr003', 'uuid-A1'),
-(questo_id, 'metaattr007', 'uuid-top500'),
-(questa_id, 'metaattr028', 'uuid-demonstrative'),
-(questa_id, 'metaattr003', 'uuid-A1'),
-(questa_id, 'metaattr007', 'uuid-top500'),
-(quello_id, 'metaattr028', 'uuid-demonstrative'),
-(quello_id, 'metaattr003', 'uuid-A1'),
-(quello_id, 'metaattr007', 'uuid-top500'),
-(quella_id, 'metaattr028', 'uuid-demonstrative'),
-(quella_id, 'metaattr003', 'uuid-A1'),
-(quella_id, 'metaattr007', 'uuid-top500');
-
--- Possessives with Person attribute
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
--- First Person
-(mio_id, 'metaattr028', 'uuid-possessive'),
-(mio_id, 'metaattr014', 'uuid-prima-persona'),
-(mio_id, 'metaattr003', 'uuid-A1'),
-(mio_id, 'metaattr007', 'uuid-top500'),
-(mia_id, 'metaattr028', 'uuid-possessive'),
-(mia_id, 'metaattr014', 'uuid-prima-persona'),
-(mia_id, 'metaattr003', 'uuid-A1'),
-(mia_id, 'metaattr007', 'uuid-top500'),
-(nostro_id, 'metaattr028', 'uuid-possessive'),
-(nostro_id, 'metaattr014', 'uuid-prima-persona'),
-(nostro_id, 'metaattr003', 'uuid-A1'),
-(nostro_id, 'metaattr007', 'uuid-top500'),
-(nostra_id, 'metaattr028', 'uuid-possessive'),
-(nostra_id, 'metaattr014', 'uuid-prima-persona'),
-(nostra_id, 'metaattr003', 'uuid-A1'),
-(nostra_id, 'metaattr007', 'uuid-top500'),
--- Second Person
-(tuo_id, 'metaattr028', 'uuid-possessive'),
-(tuo_id, 'metaattr014', 'uuid-seconda-persona'),
-(tuo_id, 'metaattr003', 'uuid-A1'),
-(tuo_id, 'metaattr007', 'uuid-top500'),
-(tua_id, 'metaattr028', 'uuid-possessive'),
-(tua_id, 'metaattr014', 'uuid-seconda-persona'),
-(tua_id, 'metaattr003', 'uuid-A1'),
-(tua_id, 'metaattr007', 'uuid-top500'),
-(vostro_id, 'metaattr028', 'uuid-possessive'),
-(vostro_id, 'metaattr014', 'uuid-seconda-persona'),
-(vostro_id, 'metaattr003', 'uuid-A2'),
-(vostro_id, 'metaattr007', 'uuid-top1000'),
-(vostra_id, 'metaattr028', 'uuid-possessive'),
-(vostra_id, 'metaattr014', 'uuid-seconda-persona'),
-(vostra_id, 'metaattr003', 'uuid-A2'),
-(vostra_id, 'metaattr007', 'uuid-top1000'),
--- Third Person
-(suo_id, 'metaattr028', 'uuid-possessive'),
-(suo_id, 'metaattr014', 'uuid-terza-persona'),
-(suo_id, 'metaattr003', 'uuid-A1'),
-(suo_id, 'metaattr007', 'uuid-top500'),
-(sua_id, 'metaattr028', 'uuid-possessive'),
-(sua_id, 'metaattr014', 'uuid-terza-persona'),
-(sua_id, 'metaattr003', 'uuid-A1'),
-(sua_id, 'metaattr007', 'uuid-top500'),
-(loro_id, 'metaattr028', 'uuid-possessive'),
-(loro_id, 'metaattr014', 'uuid-terza-persona'),
-(loro_id, 'metaattr003', 'uuid-A2'),
-(loro_id, 'metaattr007', 'uuid-top1000');
-
--- Quantifiers
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(molto_id, 'metaattr028', 'uuid-quantifier'),
-(molto_id, 'metaattr003', 'uuid-A2'),
-(molto_id, 'metaattr007', 'uuid-top1000'),
-(poco_id, 'metaattr028', 'uuid-quantifier'),
-(poco_id, 'metaattr003', 'uuid-A2'),
-(poco_id, 'metaattr007', 'uuid-top1000'),
-(tutto_id, 'metaattr028', 'uuid-quantifier'),
-(tutto_id, 'metaattr003', 'uuid-A2'),
-(tutto_id, 'metaattr007', 'uuid-top1000'),
-(alcuni_id, 'metaattr028', 'uuid-quantifier'),
-(alcuni_id, 'metaattr003', 'uuid-B1'),
-(alcuni_id, 'metaattr007', 'uuid-top2000'),
-(molti_id, 'metaattr028', 'uuid-quantifier'),
-(molti_id, 'metaattr003', 'uuid-A2'),
-(molti_id, 'metaattr007', 'uuid-top1000');
-
--- Interrogatives
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(quale_id, 'metaattr028', 'uuid-interrogative'),
-(quale_id, 'metaattr003', 'uuid-A2'),
-(quale_id, 'metaattr007', 'uuid-top1000'),
-(quanto_id, 'metaattr028', 'uuid-interrogative'),
-(quanto_id, 'metaattr003', 'uuid-A2'),
-(quanto_id, 'metaattr007', 'uuid-top1000'),
-(quanta_id, 'metaattr028', 'uuid-interrogative'),
-(quanta_id, 'metaattr003', 'uuid-A2'),
-(quanta_id, 'metaattr007', 'uuid-top1000'),
-(che_id, 'metaattr028', 'uuid-interrogative'),
-(che_id, 'metaattr003', 'uuid-A1'),
-(che_id, 'metaattr007', 'uuid-top100');
-```
-</details>
 
 ---
 
-## 6. Translation Metadata and Strategy
+## 5. Translation and Form Architecture
 
-### 6.1 Context-Dependent Translation Approach
+### 5.1 Context-Dependent Translation Approach
 
 Determiners require sophisticated translation handling due to significant structural differences between Italian and English systems.
 
-### 6.2 Article Translation Challenges
+### 5.2 Article Translation Challenges
 
 - **Definite Articles**: Italian has 7 forms (il, la, lo, l', i, gli, le) → English "the"
 - **Usage Contexts**: Italian uses definite articles with abstract nouns, body parts, and in many contexts where English omits articles
 - **Educational Priority**: Show when Italian requires articles but English doesn't
 
-### 6.3 Possessive Disambiguation Strategy
+### 5.3 Possessive Disambiguation Strategy
 
 Italian third-person possessives require context for English translation:
 - `suo libro` → "his book" OR "her book" OR "its book"
 - `sua casa` → "his house" OR "her house" OR "its house"
 - Translation metadata must indicate ambiguity
 
-### 6.4 Educational Translation Examples
-
-<details>
-<summary><strong>Article Translation Patterns</strong></summary>
-
+**Complete Translation Implementation**:
 ```sql
 -- Definite article with multiple usage contexts
 INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
@@ -555,14 +526,10 @@ INSERT INTO form_translations (form_id, base_word_id, translation_text, context_
 (tuoi_form_id, tuo_id, 'your', 'Same possessor (2nd person), masculine plural agreement'),
 (tue_form_id, tua_id, 'your', 'Same possessor (2nd person), feminine plural agreement');
 ```
-</details>
 
----
+### 5.4 Form Relationships and Search
 
-## 7. Form Metadata and Strategy
-
-### 7.1 Correct Form Relationships
-
+**Form Architecture Pattern**:
 Form relationships follow the corrected universal pattern across all determiner categories:
 
 ```sql
@@ -585,85 +552,44 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 (tua_id, 'tue', 'plural');        -- 'tue' is form of base word 'tua'
 ```
 
-### 7.2 Gender/Number System Reuse
-
-Forms use the same gender/number metadata system as adjectives for consistency:
-
-```sql
--- Reuse existing gender/number attributes for forms
-INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(i_form_id, 'metaattr011', 'uuid-masculine'),  -- Gender
-(i_form_id, 'metaattr012', 'uuid-plural'),     -- Number
-(le_form_id, 'metaattr011', 'uuid-feminine'),  -- Gender
-(le_form_id, 'metaattr012', 'uuid-plural'),    -- Number
-(miei_form_id, 'metaattr011', 'uuid-masculine'), -- Gender
-(miei_form_id, 'metaattr012', 'uuid-plural'),    -- Number
-(mie_form_id, 'metaattr011', 'uuid-feminine'),   -- Gender
-(mie_form_id, 'metaattr012', 'uuid-plural');     -- Number
-```
-
-### 7.3 Multiple Contraction Handling
-
-Phonetic contractions like `l'` that derive from multiple base words require multiple form entries:
-
-```sql
--- Each contraction creates a separate form entry for each base word
-INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
-(il_id, "l'", 'elision', ['before_vowel', 'masculine']),
-(la_id, "l'", 'elision', ['before_vowel', 'feminine']),
-(lo_id, "l'", 'elision', ['before_vowel', 'masculine_special']);
-```
-
-**Multiple Form Relationships**:
-Forms can belong to multiple base words (l' → il, la, lo) using junction table approach:
-
-```sql
-CREATE TABLE form_base_relationships (
-    form_id UUID REFERENCES word_forms(id),
-    base_word_id UUID REFERENCES dictionary(id),
-    relationship_type TEXT,
-    conditions TEXT[]
-);
-```
-
-### 7.4 Possessive Agreement Patterns
-
-Possessives agree with the possessed noun, not the possessor. The base word represents the person AND gender (semantic content), while forms represent the number agreement:
-- `il mio libro` → base: mio (1st person masculine), form: mio (masculine because libro is masculine)
-- `i miei libri` → base: mio (1st person masculine), form: miei (plural because libri is plural)
-- `la mia casa` → base: mia (1st person feminine), form: mia (feminine because casa is feminine)
-- `le mie case` → base: mia (1st person feminine), form: mie (plural because case is plural)
-
-### 7.5 Form Search Auto-Display
-
-When users search for any determiner form, auto-display the base word and complete paradigm to reinforce the universal pattern and improve learning outcomes.
+**Metadata Architecture Summary**:
+- **metaattr028** - Determiner Type (6 values: definite, indefinite, demonstrative, possessive, quantifier, interrogative)
+- **metaattr014** - Person (3 values for possessives: prima-persona, seconda-persona, terza-persona)
+- **metaattr011** - Gender (3 values: masculine, feminine, common-gender)
+- **metaattr012** - Number (2 values for forms: singular, plural)
+- **metaattr003** - CEFR Level (A1-C2 classification)
+- **metaattr007** - Frequency Tier (Usage frequency ranking)
+- **metaattr005** - Irregularity (if needed for irregular forms)
 
 ---
 
-## 8. Educational Architecture Insights
 
-### 8.1 Research-Based Design Principles
+---
+
+## 6. Educational Architecture Insights
+
+### 6.1 Research-Based Design Principles
 
 1. **Explicit Form Storage**: L2 learners need to see all determiner variants explicitly rather than inferring patterns
 2. **Searchability Priority**: Students often search for the exact form they encounter in text
 3. **Contraction Transparency**: Make phonetic contractions (l', un') transparent and searchable
 4. **Agreement Visualization**: Show complete paradigms to reinforce gender/number agreement patterns
 
-### 8.2 Searchability vs Learning Balance
+### 6.2 Searchability vs Learning Balance
 
 - Store high-frequency forms as separate entries (il, la, lo)
 - Link agreement forms to base words for paradigm learning
 - Provide cross-references between related forms
 - Enable both form-specific and paradigm-based searches
 
-### 8.3 L2 Learning Challenges
+### 6.3 L2 Learning Challenges
 
 - **Article Selection**: Complex phonetic and morphological conditioning
 - **Possessive Agreement**: Agreement with possessed item, not possessor
 - **Contraction Recognition**: l' can represent multiple underlying forms
 - **Usage Contexts**: When to use/omit articles compared to English
 
-### 8.4 Progressive Teaching Approach
+### 6.4 Progressive Teaching Approach
 
 1. **A1**: Basic article forms (il, la, un, una)
 2. **A1-A2**: Demonstratives and possessives
@@ -672,244 +598,6 @@ When users search for any determiner form, auto-display the base word and comple
 
 ---
 
-## 9. Complete Implementation Examples
-
-### 9.1 SQL Implementation Examples
-
-<details>
-<summary><strong>Complete SQL Implementation Examples</strong></summary>
-
-```sql
--- 1. Base determiner words (following corrected universal pattern)
-INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
--- Articles: Different semantic contexts = separate entries
-('il', 'determiner', 'EEL', '/il/'),
-('la', 'determiner', 'LAH', '/la/'),
-('lo', 'determiner', 'LOH', '/lo/'),
-
--- Demonstratives: Different genders = separate entries
-('questo', 'determiner', 'KWES-to', '/ˈkwes.to/'),
-('questa', 'determiner', 'KWES-ta', '/ˈkwes.ta/'),
-('quello', 'determiner', 'KWEL-lo', '/ˈkwel.lo/'),
-('quella', 'determiner', 'KWEL-la', '/ˈkwel.la/'),
-
--- Possessives: Different persons AND genders = separate entries
-('mio', 'determiner', 'MEE-o', '/ˈmi.o/'),
-('mia', 'determiner', 'MEE-a', '/ˈmi.a/'),
-('tuo', 'determiner', 'TOO-o', '/ˈtu.o/'),
-('tua', 'determiner', 'TOO-a', '/ˈtu.a/'),
-('suo', 'determiner', 'SOO-o', '/ˈsu.o/'),
-('sua', 'determiner', 'SOO-a', '/ˈsu.a/'),
-('nostro', 'determiner', 'NOS-tro', '/ˈnos.tro/'),
-('nostra', 'determiner', 'NOS-tra', '/ˈnos.tra/'),
-('vostro', 'determiner', 'VOS-tro', '/ˈvos.tro/'),
-('vostra', 'determiner', 'VOS-tra', '/ˈvos.tra/'),
-('loro', 'determiner', 'LO-ro', '/ˈlo.ro/');
-
--- 2. Forms: Number variations and contractions only
-INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
--- Article plurals (number variations)
-(il_id, 'i', 'plural', 'EE', '/i/'),
-(la_id, 'le', 'plural', 'LEH', '/le/'),
-(lo_id, 'gli', 'plural', 'LYEE', '/ʎi/'),
-
--- Article contractions (phonetic variations)
-(il_id, "l'", 'elision', 'EL', '/l/'),
-(la_id, "l'", 'elision', 'EL', '/l/'),
-(lo_id, "l'", 'elision', 'EL', '/l/'),
-
--- Demonstrative plurals (number variations)
-(questo_id, 'questi', 'plural', 'KWES-ti', '/ˈkwes.ti/'),
-(questa_id, 'queste', 'plural', 'KWES-te', '/ˈkwes.te/'),
-(quello_id, 'quelli', 'plural', 'KWEL-li', '/ˈkwel.li/'),
-(quella_id, 'quelle', 'plural', 'KWEL-le', '/ˈkwel.le/'),
-
--- Possessive number variations (forms only)
-(mio_id, 'miei', 'plural', 'MEE-ei', '/ˈmi.ei/'),
-(mia_id, 'mie', 'plural', 'MEE-e', '/ˈmi.e/'),
-(tuo_id, 'tuoi', 'plural', 'TOO-oi', '/ˈtu.oi/'),
-(tua_id, 'tue', 'plural', 'TOO-e', '/ˈtu.e/'),
-(suo_id, 'suoi', 'plural', 'SOO-oi', '/ˈsu.oi/'),
-(sua_id, 'sue', 'plural', 'SOO-e', '/ˈsu.e/'),
-(nostro_id, 'nostri', 'plural', 'NOS-tri', '/ˈnos.tri/'),
-(nostra_id, 'nostre', 'plural', 'NOS-tre', '/ˈnos.tre/'),
-(vostro_id, 'vostri', 'plural', 'VOS-tri', '/ˈvos.tri/'),
-(vostra_id, 'vostre', 'plural', 'VOS-tre', '/ˈvos.tre/');
-
--- 3. Metadata assignments (base words only)
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
--- Type classifications for all base words
-(il_id, 'metaattr028', 'uuid-definite'),
-(la_id, 'metaattr028', 'uuid-definite'),
-(lo_id, 'metaattr028', 'uuid-definite'),
-(questo_id, 'metaattr028', 'uuid-demonstrative'),
-(questa_id, 'metaattr028', 'uuid-demonstrative'),
-(quello_id, 'metaattr028', 'uuid-demonstrative'),
-(quella_id, 'metaattr028', 'uuid-demonstrative'),
-(mio_id, 'metaattr028', 'uuid-possessive'),
-(mia_id, 'metaattr028', 'uuid-possessive'),
-(tuo_id, 'metaattr028', 'uuid-possessive'),
-(tua_id, 'metaattr028', 'uuid-possessive'),
-(suo_id, 'metaattr028', 'uuid-possessive'),
-(sua_id, 'metaattr028', 'uuid-possessive'),
-(nostro_id, 'metaattr028', 'uuid-possessive'),
-(nostra_id, 'metaattr028', 'uuid-possessive'),
-(vostro_id, 'metaattr028', 'uuid-possessive'),
-(vostra_id, 'metaattr028', 'uuid-possessive'),
-(loro_id, 'metaattr028', 'uuid-possessive'),
-
--- Person metadata for possessives
-(mio_id, 'metaattr014', 'uuid-prima-persona'),
-(mia_id, 'metaattr014', 'uuid-prima-persona'),
-(tuo_id, 'metaattr014', 'uuid-seconda-persona'),
-(tua_id, 'metaattr014', 'uuid-seconda-persona'),
-(suo_id, 'metaattr014', 'uuid-terza-persona'),
-(sua_id, 'metaattr014', 'uuid-terza-persona'),
-(nostro_id, 'metaattr014', 'uuid-prima-persona'),
-(nostra_id, 'metaattr014', 'uuid-prima-persona'),
-(vostro_id, 'metaattr014', 'uuid-seconda-persona'),
-(vostra_id, 'metaattr014', 'uuid-seconda-persona'),
-(loro_id, 'metaattr014', 'uuid-terza-persona'),
-
--- CEFR levels
-(il_id, 'metaattr003', 'uuid-A1'),
-(la_id, 'metaattr003', 'uuid-A1'),
-(questo_id, 'metaattr003', 'uuid-A1'),
-(questa_id, 'metaattr003', 'uuid-A1'),
-(mio_id, 'metaattr003', 'uuid-A1'),
-(mia_id, 'metaattr003', 'uuid-A1');
-
--- 4. Translation examples with context
-INSERT INTO word_translations (word_id, translation_text, usage_notes, example_usage) VALUES
-(il_id, 'the', 'Definite article for masculine singular nouns', 'il libro (the book)'),
-(la_id, 'the', 'Definite article for feminine singular nouns', 'la casa (the house)'),
-(questo_id, 'this', 'Near demonstrative, masculine singular', 'questo tavolo (this table)'),
-(questa_id, 'this', 'Near demonstrative, feminine singular', 'questa sedia (this chair)'),
-(mio_id, 'my', 'First person possessive, masculine form', 'il mio amico (my friend)'),
-(mia_id, 'my', 'First person possessive, feminine form', 'la mia amica (my friend)');
-
--- 5. Form translations: How forms connect to base word translations
-INSERT INTO form_translations (form_id, base_word_id, translation_text, usage_notes, example_usage) VALUES
--- Article form translations
-(i_form_id, il_id, 'the', 'Plural of masculine definite article', 'i libri (the books)'),
-(le_form_id, la_id, 'the', 'Plural of feminine definite article', 'le case (the houses)'),
-(gli_form_id, lo_id, 'the', 'Plural of special masculine definite article', 'gli studenti (the students)'),
-(l_form_id, il_id, 'the', 'Contracted form before vowels', "l'amico (the friend)"),
-(l_form_id, la_id, 'the', 'Contracted form before vowels', "l'amica (the friend)"),
-
--- Demonstrative form translations
-(questi_form_id, questo_id, 'these', 'Plural of masculine demonstrative', 'questi tavoli (these tables)'),
-(queste_form_id, questa_id, 'these', 'Plural of feminine demonstrative', 'queste sedie (these chairs)'),
-(quelli_form_id, quello_id, 'those', 'Plural of masculine demonstrative', 'quelli studenti (those students)'),
-(quelle_form_id, quella_id, 'those', 'Plural of feminine demonstrative', 'quelle studentesse (those students)'),
-
--- Possessive form translations
-(miei_form_id, mio_id, 'my', 'Masculine plural form of first person possessive', 'i miei amici (my friends)'),
-(mie_form_id, mia_id, 'my', 'Feminine plural form of first person possessive', 'le mie amiche (my friends)'),
-(tuoi_form_id, tuo_id, 'your', 'Masculine plural form of second person possessive', 'i tuoi libri (your books)'),
-(tue_form_id, tua_id, 'your', 'Feminine plural form of second person possessive', 'le tue idee (your ideas)');
-```
-</details>
-
-### 9.2 Search Functionality Examples
-
-<details>
-<summary><strong>Search Functionality Examples</strong></summary>
-
-```javascript
-// Search handling for determiner forms
-function handleDeterminerSearch(searchTerm) {
-    // Direct form match
-    if (searchTerm === "l'") {
-        return {
-            directMatches: ['il', 'la', 'lo'],
-            formType: 'elision',
-            explanation: "l' can be the contracted form of il, la, or lo before vowels"
-        };
-    }
-
-    // Base word with forms display
-    if (searchTerm === 'questa') {
-        return {
-            baseWord: 'questa',
-            forms: ['queste'],
-            wordType: 'base_entry',
-            explanation: "'questa' is a base word (feminine demonstrative); 'queste' is its plural form"
-        };
-    }
-
-    // Form with base word display
-    if (searchTerm === 'questi') {
-        return {
-            baseWord: 'questo',
-            formType: 'plural',
-            relatedForms: true,
-            explanation: "'questi' is the plural form of base word 'questo'"
-        };
-    }
-}
-
-// Auto-display base word and forms (corrected architecture)
-function showDeterminerParadigm(baseWordId, determinerType) {
-    if (determinerType === 'demonstrative') {
-        // For gender-based entries like demonstratives
-        return `
-            <div class="paradigm-display">
-                <h4>Base Words and Forms</h4>
-                <div class="architecture-grid">
-                    <div><strong>Base:</strong> questo → <strong>Form:</strong> questi</div>
-                    <div><strong>Base:</strong> questa → <strong>Form:</strong> queste</div>
-                </div>
-                <p class="architecture-note">Gender = separate entries, Number = forms</p>
-            </div>
-        `;
-    } else if (determinerType === 'possessive') {
-        // For person-based entries like possessives
-        return `
-            <div class="paradigm-display">
-                <h4>Base Word and Forms</h4>
-                <div class="architecture-grid">
-                    <div><strong>Base:</strong> mio (1st person masculine) → <strong>Forms:</strong> miei</div>
-                    <div><strong>Base:</strong> mia (1st person feminine) → <strong>Forms:</strong> mie</div>
-                </div>
-                <p class="architecture-note">Person/Gender = separate entries, Number = forms</p>
-            </div>
-        `;
-    }
-}
-```
-</details>
-
-### 9.3 Translation Examples with Usage Notes
-
-<details>
-<summary><strong>Translation Examples with Usage Notes</strong></summary>
-
-```sql
--- Complex translation scenarios
-INSERT INTO word_translations (word_id, translation_text, usage_notes, register_notes) VALUES
--- Definite articles with usage contexts
-(il_id, 'the', 'General masculine singular definite article', 'neutral'),
-(il_id, 'the', 'Required with abstract nouns in Italian', 'academic'),
-(il_id, '(often omitted)', 'English may omit where Italian requires', 'educational'),
-
--- Possessive disambiguation
-(suo_id, 'his', 'When possessor is masculine', 'neutral'),
-(suo_id, 'her', 'When possessor is feminine', 'neutral'),
-(suo_id, 'its', 'When possessor is non-human', 'neutral'),
-(sua_id, 'his', 'When possessor is masculine', 'neutral'),
-(sua_id, 'her', 'When possessor is feminine', 'neutral'),
-(sua_id, 'its', 'When possessor is non-human', 'neutral'),
-
--- Demonstrative with spatial reference
-(quello_id, 'that', 'Distant demonstrative', 'neutral'),
-(quello_id, 'that', 'Can indicate time distance: in quell\'epoca', 'literary'),
-
--- Quantifier with degree
-(molto_id, 'much', 'With singular uncountable nouns', 'neutral'),
-(molti_id, 'many', 'With plural countable nouns', 'neutral');
-```
-</details>
 
 ---
 
