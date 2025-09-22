@@ -65,10 +65,10 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('lo', 'determiner', 'lo', '/lo/');    -- Special masculine context (s+cons, z, etc.)
 
 -- Forms: Number variations of base words (i, le, gli are ONLY forms)
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(il_id, 'i', 'plural'),         -- plural form of 'il'
-(la_id, 'le', 'plural'),        -- plural form of 'la'
-(lo_id, 'gli', 'plural');       -- plural form of 'lo'
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+(il_id, 'i', 'plural', 'i', '/i/'),         -- plural form of 'il'
+(la_id, 'le', 'plural', 'le', '/le/'),        -- plural form of 'la'
+(lo_id, 'gli', 'plural', 'gli', '/ʎi/');       -- plural form of 'lo'
 ```
 
 **Demonstratives - Gender = Entries, Number = Forms**:
@@ -83,11 +83,11 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('quella', 'determiner', 'KWEL-la', '/ˈkwel.la/'); -- Feminine "that"
 
 -- Forms: Number variations only
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(questo_id, 'questi', 'plural'), -- plural form of 'questo'
-(questa_id, 'queste', 'plural'), -- plural form of 'questa'
-(quello_id, 'quelli', 'plural'), -- plural form of 'quello'
-(quella_id, 'quelle', 'plural'); -- plural form of 'quella'
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+(questo_id, 'questi', 'plural', 'KWES-ti', '/ˈkwes.ti/'), -- plural form of 'questo'
+(questa_id, 'queste', 'plural', 'KWES-te', '/ˈkwes.te/'), -- plural form of 'questa'
+(quello_id, 'quelli', 'plural', 'KWEL-li', '/ˈkwel.li/'), -- plural form of 'quello'
+(quella_id, 'quelle', 'plural', 'KWEL-le', '/ˈkwel.le/'); -- plural form of 'quella'
 ```
 
 **Possessives - Person = Entries, Gender/Number = Forms**:
@@ -104,10 +104,10 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('loro', 'determiner', 'LO-ro', '/ˈlo.ro/');   -- Third person plural
 
 -- Forms: Gender and number variations
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(mio_id, 'mia', 'feminine'),     -- feminine form of 'mio'
-(mio_id, 'miei', 'plural'),      -- masculine plural form of 'mio'
-(mio_id, 'mie', 'feminine_plural'); -- feminine plural form of 'mio'
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+(mio_id, 'mia', 'feminine', 'MEE-a', '/ˈmi.a/'),     -- feminine form of 'mio'
+(mio_id, 'miei', 'plural', 'MEE-ei', '/ˈmi.ei/'),      -- masculine plural form of 'mio'
+(mio_id, 'mie', 'plural', 'MEE-e', '/ˈmi.e/'); -- plural form of 'mio' (use gender metadata for feminine)
 ```
 
 **Indefinite Articles - Context = Entries, Contractions = Forms**:
@@ -121,8 +121,8 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('una', 'determiner', 'OO-na', '/ˈu.na/');    -- General feminine
 
 -- Forms: Phonetic variations (contractions)
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(una_id, "un'", 'elision');      -- elided form of 'una' before vowels
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+(una_id, "un'", 'elision', 'un', '/un/');      -- elided form of 'una' before vowels
 ```
 
 **Quantifiers - Semantic Function = Entries, Gender/Number = Forms**:
@@ -136,10 +136,10 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('tutto', 'determiner', 'TUT-to', '/ˈtut.to/');  -- "all" concept
 
 -- Forms: Gender and number variations
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(molto_id, 'molta', 'feminine'),   -- feminine form of 'molto'
-(molto_id, 'molti', 'plural'),     -- masculine plural form of 'molto'
-(molto_id, 'molte', 'feminine_plural'); -- feminine plural form of 'molto'
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+(molto_id, 'molta', 'feminine', 'MOL-ta', '/ˈmol.ta/'),   -- feminine form of 'molto'
+(molto_id, 'molti', 'plural', 'MOL-ti', '/ˈmol.ti/'),     -- masculine plural form of 'molto'
+(molto_id, 'molte', 'plural', 'MOL-te', '/ˈmol.te/'); -- plural form of 'molto' (use gender metadata for feminine)
 ```
 
 **Interrogatives - Function = Entries, Number = Forms**:
@@ -153,10 +153,10 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('quanta', 'determiner', 'KWAN-ta', '/ˈkwan.ta/'); -- "how much/many" concept feminine
 
 -- Forms: Number variations only
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(quale_id, 'quali', 'plural'),     -- plural form of 'quale'
-(quanto_id, 'quanti', 'plural'),   -- plural form of 'quanto'
-(quanta_id, 'quante', 'plural');   -- plural form of 'quanta'
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+(quale_id, 'quali', 'plural', 'KWA-li', '/ˈkwa.li/'),     -- plural form of 'quale'
+(quanto_id, 'quanti', 'plural', 'KWAN-ti', '/ˈkwan.ti/'),   -- plural form of 'quanto'
+(quanta_id, 'quante', 'plural', 'KWAN-te', '/ˈkwan.te/');   -- plural form of 'quanta'
 ```
 
 **Phonetic Contraction Handling (l', un')**:
@@ -164,14 +164,14 @@ Elided forms require multiple form entries to maintain search accuracy:
 
 ```sql
 -- l' as form of three different articles
-INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
-(il_id, "l'", 'elision', ['before_vowel', 'masculine', 'singular']),
-(la_id, "l'", 'elision', ['before_vowel', 'feminine', 'singular']),
-(lo_id, "l'", 'elision', ['before_vowel', 'masculine', 'singular']);
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation, tags) VALUES
+(il_id, "l'", 'elision', 'l', '/l/', ['before_vowel', 'masculine', 'singular']),
+(la_id, "l'", 'elision', 'l', '/l/', ['before_vowel', 'feminine', 'singular']),
+(lo_id, "l'", 'elision', 'l', '/l/', ['before_vowel', 'masculine', 'singular']);
 
 -- un' as form of una before vowels
-INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
-(una_id, "un'", 'elision', ['before_vowel', 'feminine', 'singular']);
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation, tags) VALUES
+(una_id, "un'", 'elision', 'un', '/un/', ['before_vowel', 'feminine', 'singular']);
 ```
 
 **Key Principle Applied Universally**:
@@ -185,10 +185,10 @@ INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
 Given the irregular patterns, phonetic conditioning, and high frequency of determiners, all forms are stored in the database rather than calculated on-demand.
 
 **Form Type Column Requirements**:
-- `base` - Primary citation form
-- `agreement` - Gender/number agreement variants
+- `plural` - Number variations (i, le, gli, questi, queste, etc.)
 - `elision` - Contracted forms (l', un', etc.)
-- `plural` - Plural formations (use irregular metadata attribute for non-standard patterns)
+- `feminine` - Gender variations (mia, tua, sua, etc.)
+- Use gender/number metadata attributes for complete form classification
 
 **Pronunciation Columns for All Entries**:
 All determiner entries include both pronunciation columns to support proper learning:
@@ -222,7 +222,7 @@ CREATE TABLE form_base_relationships (
 - `quantifier` - Quantifiers (alcuni, molti, tutto, etc.)
 - `interrogative` - Interrogative determiners (quale, quanto, che)
 
-**metaattr029 - Person** (possessives only, 3 values):
+**metaattr014 - Person** (possessives only, 3 values):
 - `first` - First person (mio, nostro)
 - `second` - Second person (tuo, vostro)
 - `third` - Third person (suo, loro)
@@ -245,7 +245,7 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 -- Possessive metadata with person
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 (mio_id, 'metaattr028', 'uuid-possessive'),
-(mio_id, 'metaattr029', 'uuid-first'),
+(mio_id, 'metaattr014', 'uuid-first'),
 (mio_id, 'metaattr003', 'uuid-A1');
 
 -- Interrogative metadata
@@ -288,6 +288,23 @@ INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
 (suo_id, 'his', 'When referring to masculine possessor'),
 (suo_id, 'her', 'When referring to feminine possessor'),
 (suo_id, 'its', 'When referring to non-human possessor');
+
+-- Form translations showing connection to base words
+INSERT INTO form_translations (form_id, base_word_id, translation_text, context_notes) VALUES
+-- Article forms inherit meaning from base words
+(i_form_id, il_id, 'the', 'Plural form maintains same translation as base'),
+(le_form_id, la_id, 'the', 'Plural form maintains same translation as base'),
+(l_form_id, il_id, 'the', 'Contracted form before vowels, same meaning'),
+(l_form_id, la_id, 'the', 'Contracted form before vowels, same meaning'),
+
+-- Demonstrative forms show clear number relationship
+(questi_form_id, questo_id, 'these', 'Plural form changes translation to match number'),
+(queste_form_id, questa_id, 'these', 'Plural form changes translation to match number'),
+
+-- Possessive forms maintain person but reflect agreement
+(mia_form_id, mio_id, 'my', 'Same possessor (1st person), feminine agreement'),
+(miei_form_id, mio_id, 'my', 'Same possessor (1st person), masculine plural agreement'),
+(mie_form_id, mio_id, 'my', 'Same possessor (1st person), feminine plural agreement');
 ```
 </details>
 
@@ -312,7 +329,7 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 (mio_id, 'mia', 'feminine'),      -- 'mia' is form of base word 'mio'
 (mio_id, 'miei', 'plural'),       -- 'miei' is form of base word 'mio'
-(mio_id, 'mie', 'feminine_plural'); -- 'mie' is form of base word 'mio'
+(mio_id, 'mie', 'plural'); -- 'mie' is form of base word 'mio' (use gender metadata for feminine)
 ```
 
 **Gender/Number System Reuse**:
@@ -397,30 +414,30 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('suo', 'determiner', 'SOO-o', '/ˈsu.o/');
 
 -- 2. Forms: Number variations and contractions only
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
 -- Article plurals (number variations)
-(il_id, 'i', 'plural'),
-(la_id, 'le', 'plural'),
-(lo_id, 'gli', 'plural'),
+(il_id, 'i', 'plural', 'i', '/i/'),
+(la_id, 'le', 'plural', 'le', '/le/'),
+(lo_id, 'gli', 'plural', 'gli', '/ʎi/'),
 
 -- Article contractions (phonetic variations)
-(il_id, "l'", 'elision'),
-(la_id, "l'", 'elision'),
-(lo_id, "l'", 'elision'),
+(il_id, "l'", 'elision', 'l', '/l/'),
+(la_id, "l'", 'elision', 'l', '/l/'),
+(lo_id, "l'", 'elision', 'l', '/l/'),
 
 -- Demonstrative plurals (number variations)
-(questo_id, 'questi', 'plural'),
-(questa_id, 'queste', 'plural'),
-(quello_id, 'quelli', 'plural'),
-(quella_id, 'quelle', 'plural'),
+(questo_id, 'questi', 'plural', 'KWES-ti', '/ˈkwes.ti/'),
+(questa_id, 'queste', 'plural', 'KWES-te', '/ˈkwes.te/'),
+(quello_id, 'quelli', 'plural', 'KWEL-li', '/ˈkwel.li/'),
+(quella_id, 'quelle', 'plural', 'KWEL-le', '/ˈkwel.le/'),
 
 -- Possessive gender/number variations (forms only)
-(mio_id, 'mia', 'feminine'),
-(mio_id, 'miei', 'plural'),
-(mio_id, 'mie', 'feminine_plural'),
-(tuo_id, 'tua', 'feminine'),
-(tuo_id, 'tuoi', 'plural'),
-(tuo_id, 'tue', 'feminine_plural');
+(mio_id, 'mia', 'feminine', 'MEE-a', '/ˈmi.a/'),
+(mio_id, 'miei', 'plural', 'MEE-ei', '/ˈmi.ei/'),
+(mio_id, 'mie', 'plural', 'MEE-e', '/ˈmi.e/'),
+(tuo_id, 'tua', 'feminine', 'TOO-a', '/ˈtu.a/'),
+(tuo_id, 'tuoi', 'plural', 'TOO-oi', '/ˈtu.oi/'),
+(tuo_id, 'tue', 'plural', 'TOO-e', '/ˈtu.e/');
 
 -- 3. Metadata assignments (base words only)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -437,9 +454,9 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 (suo_id, 'metaattr028', 'uuid-possessive'),
 
 -- Person metadata for possessives
-(mio_id, 'metaattr029', 'uuid-first'),
-(tuo_id, 'metaattr029', 'uuid-second'),
-(suo_id, 'metaattr029', 'uuid-third'),
+(mio_id, 'metaattr014', 'uuid-first'),
+(tuo_id, 'metaattr014', 'uuid-second'),
+(suo_id, 'metaattr014', 'uuid-third'),
 
 -- CEFR levels
 (il_id, 'metaattr003', 'uuid-A1'),
@@ -455,6 +472,29 @@ INSERT INTO word_translations (word_id, translation_text, usage_notes, example_u
 (questo_id, 'this', 'Near demonstrative, masculine singular', 'questo tavolo (this table)'),
 (questa_id, 'this', 'Near demonstrative, feminine singular', 'questa sedia (this chair)'),
 (mio_id, 'my', 'First person possessive, masculine form', 'il mio amico (my friend)');
+
+-- 5. Form translations: How forms connect to base word translations
+INSERT INTO form_translations (form_id, base_word_id, translation_text, usage_notes, example_usage) VALUES
+-- Article form translations
+(i_form_id, il_id, 'the', 'Plural of masculine definite article', 'i libri (the books)'),
+(le_form_id, la_id, 'the', 'Plural of feminine definite article', 'le case (the houses)'),
+(gli_form_id, lo_id, 'the', 'Plural of special masculine definite article', 'gli studenti (the students)'),
+(l_form_id, il_id, 'the', 'Contracted form before vowels', "l'amico (the friend)"),
+(l_form_id, la_id, 'the', 'Contracted form before vowels', "l'amica (the friend)"),
+
+-- Demonstrative form translations
+(questi_form_id, questo_id, 'these', 'Plural of masculine demonstrative', 'questi tavoli (these tables)'),
+(queste_form_id, questa_id, 'these', 'Plural of feminine demonstrative', 'queste sedie (these chairs)'),
+(quelli_form_id, quello_id, 'those', 'Plural of masculine demonstrative', 'quelli studenti (those students)'),
+(quelle_form_id, quella_id, 'those', 'Plural of feminine demonstrative', 'quelle studentesse (those students)'),
+
+-- Possessive form translations
+(mia_form_id, mio_id, 'my', 'Feminine form of first person possessive', 'la mia casa (my house)'),
+(miei_form_id, mio_id, 'my', 'Masculine plural form of first person possessive', 'i miei amici (my friends)'),
+(mie_form_id, mio_id, 'my', 'Feminine plural form of first person possessive', 'le mie amiche (my friends)'),
+(tua_form_id, tuo_id, 'your', 'Feminine form of second person possessive', 'la tua macchina (your car)'),
+(tuoi_form_id, tuo_id, 'your', 'Masculine plural form of second person possessive', 'i tuoi libri (your books)'),
+(tue_form_id, tuo_id, 'your', 'Feminine plural form of second person possessive', 'le tue idee (your ideas)');
 ```
 </details>
 
