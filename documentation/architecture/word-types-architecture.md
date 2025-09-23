@@ -16,6 +16,16 @@
    - 5.1 [Preposition](#51-preposition)
    - 5.2 [Determiner](#52-determiner)
      - 5.2.1 [What is a Determiner](#521-what-is-a-determiner)
+   - 5.3 [Conjunction](#53-conjunction)
+   - 5.4 [Pronoun](#54-pronoun)
+   - 5.5 [Modal Verbs](#55-modal-verbs)
+   - 5.6 [Proper Noun](#56-proper-noun)
+   - 5.7 [WH-Words](#57-wh-words)
+   - 5.8 [Particle NE](#58-particle-ne)
+   - 5.9 [Interjections](#59-interjections)
+   - 5.10 [Abbreviations](#510-abbreviations)
+   - 5.11 [Indefinite Pronouns](#511-indefinite-pronouns)
+6. [Cross-Cutting Architectural Decisions](#6-cross-cutting-architectural-decisions)
 7. [Implementation Roadmap](#7-implementation-roadmap)
 
 ---
@@ -757,67 +767,36 @@ The determiner documentation provides production-ready implementation specificat
 
 ### 5.3 CONJUNCTION
 
-**Implementation Status**: 📋 **Planned**
+**Implementation Status**: 📋 **Planned - Complete Architecture**
 
-**Examples**: e, ma, o, mentre, perché, quando, se, sia, nonostante, però
+**Architecture Summary**:
+The conjunction system uses a minimal forms approach with emphasis on grammatical relationship classification. Most conjunctions are invariable, requiring only elided forms for euphonic patterns.
 
-**Architectural Challenges**:
-- Logical relationship classification
-- Coordination vs. subordination distinction
-- Elided forms (e/ed, o/od)
+**Core Function**: Conjunctions connect words, phrases, or clauses, providing essential grammatical relationships in Italian sentences. The system categorizes by coordination type and supports progressive learning from basic coordinators to complex subordinating relationships.
 
-**Planned Word-Level Metadata**:
-- `conjunction_type` - **Conjunction Type**: `coordinating`, `subordinating`, `correlative`
+#### Three Major Categories
 
-**Reuse Existing Universal Metadata**:
-- `cefr_level` - Learning difficulty classification
-- `frequency_tier` - Usage frequency ranking
-- `register` - Formality level
-- `position` - Placement relative to connected elements
+The Italian conjunction system encompasses three distinct functional categories:
 
-#### Conjunction Type Descriptions
+1. **Coordinating Conjunctions** (6 entries): e, ma, però, o, oppure, ovvero - Connect equal grammatical elements
+2. **Subordinating Conjunctions** (7 entries): perché, poiché, siccome, quando, mentre, se, qualora - Connect dependent to independent clauses
+3. **Correlative Conjunctions** (3 entries): sia, né, nonostante - Work in pairs or express complex relationships
 
-**Coordinating Conjunctions:**
-- **Function**: Connect words, phrases, or clauses of equal grammatical rank
-- **Examples**: `e` (and), `ma` (but), `o` (or)
-- **Key characteristic**: No grammatical hierarchy - elements remain equal
+#### Architecture Overview
 
-**Subordinating Conjunctions:**
-- **Function**: Connect a dependent clause to an independent clause
-- **Examples**: `perché` (because), `quando` (when), `se` (if)
-- **Key characteristic**: Create unequal relationships - one clause depends on the other
+**Storage Strategy**: Minimal forms storage due to invariable nature, with elided forms only for euphonic patterns (`e`→`ed`, `o`→`od`).
 
-**Correlative Conjunctions:**
-- **Function**: Work in pairs to connect equivalent elements
-- **Examples**: `sia...sia` (both...and), `né...né` (neither...nor)
-- **Key characteristic**: Come in matching pairs
+**Metadata Architecture**:
+- **conjunction_type** - Three functional categories (coordinating, subordinating, correlative)
+- **Universal attributes**: CEFR Level, Frequency Tier, Register, Position
 
-**Forms Strategy**:
-Minimal forms - most conjunctions are invariable:
+**Implementation Scale**: 16 total base entries across three categories with minimal form paradigms, ready-to-execute SQL implementation, and streamlined metadata coverage.
 
-```sql
--- Forms only for true elision patterns
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
--- Base conjunction "e" (and)
-(e_id, 'e', NULL),          -- base form (no form_type for base)
-(e_id, 'ed', 'elided');     -- before vowels: "Marco ed Alberto"
+**Educational Integration**: Progressive learning support from A1 basic coordinators (`e`, `ma`, `o`) to B1+ complex subordinating relationships, with frequency-based presentation prioritizing high-impact conjunctions.
 
--- Base conjunction "o" (or)
-(o_id, 'o', NULL),          -- base form
-(o_id, 'od', 'elided');     -- before vowels (rare): "uno od altro"
-```
+> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, form relationships, translation strategies, and educational integration, see [**Conjunction Complete Implementation Guide**](./word-types-architecture-7-conjunctions.md).
 
-**Key Points**:
-- Most conjunctions have no forms (completely invariable)
-- Only `e`→`ed` and `o`→`od` require elided forms
-- "Che" extensibility (like `nonostante che`) will be handled by future `government` attribute
-- Uses `form_type: 'elided'` consistent with existing database patterns
-
-**Implementation Approach**:
-- **Minimal complexity**: Single new attribute (`conjunction_type`)
-- **Maximum reuse**: Leverages existing universal metadata system
-- **Educational focus**: Clear categorization for language learners
-- **Future extensibility**: Ready for government patterns when needed
+The conjunction documentation provides production-ready implementation specifications with linguistically accurate categorization, minimal complexity metadata system, and sophisticated educational architecture designed for effective Italian language learning.
 
 ---
 
