@@ -117,7 +117,7 @@ Given the primarily invariable nature of conjunctions, the storage strategy focu
 
 ### 3.3 Form Type Requirements
 
-- `phonetic_variant` - Phonetic alternatives (e/ed, tra/fra)
+- `phonetic_variant` - Phonetic alternatives (e/ed)
 - `alternative` - Semantic alternatives (o/oppure, ma/però)
 - Use conjunction metadata attributes for complete functional classification
 
@@ -138,7 +138,7 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 
 **Universal Pattern for ALL Conjunction Categories**:
 - **Different logical relationships** = **separate dictionary entries**
-- **Phonetic variations (e/ed, tra/fra)** = **forms of the base word**
+- **Phonetic variations (e/ed)** = **forms of the base word**
 - **Alternative expressions** = **separate entries with relationship linking**
 
 ### 4.1 Coordinating Conjunctions - Complete Implementation
@@ -324,64 +324,37 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 -- Dictionary entries: Temporal conjunctions
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
 ('quando', 'conjunction', 'KWAN-do', '/ˈkwan.do/'), -- "when"
-('mentre', 'conjunction', 'MEN-tre', '/ˈmen.tre/'), -- "while"
-('fra', 'conjunction', 'FRAH', '/fra/'),            -- "between" (time)
-('tra', 'conjunction', 'TRAH', '/tra/');            -- "between" (time) - alternative
+('mentre', 'conjunction', 'MEN-tre', '/ˈmen.tre/'); -- "while"
 ```
 
-**Forms for Alternative Variants**
-```sql
--- Forms: Alternative phonetic variants
-INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(fra_id, 'tra', 'alternative', 'TRAH', '/tra/'),  -- alternative to fra
-(tra_id, 'fra', 'alternative', 'FRAH', '/fra/');  -- alternative to tra
-```
 
 **Complete Metadata Assignment**
 ```sql
 -- Conjunction type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 (quando_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating')),
-(mentre_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating')),
-(fra_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating')),
-(tra_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating'));
+(mentre_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating'));
 
 -- Logical relationship classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 (quando_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'temporal')),
-(mentre_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'temporal')),
-(fra_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'temporal')),
-(tra_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'temporal'));
+(mentre_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'temporal'));
 
 -- Syntactic level classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 (quando_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level')),
-(mentre_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level')),
-(fra_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'phrase_level')),
-(tra_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'phrase_level'));
+(mentre_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level'));
 
 -- CEFR levels
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 (quando_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
-(mentre_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(fra_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(tra_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2'));
+(mentre_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2'));
 
 -- Frequency tiers
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 (quando_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(mentre_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(fra_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top1000')),
-(tra_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top1000'));
+(mentre_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500'));
 
--- Form-level metadata for alternatives
-INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(tra_fra_form_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating')),
-(tra_fra_form_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'temporal')),
-(tra_fra_form_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'phrase_level')),
-(fra_tra_form_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating')),
-(fra_tra_form_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'temporal')),
-(fra_tra_form_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'phrase_level'));
 ```
 
 #### 4.2.3 Conditional Conjunctions
@@ -516,9 +489,9 @@ The conjunction system implements minimal but complete form coverage across all 
   - Contrast: 2 base entries (ma, però) with distinct register levels
   - Disjunction: 3 base entries (o, oppure, ovvero) with semantic specificity
 
-- **✅ Subordinating Conjunctions (9 base entries)**
+- **✅ Subordinating Conjunctions (7 base entries)**
   - Causal: 3 base entries (perché, poiché, siccome) with register variation
-  - Temporal: 4 base entries (quando, mentre, fra, tra) with alternative forms
+  - Temporal: 2 base entries (quando, mentre)
   - Conditional: 3 base entries (se, qualora, purché) with formality levels
 
 - **✅ Correlative Conjunctions (3 base entries)**
@@ -558,7 +531,7 @@ All implementation examples meet production-ready standards:
 
 Unlike other word types with complex morphological systems, conjunctions require minimal form storage due to their invariable nature. The forms strategy focuses on capturing essential variants:
 
-- **Phonetic variants**: e/ed, tra/fra
+- **Phonetic variants**: e/ed
 - **Register alternatives**: ma/però, o/oppure
 - **Semantic specificity**: oppure/ovvero
 
@@ -570,12 +543,6 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 (e_id, 'ed', 'phonetic_variant', 'EHD', '/ed/');  -- used before vowels
 ```
 
-**tra/fra Pattern**:
-```sql
-INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(tra_id, 'fra', 'alternative', 'FRAH', '/fra/'),
-(fra_id, 'tra', 'alternative', 'TRAH', '/tra/');
-```
 
 ### 5.3 Alternative Forms
 
@@ -634,7 +601,7 @@ Conjunction translations reflect register differences:
 
 The conjunction architecture represents a fully specified, production-ready implementation covering:
 
-- **18 total base entries** across three conjunction categories
+- **16 total base entries** across three conjunction categories
 - **Complete metadata coverage** for all critical linguistic attributes
 - **Minimal form generation** following phonetic and register patterns
 - **Educational progression** from A1 basic conjunctions to C1 advanced constructions
@@ -644,7 +611,7 @@ The conjunction architecture represents a fully specified, production-ready impl
 
 **Implementation Completeness Summary**:
 
-- **✅ 18 base conjunction entries** with complete metadata coverage
+- **✅ 16 base conjunction entries** with complete metadata coverage
 - **✅ 3 specialized conjunction attributes** (type, relationship, syntactic level)
 - **✅ Minimal forms architecture** optimized for invariable word type
 - **✅ Complete pronunciation support** for audio learning
@@ -656,7 +623,7 @@ The conjunction architecture represents a fully specified, production-ready impl
 
 1. **A1 Foundation**: Basic coordinating conjunctions (e, ma, o, se, quando, perché)
 2. **A2 Expansion**: Register alternatives and simple subordination (però, mentre, né)
-3. **B1 Sophistication**: Complex subordination and correlatives (sia...sia, poiché, fra)
+3. **B1 Sophistication**: Complex subordination and correlatives (sia...sia, poiché)
 4. **B2+ Mastery**: Formal and specialized conjunctions (nonostante, purché, qualora)
 
 **Searchability Architecture**:

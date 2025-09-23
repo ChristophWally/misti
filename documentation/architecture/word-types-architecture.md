@@ -759,26 +759,65 @@ The determiner documentation provides production-ready implementation specificat
 
 **Implementation Status**: 📋 **Planned**
 
-**Examples**: e, ma, ed, o, tra, mentre, fra, sia, nonostante, ovvero
+**Examples**: e, ma, o, mentre, perché, quando, se, sia, nonostante, però
 
 **Architectural Challenges**:
 - Logical relationship classification
 - Coordination vs. subordination distinction
-- Variant forms (e/ed, tra/fra)
+- Elided forms (e/ed, o/od)
 
 **Planned Word-Level Metadata**:
-- `metaattr037` - **Conjunction Type**: `coordinating`, `subordinating`, `correlative`
-- `metaattr038` - **Logical Relationship**: `addition`, `contrast`, `disjunction`, `causal`, `temporal`, `conditional`
-- `metaattr039` - **Syntactic Level**: `word_level`, `phrase_level`, `clause_level`
+- `conjunction_type` - **Conjunction Type**: `coordinating`, `subordinating`, `correlative`
+
+**Reuse Existing Universal Metadata**:
+- `cefr_level` - Learning difficulty classification
+- `frequency_tier` - Usage frequency ranking
+- `register` - Formality level
+- `position` - Placement relative to connected elements
+
+#### Conjunction Type Descriptions
+
+**Coordinating Conjunctions:**
+- **Function**: Connect words, phrases, or clauses of equal grammatical rank
+- **Examples**: `e` (and), `ma` (but), `o` (or)
+- **Key characteristic**: No grammatical hierarchy - elements remain equal
+
+**Subordinating Conjunctions:**
+- **Function**: Connect a dependent clause to an independent clause
+- **Examples**: `perché` (because), `quando` (when), `se` (if)
+- **Key characteristic**: Create unequal relationships - one clause depends on the other
+
+**Correlative Conjunctions:**
+- **Function**: Work in pairs to connect equivalent elements
+- **Examples**: `sia...sia` (both...and), `né...né` (neither...nor)
+- **Key characteristic**: Come in matching pairs
 
 **Forms Strategy**:
-Minimal forms - mainly for variants:
+Minimal forms - most conjunctions are invariable:
+
 ```sql
--- Forms for "e" conjunction
-INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
-(e_id, 'e', 'base', []),
-(e_id, 'ed', 'phonetic_variant', ['before_vowel']);
+-- Forms only for true elision patterns
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+-- Base conjunction "e" (and)
+(e_id, 'e', NULL),          -- base form (no form_type for base)
+(e_id, 'ed', 'elided');     -- before vowels: "Marco ed Alberto"
+
+-- Base conjunction "o" (or)
+(o_id, 'o', NULL),          -- base form
+(o_id, 'od', 'elided');     -- before vowels (rare): "uno od altro"
 ```
+
+**Key Points**:
+- Most conjunctions have no forms (completely invariable)
+- Only `e`→`ed` and `o`→`od` require elided forms
+- "Che" extensibility (like `nonostante che`) will be handled by future `government` attribute
+- Uses `form_type: 'elided'` consistent with existing database patterns
+
+**Implementation Approach**:
+- **Minimal complexity**: Single new attribute (`conjunction_type`)
+- **Maximum reuse**: Leverages existing universal metadata system
+- **Educational focus**: Clear categorization for language learners
+- **Future extensibility**: Ready for government patterns when needed
 
 ---
 
@@ -1022,7 +1061,7 @@ const wordTypeColors = {
 3. **CONJUNCTION** (14 words)
    - Simple implementation, mostly invariable
    - Logical relationship classification
-   - Variant form handling (e/ed, tra/fra)
+   - Variant form handling (e/ed)
 
 ### Phase 2: Reference Systems (Medium Priority)
 **Goal**: Handle pronoun and modal systems
