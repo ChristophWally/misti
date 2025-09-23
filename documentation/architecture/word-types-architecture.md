@@ -18,13 +18,8 @@
      - 5.2.1 [What is a Determiner](#521-what-is-a-determiner)
    - 5.3 [Conjunction](#53-conjunction)
    - 5.4 [Pronoun](#54-pronoun)
-   - 5.5 [Modal Verbs](#55-modal-verbs)
-   - 5.6 [Proper Noun](#56-proper-noun)
-   - 5.7 [WH-Words](#57-wh-words)
-   - 5.8 [Particle NE](#58-particle-ne)
-   - 5.9 [Interjections](#59-interjections)
-   - 5.10 [Abbreviations](#510-abbreviations)
-   - 5.11 [Indefinite Pronouns](#511-indefinite-pronouns)
+   - 5.5 [WH-Words](#55-wh-words)
+   - 5.6 [Interjections](#56-interjections)
 6. [Cross-Cutting Architectural Decisions](#6-cross-cutting-architectural-decisions)
 7. [Implementation Roadmap](#7-implementation-roadmap)
 
@@ -561,7 +556,7 @@ Complete conjugation paradigms are stored in `word_forms` table (~100-140 forms 
 **Implementation Status**: ✅ **Fully Implemented**
 
 **Architecture Summary**:
-The noun system focuses on gender, number, and article generation with support for irregular plural formations.
+The noun system handles common nouns and proper nouns (excluding personal names), focusing on gender, number, and article generation with support for irregular plural formations and place name variations.
 
 **Word-Level Metadata** *(see [Section 3.3](#33-noun-specific-attributes) for complete value descriptions)*:
 - `metaattr011` - **Noun Gender**: `masculine` (3 words), `feminine` (2 words), `common-gender` (1 word) - inherent grammatical gender
@@ -569,12 +564,28 @@ The noun system focuses on gender, number, and article generation with support f
 - `metaattr013` - **Number Restriction**: `plural-only` (2 words), `singular-only` (1 word) - for defective nouns
 - `metaattr026` - **Plural Formation**: `plural-e` (3 words), `plural-i` (2 words) - standard formation patterns
 
+**Proper Noun Metadata** *(for place names, countries, organizations, works)*:
+- `metaattr045` - **Proper Noun Type**: `place`, `organization`, `event`, `work`, `date` - excludes personal names
+- `metaattr046` - **Entity Category**: `country`, `city`, `title`, `brand` - specific proper noun classification
+
 **Translation-Level Metadata** *(see [Section 3.6](#36-universal-translation-level-attributes) for complete value descriptions)*:
 - `metaattr018` - **Register**: `neutral` (most common), `formal`, `casual` - formality level for specific meanings
 - `metaattr_optional_tag` - **Optional Topic Tags**: `topic-abstract`, `topic-daily-life`, `topic-place` and others - see [Section 3.7](#37-optional-tags-system)
 
 **Forms Storage**:
-Generally no forms stored - articles and plural forms are calculated on the frontend using algorithmic generation based on gender and phonetic rules.
+Generally no forms stored for common nouns - articles and plural forms are calculated on the frontend using algorithmic generation based on gender and phonetic rules.
+
+**Proper Noun Forms**:
+Most proper nouns are invariable, but some place names have special forms:
+```sql
+-- Most proper nouns have only base form
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(italia_id, 'Italia', NULL);
+
+-- Some have plural or variant forms
+INSERT INTO word_forms (word_id, form_text, form_type) VALUES
+(stati_uniti_id, 'Stati Uniti', 'plural_only');
+```
 
 **Frontend Features**:
 - **Article Generation**: Automatic definite/indefinite article calculation
@@ -802,150 +813,125 @@ The conjunction documentation provides production-ready implementation specifica
 
 ### 5.4 PRONOUN
 
-**Implementation Status**: 📋 **Planned - High Complexity**
+**Implementation Status**: 📋 **Planned - Complete Architecture**
 
-**Examples**: si, cui, se, lo, ci, gli, mi, lui, chi, li
+**Architecture Summary**:
+The pronoun system handles the complex Italian case system with comprehensive coverage of personal, clitic, relative, and indefinite pronouns including the particle NE.
 
-**Architectural Challenges**:
-- Most complex forms system after verbs
-- Multiple pronoun types with different declension patterns
-- Clitic vs. full pronoun distinctions
-- Case system (nominative, accusative, dative, ablative)
+**Core Function**: Pronouns replace nouns and noun phrases, providing essential reference mechanisms in Italian sentences. The system supports complex clitic positioning, case distinctions, and agreement patterns essential for natural Italian expression.
 
-**Planned Word-Level Metadata**:
-- `metaattr040` - **Pronoun Type**: `personal`, `relative`, `demonstrative`, `interrogative`, `indefinite`, `reflexive`
-- `metaattr041` - **Pronoun Form**: `clitic`, `full`, `both`
-- `metaattr042` - **Case System**: `nominative_only`, `accusative_dative`, `full_case`
+#### Six Major Categories
 
-**Forms Strategy**:
-Complex declension paradigms:
-```sql
--- Forms for "io" (first person pronoun)
-INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
-(io_id, 'io', 'nominative', ['first_person', 'singular']),
-(io_id, 'me', 'accusative', ['first_person', 'singular']),
-(io_id, 'mi', 'clitic_accusative', ['first_person', 'singular']),
-(io_id, 'mi', 'clitic_dative', ['first_person', 'singular']);
-```
+The Italian pronoun system encompasses six distinct functional categories:
 
----
+1. **Personal Pronouns** (28+ entries): io, tu, lui, lei, noi, voi, loro - Complete case system with nominative, accusative, dative distinctions
+2. **Clitic Pronouns** (25+ entries): mi, ti, lo, la, ci, vi, li, le, combined forms - Essential for natural Italian expression
+3. **Particle NE** (2 entries): ne, n' - Specialized clitic with partitive, locative, possessive functions
+4. **Indefinite Pronouns** (12+ entries): qualcuno, nessuno, chiunque, qualcosa - Quantitative and qualitative reference
+5. **Relative Pronouns** (8+ entries): che, cui, quale, chi - Complex clause-connecting system
+6. **Demonstrative Pronouns** (12+ entries): questo, quello, ciò - Spatial and discourse reference
 
-### 5.5 MODAL VERBS
+#### Architecture Overview
 
-**Implementation Status**: 📋 **Planned - Extend Existing VERB System**
+**Storage Strategy**: Complex form storage due to irregular patterns, case system complexity, and critical clitic positioning rules.
 
-**Examples**: potere, dovere, volere, bisognare, osare
+**Metadata Architecture**:
+- **Six pronoun categories** with specialized metadata for each type
+- **Complete case system** (nominative, accusative, dative, ablative)
+- **Clitic positioning rules** and combined form handling
+- **Universal attributes**: CEFR Level, Frequency Tier, Register, Position
 
-**Architectural Strategy**:
-Extend existing verb architecture rather than create new word type.
+**Implementation Scale**: 65+ total base entries across six categories with complex form paradigms, ready-to-execute SQL implementation, and comprehensive metadata coverage.
 
-**Additional Word-Level Metadata**:
-- `metaattr043` - **Modal Type**: `necessity`, `possibility`, `volition`, `obligation`
-- `metaattr044` - **Modal Behavior**: `auxiliary_selection_variable`, `impersonal_forms`
+**Educational Integration**: Progressive learning support from A1 basic personal pronouns to B2+ advanced clitic combinations, with systematic case system instruction essential for Italian fluency.
 
-**Special Translation-Level Properties**:
-- Auxiliary selection depends on dependent verb
-- Special impersonal constructions (bisogna, occorre)
+> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, form relationships, case system handling, and educational integration, see [**Pronoun Complete Implementation Guide**](./word-types-architecture-8-pronouns.md).
+
+The pronoun documentation provides production-ready implementation specifications with complete case system coverage, clitic positioning rules, and sophisticated educational architecture designed for effective Italian language learning.
 
 ---
 
-### 5.6 PROPER NOUN
 
-**Implementation Status**: 📋 **Planned**
 
-**Examples**: Italia, Roma, II, Maria, Giovanni, Milano, Europa, Francia
+### 5.5 WH-WORDS
 
-**Planned Word-Level Metadata**:
-- `metaattr045` - **Proper Noun Type**: `person`, `place`, `organization`, `event`, `work`, `date`
-- `metaattr046` - **Entity Category**: `country`, `city`, `person_name`, `title`, `brand`
-- `metaattr011` - **Word Gender**: For agreement purposes (la Francia, il Giovanni)
+**Implementation Status**: 📋 **Planned - Complete Architecture**
 
-**Forms Strategy**:
-Generally invariable, but some place names have forms:
-```sql
--- Most proper nouns have only base form
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(italia_id, 'Italia', 'base');
+**Architecture Summary**:
+The WH-words system handles interrogative, relative, and universal constructions with systematic semantic categorization and context-dependent functionality.
 
--- Some have plural or variant forms
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(stato_id, 'Stati Uniti', 'plural_only');
-```
+**Core Function**: WH-words form questions, introduce relative clauses, and create universal/conditional constructions. The system supports progressive learning from basic interrogatives to complex relative clause structures essential for sophisticated Italian expression.
 
----
+#### Four Major Categories
 
-### 5.7 WH-WORDS
+The Italian WH-words system encompasses four distinct functional categories:
 
-**Implementation Status**: 📋 **Planned**
+1. **Interrogative WH-Words** (10 entries): come, quando, dove, perché, chi, quanto/a, quale - Direct and indirect question formation
+2. **Relative WH-Words** (4 entries): che, cui, dove, quando - Complex clause-connecting with prepositional government
+3. **Universal/Conditional WH-Words** (4 entries): comunque, ovunque, qualunque, chiunque - Advanced B1-B2 constructions
+4. **Exclamatory WH-Words** (3 entries): come!, quanto/a!, che! - Emotional expressions with agreement patterns
 
-**Examples**: come, quando, dove, comunque, ove, ovunque, laddove
+#### Architecture Overview
 
-**Planned Word-Level Metadata**:
-- `metaattr047` - **WH Type**: `interrogative`, `relative`, `conditional`, `universal`
-- `metaattr048` - **Semantic Category**: `manner`, `time`, `place`, `reason`, `quantity`
+**Storage Strategy**: Systematic form storage for agreement patterns (quanto/quanta/quanti/quante, quale/quali) with minimal forms for invariable entries.
 
----
+**Metadata Architecture**:
+- **WH functional types** with context-dependent classification
+- **Semantic categories** (manner, time, place, reason, quantity, selection)
+- **Agreement patterns** where applicable
+- **Universal attributes**: CEFR Level, Frequency Tier, Register, Position
 
-### 5.8 PARTICLE NE
+**Implementation Scale**: 21 total base entries across four categories with targeted form paradigms, ready-to-execute SQL implementation, and systematic metadata coverage.
 
-**Implementation Status**: 📋 **Planned**
+**Educational Integration**: Progressive learning support from A1 basic interrogatives to B2+ complex relative constructions, with clear distinction between different WH-word functions essential for advanced Italian competence.
 
-**Examples**: ne, n'
+> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, semantic classification, agreement patterns, and educational integration, see [**WH-Words Complete Implementation Guide**](./word-types-architecture-9-wh-words.md).
 
-**Planned Word-Level Metadata**:
-- `metaattr049` - **Particle Function**: `partitive`, `locative`, `possessive`, `indefinite`
-
-**Forms Strategy**:
-```sql
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(ne_id, 'ne', 'base'),
-(ne_id, "n'", 'elided');  -- before vowels
-```
+The WH-words documentation provides production-ready implementation specifications with systematic semantic categorization, context-dependent functionality, and sophisticated educational architecture designed for effective Italian language learning.
 
 ---
 
-### 5.9 INTERJECTIONS
 
-**Implementation Status**: 📋 **Planned**
+### 5.6 INTERJECTIONS
 
-**Examples**: ciao, ah, beh, eh, oh
+**Implementation Status**: 📋 **Planned - Complete Architecture**
 
-**Planned Word-Level Metadata**:
-- `metaattr050` - **Interjection Type**: `greeting`, `exclamation`, `hesitation`, `agreement`, `surprise`
-- `metaattr051` - **Emotional Tone**: `positive`, `negative`, `neutral`, `surprise`, `doubt`
+**Architecture Summary**:
+The interjection system handles emotional expressions, greetings, and social interactions with comprehensive cultural context and register sensitivity.
 
----
+**Core Function**: Interjections express emotions, reactions, and social interactions as autonomous linguistic units. The system supports cultural appropriateness and register awareness essential for natural Italian social competence.
 
-### 5.10 ABBREVIATIONS
+#### Five Major Categories
 
-**Implementation Status**: 📋 **Planned**
+The Italian interjection system encompasses five distinct functional categories:
 
-**Examples**: ecc., etc, cfr., vs.
+1. **Greeting Interjections** (7 entries): ciao, salve, arrivederci, buongiorno, buonasera - Social interaction with register sensitivity
+2. **Emotional Exclamations** (8 entries): ah, oh, eh, uh, ahi, uff - Basic emotional expression
+3. **Hesitation Markers** (7 entries): beh, mah, boh, ecco, insomma - Discourse management and uncertainty
+4. **Agreement/Disagreement** (8 entries): sì, no, già, appunto, infatti, proprio, esatto - Conversational interaction
+5. **Surprise/Shock Expressions** (7 entries): davvero, mamma mia, perbacco, accidenti, madonna, incredibile - Emotional intensity with cultural sensitivity
 
-**Planned Word-Level Metadata**:
-- `metaattr052` - **Abbreviation Type**: `latin`, `italian`, `international`
-- `metaattr053` - **Expansion**: Store full form (ecc. → eccetera)
+#### Architecture Overview
 
----
+**Storage Strategy**: Minimal forms storage for invariable expressions with cultural context annotations and register classifications.
 
-### 5.11 INDEFINITE PRONOUNS
+**Metadata Architecture**:
+- **Interjection functional types** with emotional and social classification
+- **Emotional tone** (positive, negative, neutral, surprise, doubt)
+- **Cultural sensitivity** and register appropriateness
+- **Universal attributes**: CEFR Level, Frequency Tier, Register
 
-**Implementation Status**: 📋 **Planned**
+**Implementation Scale**: 30+ total base entries across five categories with cultural context annotations, ready-to-execute SQL implementation, and comprehensive metadata coverage.
 
-**Examples**: tale
+**Educational Integration**: Progressive learning support from A1 basic social interactions to B1+ cultural competence, with emphasis on register appropriateness and cultural sensitivity essential for successful Italian social integration.
 
-**Planned Word-Level Metadata**:
-- `metaattr054` - **Indefinite Type**: `quantitative`, `qualitative`, `selective`
+> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, cultural context handling, register sensitivity, and educational integration, see [**Interjection Complete Implementation Guide**](./word-types-architecture-10-interjections.md).
 
-**Forms Strategy**:
-Agreement forms like adjectives:
-```sql
-INSERT INTO word_forms (word_id, form_text, form_type, tags) VALUES
-(tale_id, 'tale', 'base', ['masculine', 'feminine', 'singular']),
-(tale_id, 'tali', 'plural', ['masculine', 'feminine', 'plural']);
-```
+The interjection documentation provides production-ready implementation specifications with cultural sensitivity guidance, register appropriateness classifications, and sophisticated educational architecture designed for effective Italian social competence development.
 
 ---
+
+
 
 ## 6. Cross-Cutting Architectural Decisions
 
