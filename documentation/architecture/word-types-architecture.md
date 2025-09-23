@@ -18,8 +18,7 @@
      - 5.2.1 [What is a Determiner](#521-what-is-a-determiner)
    - 5.3 [Conjunction](#53-conjunction)
    - 5.4 [Pronoun](#54-pronoun)
-   - 5.5 [WH-Words](#55-wh-words)
-   - 5.6 [Interjections](#56-interjections)
+   - 5.5 [Interjections](#55-interjections)
 6. [Cross-Cutting Architectural Decisions](#6-cross-cutting-architectural-decisions)
 7. [Implementation Roadmap](#7-implementation-roadmap)
 
@@ -171,6 +170,16 @@ This section provides comprehensive documentation of all metadata attributes and
 | Value | Shorthand | Description | Usage Count |
 |-------|-----------|-------------|-------------|
 | `irregular` | irreg | Form deviates from conjugation pattern | 137 |
+
+#### Interrogative Function (`metaattr056`)
+**Purpose**: Cross-word-type attribute marking words that function as question words
+**Source Level**: word
+**Display Level**: word
+**Database Usage**: Applied to interrogative pronouns, adjectives, and adverbs for cross-filtering
+
+| Value | Shorthand | Description | Usage Count |
+|-------|-----------|-------------|-------------|
+| `interrogative` | INTER | Marks words that form questions: chi (who), cosa (what), come (how), quando (when), dove (where), quale (which), quanto (how much) | TBD |
 
 ### 3.2 Verb-Specific Attributes
 
@@ -626,6 +635,7 @@ The adjective system handles agreement patterns, position preferences, and grada
 - `metaattr009` - **Gradable**: `full-gradability` (3 words), `analytical-gradability` (1 word), `non-gradable` (1 word) - comparative/superlative capability
 - `metaattr006` - **Form Pattern**: `form-4` (2 words), `form-2` (2 words) - agreement variations (rosso/rossa/rossi/rosse vs grande/grandi)
 - `metaattr011` - **Noun Gender**: inherited for agreement purposes - see [Section 3.3](#33-noun-specific-attributes)
+- `metaattr056` - **Interrogative Function**: Cross-word-type attribute marking interrogative adjectives (quale, quanto) for filtering and grouping
 
 **Translation-Level Metadata** *(see [Section 3.4](#34-adjective-specific-attributes) and [Section 3.6](#36-universal-translation-level-attributes) for complete value descriptions)*:
 - `metaattr008` - **Gender Usage**: `male-only` (2 translations), `female-only` (1 translation) - gender-specific meanings like "handsome" (bello)
@@ -634,6 +644,13 @@ The adjective system handles agreement patterns, position preferences, and grada
 
 **Forms Storage**:
 Minimal forms storage - agreement forms are typically calculated on frontend based on regular patterns (alto/alta/alti/alte).
+
+**Interrogative Adjectives**:
+Italian interrogative adjectives form questions about identity, quantity, and selection:
+- **quale/quali** (which) - selection interrogation: "Quale libro?" (Which book?)
+- **quanto/quanta/quanti/quante** (how much/many) - quantity interrogation: "Quanta acqua?" (How much water?)
+
+These adjectives are marked with `interrogative_function: interrogative` for cross-word-type filtering while maintaining their adjective classification and agreement patterns.
 
 **Frontend Features**:
 - **Position Indicators**: Shows preferred placement relative to noun
@@ -651,7 +668,8 @@ Minimal forms storage - agreement forms are typically calculated on frontend bas
 The adverb system classifies by semantic type and position, with sophisticated support for adverb-preposition constructions that form systematic grammatical patterns in Italian.
 
 **Word-Level Metadata** *(see [Section 3.5](#35-adverb-specific-attributes) for complete value descriptions)*:
-- `metaattr001` - **Adverb Type**: 11 semantic categories with 11 words assigned - `manner` (2 uses), `negation`, `interrogative`, `affirmation`, `quantity`, `doubt`, `emphasis`, `evaluation`, `place`, `frequency`, `time` (1 use each)
+- `metaattr001` - **Adverb Type**: 10 semantic categories (interrogative function now handled separately) - `manner` (2 uses), `negation`, `affirmation`, `quantity`, `doubt`, `emphasis`, `evaluation`, `place`, `frequency`, `time` (1 use each)
+- `metaattr056` - **Interrogative Function**: Cross-word-type attribute marking interrogative adverbs (come, quando, dove, perché) for filtering and grouping
 - `metaattr055` - **Adverb Government**: NEW systematic classification for prepositional constructions:
   - `governs_a` - Spatial adverbs forming constructions with "a": davanti a, dietro a, accanto a, vicino a
   - `governs_di` - Temporal adverbs forming constructions with "di": prima di, dopo di, invece di
@@ -676,6 +694,15 @@ The adverb system classifies by semantic type and position, with sophisticated s
 **Distance Adverbs + "da"** (Separation/Origin):
 - lontano da (far from), distante da (distant from)
 - via da (away from), fuori da (outside of)
+
+**Interrogative Adverbs**:
+Italian interrogative adverbs form questions about manner, time, place, and reason:
+- **come** (how) - manner interrogation: "Come stai?" (How are you?)
+- **quando** (when) - temporal interrogation: "Quando arrivi?" (When do you arrive?)
+- **dove** (where) - spatial interrogation: "Dove vai?" (Where are you going?)
+- **perché** (why) - causal interrogation: "Perché piangi?" (Why are you crying?)
+
+These adverbs are marked with `interrogative_function: interrogative` for cross-word-type filtering while maintaining their adverb classification.
 
 **Educational Value**:
 These systematic patterns help learners understand that many apparent "compound prepositions" are actually predictable adverb + preposition constructions, making Italian prepositional phrases more learnable and systematic.
@@ -703,9 +730,13 @@ const adverbTypeMap = {
   'adverb-affirmation': 'affirmation', // sì, certo
   'adverb-doubt': 'doubt',        // forse, probabilmente
   'adverb-negation': 'negation',  // non, mai
-  'adverb-interrogative': 'interrogative', // quando, dove, come
   'adverb-evaluation': 'evaluation', // bene, male
   'adverb-emphasis': 'emphasis'   // proprio, davvero
+};
+
+// NEW: Cross-word-type interrogative filtering
+const interrogativeFunctionMap = {
+  'interrogative': 'question-words'    // come, quando, dove, chi, quale, etc.
 };
 
 // NEW: Adverb government pattern integration
@@ -725,12 +756,38 @@ const adverbGovernmentMap = {
 
 ### 5.1 PREPOSITION
 
-**Implementation Status**: 📋 **Planned**
+**Implementation Status**: 📋 **Planned - Complete Architecture**
 
 **Architecture Summary**:
-Prepositions use a clean atomic approach: storage for true prepositions only, algorithmic calculation of contracted forms (following phonetic conditioning rules), with previous "compound prepositions" now properly recognized as adverb + preposition constructions.
+The preposition system uses a clean atomic approach with systematic contraction patterns and semantic role classification. The system emphasizes true prepositions with algorithmic contracted form generation.
 
-For more detail on preopisitions. Please see the detailed document: documentation/architecture/word-types-architecture-5-prepositions.md.
+**Core Function**: Prepositions establish relationships between sentence elements, providing essential grammatical and semantic connections that clarify spatial, temporal, causal, and instrumental relationships in Italian sentences.
+
+#### Three Major Categories
+
+The Italian preposition system encompasses three distinct structural categories:
+
+1. **Simple Prepositions** (9 entries): di, a, da, in, con, su, per, tra, fra - Core atomic prepositions with fundamental relationships
+2. **Contracted Forms** (30 entries): del, al, dalla, nel, sulla, etc. - Mandatory combinations with definite articles following systematic patterns
+3. **Complex Prepositions** (12+ entries): durante, attraverso, presso, mediante, nonostante - Single-word prepositional units with specialized functions
+
+#### Architecture Overview
+
+**Storage Strategy**: Store simple prepositions and complex forms, with algorithmic generation of contracted forms using systematic 5×6 contraction matrix.
+
+**Metadata Architecture**:
+- **Semantic role classification** for spatial, temporal, causal, instrumental relationships
+- **Contraction behavior** (mandatory, optional, never) with systematic patterns
+- **Government patterns** for complement structure
+- **Universal attributes**: CEFR Level, Frequency Tier, Register
+
+**Implementation Scale**: 50+ total entries across three categories with systematic contraction algorithms, ready-to-execute SQL implementation, and comprehensive semantic classification.
+
+**Educational Integration**: Progressive learning support from A1 basic spatial relationships to B1+ complex semantic roles, with systematic contraction pattern instruction essential for Italian fluency.
+
+> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, contraction algorithms, semantic classification, and educational integration, see [**Preposition Complete Implementation Guide**](./word-types-architecture-5-prepositions.md).
+
+The preposition documentation provides production-ready implementation specifications with systematic contraction patterns, semantic role classification, and sophisticated educational architecture designed for effective Italian language learning.
 
 ---
 
@@ -816,7 +873,7 @@ The conjunction documentation provides production-ready implementation specifica
 **Implementation Status**: 📋 **Planned - Complete Architecture**
 
 **Architecture Summary**:
-The pronoun system handles the complex Italian case system with comprehensive coverage of personal, clitic, relative, and indefinite pronouns including the particle NE.
+The pronoun system handles the complex Italian case system with comprehensive coverage of personal, clitic, relative, indefinite, and interrogative pronouns including the particle NE.
 
 **Core Function**: Pronouns replace nouns and noun phrases, providing essential reference mechanisms in Italian sentences. The system supports complex clitic positioning, case distinctions, and agreement patterns essential for natural Italian expression.
 
@@ -830,20 +887,30 @@ The Italian pronoun system encompasses six distinct functional categories:
 4. **Indefinite Pronouns** (12+ entries): qualcuno, nessuno, chiunque, qualcosa - Quantitative and qualitative reference
 5. **Relative Pronouns** (8+ entries): che, cui, quale, chi - Complex clause-connecting system
 6. **Demonstrative Pronouns** (12+ entries): questo, quello, ciò - Spatial and discourse reference
+7. **Interrogative Pronouns** (4+ entries): chi, cosa, che cosa - Question formation pronouns
 
 #### Architecture Overview
 
 **Storage Strategy**: Complex form storage due to irregular patterns, case system complexity, and critical clitic positioning rules.
 
 **Metadata Architecture**:
-- **Six pronoun categories** with specialized metadata for each type
+- **Seven pronoun categories** with specialized metadata for each type
 - **Complete case system** (nominative, accusative, dative, ablative)
 - **Clitic positioning rules** and combined form handling
+- **metaattr056** - Interrogative Function (cross-word-type attribute for filtering question words)
 - **Universal attributes**: CEFR Level, Frequency Tier, Register, Position
 
-**Implementation Scale**: 65+ total base entries across six categories with complex form paradigms, ready-to-execute SQL implementation, and comprehensive metadata coverage.
+**Implementation Scale**: 69+ total base entries across seven categories with complex form paradigms, ready-to-execute SQL implementation, and comprehensive metadata coverage.
 
 **Educational Integration**: Progressive learning support from A1 basic personal pronouns to B2+ advanced clitic combinations, with systematic case system instruction essential for Italian fluency.
+
+#### Interrogative Pronouns
+
+Italian interrogative pronouns form questions about identity and objects:
+- **chi** (who) - Person interrogation: "Chi è?" (Who is it?)
+- **cosa/che cosa** (what) - Thing interrogation: "Cosa fai?" (What are you doing?)
+
+These pronouns are marked with `interrogative_function: interrogative` for cross-word-type filtering, enabling learners to find all question words (pronouns, adjectives, adverbs) together while maintaining their pronoun classification and case patterns.
 
 > **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, form relationships, case system handling, and educational integration, see [**Pronoun Complete Implementation Guide**](./word-types-architecture-8-pronouns.md).
 
@@ -853,46 +920,9 @@ The pronoun documentation provides production-ready implementation specification
 
 
 
-### 5.5 WH-WORDS
-
-**Implementation Status**: 📋 **Planned - Complete Architecture**
-
-**Architecture Summary**:
-The WH-words system handles interrogative, relative, and universal constructions with systematic semantic categorization and context-dependent functionality.
-
-**Core Function**: WH-words form questions, introduce relative clauses, and create universal/conditional constructions. The system supports progressive learning from basic interrogatives to complex relative clause structures essential for sophisticated Italian expression.
-
-#### Four Major Categories
-
-The Italian WH-words system encompasses four distinct functional categories:
-
-1. **Interrogative WH-Words** (10 entries): come, quando, dove, perché, chi, quanto/a, quale - Direct and indirect question formation
-2. **Relative WH-Words** (4 entries): che, cui, dove, quando - Complex clause-connecting with prepositional government
-3. **Universal/Conditional WH-Words** (4 entries): comunque, ovunque, qualunque, chiunque - Advanced B1-B2 constructions
-4. **Exclamatory WH-Words** (3 entries): come!, quanto/a!, che! - Emotional expressions with agreement patterns
-
-#### Architecture Overview
-
-**Storage Strategy**: Systematic form storage for agreement patterns (quanto/quanta/quanti/quante, quale/quali) with minimal forms for invariable entries.
-
-**Metadata Architecture**:
-- **WH functional types** with context-dependent classification
-- **Semantic categories** (manner, time, place, reason, quantity, selection)
-- **Agreement patterns** where applicable
-- **Universal attributes**: CEFR Level, Frequency Tier, Register, Position
-
-**Implementation Scale**: 21 total base entries across four categories with targeted form paradigms, ready-to-execute SQL implementation, and systematic metadata coverage.
-
-**Educational Integration**: Progressive learning support from A1 basic interrogatives to B2+ complex relative constructions, with clear distinction between different WH-word functions essential for advanced Italian competence.
-
-> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, semantic classification, agreement patterns, and educational integration, see [**WH-Words Complete Implementation Guide**](./word-types-architecture-9-wh-words.md).
-
-The WH-words documentation provides production-ready implementation specifications with systematic semantic categorization, context-dependent functionality, and sophisticated educational architecture designed for effective Italian language learning.
-
----
 
 
-### 5.6 INTERJECTIONS
+### 5.5 INTERJECTIONS
 
 **Implementation Status**: 📋 **Planned - Complete Architecture**
 

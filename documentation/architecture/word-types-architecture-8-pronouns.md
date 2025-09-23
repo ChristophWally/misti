@@ -31,7 +31,8 @@
    - 4.4 [Indefinite Pronouns - Complete Implementation](#44-indefinite-pronouns---complete-implementation)
    - 4.5 [Relative Pronouns - Complete Implementation](#45-relative-pronouns---complete-implementation)
    - 4.6 [Demonstrative Pronouns - Complete Implementation](#46-demonstrative-pronouns---complete-implementation)
-   - 4.7 [Implementation Completeness Verification](#47-implementation-completeness-verification)
+   - 4.7 [Interrogative Pronouns - Complete Implementation](#47-interrogative-pronouns---complete-implementation)
+   - 4.8 [Implementation Completeness Verification](#48-implementation-completeness-verification)
 
 5. [Translation and Form Architecture](#5-translation-and-form-architecture)
    - 5.1 [Context-Dependent Translation Approach](#51-context-dependent-translation-approach)
@@ -57,7 +58,7 @@ Pronouns are a fundamental class of words that replace nouns or refer to partici
 
 **Core Function**: Pronouns replace nouns to avoid repetition and establish referential relationships within discourse. Unlike nouns, pronouns change form based on their grammatical function (case) and can appear in different positions (clitic vs. full forms).
 
-### 1.3 Six Major Categories
+### 1.3 Seven Major Categories
 
 1. **Personal Pronouns** - Refer to specific persons or entities
 2. **Clitic Pronouns** - Reduced forms that attach to verbs
@@ -65,6 +66,7 @@ Pronouns are a fundamental class of words that replace nouns or refer to partici
 4. **Indefinite Pronouns** - Refer to unspecified quantities or entities
 5. **Relative Pronouns** - Connect clauses and establish relationships
 6. **Demonstrative Pronouns** - Point to referents in space or discourse
+7. **Interrogative Pronouns** - Form questions about identity and objects
 
 ---
 
@@ -114,6 +116,13 @@ Pronouns are a fundamental class of words that replace nouns or refer to partici
 - **Distal**: quello/quella/quelli/quelle (that/those)
 - **Usage**: When not modifying a noun (vs. demonstrative determiners)
 
+### 2.7 Interrogative Pronouns
+
+**Question Formation**:
+- **Person Interrogation**: chi (who/whom) - "Chi è?" (Who is it?)
+- **Thing Interrogation**: cosa (what), che cosa (what) - "Cosa fai?" (What are you doing?)
+- **Cross-word-type Function**: Marked with `interrogative_function: interrogative` for filtering with other question words (adjectives, adverbs)
+
 ---
 
 ## 3. Storage Strategy and Metadata Architecture
@@ -131,6 +140,7 @@ Given the highly irregular case patterns, clitic positioning rules, and suppleti
 - **metaattr040** - Pronoun Type (6 values: personal, relative, demonstrative, interrogative, indefinite, reflexive)
 - **metaattr041** - Pronoun Form (3 values: clitic, full, both)
 - **metaattr042** - Case System (3 values: nominative_only, accusative_dative, full_case)
+- **metaattr056** - Interrogative Function (cross-word-type attribute: interrogative - for filtering question words)
 - **metaattr049** - Particle Function (4 values for NE: partitive, locative, possessive, indefinite)
 - **metaattr054** - Indefinite Type (3 values: quantitative, qualitative, selective)
 - **metaattr014** - Person (3 values: prima-persona, seconda-persona, terza-persona)
@@ -924,11 +934,102 @@ INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUE
 (quelle_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural'));
 ```
 
-### 4.7 Implementation Completeness Verification
+### 4.7 Interrogative Pronouns - Complete Implementation
+
+**Architecture Strategy**: Separate entries for Italian interrogative pronouns that form questions about identity and objects
+
+#### Dictionary Entries and Forms
+```sql
+-- Dictionary entries: Italian interrogative pronouns for question formation
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('chi', 'pronoun', 'KEE', '/ki/'),                    -- "who" (person interrogative)
+('cosa', 'pronoun', 'KO-sa', '/ˈko.sa/'),             -- "what" (thing interrogative)
+('che cosa', 'pronoun', 'ke KO-sa', '/ke ˈko.sa/');   -- "what" (alternative form)
+
+-- Forms: No morphological variations for these interrogatives (invariable)
+-- chi, cosa, and che cosa do not decline or agree
+```
+
+#### Complete Metadata Assignment
+```sql
+-- Pronoun type classification (interrogative)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(chi_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(cosa_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(che_cosa_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'interrogative'));
+
+-- Interrogative function (cross-word-type filtering)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(chi_id, 'metaattr056', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(cosa_id, 'metaattr056', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(che_cosa_id, 'metaattr056', (SELECT id FROM meta_values WHERE value = 'interrogative'));
+
+-- Pronoun form classification (all full forms)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(chi_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
+(cosa_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
+(che_cosa_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full'));
+
+-- Case system (full case - can function in various positions)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(chi_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case')),     -- Chi è? Chi vedi? A chi parli?
+(cosa_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case')),    -- Cosa fai? Cosa vedi? Di cosa parli?
+(che_cosa_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case'));
+
+-- Gender metadata (common-gender - can refer to any gender)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(chi_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(cosa_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(che_cosa_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender'));
+
+-- Number metadata (singular - invariable forms)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(chi_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
+(cosa_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
+(che_cosa_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular'));
+
+-- Person metadata (third person for question formation)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(chi_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(cosa_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(che_cosa_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona'));
+
+-- CEFR levels (A1 - fundamental question words)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(chi_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
+(cosa_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
+(che_cosa_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1'));
+
+-- Frequency tier (top100 - essential question words)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+(chi_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
+(cosa_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
+(che_cosa_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')); -- slightly less frequent
+```
+
+#### Translation Examples
+```sql
+-- Chi - person interrogation
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+(chi_id, 'who', 'Subject form: Chi è? (Who is it?)'),
+(chi_id, 'whom', 'Object form: Chi vedi? (Whom do you see?)'),
+(chi_id, 'whose', 'With prepositions: Di chi è? (Whose is it?)');
+
+-- Cosa - thing interrogation
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+(cosa_id, 'what', 'Subject/object form: Cosa fai? (What are you doing?)'),
+(cosa_id, 'what', 'With prepositions: Di cosa parli? (What are you talking about?)');
+
+-- Che cosa - alternative thing interrogation
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+(che_cosa_id, 'what', 'Alternative to cosa - slightly more formal: Che cosa vuoi? (What do you want?)');
+```
+
+### 4.8 Implementation Completeness Verification
 
 This section provides comprehensive verification of the complete pronoun implementation, ensuring all metadata coverage, form-level architecture, and SQL requirements are properly addressed.
 
-#### 4.7.1 Metadata Coverage Verification
+#### 4.8.1 Metadata Coverage Verification
 
 The following critical metadata attributes have complete coverage across all pronoun categories:
 
@@ -982,7 +1083,7 @@ The following critical metadata attributes have complete coverage across all pro
   - Usage priority properly established from essential pronouns (top100) to specialized forms (top2500)
   - Learning efficiency supported through frequency-based presentation
 
-#### 4.7.2 Form-Level Architecture Verification
+#### 4.8.2 Form-Level Architecture Verification
 
 The pronoun system implements complete form coverage across all six major categories:
 
@@ -1023,7 +1124,13 @@ The pronoun system implements complete form coverage across all six major catego
   - Distinction from demonstrative determiners properly maintained
   - Neuter demonstrative (ciò) properly classified
 
-#### 4.7.3 Ready-to-Execute SQL Status
+- **✅ Interrogative Pronouns (3 base entries)**
+  - 3 base entries covering essential question formation (chi, cosa, che cosa)
+  - Cross-word-type interrogative function properly marked
+  - Complete case system for various question contexts
+  - Integration with broader question word system documented
+
+#### 4.8.3 Ready-to-Execute SQL Status
 
 All implementation examples meet production-ready standards:
 
@@ -1047,11 +1154,11 @@ All implementation examples meet production-ready standards:
   - Both phonetic_pronunciation and ipa_pronunciation properly populated
   - Audio learning support enabled through complete phonetic coverage
 
-#### 4.7.4 Implementation Completeness Summary
+#### 4.8.4 Implementation Completeness Summary
 
 The pronoun architecture represents a fully specified, production-ready implementation covering:
 
-- **65+ total base entries** across six pronoun categories
+- **68+ total base entries** across seven pronoun categories
 - **Complete metadata coverage** for all critical linguistic attributes
 - **Systematic form generation** following universal morphological patterns
 - **Educational progression** from A1 basic personal pronouns to C2 advanced constructions
