@@ -162,7 +162,7 @@ Given the highly irregular case patterns, clitic positioning rules, and suppleti
 ```sql
 -- Create pronoun_type attribute
 INSERT INTO meta_attributes (stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
-VALUES ('metaattr040', 'pronoun_type', 'Pronoun Type', 'Functional classification of Italian pronouns', 'word', 'word', 'ANY_MATCH', true);
+VALUES ((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), 'pronoun_type', 'Pronoun Type', 'Functional classification of Italian pronouns', 'word', 'word', 'ANY_MATCH', true);
 
 -- Create pronoun_type values
 INSERT INTO meta_values (attribute_id, value, shorthand, description, sort_order, is_active) VALUES
@@ -175,7 +175,7 @@ INSERT INTO meta_values (attribute_id, value, shorthand, description, sort_order
 
 -- Create syntactic_function attribute
 INSERT INTO meta_attributes (stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
-VALUES ('metaattr041', 'syntactic_function', 'Syntactic Function', 'Grammatical role of pronoun in sentence (required for multiple translations)', 'translation', 'translation', 'ANY_MATCH', true);
+VALUES ((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), 'syntactic_function', 'Syntactic Function', 'Grammatical role of pronoun in sentence (required for multiple translations)', 'translation', 'translation', 'ANY_MATCH', true);
 
 -- Create syntactic_function values
 INSERT INTO meta_values (attribute_id, value, shorthand, description, sort_order, is_active) VALUES
@@ -278,7 +278,7 @@ INSERT INTO word_translations (word_id, translation_text, syntactic_function) VA
 
 **Architecture Strategy**: Each major semantic distinction = separate entry, case forms = word forms
 
-##### Dictionary Entries and Forms
+##### Dictionary Entries and Translations
 ```sql
 -- Dictionary entries: Different semantic functions (subject vs object)
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
@@ -288,102 +288,124 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('noi', 'pronoun', 'NOH-ee', '/ˈno.i/'),     -- First person plural subject
 ('ci', 'pronoun', 'CHEE', '/tʃi/');          -- First person plural clitic
 
--- Forms: Case and positional variations
-INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
--- No forms needed for 'io' - nominative only
--- No forms needed for 'me' - accusative only
-(mi_id, 'mi', 'clitic_dative', 'MEE', '/mi/'),     -- same form, different function
-(mi_id, 'mi', 'clitic_accusative', 'MEE', '/mi/'), -- same form, different function
--- No additional forms for 'noi' - nominative only
-(ci_id, 'ci', 'clitic_dative', 'CHEE', '/tʃi/'),   -- same form, different function
-(ci_id, 'ci', 'clitic_accusative', 'CHEE', '/tʃi/'), -- same form, different function
-(ci_id, 'ci', 'reflexive', 'CHEE', '/tʃi/');       -- reflexive function
+-- Translations with comprehensive usage notes and syntactic function metadata
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+-- 'io' - subject pronoun
+(io_id, 'I', 'Subject form only. Used before verbs: "Io parlo" (I speak). Often omitted in Italian due to verb conjugation indicating person: "Parlo" (I speak).'),
+
+-- 'me' - stressed object pronoun
+(me_id, 'me', 'Stressed object form used after prepositions and for emphasis: "con me" (with me), "È per me" (It\'s for me). Cannot be used as clitic.'),
+
+-- 'mi' - clitic pronoun with multiple functions
+(mi_id, 'me', 'Direct object clitic pronoun: "Mi vede" (He sees me). Appears before conjugated verbs, after infinitives (vedermi). Unstressed form.'),
+(mi_id, 'to me', 'Indirect object clitic pronoun: "Mi parla" (He speaks to me). Expresses recipient or beneficiary of action. Pre-verbal: "Mi scrive", post-verbal: "scrivermi".'),
+(mi_id, 'myself', 'Reflexive clitic pronoun: "Mi lavo" (I wash myself). Indicates action performed on oneself. Essential for Italian reflexive verbs.'),
+
+-- 'noi' - first person plural subject
+(noi_id, 'we', 'First person plural subject pronoun: "Noi parliamo" (We speak). Can be stressed for emphasis or contrast: "Noi andiamo, voi restate" (We go, you stay).'),
+
+-- 'ci' - first person plural clitic with multiple functions
+(ci_id, 'us', 'Direct object clitic pronoun: "Ci vede" (He sees us). First person plural unstressed form. Pre-verbal with finite verbs, post-verbal with infinitives.'),
+(ci_id, 'to us', 'Indirect object clitic pronoun: "Ci parla" (He speaks to us). Expresses plural recipient or beneficiary. Position follows clitic placement rules.'),
+(ci_id, 'ourselves', 'Reflexive clitic pronoun: "Ci laviamo" (We wash ourselves). First person plural reflexive form for actions performed on the group.'),
+(ci_id, 'there', 'Locative clitic pronoun: "Ci andiamo" (We go there). Replaces prepositional phrases with "a" + place. Common in spoken Italian.');
+
+-- Translation-level metadata for syntactic differentiation
+INSERT INTO entity_meta_values (entity_id, entity_type, meta_attribute_id, meta_value_id) VALUES
+-- 'mi' syntactic functions
+((SELECT id FROM word_translations WHERE word_id = mi_id AND translation_text = 'me'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'direct_object')),
+((SELECT id FROM word_translations WHERE word_id = mi_id AND translation_text = 'to me'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'indirect_object')),
+((SELECT id FROM word_translations WHERE word_id = mi_id AND translation_text = 'myself'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'reflexive')),
+
+-- 'ci' syntactic functions
+((SELECT id FROM word_translations WHERE word_id = ci_id AND translation_text = 'us'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'direct_object')),
+((SELECT id FROM word_translations WHERE word_id = ci_id AND translation_text = 'to us'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'indirect_object')),
+((SELECT id FROM word_translations WHERE word_id = ci_id AND translation_text = 'ourselves'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'reflexive')),
+((SELECT id FROM word_translations WHERE word_id = ci_id AND translation_text = 'there'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'locative'));
+
+-- No word_forms needed for same-spelling pronunciations - handled via translations
 ```
 
 ##### Complete Metadata Assignment
 ```sql
 -- Pronoun type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(me_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(mi_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(noi_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(ci_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal'));
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal'));
 
 -- Pronoun form classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(me_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(mi_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'clitic')),
-(noi_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(ci_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'clitic'));
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'clitic')),
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'clitic'));
 
 -- Case system classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(me_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(mi_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(noi_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(ci_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'accusative_dative'));
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042')), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042')), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042')), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042')), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042')), (SELECT id FROM meta_values WHERE value = 'accusative_dative'));
 
 -- Person metadata (critical for personal pronouns)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'prima-persona')),
-(me_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'prima-persona')),
-(mi_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'prima-persona')),
-(noi_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'prima-persona')),
-(ci_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'prima-persona'));
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014')), (SELECT id FROM meta_values WHERE value = 'prima-persona')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014')), (SELECT id FROM meta_values WHERE value = 'prima-persona')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014')), (SELECT id FROM meta_values WHERE value = 'prima-persona')),
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014')), (SELECT id FROM meta_values WHERE value = 'prima-persona')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014')), (SELECT id FROM meta_values WHERE value = 'prima-persona'));
 
 -- Case metadata for base words
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'nominative')),
-(me_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'accusative')),
-(mi_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'accusative')),  -- primary function
-(noi_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'nominative')),
-(ci_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'accusative')); -- primary function
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030')), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030')), (SELECT id FROM meta_values WHERE value = 'accusative')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030')), (SELECT id FROM meta_values WHERE value = 'accusative')),  -- primary function
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030')), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030')), (SELECT id FROM meta_values WHERE value = 'accusative')); -- primary function
 
 -- Number metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(me_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(mi_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(noi_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(ci_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural'));
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012')), (SELECT id FROM meta_values WHERE value = 'singular')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012')), (SELECT id FROM meta_values WHERE value = 'singular')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012')), (SELECT id FROM meta_values WHERE value = 'singular')),
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012')), (SELECT id FROM meta_values WHERE value = 'plural')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012')), (SELECT id FROM meta_values WHERE value = 'plural'));
 
 -- Gender metadata (first person is common-gender)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(me_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(mi_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(noi_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(ci_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender'));
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011')), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011')), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011')), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011')), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011')), (SELECT id FROM meta_values WHERE value = 'common-gender'));
 
 -- CEFR levels (A1 - fundamental)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
-(me_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
-(mi_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
-(noi_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
-(ci_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1'));
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003')), (SELECT id FROM meta_values WHERE value = 'A1')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003')), (SELECT id FROM meta_values WHERE value = 'A1')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003')), (SELECT id FROM meta_values WHERE value = 'A1')),
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003')), (SELECT id FROM meta_values WHERE value = 'A1')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003')), (SELECT id FROM meta_values WHERE value = 'A1'));
 
 -- Frequency tier (top 100 - most essential)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
-(me_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
-(mi_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
-(noi_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
-(ci_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100'));
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007')), (SELECT id FROM meta_values WHERE value = 'top100')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007')), (SELECT id FROM meta_values WHERE value = 'top100')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007')), (SELECT id FROM meta_values WHERE value = 'top100')),
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007')), (SELECT id FROM meta_values WHERE value = 'top100')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007')), (SELECT id FROM meta_values WHERE value = 'top100'));
 
--- Form-level metadata for case function variations
-INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(mi_dative_form_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'dative')),
-(ci_dative_form_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'dative')),
-(ci_reflexive_form_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'reflexive'));
+-- Form-level metadata no longer needed - same-spelling handled via translations
 ```
 
 #### 4.1.2 Second Person Pronouns
 
-##### Dictionary Entries and Forms
+##### Dictionary Entries and Translations
 ```sql
 -- Dictionary entries: Different semantic functions
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
@@ -393,39 +415,66 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('voi', 'pronoun', 'VOH-ee', '/ˈvo.i/'),      -- Second person plural subject
 ('vi', 'pronoun', 'VEE', '/vi/');             -- Second person plural clitic
 
--- Forms: Case and positional variations
-INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(ti_id, 'ti', 'clitic_dative', 'TEE', '/ti/'),
-(ti_id, 'ti', 'clitic_accusative', 'TEE', '/ti/'),
-(vi_id, 'vi', 'clitic_dative', 'VEE', '/vi/'),
-(vi_id, 'vi', 'clitic_accusative', 'VEE', '/vi/'),
-(vi_id, 'vi', 'reflexive', 'VEE', '/vi/');
+-- Translations with comprehensive usage notes and syntactic function metadata
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+-- 'tu' - second person subject pronoun
+(tu_id, 'you', 'Informal second person subject: "Tu parli" (You speak). Used with friends, family, children. Contrasts with formal "Lei". Often omitted: "Parli bene" (You speak well).'),
+
+-- 'te' - stressed object pronoun
+(te_id, 'you', 'Stressed second person object after prepositions and for emphasis: "con te" (with you), "per te" (for you). Cannot be used as unstressed clitic.'),
+
+-- 'ti' - clitic pronoun with multiple functions
+(ti_id, 'you', 'Direct object clitic pronoun: "Ti vedo" (I see you). Appears before conjugated verbs, after infinitives (vederti). Unstressed informal form.'),
+(ti_id, 'to you', 'Indirect object clitic pronoun: "Ti parlo" (I speak to you). Expresses recipient of action. Pre-verbal: "Ti scrivo", post-verbal: "scriverti".'),
+(ti_id, 'yourself', 'Reflexive clitic pronoun: "Ti lavi" (You wash yourself). Second person singular reflexive for actions on oneself.'),
+
+-- 'voi' - second person plural subject
+(voi_id, 'you', 'Second person plural subject pronoun: "Voi parlate" (You [all] speak). Can be formal singular in traditional usage. Stressed for emphasis or contrast.'),
+
+-- 'vi' - second person plural clitic with multiple functions
+(vi_id, 'you', 'Direct object clitic pronoun: "Vi vedo" (I see you [all]). Second person plural unstressed form. Pre-verbal with finite verbs, post-verbal with infinitives.'),
+(vi_id, 'to you', 'Indirect object clitic pronoun: "Vi parlo" (I speak to you [all]). Expresses plural recipient. Follows standard clitic placement rules.'),
+(vi_id, 'yourselves', 'Reflexive clitic pronoun: "Vi lavate" (You [all] wash yourselves). Second person plural reflexive form for group actions on themselves.');
+
+-- Translation-level metadata for syntactic differentiation
+INSERT INTO entity_meta_values (entity_id, entity_type, meta_attribute_id, meta_value_id) VALUES
+-- 'ti' syntactic functions
+((SELECT id FROM word_translations WHERE word_id = ti_id AND translation_text = 'you'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'direct_object')),
+((SELECT id FROM word_translations WHERE word_id = ti_id AND translation_text = 'to you'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'indirect_object')),
+((SELECT id FROM word_translations WHERE word_id = ti_id AND translation_text = 'yourself'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'reflexive')),
+
+-- 'vi' syntactic functions
+((SELECT id FROM word_translations WHERE word_id = vi_id AND translation_text = 'you'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'direct_object')),
+((SELECT id FROM word_translations WHERE word_id = vi_id AND translation_text = 'to you'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'indirect_object')),
+((SELECT id FROM word_translations WHERE word_id = vi_id AND translation_text = 'yourselves'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'reflexive'));
+
+-- No word_forms needed for same-spelling pronunciations - handled via translations
 ```
 
 ##### Complete Metadata Assignment
 ```sql
 -- Pronoun type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tu_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(te_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(ti_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(voi_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(vi_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal'));
+(tu_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(te_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(ti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(voi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(vi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal'));
 
 -- Person metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tu_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
-(te_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
-(ti_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
-(voi_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
-(vi_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'seconda-persona'));
+(tu_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
+(te_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
+(ti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
+(voi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'seconda-persona')),
+(vi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'seconda-persona'));
 
 -- [Continue with similar pattern for pronoun form, case system, case, number, gender, CEFR, frequency]
 ```
 
 #### 4.1.3 Third Person Pronouns
 
-##### Dictionary Entries and Forms
+##### Dictionary Entries and Translations
 ```sql
 -- Dictionary entries: Gender and case distinctions
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
@@ -437,7 +486,7 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 -- Feminine forms
 ('lei', 'pronoun', 'LEH-ee', '/ˈle.i/'),      -- Third person feminine subject
 ('la', 'pronoun', 'LAH', '/la/'),             -- Third person feminine direct object clitic
-('le', 'pronoun', 'LEH', '/le/'),             -- Third person feminine indirect/plural direct object clitic
+('le', 'pronoun', 'LEH', '/le/'),             -- Third person feminine clitic (multiple functions)
 -- Reflexive
 ('si', 'pronoun', 'SEE', '/si/'),             -- Third person reflexive clitic
 -- Plural subjects
@@ -445,12 +494,87 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('essi', 'pronoun', 'ES-see', '/ˈes.si/'),    -- Third person masculine plural subject (formal)
 ('esse', 'pronoun', 'ES-se', '/ˈes.se/');     -- Third person feminine plural subject (formal)
 
--- Forms: Elision and positional variations
+-- Translations with comprehensive usage notes and syntactic function metadata
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+-- 'lui' - masculine subject
+(lui_id, 'he', 'Third person masculine subject pronoun: "Lui parla" (He speaks). Can be stressed for emphasis or contrast. Used for male persons and masculine nouns.'),
+(lui_id, 'him', 'Stressed masculine object after prepositions: "con lui" (with him), "per lui" (for him). Cannot be used as unstressed clitic.'),
+
+-- 'lo' - masculine direct object clitic
+(lo_id, 'him', 'Direct object clitic for masculine animate: "Lo vedo" (I see him). Pre-verbal with finite verbs, post-verbal with infinitives (vederlo).'),
+(lo_id, 'it', 'Direct object clitic for masculine inanimate: "Lo compro" (I buy it). Refers to masculine nouns like "libro", "tavolo".'),
+
+-- 'gli' - masculine indirect object clitic
+(gli_id, 'to him', 'Indirect object clitic for masculine: "Gli parlo" (I speak to him). Expresses recipient or beneficiary. Can combine with direct object clitics.'),
+(gli_id, 'to them', 'Indirect object clitic for plural (both genders): "Gli scrivo" (I write to them). Modern usage replaces "loro" in spoken Italian.'),
+
+-- 'li' - masculine plural direct object clitic
+(li_id, 'them', 'Direct object clitic for masculine plural: "Li vedo" (I see them). Used for masculine animate/inanimate plural nouns.'),
+
+-- 'lei' - feminine subject with formal usage
+(lei_id, 'she', 'Third person feminine subject pronoun: "Lei parla" (She speaks). Used for female persons and feminine nouns.'),
+(lei_id, 'you', 'Formal second person subject pronoun: "Lei è gentile" (You are kind). Capitalized in writing. Replaces informal "tu".'),
+(lei_id, 'her', 'Stressed feminine object after prepositions: "con lei" (with her), "per lei" (for her). Cannot be used as unstressed clitic.'),
+
+-- 'la' - feminine direct object clitic
+(la_id, 'her', 'Direct object clitic for feminine animate: "La vedo" (I see her). Pre-verbal with finite verbs, post-verbal with infinitives.'),
+(la_id, 'it', 'Direct object clitic for feminine inanimate: "La compro" (I buy it). Refers to feminine nouns like "casa", "macchina".'),
+
+-- 'le' - feminine clitic with multiple functions
+(le_id, 'to her', 'Indirect object clitic for feminine singular: "Le parlo" (I speak to her). Expresses recipient of action to female person.'),
+(le_id, 'them', 'Direct object clitic for feminine plural: "Le vedo" (I see them [feminine]). Used for feminine animate/inanimate plural nouns.'),
+
+-- 'si' - reflexive clitic
+(si_id, 'himself', 'Third person masculine singular reflexive: "Si lava" (He washes himself). For actions performed on masculine subject.'),
+(si_id, 'herself', 'Third person feminine singular reflexive: "Si lava" (She washes herself). For actions performed on feminine subject.'),
+(si_id, 'themselves', 'Third person plural reflexive: "Si lavano" (They wash themselves). For actions performed by group on themselves.'),
+(si_id, 'oneself', 'Impersonal reflexive: "Si dice" (One says, It is said). Used in impersonal constructions and passive meanings.'),
+
+-- 'loro' - plural subject and object
+(loro_id, 'they', 'Third person plural subject pronoun: "Loro parlano" (They speak). Invariable for gender. Can be stressed for emphasis.'),
+(loro_id, 'them', 'Stressed plural object after prepositions: "con loro" (with them). Cannot be used as unstressed clitic - use "li/le" instead.'),
+(loro_id, 'to them', 'Indirect object (formal/literary): "Parlo loro" (I speak to them). In modern usage, "gli" is preferred in speech.'),
+
+-- 'essi' and 'esse' - formal plural subjects
+(essi_id, 'they', 'Third person masculine plural subject (formal): "Essi partono" (They leave). Literary/formal register, rarely used in speech.'),
+(esse_id, 'they', 'Third person feminine plural subject (formal): "Esse partono" (They [feminine] leave). Literary/formal register, rarely used in speech.');
+
+-- Translation-level metadata for syntactic differentiation
+INSERT INTO entity_meta_values (entity_id, entity_type, meta_attribute_id, meta_value_id) VALUES
+-- 'lui' syntactic functions
+((SELECT id FROM word_translations WHERE word_id = lui_id AND translation_text = 'he'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'subject')),
+((SELECT id FROM word_translations WHERE word_id = lui_id AND translation_text = 'him'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'prepositional_object')),
+
+-- 'lo' syntactic functions
+((SELECT id FROM word_translations WHERE word_id = lo_id AND translation_text = 'him'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'direct_object')),
+((SELECT id FROM word_translations WHERE word_id = lo_id AND translation_text = 'it'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'direct_object')),
+
+-- 'gli' syntactic functions
+((SELECT id FROM word_translations WHERE word_id = gli_id AND translation_text = 'to him'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'indirect_object')),
+((SELECT id FROM word_translations WHERE word_id = gli_id AND translation_text = 'to them'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'indirect_object')),
+
+-- 'le' syntactic functions
+((SELECT id FROM word_translations WHERE word_id = le_id AND translation_text = 'to her'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'indirect_object')),
+((SELECT id FROM word_translations WHERE word_id = le_id AND translation_text = 'them'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'direct_object')),
+
+-- 'si' syntactic functions
+((SELECT id FROM word_translations WHERE word_id = si_id AND translation_text = 'himself'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'reflexive')),
+((SELECT id FROM word_translations WHERE word_id = si_id AND translation_text = 'herself'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'reflexive')),
+((SELECT id FROM word_translations WHERE word_id = si_id AND translation_text = 'themselves'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'reflexive')),
+((SELECT id FROM word_translations WHERE word_id = si_id AND translation_text = 'oneself'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'impersonal')),
+
+-- 'loro' syntactic functions
+((SELECT id FROM word_translations WHERE word_id = loro_id AND translation_text = 'they'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'subject')),
+((SELECT id FROM word_translations WHERE word_id = loro_id AND translation_text = 'them'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'prepositional_object')),
+((SELECT id FROM word_translations WHERE word_id = loro_id AND translation_text = 'to them'), 'translation', (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'indirect_object'));
+
+-- Word forms kept only for elision (actual morphological change)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(lo_id, "l'", 'elision', 'EL', '/l/'),        -- before vowels
-(la_id, "l'", 'elision', 'EL', '/l/'),        -- before vowels
-(si_id, "s'", 'elision', 'ES', '/s/'),        -- before vowels
-(si_id, 'si', 'reflexive_plural', 'SEE', '/si/'); -- plural function (same form)
+(lo_id, "l'", 'elision', 'EL', '/l/'),        -- lo → l' before vowels (actual morphological change)
+(la_id, "l'", 'elision', 'EL', '/l/'),        -- la → l' before vowels (actual morphological change)
+(si_id, "s'", 'elision', 'ES', '/s/');        -- si → s' before vowels (actual morphological change)
+
+-- No forms for same-spelling different functions - handled via translations
 ```
 
 ##### Complete Metadata Assignment
@@ -458,44 +582,44 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 -- Third person pronouns require gender distinctions
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 -- Gender metadata
-(lui_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(lo_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(gli_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(li_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(lei_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(la_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(le_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(si_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(loro_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(essi_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(esse_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine'));
+(lui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(lo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(gli_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(li_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(lei_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(la_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(le_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(si_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(loro_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(essi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(esse_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine'));
 
 -- Person metadata (all third person)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(lui_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(lo_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(gli_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(li_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(lei_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(la_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(le_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(si_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(loro_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(essi_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(esse_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona'));
+(lui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(lo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(gli_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(li_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(lei_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(la_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(le_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(si_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(loro_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(essi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(esse_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona'));
 
 -- Case metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(lui_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'nominative')),
-(lo_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'accusative')),
-(gli_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'dative')),
-(li_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'accusative')),
-(lei_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'nominative')),
-(la_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'accusative')),
-(le_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'dative')),    -- primary function
-(loro_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'nominative')),
-(essi_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'nominative')),
-(esse_id, 'metaattr030', (SELECT id FROM meta_values WHERE value = 'nominative'));
+(lui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(lo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'accusative')),
+(gli_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'dative')),
+(li_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'accusative')),
+(lei_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(la_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'accusative')),
+(le_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'dative')),    -- primary function
+(loro_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(essi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(esse_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'nominative'));
 
 -- [Continue with pronoun type, pronoun form, case system, number, CEFR, frequency metadata]
 ```
@@ -546,47 +670,47 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- All combined clitics are personal pronouns with clitic form
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(glielo_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(gliela_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(glieli_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(gliele_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(gliene_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
+(glielo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(gliela_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(glieli_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(gliele_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(gliene_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
 -- [Continue for all combined clitic forms]
 
 -- All combined clitics have clitic form type
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(glielo_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'clitic')),
-(gliela_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'clitic')),
-(glieli_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'clitic')),
-(gliele_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'clitic')),
-(gliene_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'clitic')),
+(glielo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'clitic')),
+(gliela_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'clitic')),
+(glieli_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'clitic')),
+(gliele_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'clitic')),
+(gliene_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'clitic')),
 -- [Continue for all combined clitic forms]
 
 -- All combined clitics involve accusative_dative case system
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(glielo_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(gliela_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(glielo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(gliela_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
 -- [Continue for all combined clitic forms]
 
 -- Gender metadata based on direct object component
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(glielo_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(gliela_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(glieli_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(gliele_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(gliene_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(glielo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(gliela_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(glieli_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(gliele_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(gliene_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
 -- [Continue with appropriate gender assignments]
 
 -- CEFR levels (B1-B2 - advanced clitic combinations)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(glielo_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1')),
-(gliela_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1')),
+(glielo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B1')),
+(gliela_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B1')),
 -- [Continue with B1-B2 levels for combined clitics]
 
 -- Frequency tier (top1000-top2500 - moderately frequent)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(glielo_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top1000')),
-(gliela_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top1000'));
+(glielo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top1000')),
+(gliela_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top1000'));
 -- [Continue with appropriate frequency assignments]
 ```
 
@@ -609,48 +733,48 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Pronoun type classification (personal due to pronominal function)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal'));
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal'));
 
 -- Pronoun form classification (clitic)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'clitic'));
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'clitic'));
 
 -- Particle function metadata (multiple functions)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, 'metaattr049', (SELECT id FROM meta_values WHERE value = 'partitive')),  -- primary function
-(ne_id, 'metaattr049', (SELECT id FROM meta_values WHERE value = 'locative')),
-(ne_id, 'metaattr049', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(ne_id, 'metaattr049', (SELECT id FROM meta_values WHERE value = 'indefinite'));
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr049'), (SELECT id FROM meta_values WHERE value = 'partitive')),  -- primary function
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr049'), (SELECT id FROM meta_values WHERE value = 'locative')),
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr049'), (SELECT id FROM meta_values WHERE value = 'possessive')),
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr049'), (SELECT id FROM meta_values WHERE value = 'indefinite'));
 
 -- Gender metadata (common-gender - works with all)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender'));
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender'));
 
 -- Number metadata (common - works with singular and plural)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')); -- default, but flexible
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')); -- default, but flexible
 
 -- Person metadata (third person function)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona'));
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona'));
 
 -- Case system (special particle case system)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case')); -- complex case functions
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')); -- complex case functions
 
 -- CEFR level (A2-B1 - important intermediate concept)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1'));
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B1'));
 
 -- Frequency tier (top500 - very common particle)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500'));
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500'));
 
 -- Form-level metadata for elision
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(n_elision_form_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'personal')),
-(n_elision_form_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'clitic')),
-(n_elision_form_id, 'metaattr049', (SELECT id FROM meta_values WHERE value = 'partitive'));
+(n_elision_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
+(n_elision_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'clitic')),
+(n_elision_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr049'), (SELECT id FROM meta_values WHERE value = 'partitive'));
 ```
 
 ### 4.4 Indefinite Pronouns - Complete Implementation
@@ -676,6 +800,49 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('ciascuno', 'pronoun', 'chas-KU-no', '/tʃasˈku.no/'), -- "each one"
 ('chiunque', 'pronoun', 'kee-UN-kwe', '/kiˈun.kwe/'); -- "whoever"
 
+-- Translations with comprehensive usage notes
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+-- 'tale' - qualitative indefinite
+(tale_id, 'such a one', 'Qualitative indefinite referring to someone of particular quality or character: "Tale è la situazione" (Such is the situation). Often used in formal/literary contexts.'),
+
+-- 'alcuni/alcune' - quantitative indefinites
+(alcuni_id, 'some', 'Masculine plural quantitative indefinite: "Alcuni sono partiti" (Some have left). Refers to an unspecified number from a larger group. Always plural.'),
+(alcune_id, 'some', 'Feminine plural quantitative indefinite: "Alcune sono rimaste" (Some [feminine] have stayed). Gender-specific reference to unspecified quantity.'),
+
+-- 'qualcuno' - selective indefinite
+(qualcuno_id, 'someone', 'Selective indefinite for persons: "Qualcuno ha chiamato" (Someone called). Used only for people, not things. Invariable form.'),
+(qualcuno_id, 'anybody', 'In questions/negatives: "Conosci qualcuno?" (Do you know anybody?). Used in interrogative and conditional contexts.'),
+
+-- 'qualcosa' - selective indefinite
+(qualcosa_id, 'something', 'Selective indefinite for things: "Qualcosa è cambiato" (Something has changed). Used only for objects/concepts, not people. Invariable form.'),
+(qualcosa_id, 'anything', 'In questions/negatives: "Hai visto qualcosa?" (Have you seen anything?). Used in interrogative and conditional contexts.'),
+
+-- 'tutto' - totality indefinite (pronoun usage)
+(tutto_id, 'everything', 'Total indefinite when used as pronoun: "Tutto è finito" (Everything is finished). Refers to entirety of things/concepts.'),
+
+-- 'tutti/tutte' - collective indefinites
+(tutti_id, 'everyone', 'Masculine collective indefinite: "Tutti sono arrivati" (Everyone has arrived). Includes mixed groups or masculine-specific groups.'),
+(tutte_id, 'everyone', 'Feminine collective indefinite: "Tutte sono arrivate" (Everyone [feminine] has arrived). Used for exclusively feminine groups.'),
+
+-- 'niente/nulla' - negative indefinites
+(niente_id, 'nothing', 'Negative indefinite: "Non ho visto niente" (I saw nothing). More common in spoken Italian. Invariable form.'),
+(nulla_id, 'nothing', 'Negative indefinite (formal): "Non sappiamo nulla" (We know nothing). More formal/literary than "niente". Invariable form.'),
+
+-- 'nessuno' - negative indefinite for persons
+(nessuno_id, 'nobody', 'Negative indefinite for people: "Nessuno è venuto" (Nobody came). Used only for persons, not things. Invariable form.'),
+(nessuno_id, 'no one', 'Alternative translation: "Nessuno lo sa" (No one knows it). Emphasizes complete absence of people.'),
+
+-- 'ognuno' - distributive indefinite
+(ognuno_id, 'everyone', 'Distributive indefinite emphasizing individuals: "Ognuno ha il suo posto" (Everyone has their place). Focuses on individual members.'),
+(ognuno_id, 'each one', 'Emphasizing individual identity: "Ognuno deve decidere" (Each one must decide). Distributive meaning.'),
+
+-- 'ciascuno' - distributive indefinite (formal)
+(ciascuno_id, 'each one', 'Formal distributive indefinite: "Ciascuno riceverà una copia" (Each one will receive a copy). More formal than "ognuno".'),
+
+-- 'chiunque' - universal indefinite
+(chiunque_id, 'whoever', 'Universal indefinite: "Chiunque può partecipare" (Whoever can participate). Open to any person without restriction.'),
+(chiunque_id, 'anyone', 'In any context: "Chiunque lo sa" (Anyone knows it). Universal availability or capability.');
+
 -- Forms: Gender and number variations (where applicable)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
 (tale_id, 'tali', 'plural', 'TAH-li', '/ˈta.li/'); -- tale → tali
@@ -688,147 +855,147 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Pronoun type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tale_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(alcuni_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(alcune_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(qualcuno_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(qualcosa_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(tutto_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(tutti_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(tutte_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(niente_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(nulla_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(nessuno_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(ognuno_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(ciascuno_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(chiunque_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite'));
+(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite'));
 
 -- Indefinite type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tale_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'qualitative')),
-(alcuni_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(alcune_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(qualcuno_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'selective')),
-(qualcosa_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'selective')),
-(tutto_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(tutti_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(tutte_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(niente_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(nulla_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(nessuno_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'selective')),
-(ognuno_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'selective')),
-(ciascuno_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'selective')),
-(chiunque_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'selective'));
+(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective')),
+(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective')),
+(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective')),
+(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective')),
+(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective')),
+(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective'));
 
 -- Pronoun form classification (all full forms)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tale_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(alcuni_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(alcune_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(qualcuno_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(qualcosa_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(tutto_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(tutti_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(tutte_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(niente_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(nulla_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(nessuno_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(ognuno_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(ciascuno_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(chiunque_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full'));
+(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full'));
 
 -- Gender metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tale_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(alcuni_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(alcune_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(qualcuno_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(qualcosa_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(tutto_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(tutti_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(tutte_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(niente_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(nulla_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(nessuno_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(ognuno_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(ciascuno_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(chiunque_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender'));
+(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender'));
 
 -- Number metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tale_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(alcuni_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(alcune_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(qualcuno_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(qualcosa_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(tutto_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(tutti_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(tutte_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(niente_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(nulla_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(nessuno_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(ognuno_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(ciascuno_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(chiunque_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular'));
+(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural')),
+(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural')),
+(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural')),
+(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural')),
+(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular'));
 
 -- Case system (most are nominative only)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tale_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case')), -- can take various cases
-(alcuni_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(alcune_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(qualcuno_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(qualcosa_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(tutto_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(tutti_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(tutte_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(niente_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(nulla_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(nessuno_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(ognuno_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(ciascuno_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(chiunque_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case'));
+(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- can take various cases
+(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case'));
 
 -- CEFR levels (B1-B2 - intermediate to advanced)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tale_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B2')),
-(alcuni_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1')),
-(alcune_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1')),
-(qualcuno_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(qualcosa_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(tutto_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(tutti_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(tutte_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(niente_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(nulla_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1')),
-(nessuno_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(ognuno_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1')),
-(ciascuno_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B2')),
-(chiunque_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B2'));
+(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B2')),
+(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B1')),
+(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B1')),
+(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2')),
+(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2')),
+(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2')),
+(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2')),
+(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2')),
+(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2')),
+(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B1')),
+(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2')),
+(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B1')),
+(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B2')),
+(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B2'));
 
 -- Frequency tier
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tale_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top2500')),
-(alcuni_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top1000')),
-(alcune_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top1000')),
-(qualcuno_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(qualcosa_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(tutto_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(tutti_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(tutte_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(niente_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(nulla_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top1000')),
-(nessuno_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(ognuno_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top1000')),
-(ciascuno_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top2500')),
-(chiunque_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top1000'));
+(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top2500')),
+(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top1000')),
+(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top1000')),
+(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top1000')),
+(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top1000')),
+(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top2500')),
+(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top1000'));
 
 -- Form-level metadata for tale → tali
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(tali_form_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(tali_form_id, 'metaattr054', (SELECT id FROM meta_values WHERE value = 'qualitative')),
-(tali_form_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(tali_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(tali_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural'));
+(tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
+(tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural'));
 ```
 
 ### 4.5 Relative Pronouns - Complete Implementation
@@ -844,6 +1011,26 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('quale', 'pronoun', 'KWA-le', '/ˈkwa.le/'),   -- Specific relative masculine/feminine singular
 ('chi', 'pronoun', 'KEE', '/ki/');             -- "who/whoever" (invariable)
 
+-- Translations with comprehensive usage notes
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+-- 'che' - general relative pronoun
+(che_id, 'that', 'Most common relative pronoun, invariable: "Il libro che ho letto" (The book that I read). Can be subject or direct object of relative clause.'),
+(che_id, 'who', 'For people as subject/object: "La persona che ho visto" (The person who I saw). Replaces both "who" and "whom" in English.'),
+(che_id, 'which', 'For things: "La casa che voglio comprare" (The house which I want to buy). Most versatile Italian relative pronoun.'),
+
+-- 'cui' - relative with prepositions
+(cui_id, 'whom', 'Relative pronoun after prepositions for people: "La persona a cui ho parlato" (The person to whom I spoke). Always follows prepositions.'),
+(cui_id, 'which', 'Relative pronoun after prepositions for things: "Il tavolo su cui ho scritto" (The table on which I wrote). Required after all prepositions.'),
+
+-- 'quale' - formal/specific relative
+(quale_id, 'who', 'Formal relative for people (with article): "Il professore il quale insegna" (The professor who teaches). More formal than "che".'),
+(quale_id, 'which', 'Formal relative for things (with article): "La casa la quale è grande" (The house which is large). Used for clarity or formality.'),
+
+-- 'chi' - indefinite relative
+(chi_id, 'who', 'Indefinite relative meaning "the one who": "Chi studia, impara" (Who studies, learns). Combines relative and indefinite functions.'),
+(chi_id, 'whoever', 'Universal meaning: "Chi vuole può venire" (Whoever wants can come). Open-ended reference to any person.'),
+(chi_id, 'the one who', 'More literal translation: "Chi ha fatto questo?" (The one who did this?). Emphasizes the indefinite aspect.');
+
 -- Forms: Gender and number variations for "quale"
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
 (quale_id, 'quali', 'plural', 'KWA-li', '/ˈkwa.li/'); -- quale → quali
@@ -856,66 +1043,66 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Pronoun type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(che_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'relative')),
-(cui_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'relative')),
-(quale_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'relative')),
-(chi_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'relative'));
+(che_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'relative')),
+(cui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'relative')),
+(quale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'relative')),
+(chi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'relative'));
 
 -- Pronoun form classification (all full forms)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(che_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(cui_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(quale_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(chi_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full'));
+(che_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(cui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(quale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(chi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full'));
 
 -- Case system
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(che_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case')), -- subject or object
-(cui_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case')), -- with prepositions
-(quale_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case')), -- various cases
-(chi_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case')); -- various functions
+(che_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- subject or object
+(cui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- with prepositions
+(quale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- various cases
+(chi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')); -- various functions
 
 -- Gender metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(che_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(cui_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(quale_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(chi_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender'));
+(che_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(cui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(quale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(chi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender'));
 
 -- Number metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(che_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(cui_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(quale_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(chi_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular'));
+(che_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(cui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(quale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(chi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular'));
 
 -- Person metadata (third person for relatives)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(che_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(cui_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(quale_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(chi_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona'));
+(che_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(cui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(quale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(chi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona'));
 
 -- CEFR levels (A2-B1)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(che_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(cui_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1')),
-(quale_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1')),
-(chi_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2'));
+(che_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2')),
+(cui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B1')),
+(quale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B1')),
+(chi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2'));
 
 -- Frequency tier
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(che_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
-(cui_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(quale_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top1000')),
-(chi_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500'));
+(che_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top100')),
+(cui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(quale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top1000')),
+(chi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500'));
 
 -- Form-level metadata for quale → quali
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(quali_form_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'relative')),
-(quali_form_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(quali_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(quali_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural'));
+(quali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'relative')),
+(quali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(quali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
+(quali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural'));
 ```
 
 ### 4.6 Demonstrative Pronouns - Complete Implementation
@@ -932,6 +1119,29 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('quella', 'pronoun', 'KWEL-la', '/ˈkwel.la/'), -- "that one" feminine
 ('ciò', 'pronoun', 'CHOH', '/tʃo/');            -- "that" (neuter, invariable)
 
+-- Translations with comprehensive usage notes
+INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
+-- 'questo' - proximal demonstrative masculine
+(questo_id, 'this one', 'Proximal demonstrative for masculine entities near speaker: "Questo è mio" (This one is mine). Used when not modifying a noun directly.'),
+(questo_id, 'this', 'General demonstrative: "Questo non mi piace" (I don\'t like this). Can refer to situations, concepts, or previously mentioned things.'),
+
+-- 'questa' - proximal demonstrative feminine
+(questa_id, 'this one', 'Proximal demonstrative for feminine entities: "Questa è bella" (This one is beautiful). Gender agreement required with feminine referent.'),
+(questa_id, 'this', 'General feminine demonstrative: "Questa è la verità" (This is the truth). Used for feminine nouns or concepts.'),
+
+-- 'quello' - distal demonstrative masculine
+(quello_id, 'that one', 'Distal demonstrative for masculine entities away from speaker: "Quello è suo" (That one is his). Indicates distance or distinction.'),
+(quello_id, 'that', 'General masculine demonstrative: "Quello che dici è vero" (What you say is true). Often in relative constructions.'),
+
+-- 'quella' - distal demonstrative feminine
+(quella_id, 'that one', 'Distal demonstrative for feminine entities: "Quella è cara" (That one is expensive). Distance or contrast with feminine referent.'),
+(quella_id, 'that', 'General feminine demonstrative: "Quella storia è interessante" (That story is interesting). Feminine agreement required.'),
+
+-- 'ciò' - neuter demonstrative
+(ciò_id, 'that', 'Neuter demonstrative for abstract concepts: "Ciò che dici" (That which you say). Used for ideas, situations, or abstract things.'),
+(ciò_id, 'what', 'In relative constructions: "Ciò che voglio" (What I want). Combines demonstrative and relative functions.'),
+(ciò_id, 'this', 'For abstract situations: "Ciò mi preoccupa" (This worries me). Refers to entire situations or concepts.');
+
 -- Forms: Number variations
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
 (questo_id, 'questi', 'plural', 'KWES-ti', '/ˈkwes.ti/'),
@@ -944,82 +1154,82 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Pronoun type classification (demonstrative)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(questa_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(quello_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(quella_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(ciò_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'demonstrative'));
+(questo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(questa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(quello_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(quella_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(ciò_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'demonstrative'));
 
 -- Pronoun form classification (all full forms)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(questa_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(quello_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(quella_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(ciò_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full'));
+(questo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(questa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(quello_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(quella_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
+(ciò_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full'));
 
 -- Case system (nominative only for demonstrative pronouns)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(questa_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(quello_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(quella_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(ciò_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'accusative_dative'));
+(questo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(questa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(quello_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(quella_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(ciò_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative'));
 
 -- Gender metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(questa_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(quello_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(quella_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(ciò_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender'));
+(questo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(questa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(quello_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(quella_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(ciò_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender'));
 
 -- Number metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(questa_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(quello_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(quella_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(ciò_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular'));
+(questo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(questa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(quello_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(quella_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular')),
+(ciò_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'singular'));
 
 -- Person metadata (third person)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(questa_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(quello_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(quella_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(ciò_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona'));
+(questo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(questa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(quello_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(quella_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona')),
+(ciò_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr014'), (SELECT id FROM meta_values WHERE value = 'terza-persona'));
 
 -- CEFR levels (A1-A2)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
-(questa_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
-(quello_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(quella_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A2')),
-(ciò_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'B1'));
+(questo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A1')),
+(questa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A1')),
+(quello_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2')),
+(quella_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'A2')),
+(ciò_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr003'), (SELECT id FROM meta_values WHERE value = 'B1'));
 
 -- Frequency tier
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(questa_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(quello_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(quella_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')),
-(ciò_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500'));
+(questo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(questa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(quello_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(quella_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500')),
+(ciò_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top500'));
 
 -- Form-level metadata for plural forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(questi_form_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(questi_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(questi_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(queste_form_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(queste_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(queste_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(quelli_form_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(quelli_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
-(quelli_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(quelle_form_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(quelle_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
-(quelle_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural'));
+(questi_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(questi_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(questi_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural')),
+(queste_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(queste_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(queste_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural')),
+(quelli_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(quelli_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'masculine')),
+(quelli_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural')),
+(quelle_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(quelle_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'feminine')),
+(quelle_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural'));
 ```
 
 
