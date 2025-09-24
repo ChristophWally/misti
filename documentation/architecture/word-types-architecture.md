@@ -651,6 +651,20 @@ Italian interrogative adjectives form questions about identity, quantity, and se
 
 These adjectives are marked with `interrogative_function: interrogative` for cross-word-type filtering while maintaining their adjective classification and agreement patterns.
 
+**Exclamatory Usage of Adjectives**:
+Many Italian adjectives can be used exclamatorily to express strong reactions, surprise, or evaluation. When used in this context, they function grammatically as adjectives but serve pragmatic functions similar to interjections:
+
+**Evaluative Exclamations**:
+- **esatto!** (exactly!/correct!) - evaluative adjective: "Esatto! È proprio così!" (Exactly! That's exactly right!)
+- **incredibile!** (incredible!/unbelievable!) - surprise adjective: "Incredibile che sia già finito!" (Incredible that it's already finished!)
+- **assurdo!** (absurd!/ridiculous!) - negative evaluation: "Assurdo! Non ci posso credere!" (Absurd! I can't believe it!)
+
+**Usage Notes**:
+- These adjectives maintain their grammatical properties (agreement, gradability) even in exclamatory contexts
+- Distinguished from true interjections by their ability to modify nouns: "Una situazione incredibile!" (An incredible situation!)
+- Can form comparative and superlative constructions: "È incredibilissimo!" (It's extremely incredible!)
+- Register varies from neutral (esatto) to informal (incredibile, assurdo) depending on context
+
 **Frontend Features**:
 - **Position Indicators**: Shows preferred placement relative to noun
 - **Gradability Display**: Indicates if adjective can be compared (più alto, altissimo)
@@ -667,7 +681,7 @@ These adjectives are marked with `interrogative_function: interrogative` for cro
 The adverb system classifies by semantic type and position, with sophisticated support for adverb-preposition constructions that form systematic grammatical patterns in Italian.
 
 **Word-Level Metadata** *(see [Section 3.5](#35-adverb-specific-attributes) for complete value descriptions)*:
-- `metaattr001` - **Adverb Type**: 10 semantic categories (interrogative function now handled separately) - `manner` (2 uses), `negation`, `affirmation`, `quantity`, `doubt`, `emphasis`, `evaluation`, `place`, `frequency`, `time` (1 use each)
+- `metaattr001` - **Adverb Type**: 10 semantic categories (interrogative function now handled separately) - `manner` (2 uses), `affirmation` (2 uses), `negation` (2 uses), `time` (2 uses), `emphasis` (3 uses), `evaluation` (3 uses), `quantity`, `doubt`, `place`, `frequency` (1 use each)
 - `metaattr056` - **Interrogative Function**: Cross-word-type attribute marking interrogative adverbs (come, quando, dove, perché) for filtering and grouping
 - `metaattr055` - **Adverb Government**: NEW systematic classification for prepositional constructions:
   - `governs_a` - Spatial adverbs forming constructions with "a": davanti a, dietro a, accanto a, vicino a
@@ -702,6 +716,26 @@ Italian interrogative adverbs form questions about manner, time, place, and reas
 - **perché** (why) - causal interrogation: "Perché piangi?" (Why are you crying?)
 
 These adverbs are marked with `interrogative_function: interrogative` for cross-word-type filtering while maintaining their adverb classification.
+
+**Response and Discourse Adverbs**:
+Italian includes a important set of adverbs that function primarily in conversational contexts for affirmation, negation, temporal relations, evaluation, and emphasis:
+
+**Affirmation and Negation**:
+- **sì** (yes) - affirmation adverb: "Sì, vengo anch'io" (Yes, I'm coming too)
+- **no** (no) - negation adverb: "No, non posso" (No, I can't)
+
+**Temporal and Sequential Relations**:
+- **già** (already) - temporal adverb: "Sono già arrivato" (I have already arrived)
+
+**Evaluative and Confirmatory**:
+- **appunto** (exactly/precisely) - evaluation adverb: "Appunto, è quello che pensavo" (Exactly, that's what I thought)
+- **infatti** (indeed/in fact) - evaluation adverb: "Infatti, hai ragione" (Indeed, you're right)
+
+**Emphatic and Modal**:
+- **proprio** (really/exactly) - emphasis adverb: "È proprio vero" (It's really true)
+- **davvero** (really/truly) - emphasis adverb: "È davvero bello" (It's really beautiful)
+
+These adverbs are frequently used in spoken Italian and serve important pragmatic functions in discourse organization and interpersonal communication. While they may sometimes appear interjection-like due to their conversational nature, they function grammatically as adverbs modifying verbs, adjectives, or entire sentences.
 
 **Educational Value**:
 These systematic patterns help learners understand that many apparent "compound prepositions" are actually predictable adverb + preposition constructions, making Italian prepositional phrases more learnable and systematic.
