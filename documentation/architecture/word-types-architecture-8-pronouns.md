@@ -31,7 +31,6 @@
    - 4.4 [Indefinite Pronouns - Complete Implementation](#44-indefinite-pronouns---complete-implementation)
    - 4.5 [Relative Pronouns - Complete Implementation](#45-relative-pronouns---complete-implementation)
    - 4.6 [Demonstrative Pronouns - Complete Implementation](#46-demonstrative-pronouns---complete-implementation)
-   - 4.7 [Interrogative Pronouns - Complete Implementation](#47-interrogative-pronouns---complete-implementation)
    - 4.8 [Implementation Completeness Verification](#48-implementation-completeness-verification)
 
 5. [Translation and Form Architecture](#5-translation-and-form-architecture)
@@ -58,15 +57,16 @@ Pronouns are a fundamental class of words that replace nouns or refer to partici
 
 **Core Function**: Pronouns replace nouns to avoid repetition and establish referential relationships within discourse. Unlike nouns, pronouns change form based on their grammatical function (case) and can appear in different positions (clitic vs. full forms).
 
-### 1.3 Seven Major Categories
+### 1.3 Six Major Categories
 
 1. **Personal Pronouns** - Refer to specific persons or entities
 2. **Clitic Pronouns** - Reduced forms that attach to verbs
-3. **The Particle NE** - Special clitic with partitive/genitive functions
+3. **Particle NE** - Special clitic with partitive/genitive functions
 4. **Indefinite Pronouns** - Refer to unspecified quantities or entities
 5. **Relative Pronouns** - Connect clauses and establish relationships
 6. **Demonstrative Pronouns** - Point to referents in space or discourse
-7. **Interrogative Pronouns** - Form questions about identity and objects
+
+**Note**: Interrogative pronouns (chi, cosa, quale, quanto) are distributed to their appropriate base categories with `interrogative_function=interrogative` metadata rather than forming a separate category.
 
 ---
 
@@ -116,12 +116,14 @@ Pronouns are a fundamental class of words that replace nouns or refer to partici
 - **Distal**: quello/quella/quelli/quelle (that/those)
 - **Usage**: When not modifying a noun (vs. demonstrative determiners)
 
-### 2.7 Interrogative Pronouns
+**Note on Interrogative Pronouns**:
+Interrogative pronouns (chi, cosa, quale, quanto) are now integrated into their respective base categories:
+- **chi** → Personal Pronouns (with interrogative_function=interrogative)
+- **cosa, che cosa** → Indefinite Pronouns (with interrogative_function=interrogative)
+- **quale, quali** → Relative Pronouns (with interrogative_function=interrogative)
+- **quanto, quanta, quanti, quante** → Indefinite Pronouns (with interrogative_function=interrogative)
 
-**Question Formation**:
-- **Person Interrogation**: chi (who/whom) - "Chi è?" (Who is it?)
-- **Thing Interrogation**: cosa (what), che cosa (what) - "Cosa fai?" (What are you doing?)
-- **Cross-word-type Function**: Marked with `interrogative_function: interrogative` for filtering with other question words (adjectives, adverbs)
+This approach maintains semantic relationships while enabling cross-word-type interrogative filtering.
 
 ---
 
@@ -137,10 +139,10 @@ Given the highly irregular case patterns, clitic positioning rules, and suppleti
 ### 3.2 Applicable Metadata Attributes
 
 **Core Pronoun Metadata**:
-- **metaattr040** - Pronoun Type (6 values: personal, relative, demonstrative, interrogative, indefinite, reflexive)
-- **metaattr041** - Pronoun Form (3 values: clitic, full, both)
-- **metaattr042** - Case System (3 values: nominative_only, accusative_dative, full_case)
-- **metaattr056** - Interrogative Function (cross-word-type attribute: interrogative - for filtering question words)
+- **metaattr040** - Pronoun Type (6 values: personal, clitic, partitive, indefinite, relative, demonstrative)
+- **metaattr041** - Syntactic Function (translation-level: subject, direct_object, indirect_object, prepositional_object, relative_clause, demonstrative_reference, indefinite_reference, partitive)
+- **metaattr017** - Reflexive (existing: when applicable)
+- **metaattr027** - Interrogative Function (existing cross-word-type attribute: when applicable)
 - **metaattr049** - Particle Function (4 values for NE: partitive, locative, possessive, indefinite)
 - **metaattr054** - Indefinite Type (3 values: quantitative, qualitative, selective)
 - **metaattr014** - Person (3 values: prima-persona, seconda-persona, terza-persona)
@@ -152,6 +154,40 @@ Given the highly irregular case patterns, clitic positioning rules, and suppleti
 - **metaattr003** - CEFR Level (A1-C2 classification)
 - **metaattr007** - Frequency Tier (Usage frequency ranking)
 - **metaattr008** - Register (formal, informal, literary, spoken)
+
+#### New Metadata Attributes SQL Implementation
+
+**Production-ready SQL for creating new pronoun metadata attributes:**
+
+```sql
+-- Create pronoun_type attribute
+INSERT INTO meta_attributes (stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
+VALUES ('metaattr040', 'pronoun_type', 'Pronoun Type', 'Functional classification of Italian pronouns', 'word', 'word', 'ANY_MATCH', true);
+
+-- Create pronoun_type values
+INSERT INTO meta_values (attribute_id, value, shorthand, description, sort_order, is_active) VALUES
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), 'personal', 'PERS', 'Personal pronouns: io, tu, lui, lei, noi, voi, loro', 1, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), 'clitic', 'CLIT', 'Clitic pronouns that attach to verbs: mi, ti, lo, la, etc.', 2, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), 'partitive', 'PART', 'Partitive pronoun ne and its forms', 3, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), 'indefinite', 'INDEF', 'Indefinite pronouns: qualcuno, nessuno, qualcosa', 4, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), 'relative', 'REL', 'Relative pronouns: che, cui, quale, chi', 5, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), 'demonstrative', 'DEM', 'Demonstrative pronouns: questo, quello, ciò', 6, true);
+
+-- Create syntactic_function attribute
+INSERT INTO meta_attributes (stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
+VALUES ('metaattr041', 'syntactic_function', 'Syntactic Function', 'Grammatical role of pronoun in sentence (required for multiple translations)', 'translation', 'translation', 'ANY_MATCH', true);
+
+-- Create syntactic_function values
+INSERT INTO meta_values (attribute_id, value, shorthand, description, sort_order, is_active) VALUES
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), 'subject', 'SUBJ', 'Sentence subject: he, she, I', 1, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), 'direct_object', 'DO', 'Direct object: him, her, it', 2, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), 'indirect_object', 'IO', 'Indirect object: to him, to her', 3, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), 'prepositional_object', 'PO', 'Object of preposition: with him, for her', 4, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), 'relative_clause', 'REL', 'Introduces relative clause: who, which, that', 5, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), 'demonstrative_reference', 'DEM', 'Standalone demonstrative: this one, that one', 6, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), 'indefinite_reference', 'INDEF', 'Indefinite reference: someone, nothing', 7, true),
+((SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), 'partitive', 'PART', 'Partitive function: of it, some', 8, true);
+```
 
 ### 3.3 Form Type Column Requirements
 
@@ -171,6 +207,58 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ('gli', 'pronoun', 'LYEE', '/ʎi/'),
 ('cui', 'pronoun', 'KWEE', '/kui/'),
 ('ne', 'pronoun', 'NEH', '/ne/');
+```
+
+### 3.5 Translation Strategy and Syntactic Function Usage
+
+#### Single vs Multiple Translation Handling
+
+**When syntactic_function is REQUIRED (multiple translations):**
+Pronouns with multiple English translations based on grammatical role must use syntactic_function metadata:
+
+```sql
+-- "lui" example (multiple translations - syntactic_function REQUIRED)
+INSERT INTO dictionary (italian, word_type) VALUES ('lui', 'pronoun');
+INSERT INTO word_translations (word_id, translation_text, syntactic_function) VALUES
+(lui_id, 'he', 'subject'),
+(lui_id, 'him', 'prepositional_object');
+
+-- "lo" example (multiple translations - syntactic_function REQUIRED)
+INSERT INTO dictionary (italian, word_type) VALUES ('lo', 'pronoun');
+INSERT INTO word_translations (word_id, translation_text, syntactic_function) VALUES
+(lo_id, 'him', 'direct_object'),
+(lo_id, 'it', 'direct_object');
+```
+
+**When syntactic_function is OPTIONAL (single translation):**
+Pronouns with one clear English translation may omit syntactic_function metadata:
+
+```sql
+-- "qualcuno" example (single translation - syntactic_function optional)
+INSERT INTO dictionary (italian, word_type) VALUES ('qualcuno', 'pronoun');
+INSERT INTO word_translations (word_id, translation_text) VALUES
+(qualcuno_id, 'someone');
+
+-- "ciò" example (single translation - syntactic_function optional)
+INSERT INTO dictionary (italian, word_type) VALUES ('ciò', 'pronoun');
+INSERT INTO word_translations (word_id, translation_text) VALUES
+(ciò_id, 'that');
+```
+
+#### Article vs Pronoun Distinction
+
+**Critical**: Some Italian words function as both articles and pronouns. These require separate dictionary entries:
+
+```sql
+-- "la" as article
+INSERT INTO dictionary (italian, word_type) VALUES ('la', 'article');
+INSERT INTO word_translations (word_id, translation_text) VALUES (la_article_id, 'the');
+
+-- "la" as pronoun
+INSERT INTO dictionary (italian, word_type) VALUES ('la', 'pronoun');
+INSERT INTO word_translations (word_id, translation_text, syntactic_function) VALUES
+(la_pronoun_id, 'her', 'direct_object'),
+(la_pronoun_id, 'it', 'direct_object');
 ```
 
 ---
@@ -934,96 +1022,6 @@ INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUE
 (quelle_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural'));
 ```
 
-### 4.7 Interrogative Pronouns - Complete Implementation
-
-**Architecture Strategy**: Separate entries for Italian interrogative pronouns that form questions about identity and objects
-
-#### Dictionary Entries and Forms
-```sql
--- Dictionary entries: Italian interrogative pronouns for question formation
-INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-('chi', 'pronoun', 'KEE', '/ki/'),                    -- "who" (person interrogative)
-('cosa', 'pronoun', 'KO-sa', '/ˈko.sa/'),             -- "what" (thing interrogative)
-('che cosa', 'pronoun', 'ke KO-sa', '/ke ˈko.sa/');   -- "what" (alternative form)
-
--- Forms: No morphological variations for these interrogatives (invariable)
--- chi, cosa, and che cosa do not decline or agree
-```
-
-#### Complete Metadata Assignment
-```sql
--- Pronoun type classification (interrogative)
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(chi_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'interrogative')),
-(cosa_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'interrogative')),
-(che_cosa_id, 'metaattr040', (SELECT id FROM meta_values WHERE value = 'interrogative'));
-
--- Interrogative function (cross-word-type filtering)
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(chi_id, 'metaattr056', (SELECT id FROM meta_values WHERE value = 'interrogative')),
-(cosa_id, 'metaattr056', (SELECT id FROM meta_values WHERE value = 'interrogative')),
-(che_cosa_id, 'metaattr056', (SELECT id FROM meta_values WHERE value = 'interrogative'));
-
--- Pronoun form classification (all full forms)
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(chi_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(cosa_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full')),
-(che_cosa_id, 'metaattr041', (SELECT id FROM meta_values WHERE value = 'full'));
-
--- Case system (full case - can function in various positions)
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(chi_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case')),     -- Chi è? Chi vedi? A chi parli?
-(cosa_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case')),    -- Cosa fai? Cosa vedi? Di cosa parli?
-(che_cosa_id, 'metaattr042', (SELECT id FROM meta_values WHERE value = 'full_case'));
-
--- Gender metadata (common-gender - can refer to any gender)
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(chi_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(cosa_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
-(che_cosa_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender'));
-
--- Number metadata (singular - invariable forms)
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(chi_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(cosa_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(che_cosa_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular'));
-
--- Person metadata (third person for question formation)
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(chi_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(cosa_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona')),
-(che_cosa_id, 'metaattr014', (SELECT id FROM meta_values WHERE value = 'terza-persona'));
-
--- CEFR levels (A1 - fundamental question words)
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(chi_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
-(cosa_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1')),
-(che_cosa_id, 'metaattr003', (SELECT id FROM meta_values WHERE value = 'A1'));
-
--- Frequency tier (top100 - essential question words)
-INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(chi_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
-(cosa_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top100')),
-(che_cosa_id, 'metaattr007', (SELECT id FROM meta_values WHERE value = 'top500')); -- slightly less frequent
-```
-
-#### Translation Examples
-```sql
--- Chi - person interrogation
-INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
-(chi_id, 'who', 'Subject form: Chi è? (Who is it?)'),
-(chi_id, 'whom', 'Object form: Chi vedi? (Whom do you see?)'),
-(chi_id, 'whose', 'With prepositions: Di chi è? (Whose is it?)');
-
--- Cosa - thing interrogation
-INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
-(cosa_id, 'what', 'Subject/object form: Cosa fai? (What are you doing?)'),
-(cosa_id, 'what', 'With prepositions: Di cosa parli? (What are you talking about?)');
-
--- Che cosa - alternative thing interrogation
-INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
-(che_cosa_id, 'what', 'Alternative to cosa - slightly more formal: Che cosa vuoi? (What do you want?)');
-```
 
 ### 4.8 Implementation Completeness Verification
 
@@ -1035,18 +1033,23 @@ The following critical metadata attributes have complete coverage across all pro
 
 - **✅ Complete metaattr040 (pronoun_type) coverage**
   - All base words and forms have pronoun type metadata
-  - Six pronoun types properly classified: personal, relative, demonstrative, interrogative, indefinite, reflexive
+  - Six pronoun types properly classified: personal, clitic, partitive, indefinite, relative, demonstrative
   - Form-level inheritance ensures complete searchability
 
-- **✅ Complete metaattr041 (pronoun_form) coverage**
-  - All base words have pronoun form metadata (clitic/full/both)
-  - Critical distinction between clitic and full forms properly captured
-  - Combined clitic forms properly classified as clitic type
+- **✅ Complete metaattr041 (syntactic_function) coverage**
+  - Translation-level metadata for grammatical role differentiation
+  - Required for multiple translations, optional for single translations
+  - Eight syntactic functions properly classified: subject, direct_object, indirect_object, prepositional_object, relative_clause, demonstrative_reference, indefinite_reference, partitive
 
-- **✅ Complete metaattr042 (case_system) coverage**
-  - All base words have case system metadata
-  - Three case systems properly implemented: nominative_only, accusative_dative, full_case
-  - Complex case patterns of Italian pronouns fully captured
+- **✅ Complete metaattr017 (reflexive) coverage**
+  - Applied to pronouns with reflexive functions
+  - Supports filtering for reflexive pronoun patterns
+  - Inherited at form level where applicable
+
+- **✅ Complete metaattr027 (interrogative_function) coverage**
+  - Cross-word-type attribute for interrogative filtering
+  - Applied to interrogative pronouns distributed across base categories
+  - Enables unified interrogative word searches
 
 - **✅ Complete metaattr030 (case) coverage**
   - All base words and relevant forms have case metadata
@@ -1124,11 +1127,7 @@ The pronoun system implements complete form coverage across all six major catego
   - Distinction from demonstrative determiners properly maintained
   - Neuter demonstrative (ciò) properly classified
 
-- **✅ Interrogative Pronouns (3 base entries)**
-  - 3 base entries covering essential question formation (chi, cosa, che cosa)
-  - Cross-word-type interrogative function properly marked
-  - Complete case system for various question contexts
-  - Integration with broader question word system documented
+**Note**: Interrogative pronouns (chi, cosa, quale, quanto) are now distributed across their appropriate base categories with interrogative_function metadata rather than forming a separate category.
 
 #### 4.8.3 Ready-to-Execute SQL Status
 
@@ -1158,7 +1157,7 @@ All implementation examples meet production-ready standards:
 
 The pronoun architecture represents a fully specified, production-ready implementation covering:
 
-- **68+ total base entries** across seven pronoun categories
+- **65+ total base entries** across six pronoun categories
 - **Complete metadata coverage** for all critical linguistic attributes
 - **Systematic form generation** following universal morphological patterns
 - **Educational progression** from A1 basic personal pronouns to C2 advanced constructions
@@ -1236,73 +1235,55 @@ INSERT INTO clitic_combinations (indirect_clitic_id, direct_clitic_id, combined_
 
 ### 5.4 Form Relationships and Search
 
-**Form Architecture Pattern**:
-Form relationships follow consistent patterns across all pronoun categories:
+**Clarified Forms Strategy**: Most pronouns are separate dictionary entries, not forms of each other. Minimal forms needed:
+
+#### When to Use Forms vs Separate Entries
+
+**Use word_forms for**:
+- **Elision**: ne → n' (before vowels), lo → l', la → l'
+- **Same semantic content, phonetic variation only**
+
+**Use separate dictionary entries for**:
+- **Related pronouns with different semantic content**: io/me/mi are separate entries (different case roles)
+- **Different morphological words**: questo/quella are separate entries (different demonstrative types)
 
 ```sql
--- Personal pronouns: Case forms of person base entries
+-- FORMS: Elision variations only
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(mi_id, 'mi', 'clitic_accusative'),    -- accusative function
-(mi_id, 'mi', 'clitic_dative'),       -- dative function
-(ci_id, 'ci', 'clitic_accusative'),    -- accusative function
-(ci_id, 'ci', 'clitic_dative'),       -- dative function
-(ci_id, 'ci', 'reflexive');           -- reflexive function
+(ne_id, "n'", 'elision'),             -- n' is form of base word 'ne'
+(lo_id, "l'", 'elision'),             -- l' is form of base word 'lo'
+(la_id, "l'", 'elision');             -- l' is form of base word 'la'
 
--- Particle NE: Elision forms
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(ne_id, "n'", 'elision');             -- n' is form of base word 'ne'
-
--- Indefinite pronouns: Number forms
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(tale_id, 'tali', 'plural');          -- tali is form of base word 'tale'
-
--- Relative pronouns: Number forms where applicable
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(quale_id, 'quali', 'plural');        -- quali is form of base word 'quale'
-
--- Demonstratives: Number forms
-INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(questo_id, 'questi', 'plural'),      -- questi is form of base word 'questo'
-(questa_id, 'queste', 'plural');      -- queste is form of base word 'questa'
+-- SEPARATE ENTRIES: Different semantic content
+INSERT INTO dictionary (italian, word_type) VALUES
+('io', 'pronoun'),     -- Subject form - separate entry
+('me', 'pronoun'),     -- Object form - separate entry
+('mi', 'pronoun');     -- Clitic form - separate entry
 ```
+
+**Form Strategy Rationale**:
+- **Searchability**: Each semantically distinct pronoun gets its own entry for direct lookup
+- **Metadata**: Different case functions require different grammatical metadata
+- **Learning**: Learners need to discover case system through separate entries, not hidden forms
 
 **Complete Metadata Architecture Summary**:
 
-**Required for ALL Pronoun Base Words**:
-- **metaattr040** - Pronoun Type (6 values: personal, relative, demonstrative, interrogative, indefinite, reflexive)
-- **metaattr041** - Pronoun Form (3 values: clitic, full, both)
-- **metaattr042** - Case System (3 values: nominative_only, accusative_dative, full_case)
+**Word-Level Metadata (ALL Pronoun Base Words)**:
+- **metaattr040** - Pronoun Type (6 values: personal, clitic, partitive, indefinite, relative, demonstrative)
+- **metaattr014** - Person (3 values: prima-persona, seconda-persona, terza-persona)
 - **metaattr011** - Gender (3 values: masculine, feminine, common-gender)
 - **metaattr012** - Number (2 values: singular, plural)
 - **metaattr003** - CEFR Level (A1-C2 classification)
 - **metaattr007** - Frequency Tier (Usage frequency ranking)
 
-**Required for ALL Pronoun Forms**:
-- **metaattr040** - Pronoun Type (inherited from base word)
-- **metaattr041** - Pronoun Form (clitic, full, both)
-- **metaattr011** - Gender (masculine, feminine, common-gender)
-- **metaattr012** - Number (singular, plural)
-- **metaattr030** - Case (nominative, accusative, dative, ablative - where applicable)
+**Translation-Level Metadata (When Multiple Translations)**:
+- **metaattr041** - Syntactic Function (8 values: subject, direct_object, indirect_object, prepositional_object, relative_clause, demonstrative_reference, indefinite_reference, partitive)
 
-**Required for Personal Pronouns Only**:
-- **metaattr014** - Person (3 values: prima-persona, seconda-persona, terza-persona)
-- **metaattr030** - Case (4 values: nominative, accusative, dative, ablative)
-  * Base words: All personal pronoun dictionary entries
-  * Forms: All case function variations inherit case from base word or specify new case
-
-**Required for NE Particle Only**:
-- **metaattr049** - Particle Function (4 values: partitive, locative, possessive, indefinite)
-  * Base word: NE particle entry
-  * Forms: Elision forms inherit particle function
-
-**Required for Indefinite Pronouns Only**:
-- **metaattr054** - Indefinite Type (3 values: quantitative, qualitative, selective)
-  * Base words: All indefinite pronoun dictionary entries
-  * Forms: Number forms inherit indefinite type from base word
-
-**Optional Attributes**:
-- **metaattr005** - Irregularity (for irregular case forms)
-- **metaattr008** - Register (formal, informal, literary, spoken)
+**Optional Metadata (When Applicable)**:
+- **metaattr017** - Reflexive (for reflexive pronouns)
+- **metaattr027** - Interrogative Function (for interrogative pronouns distributed across categories)
+- **metaattr049** - Particle Function (for NE: partitive, locative, possessive, indefinite)
+- **metaattr054** - Indefinite Type (for indefinites: quantitative, qualitative, selective)
 
 ---
 

@@ -410,13 +410,12 @@ This section provides comprehensive documentation of all metadata attributes and
 **Purpose**: Semantic/syntactic categorization of adverbs
 **Source Level**: word
 **Display Level**: word
-**Database Usage**: 11 words assigned across all types
+**Database Usage**: 10 words assigned across all types
 
 | Value | Shorthand | Description | Usage Count |
 |-------|-----------|-------------|-------------|
 | `manner` | MAN | How something is done: velocemente, bene | 2 |
 | `negation` | NEG | Negative constructions: non, niente, nessuno | 1 |
-| `interrogative` | INTER | Questions: quando, dove, come | 1 |
 | `affirmation` | AFF | Confirmation: sì, certamente | 1 |
 | `quantity` | QUANT | How much: molto, poco | 1 |
 | `doubt` | DOUBT | Uncertainty: forse, probabilmente | 1 |
@@ -873,7 +872,7 @@ The conjunction documentation provides production-ready implementation specifica
 **Implementation Status**: 📋 **Planned - Complete Architecture**
 
 **Architecture Summary**:
-The pronoun system handles the complex Italian case system with comprehensive coverage of personal, clitic, relative, indefinite, and interrogative pronouns including the particle NE.
+The pronoun system handles the complex Italian case system with comprehensive coverage of personal, clitic, relative, indefinite, and demonstrative pronouns including the particle NE.
 
 **Core Function**: Pronouns replace nouns and noun phrases, providing essential reference mechanisms in Italian sentences. The system supports complex clitic positioning, case distinctions, and agreement patterns essential for natural Italian expression.
 
@@ -881,36 +880,32 @@ The pronoun system handles the complex Italian case system with comprehensive co
 
 The Italian pronoun system encompasses six distinct functional categories:
 
-1. **Personal Pronouns** (28+ entries): io, tu, lui, lei, noi, voi, loro - Complete case system with nominative, accusative, dative distinctions
+1. **Personal Pronouns** (28+ entries): io, tu, lui, lei, noi, voi, loro - Complete case system with separate entries for each function
 2. **Clitic Pronouns** (25+ entries): mi, ti, lo, la, ci, vi, li, le, combined forms - Essential for natural Italian expression
 3. **Particle NE** (2 entries): ne, n' - Specialized clitic with partitive, locative, possessive functions
 4. **Indefinite Pronouns** (12+ entries): qualcuno, nessuno, chiunque, qualcosa - Quantitative and qualitative reference
 5. **Relative Pronouns** (8+ entries): che, cui, quale, chi - Complex clause-connecting system
 6. **Demonstrative Pronouns** (12+ entries): questo, quello, ciò - Spatial and discourse reference
-7. **Interrogative Pronouns** (4+ entries): chi, cosa, che cosa - Question formation pronouns
 
 #### Architecture Overview
 
 **Storage Strategy**: Complex form storage due to irregular patterns, case system complexity, and critical clitic positioning rules.
 
 **Metadata Architecture**:
-- **Seven pronoun categories** with specialized metadata for each type
+- **pronoun_type** - Six functional categories (personal, clitic, partitive, indefinite, relative, demonstrative)
+- **syntactic_function** - Translation-level differentiation for multiple translations
+- **Cross-word-type integration** - Uses existing interrogative_function attribute for question words
 - **Complete case system** (nominative, accusative, dative, ablative)
 - **Clitic positioning rules** and combined form handling
-- **metaattr056** - Interrogative Function (cross-word-type attribute for filtering question words)
-- **Universal attributes**: CEFR Level, Frequency Tier, Register, Position
+- **Universal attributes**: CEFR Level, Frequency Tier, Register, Person, Number
 
-**Implementation Scale**: 69+ total base entries across seven categories with complex form paradigms, ready-to-execute SQL implementation, and comprehensive metadata coverage.
+**Implementation Scale**: 65+ total base entries across six categories with minimal form paradigms (separate entries approach), ready-to-execute SQL implementation, and streamlined metadata coverage with existing attribute reuse.
 
 **Educational Integration**: Progressive learning support from A1 basic personal pronouns to B2+ advanced clitic combinations, with systematic case system instruction essential for Italian fluency.
 
-#### Interrogative Pronouns
+#### Interrogative Distribution
 
-Italian interrogative pronouns form questions about identity and objects:
-- **chi** (who) - Person interrogation: "Chi è?" (Who is it?)
-- **cosa/che cosa** (what) - Thing interrogation: "Cosa fai?" (What are you doing?)
-
-These pronouns are marked with `interrogative_function: interrogative` for cross-word-type filtering, enabling learners to find all question words (pronouns, adjectives, adverbs) together while maintaining their pronoun classification and case patterns.
+Interrogative pronouns (chi, cosa, quale, quanto) are distributed across appropriate base categories (relative, demonstrative, etc.) and identified using the existing cross-word-type interrogative_function attribute. This approach maintains proper grammatical classification while enabling learners to find all question words together through cross-category filtering.
 
 > **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, form relationships, case system handling, and educational integration, see [**Pronoun Complete Implementation Guide**](./word-types-architecture-8-pronouns.md).
 
