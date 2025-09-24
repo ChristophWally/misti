@@ -1,4 +1,4 @@
-> **Part of**: [Misti Verb Forms System Architecture](./verb-forms-system-architecture.md)
+> **Part of**: [Misti Verb Forms System Architecture](./word-types-architecture-1-verbs.md)
 > **Section**: 8.7 - Irregular Verb Patterns
 > **Example Verb**: "andare" (to go)
 

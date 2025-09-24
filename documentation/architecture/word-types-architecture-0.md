@@ -15,7 +15,6 @@
 5. [Planned Word Types](#5-planned-word-types)
    - 5.1 [Preposition](#51-preposition)
    - 5.2 [Determiner](#52-determiner)
-     - 5.2.1 [What is a Determiner](#521-what-is-a-determiner)
    - 5.3 [Conjunction](#53-conjunction)
    - 5.4 [Pronoun](#54-pronoun)
    - 5.5 [Interjections](#55-interjections)
@@ -557,6 +556,7 @@ Complete conjugation paradigms are stored in `word_forms` table (~100-140 forms 
 - Essential vs. detailed tag categorization
 - Verb type indicators (regular/irregular/reflexive)
 
+> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, form relationships, translation strategies, and educational integration, see [**Determiner Complete Implementation Guide**](./word-types-architecture-1-verbs.md).
 ---
 
 ### 4.2 NOUN
@@ -960,15 +960,13 @@ The interjection system handles emotional expressions, greetings, and social int
 
 **Core Function**: Interjections express emotions, reactions, and social interactions as autonomous linguistic units. The system supports cultural appropriateness and register awareness essential for natural Italian social competence.
 
-#### Five Major Categories
+#### Three Linguistic Categories
 
-The Italian interjection system encompasses five distinct functional categories:
+Following traditional Italian grammatical classification, the interjection system encompasses three distinct linguistic categories:
 
-1. **Greeting Interjections** (7 entries): ciao, salve, arrivederci, buongiorno, buonasera - Social interaction with register sensitivity
-2. **Emotional Exclamations** (8 entries): ah, oh, eh, uh, ahi, uff - Basic emotional expression
-3. **Hesitation Markers** (7 entries): beh, mah, boh, ecco, insomma - Discourse management and uncertainty
-4. **Agreement/Disagreement** (8 entries): sì, no, già, appunto, infatti, proprio, esatto - Conversational interaction
-5. **Surprise/Shock Expressions** (7 entries): davvero, mamma mia, perbacco, accidenti, madonna, incredibile - Emotional intensity with cultural sensitivity
+1. **Primary Interjections (11 entries)**: ah, oh, eh, uh, ahi, uff, beh, mah, boh, ecco, insomma - Pure vocal expressions (interiezioni proprie)
+2. **Lexicalized Greeting Interjections (6 entries)**: ciao, salve, arrivederci, buongiorno, buonasera, buonanotte - Social formulas functioning interjectively
+3. **Cultural Interjective Phrases (4 entries)**: mamma mia, perbacco, madonna, accidenti - Multi-word cultural expressions (locuzioni interiettive)
 
 #### Architecture Overview
 
@@ -976,15 +974,16 @@ The Italian interjection system encompasses five distinct functional categories:
 
 **Metadata Architecture**:
 - **Interjection functional types** with emotional and social classification
-- **Emotional tone** (positive, negative, neutral, surprise, doubt)
+- **Emotional tone** (positive, negative, neutral, surprise, doubt, high-sensitivity)
 - **Cultural sensitivity** and register appropriateness
+- **Form variant grammar rules** with specific linguistic constraints
 - **Universal attributes**: CEFR Level, Frequency Tier, Register
 
-**Implementation Scale**: 30+ total base entries across five categories with cultural context annotations, ready-to-execute SQL implementation, and comprehensive metadata coverage.
+**Implementation Scale**: 18+ authentic interjections across three linguistic categories with cultural context annotations, ready-to-execute SQL implementation, and comprehensive metadata coverage.
 
 **Educational Integration**: Progressive learning support from A1 basic social interactions to B1+ cultural competence, with emphasis on register appropriateness and cultural sensitivity essential for successful Italian social integration.
 
-> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, cultural context handling, register sensitivity, and educational integration, see [**Interjection Complete Implementation Guide**](./word-types-architecture-10-interjections.md).
+> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, cultural context handling, register sensitivity, and educational integration, see [**Interjection Complete Implementation Guide**](./word-types-architecture-9-interjections.md).
 
 The interjection documentation provides production-ready implementation specifications with cultural sensitivity guidance, register appropriateness classifications, and sophisticated educational architecture designed for effective Italian social competence development.
 

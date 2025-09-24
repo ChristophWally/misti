@@ -117,13 +117,45 @@ Based on Italian linguistic research and traditional grammatical analysis:
 
 #### 2.3.1 Italian Cultural Expressions
 
-**Primary Examples**:
-- **mamma mia** - Surprise, cultural marker: "Mamma mia, che traffico!" (My goodness, what traffic!)
-- **perbacco** - Mild surprise, traditional: "Perbacco, è vero!" (Good heavens, it's true!)
-- **madonna** - Strong surprise, cultural/religious: "Madonna, che spavento!" (Good God, what a fright!)
-- **accidenti** - Frustration, mild profanity: "Accidenti, ho dimenticato!" (Darn, I forgot!)
+**Primary Examples with Cultural Sensitivity Guidelines**:
 
-**Cultural Considerations**: These expressions carry important cultural weight and require sensitivity in teaching and usage guidance.
+- **madonna** - Strong surprise, cultural/religious: "Madonna, che spavento!" (Good God, what a fright!)
+  - ⚠️ **HIGH CULTURAL SENSITIVITY**: Contains religious reference that may offend devout Catholics
+  - **Usage restriction**: Avoid in formal/professional contexts and with elderly/religious individuals
+  - **Regional sensitivity**: More acceptable in Northern Italy than Southern Italy
+  - **Alternative suggestion**: Use "mamma mia" for similar surprise function
+
+- **mamma mia** - Surprise, cultural marker: "Mamma mia, che traffico!" (My goodness, what traffic!)
+  - ⚠️ **MODERATE SENSITIVITY**: Overuse reinforces Italian stereotypes
+  - **Authentic usage**: Genuine Italian expression but use naturally, not performatively
+  - **Cultural acceptance**: Acceptable across all regions and age groups
+  - **Teaching note**: Emphasize natural integration, discourage caricature
+
+- **perbacco** - Mild surprise, traditional: "Perbacco, è vero!" (Good heavens, it's true!)
+  - ⚠️ **GENERATIONAL SENSITIVITY**: Primarily used by older speakers (65+)
+  - **Modern perception**: May sound old-fashioned or theatrical to young Italians
+  - **Educational value**: Important for understanding literature and older media
+  - **Context**: Best reserved for formal literary contexts or historical comprehension
+
+- **accidenti** - Frustration, mild profanity: "Accidenti, ho dimenticato!" (Darn, I forgot!)
+  - ⚠️ **MILD PROFANITY**: Informal oath inappropriate for professional contexts
+  - **Intensity equivalent**: Similar to English "darn" - not offensive but casual
+  - **Register limitation**: Strictly informal register only
+  - **Social safety**: Generally acceptable among peers but avoid with authority figures
+
+#### 2.3.2 Cultural Appropriateness Guidelines
+
+**Teaching Priorities for Cultural Phrases**:
+1. **Context Sensitivity**: Always provide specific usage contexts and restrictions
+2. **Alternative Options**: Offer culturally safer alternatives for sensitive expressions
+3. **Stereotype Awareness**: Emphasize natural usage to prevent Italian caricature
+4. **Register Training**: Clear guidance on formal vs informal appropriateness
+5. **Regional Variations**: Acknowledge geographic and generational differences
+
+**Assessment Integration**:
+- **Sensitivity scenarios**: Test appropriate cultural context selection
+- **Alternative usage**: Practice substituting safer expressions in sensitive contexts
+- **Register awareness**: Demonstrate understanding of formality implications
 
 ---
 
@@ -163,6 +195,7 @@ Based on Italian linguistic research and traditional grammatical analysis:
 - `neutral` - Processing markers (beh, ecco, insomma)
 - `surprise` - Surprise expressions (oh [surprise], mamma mia)
 - `doubt` - Uncertainty markers (mah, boh)
+- `high-sensitivity` - Cultural expressions requiring special usage awareness (madonna, religious/generational concerns)
 
 ### 3.3 Form Type Requirements
 
@@ -173,7 +206,105 @@ Based on Italian linguistic research and traditional grammatical analysis:
 - `lengthened` - Emotional lengthening (aaah, oooh)
 - `questioning` - With question mark (eh?, davvero?)
 
-### 3.4 Pronunciation Column Requirements
+### 3.4 Form Variant Grammar Rules
+
+**CRITICAL**: Italian interjection form variants must follow specific grammatical and semantic rules. Incorrect usage violates linguistic authenticity.
+
+#### 3.4.1 Capitalization Rules (MANDATORY CONSTRAINTS)
+
+**MUST Capitalize**:
+- **Sentence-initial position**: After terminal punctuation (. ! ?)
+  - ✅ "Ciao, come stai?" (sentence start)
+  - ✅ "...e poi disse: 'Ciao!'" (after colon + quote)
+
+**MAY Capitalize**:
+- **Mid-sentence emotional emphasis** (informal contexts only)
+  - ✅ "Stavo camminando e... Ciao! l'ho visto" (dramatic emphasis)
+
+**Constraint Violation**:
+- ❌ Capitalizing interjections that aren't sentence-initial in formal writing
+
+#### 3.4.2 Exclamatory Rules (INTENSITY-BASED CONSTRAINTS)
+
+**REQUIRED Exclamation Points** (High-intensity emotions):
+- **Pain expressions**: `ahi!` (physical discomfort requires !)
+- **Strong frustration**: `uff!` (intense exasperation requires !)
+- **Cultural surprise**: `mamma mia!` (cultural expressions typically require !)
+- **Completion emphasis**: `ecco!` (strong conclusion requires !)
+
+**OPTIONAL Exclamation Points** (Moderate emotions):
+- **Realization**: `ah` vs `ah!` (neutral acknowledgment vs strong realization)
+- **Mild surprise**: `oh` vs `oh!` (gentle wonder vs strong surprise)
+
+**INAPPROPRIATE Exclamation Points**:
+- **Processing markers**: `beh`, `mah` (thinking time - exclamation contradicts function)
+- **Formal greetings**: `salve` in professional contexts (too emphatic)
+
+**Semantic Rule**: Exclamation point intensity must match emotional content - mismatched intensity violates pragmatic appropriateness.
+
+#### 3.4.3 Questioning Rules (SEMANTIC COMPATIBILITY CONSTRAINTS)
+
+**CAN Take Question Marks** (Confirmation-seeking semantics):
+- **eh?** - Seeking repetition/clarification: "Eh? Cosa hai detto?"
+- **mah?** - Questioning others' statements (external doubt)
+- **davvero?** - Questioning truth/belief (verification request)
+
+**CANNOT Take Question Marks** (Semantic incompatibility):
+- **Pain expressions**: `ahi`, `uff` (pain is declarative, not interrogative)
+- **Greetings**: `ciao`, `buongiorno` (social formulas don't question)
+- **Completion markers**: `ecco` (indicates finality, contradicts questioning)
+- **Cultural phrases**: `mamma mia`, `perbacco` (exclamatory by nature)
+
+**Semantic Constraint**: Only interjections with confirmation-seeking or doubt-expressing semantics can take question marks.
+
+#### 3.4.4 Lengthening Rules (PHONOTACTIC CONSTRAINTS)
+
+**PERMITTED Lengthening** (Vowel-final structures):
+- **Simple vowel interjections**: `ah → aaah`, `oh → oooh` (vowel extension)
+- **Vowel-final processing**: `beh → beeh` (final vowel lengthening)
+- **Phonetic transformation**: `uff → uffa` (consonant + vowel pattern)
+
+**MAXIMUM LIMITS**:
+- **2-3 repetitions only**: `aaah` ✅, `aaaaah` ❌ (violates prosodic naturalness)
+- **Rhythmic constraint**: Must maintain natural speech rhythm patterns
+
+**FORBIDDEN Lengthening**:
+- **Complex phrases**: `mamma mia`, `arrivederci` (morphologically fixed units)
+- **Consonant clusters**: Complex internal phonology prevents lengthening
+
+**Phonotactic Rule**: Only interjections ending in vowels or simple consonant-vowel patterns can be lengthened.
+
+#### 3.4.5 Repetition Rules (PRAGMATIC CONSTRAINTS)
+
+**PERMITTED Repetition** (Simple structures):
+- **Processing markers**: `beh beh` (extended hesitation)
+- **Emphatic refusal**: `no no no` (strengthened negation)
+- **Pain continuation**: `ahi ahi` (ongoing discomfort)
+
+**SEMANTIC CHANGES With Repetition**:
+- **Intensity increase**: `ah` (single realization) → `ah ah` (dawning comprehension)
+- **Temporal extension**: `uff` (momentary frustration) → `uff uff` (ongoing annoyance)
+- **Social reinforcement**: Repetition signals group solidarity/shared experience
+
+**MAXIMUM CONSTRAINTS**:
+- **3 repetitions maximum**: Natural speech rhythm limits
+- **Pragmatic appropriateness**: Formal contexts discourage repetition
+
+**FORBIDDEN Repetition**:
+- **Lexicalized greetings**: `*ciao ciao ciao` (ungrammatical as greeting formula)
+- **Cultural phrases**: `*mamma mia mamma mia` (loses semantic coherence)
+
+**Pragmatic Rule**: Repetition must serve communicative function (emphasis, temporal extension) without violating social appropriateness.
+
+#### 3.4.6 Universal Constraints
+
+**Syntactic Independence**: "Priva di legami sintattici" - interjections maintain grammatical autonomy regardless of form variant.
+
+**Prosodic Integration**: All form variants must integrate naturally with sentence rhythm and intonation patterns.
+
+**Register Compatibility**: Form variant selection must match discourse register (formal contexts prefer conservative variants).
+
+### 3.5 Pronunciation Column Requirements
 
 All interjection entries include complete pronunciation support:
 

@@ -1,4 +1,4 @@
-> **Part of**: [Misti Verb Forms System Architecture](./verb-forms-system-architecture.md)
+> **Part of**: [Misti Verb Forms System Architecture](./word-types-architecture-1-verbs.md)
 > **Section**: 8.4 - Modal Verb Patterns
 > **Example Verb**: "dovere" (must/have to; to owe)
 

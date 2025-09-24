@@ -1,5 +1,5 @@
 -- =============================================================================
--- ITALIAN INTERJECTIONS - PRODUCTION-READY IMPLEMENTATION
+-- ITALIAN INTERJECTIONS - DOCUMENT 9 PRODUCTION-READY IMPLEMENTATION
 -- Linguistically Accurate Metadata and Data Implementation
 -- =============================================================================
 
@@ -47,7 +47,8 @@ INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, descript
 (gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), 'metaattr051val002', 'negative', 'NEG', 'Conveys negative emotions: pain, frustration, displeasure'),
 (gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), 'metaattr051val003', 'neutral', 'NEUT', 'Processing markers or neutral expressions: thinking time, transitions'),
 (gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), 'metaattr051val004', 'surprise', 'SURP', 'Expresses surprise or wonder: unexpected reactions, amazement'),
-(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), 'metaattr051val005', 'doubt', 'DOUBT', 'Indicates uncertainty or skepticism: questioning, hesitation');
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), 'metaattr051val005', 'doubt', 'DOUBT', 'Indicates uncertainty or skepticism: questioning, hesitation'),
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), 'metaattr051val006', 'high-sensitivity', 'SENS', 'Requires cultural sensitivity - religious, generational, or stereotyping concerns');
 
 -- =============================================================================
 -- SECTION 3: DICTIONARY ENTRIES - PRIMARY INTERJECTIONS
@@ -195,8 +196,11 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 ((SELECT id FROM dictionary WHERE italian = 'oh'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), (SELECT id FROM meta_values WHERE value = 'surprise')),
 ((SELECT id FROM dictionary WHERE italian = 'mamma mia'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), (SELECT id FROM meta_values WHERE value = 'surprise')),
-((SELECT id FROM dictionary WHERE italian = 'perbacco'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), (SELECT id FROM meta_values WHERE value = 'surprise')),
-((SELECT id FROM dictionary WHERE italian = 'madonna'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), (SELECT id FROM meta_values WHERE value = 'surprise'));
+((SELECT id FROM dictionary WHERE italian = 'perbacco'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), (SELECT id FROM meta_values WHERE value = 'surprise'));
+
+-- High-Sensitivity Tone (Cultural expressions requiring special awareness)
+INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
+((SELECT id FROM dictionary WHERE italian = 'madonna'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), (SELECT id FROM meta_values WHERE value = 'high-sensitivity'));
 
 -- Doubt Tone
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -362,13 +366,13 @@ INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
 
 -- Cultural Interjective Phrases Translations
 INSERT INTO word_translations (word_id, translation_text, usage_notes) VALUES
-((SELECT id FROM dictionary WHERE italian = 'mamma mia'), 'oh my!', 'CULTURAL: Quintessentially Italian expression of surprise'),
-((SELECT id FROM dictionary WHERE italian = 'mamma mia'), 'good grief!', 'Alternative translation showing exasperation'),
-((SELECT id FROM dictionary WHERE italian = 'perbacco'), 'good heavens!', 'TRADITIONAL: Old-fashioned expression, mainly used by older speakers'),
-((SELECT id FROM dictionary WHERE italian = 'madonna'), 'oh my God!', 'CULTURAL/RELIGIOUS: Handle with sensitivity, may be offensive to some'),
-((SELECT id FROM dictionary WHERE italian = 'madonna'), 'good God!', 'Strong surprise expression with religious reference'),
-((SELECT id FROM dictionary WHERE italian = 'accidenti'), 'darn!', 'Frustration, mild profanity: "Accidenti, ho dimenticato!" (Darn, I forgot!)'),
-((SELECT id FROM dictionary WHERE italian = 'accidenti'), 'damn!', 'Stronger translation for emphasis');
+((SELECT id FROM dictionary WHERE italian = 'madonna'), 'oh my God!', 'HIGH CULTURAL SENSITIVITY: Contains religious reference that may offend devout Catholics. Avoid in formal/professional contexts and with elderly/religious individuals. More acceptable in Northern Italy than Southern Italy. Alternative: use "mamma mia" for similar surprise function.'),
+((SELECT id FROM dictionary WHERE italian = 'madonna'), 'good God!', 'HIGH CULTURAL SENSITIVITY: Strong surprise expression with religious reference. Usage restrictions apply - see primary translation for complete sensitivity guidelines.'),
+((SELECT id FROM dictionary WHERE italian = 'mamma mia'), 'oh my!', 'MODERATE SENSITIVITY: Quintessentially Italian expression but avoid overuse to prevent stereotyping. Authentic usage encouraged but use naturally, not performatively. Acceptable across all regions and age groups.'),
+((SELECT id FROM dictionary WHERE italian = 'mamma mia'), 'good grief!', 'MODERATE SENSITIVITY: Alternative translation showing exasperation. Emphasize natural integration and discourage caricature when teaching.'),
+((SELECT id FROM dictionary WHERE italian = 'perbacco'), 'good heavens!', 'GENERATIONAL SENSITIVITY: Old-fashioned expression mainly used by older speakers (65+). May sound theatrical to young Italians. Best reserved for formal literary contexts or historical comprehension.'),
+((SELECT id FROM dictionary WHERE italian = 'accidenti'), 'darn!', 'MILD PROFANITY: Informal oath inappropriate for professional contexts. Equivalent to English "darn" - not offensive but strictly informal register. Acceptable among peers but avoid with authority figures.'),
+((SELECT id FROM dictionary WHERE italian = 'accidenti'), 'damn!', 'MILD PROFANITY: Stronger translation for emphasis. Register limitations apply - see primary translation for usage guidelines.');
 
 -- =============================================================================
 -- SECTION 14: IMPLEMENTATION VERIFICATION QUERIES

@@ -1260,7 +1260,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 - [8.7 Irregular Verb Patterns - "andare"](#87-irregular-verb---andare-to-go)
 
 ### 8.1 Regular Verb - "mangiare" (to eat)
-**📋 Complete Details**: [Section 8.1: Regular Verb Patterns - "mangiare"](./verb-forms-architecture-8.1-regular-verb-patterns.md)
+**📋 Complete Details**: [Section 8.1: Regular Verb Patterns - "mangiare"](./word-types-architecture-1.8.1-regular-verb-patterns.md)
 
 **Dictionary Entry**: `lemma: "mangiare", word_type: "verb"`
 
@@ -1275,7 +1275,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 ---
 
 ### 8.2 Reflexive Verb - "lavarsi" (to wash oneself/each other)
-**📋 Complete Details**: [Section 8.2: Reflexive Verb Patterns - "lavarsi"](./verb-forms-architecture-8.2-reflexive-verb-patterns.md)
+**📋 Complete Details**: [Section 8.2: Reflexive Verb Patterns - "lavarsi"](./word-types-architecture-1.8.2-reflexive-verb-patterns.md)
 
 **Dictionary Entry**: `lemma: "lavarsi", word_type: "verb"`
 
@@ -1290,7 +1290,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 ---
 
 ### 8.3 Dual Auxiliary Verb - "correre" (to run)
-**📋 Complete Details**: [Section 8.3: Dual Auxiliary Verb Patterns - "correre"](./verb-forms-architecture-8.3-dual-auxiliary-verb-patterns.md)
+**📋 Complete Details**: [Section 8.3: Dual Auxiliary Verb Patterns - "correre"](./word-types-architecture-1.8.3-dual-auxiliary-verb-patterns.md)
 
 **Dictionary Entry**: `lemma: "correre", word_type: "verb"`
 
@@ -1305,7 +1305,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 ---
 
 ### 8.4 Modal Verb - "dovere" (to have to)
-**📋 Complete Details**: [Section 8.4: Modal Verb Patterns - "dovere"](./verb-forms-architecture-8.4-modal-verb-patterns.md)
+**📋 Complete Details**: [Section 8.4: Modal Verb Patterns - "dovere"](./word-types-architecture-1.8.4-modal-verb-patterns.md)
 
 **Dictionary Entry**: `lemma: "dovere", word_type: "verb"`
 
@@ -1320,7 +1320,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 ---
 
 ### 8.5 Defective Verb - "vigere" (to be in force)
-**📋 Complete Details**: [Section 8.5: Defective Verb Patterns - "vigere"](./verb-forms-architecture-8.5-defective-verb-patterns.md)
+**📋 Complete Details**: [Section 8.5: Defective Verb Patterns - "vigere"](./word-types-architecture-1.8.5-defective-verb-patterns.md)
 
 **Dictionary Entry**: `lemma: "vigere", word_type: "verb"`
 
@@ -1335,7 +1335,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 ---
 
 ### 8.6 Impersonal Verb - "importare" (to matter)
-**📋 Complete Details**: [Section 8.6: Impersonal Verb Patterns - "importare"](./verb-forms-architecture-8.6-impersonal-verb-patterns.md)
+**📋 Complete Details**: [Section 8.6: Impersonal Verb Patterns - "importare"](./word-types-architecture-1.8.6-impersonal-verb-patterns.md)
 
 **Dictionary Entry**: `lemma: "importare", word_type: "verb"`
 
@@ -1350,7 +1350,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 ---
 
 ### 8.7 Irregular Verb - "andare" (to go)
-**📋 Complete Details**: [Section 8.7: Irregular Verb Patterns - "andare"](./verb-forms-architecture-8.7-irregular-verb-patterns.md)
+**📋 Complete Details**: [Section 8.7: Irregular Verb Patterns - "andare"](./word-types-architecture-1.8.7-irregular-verb-patterns.md)
 
 **Dictionary Entry**: `lemma: "andare", word_type: "verb"`
 
