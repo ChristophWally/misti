@@ -1,6 +1,11 @@
 -- =============================================================================
 -- ITALIAN INTERJECTIONS - DOCUMENT 9 PRODUCTION-READY IMPLEMENTATION
 -- Linguistically Accurate Metadata and Data Implementation
+--
+-- ARCHITECTURAL UPDATE: Unified Form Type System (following verb pattern)
+-- - Single form_type: 'expression' for ALL interjection variants
+-- - Expression Variant attribute (metaattr052) captures specific form characteristics
+-- - Follows established verb pattern: verbs use 'conjugation' + attributes, interjections use 'expression' + attributes
 -- =============================================================================
 
 -- =============================================================================
@@ -31,6 +36,18 @@ VALUES (
   'word'
 );
 
+-- Create Expression Variant attribute (following verb pattern)
+INSERT INTO meta_attributes (id, stable_id, name, display_name, description, source_level, display_level)
+VALUES (
+  gen_random_uuid(),
+  'metaattr052',
+  'expression_variant',
+  'Expression Variant',
+  'Indicates the specific variant form of the interjection expression (base, exclamatory, lengthened, etc.)',
+  'form',
+  'form'
+);
+
 -- =============================================================================
 -- SECTION 2: META VALUES CREATION
 -- =============================================================================
@@ -49,6 +66,15 @@ INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, descript
 (gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), 'metaattr051val004', 'surprise', 'SURP', 'Expresses surprise or wonder: unexpected reactions, amazement'),
 (gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), 'metaattr051val005', 'doubt', 'DOUBT', 'Indicates uncertainty or skepticism: questioning, hesitation'),
 (gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr051'), 'metaattr051val006', 'high-sensitivity', 'SENS', 'Requires cultural sensitivity - religious, generational, or stereotyping concerns');
+
+-- Expression Variant Values (metaattr052) - following verb pattern
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description) VALUES
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), 'metaattr052val001', 'base', 'BASE', 'Base form of the interjection (ah, ciao, mamma mia)'),
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), 'metaattr052val002', 'exclamatory', 'EXCL', 'With exclamation point (ah!, Ciao!, mamma mia!)'),
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), 'metaattr052val003', 'lengthened', 'LENG', 'Emotional lengthening (aaah, oooh, beeh)'),
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), 'metaattr052val004', 'questioning', 'QUES', 'With question mark (eh?, mah?)'),
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), 'metaattr052val005', 'capitalized', 'CAPS', 'Sentence-initial forms (Ciao, Salve)'),
+(gen_random_uuid(), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), 'metaattr052val006', 'repeated', 'REPT', 'Emphatic repetition (no no no, ah ah)');
 
 -- =============================================================================
 -- SECTION 3: DICTIONARY ENTRIES - PRIMARY INTERJECTIONS
@@ -102,35 +128,35 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 -- SECTION 6: WORD FORMS - EMPHASIS AND VARIATION PATTERNS
 -- =============================================================================
 
--- Primary Interjection Forms (emotional lengthening and emphasis)
+-- Primary Interjection Forms (unified expression form_type)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-((SELECT id FROM dictionary WHERE italian = 'ah'), 'ah!', 'exclamatory', 'AH', '/a/'),
-((SELECT id FROM dictionary WHERE italian = 'ah'), 'aaah', 'lengthened', 'AAH-ah', '/ˈa.a.a/'),
-((SELECT id FROM dictionary WHERE italian = 'oh'), 'oh!', 'exclamatory', 'OH', '/o/'),
-((SELECT id FROM dictionary WHERE italian = 'oh'), 'oooh', 'lengthened', 'OOH-oh', '/ˈo.o.o/'),
-((SELECT id FROM dictionary WHERE italian = 'eh'), 'eh?', 'questioning', 'EH', '/e/'),
-((SELECT id FROM dictionary WHERE italian = 'uff'), 'uffa', 'lengthened', 'UF-fa', '/ˈuf.fa/');
+((SELECT id FROM dictionary WHERE italian = 'ah'), 'ah!', 'expression', 'AH', '/a/'),
+((SELECT id FROM dictionary WHERE italian = 'ah'), 'aaah', 'expression', 'AAH-ah', '/ˈa.a.a/'),
+((SELECT id FROM dictionary WHERE italian = 'oh'), 'oh!', 'expression', 'OH', '/o/'),
+((SELECT id FROM dictionary WHERE italian = 'oh'), 'oooh', 'expression', 'OOH-oh', '/ˈo.o.o/'),
+((SELECT id FROM dictionary WHERE italian = 'eh'), 'eh?', 'expression', 'EH', '/e/'),
+((SELECT id FROM dictionary WHERE italian = 'uff'), 'uffa', 'expression', 'UF-fa', '/ˈuf.fa/');
 
--- Hesitation Marker Forms
+-- Hesitation Marker Forms (unified expression form_type)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-((SELECT id FROM dictionary WHERE italian = 'beh'), 'beeh', 'lengthened', 'BEH-eh', '/ˈbe.e/'),
-((SELECT id FROM dictionary WHERE italian = 'mah'), 'maah', 'lengthened', 'MAH-ah', '/ˈma.a/'),
-((SELECT id FROM dictionary WHERE italian = 'ecco'), 'ecco!', 'exclamatory', 'EK-ko', '/ˈek.ko/');
+((SELECT id FROM dictionary WHERE italian = 'beh'), 'beeh', 'expression', 'BEH-eh', '/ˈbe.e/'),
+((SELECT id FROM dictionary WHERE italian = 'mah'), 'maah', 'expression', 'MAH-ah', '/ˈma.a/'),
+((SELECT id FROM dictionary WHERE italian = 'ecco'), 'ecco!', 'expression', 'EK-ko', '/ˈek.ko/');
 
--- Greeting Forms (capitalization and exclamatory)
+-- Greeting Forms (unified expression form_type)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-((SELECT id FROM dictionary WHERE italian = 'ciao'), 'Ciao', 'capitalized', 'CHOW', '/ˈtʃa.o/'),
-((SELECT id FROM dictionary WHERE italian = 'ciao'), 'Ciao!', 'exclamatory', 'CHOW', '/ˈtʃa.o/'),
-((SELECT id FROM dictionary WHERE italian = 'salve'), 'Salve!', 'exclamatory', 'SAL-ve', '/ˈsal.ve/'),
-((SELECT id FROM dictionary WHERE italian = 'arrivederci'), 'Arrivederci!', 'exclamatory', 'ah-ri-ve-DER-chi', '/ar.ri.veˈder.tʃi/');
+((SELECT id FROM dictionary WHERE italian = 'ciao'), 'Ciao', 'expression', 'CHOW', '/ˈtʃa.o/'),
+((SELECT id FROM dictionary WHERE italian = 'ciao'), 'Ciao!', 'expression', 'CHOW', '/ˈtʃa.o/'),
+((SELECT id FROM dictionary WHERE italian = 'salve'), 'Salve!', 'expression', 'SAL-ve', '/ˈsal.ve/'),
+((SELECT id FROM dictionary WHERE italian = 'arrivederci'), 'Arrivederci!', 'expression', 'ah-ri-ve-DER-chi', '/ar.ri.veˈder.tʃi/');
 
--- Cultural Phrase Forms
+-- Cultural Phrase Forms (unified expression form_type)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-((SELECT id FROM dictionary WHERE italian = 'mamma mia'), 'mamma mia!', 'exclamatory', 'MAH-ma MEE-a', '/ˈmam.ma ˈmi.a/'),
-((SELECT id FROM dictionary WHERE italian = 'perbacco'), 'perbacco!', 'exclamatory', 'per-BAK-ko', '/perˈbak.ko/'),
-((SELECT id FROM dictionary WHERE italian = 'madonna'), 'madonna!', 'exclamatory', 'ma-DON-na', '/maˈdon.na/'),
-((SELECT id FROM dictionary WHERE italian = 'madonna'), 'madonna mia!', 'exclamatory', 'ma-DON-na MEE-a', '/maˈdon.na ˈmi.a/'),
-((SELECT id FROM dictionary WHERE italian = 'accidenti'), 'accidenti!', 'exclamatory', 'ah-chi-DEN-ti', '/at.tʃiˈden.ti/');
+((SELECT id FROM dictionary WHERE italian = 'mamma mia'), 'mamma mia!', 'expression', 'MAH-ma MEE-a', '/ˈmam.ma ˈmi.a/'),
+((SELECT id FROM dictionary WHERE italian = 'perbacco'), 'perbacco!', 'expression', 'per-BAK-ko', '/perˈbak.ko/'),
+((SELECT id FROM dictionary WHERE italian = 'madonna'), 'madonna!', 'expression', 'ma-DON-na', '/maˈdon.na/'),
+((SELECT id FROM dictionary WHERE italian = 'madonna'), 'madonna mia!', 'expression', 'ma-DON-na MEE-a', '/maˈdon.na ˈmi.a/'),
+((SELECT id FROM dictionary WHERE italian = 'accidenti'), 'accidenti!', 'expression', 'ah-chi-DEN-ti', '/at.tʃiˈden.ti/');
 
 -- =============================================================================
 -- SECTION 7: INTERJECTION TYPE METADATA
@@ -325,6 +351,48 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 -- Top 5000 (Advanced/cultural expressions)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 ((SELECT id FROM dictionary WHERE italian = 'perbacco'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr007'), (SELECT id FROM meta_values WHERE value = 'top5000'));
+
+-- =============================================================================
+-- SECTION 12.1: EXPRESSION VARIANT METADATA (FORM-LEVEL ATTRIBUTES)
+-- =============================================================================
+
+-- Base forms (dictionary entries default to base variant)
+INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id)
+SELECT d.id,
+       (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'),
+       (SELECT id FROM meta_values WHERE value = 'base')
+FROM dictionary d
+WHERE d.word_type = 'interjection';
+
+-- Exclamatory forms
+INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
+((SELECT id FROM word_forms WHERE form_text = 'ah!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'oh!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'ecco!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'Ciao!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'Salve!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'Arrivederci!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'mamma mia!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'perbacco!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'madonna!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'madonna mia!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'accidenti!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory'));
+
+-- Lengthened forms
+INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
+((SELECT id FROM word_forms WHERE form_text = 'aaah'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'lengthened')),
+((SELECT id FROM word_forms WHERE form_text = 'oooh'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'lengthened')),
+((SELECT id FROM word_forms WHERE form_text = 'uffa'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'lengthened')),
+((SELECT id FROM word_forms WHERE form_text = 'beeh'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'lengthened')),
+((SELECT id FROM word_forms WHERE form_text = 'maah'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'lengthened'));
+
+-- Questioning forms
+INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
+((SELECT id FROM word_forms WHERE form_text = 'eh?'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'questioning'));
+
+-- Capitalized forms
+INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
+((SELECT id FROM word_forms WHERE form_text = 'Ciao'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'capitalized'));
 
 -- =============================================================================
 -- SECTION 13: WORD TRANSLATIONS
