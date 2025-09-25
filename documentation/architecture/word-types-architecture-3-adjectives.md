@@ -1,5 +1,9 @@
 # Italian Adjective Architecture - Complete Implementation Guide
 
+## 📖 COMPREHENSIVE EXAMPLE DOCUMENTATION
+
+This document serves as comprehensive example documentation for Italian adjective implementation, providing production-ready SQL snippets that developers can reference and use directly. All examples include proper pronunciation, complete metadata coverage, and systematic form generation patterns.
+
 ## Table of Contents
 
 1. [Overview and Definition](#1-overview-and-definition)
@@ -123,7 +127,7 @@ Given the complexity of gender/number agreement patterns, positional meaning dif
 ### 3.2 Applicable Metadata Attributes
 
 **Core Adjective Metadata**:
-- **NEW: adjective_type** (2 values, word-level only: qualitative, fixed-comparative)
+- **adjective_type** - metaattr030 (2 values, word-level only: qualitative, fixed-comparative)
 - **metaattr009** - Gradable (3 values: true, false, analytical - indicates comparative/superlative capability)
 - **metaattr006** - Form Pattern (2/4-form classification for agreement patterns)
 - **metaattr011** - Gender (2 values, form-level: masculine, feminine)
@@ -164,19 +168,42 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 
 **Architecture Strategy**: Each qualitative adjective = separate entry, agreement forms = forms of base adjective
 
+---
+
+## 📚 QUALITATIVE ADJECTIVES - PRODUCTION-READY EXAMPLES
+
+This section provides comprehensive coverage of qualitative adjectives with all semantic types:
+- **4-form pattern**: bello/bella/belli/belle (masculine/feminine distinction)
+- **2-form pattern**: grande/grandi (common gender)
+- **Invariant**: blu (no changes)
+- **Color adjectives**: rosso, blu, verde
+- **Size adjectives**: grande, piccolo
+- **Quality adjectives**: bello, buono
+- **Age adjectives**: nuovo, giovane, vecchio
+- **Nationality adjectives**: italiano, francese
+
 #### Dictionary Entries and Forms
 
 ```sql
--- Dictionary entries: Core qualitative adjectives
+-- Dictionary entries: Comprehensive qualitative adjectives
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+-- Beauty and Quality adjectives
 ('bello', 'adjective', 'BEL-lo', '/ˈbel.lo/'),
-('grande', 'adjective', 'GRAN-de', '/ˈɡran.de/'),
-('rosso', 'adjective', 'ROS-so', '/ˈros.so/'),
-('piccolo', 'adjective', 'PIC-co-lo', '/ˈpik.ko.lo/'),
 ('buono', 'adjective', 'BUO-no', '/ˈbwo.no/'),
+-- Size adjectives
+('grande', 'adjective', 'GRAN-de', '/ˈɡran.de/'),
+('piccolo', 'adjective', 'PIC-co-lo', '/ˈpik.ko.lo/'),
+-- Color adjectives
+('rosso', 'adjective', 'ROS-so', '/ˈros.so/'),
+('blu', 'adjective', 'BLU', '/blu/'),
+('verde', 'adjective', 'VER-de', '/ˈver.de/'),
+-- Age adjectives
 ('nuovo', 'adjective', 'NUO-vo', '/ˈnwo.vo/'),
 ('giovane', 'adjective', 'gio-VA-ne', '/d͡ʒoˈva.ne/'),
-('italiano', 'adjective', 'i-ta-li-A-no', '/itaˈlja.no/');
+('vecchio', 'adjective', 'VEC-chio', '/ˈvek.kjo/'),
+-- Nationality adjectives
+('italiano', 'adjective', 'i-ta-li-A-no', '/itaˈlja.no/'),
+('francese', 'adjective', 'fran-CE-se', '/franˈt͡ʃe.se/');
 ```
 
 #### Complete Form Implementation
@@ -220,11 +247,28 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
 (giovane_id, 'giovani', 'agreement', 'gio-VA-ni', '/d͡ʒoˈva.ni/');
 
+-- VECCHIO forms (4-form pattern)
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+(vecchio_id, 'vecchia', 'agreement', 'VEC-chia', '/ˈvek.kja/'),
+(vecchio_id, 'vecchi', 'agreement', 'VEC-chi', '/ˈvek.ki/'),
+(vecchio_id, 'vecchie', 'agreement', 'VEC-chie', '/ˈvek.kje/');
+
+-- BLU forms (invariant - no forms needed, blu remains unchanged)
+-- Note: BLU is invariant - takes no agreement forms
+
+-- VERDE forms (invariant singular, -i plural - 2-form pattern)
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+(verde_id, 'verdi', 'agreement', 'VER-di', '/ˈver.di/');
+
 -- ITALIANO forms (4-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
 (italiano_id, 'italiana', 'agreement', 'i-ta-li-A-na', '/itaˈlja.na/'),
 (italiano_id, 'italiani', 'agreement', 'i-ta-li-A-ni', '/itaˈlja.ni/'),
 (italiano_id, 'italiane', 'agreement', 'i-ta-li-A-ne', '/itaˈlja.ne/');
+
+-- FRANCESE forms (invariant singular, -i plural - 2-form pattern)
+INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+(francese_id, 'francesi', 'agreement', 'fran-CE-si', '/franˈt͡ʃe.si/');
 ```
 
 #### Complete Metadata Assignment
@@ -232,14 +276,19 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Adjective type classification for qualitative adjectives
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(bello_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'qualitative')),
-(grande_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'qualitative')),
-(rosso_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'qualitative')),
-(piccolo_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'qualitative')),
-(buono_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'qualitative')),
-(nuovo_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'qualitative')),
-(giovane_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'qualitative')),
-(italiano_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'qualitative'));
+(bello_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(grande_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(rosso_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(piccolo_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(buono_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(nuovo_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(giovane_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(italiano_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+-- Additional color adjectives
+(blu_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(verde_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(vecchio_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(francese_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'qualitative'));
 
 -- Gradable metadata (all qualitative adjectives are gradable)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -250,7 +299,11 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 (buono_id, 'f40a8c4c-09cf-4385-a612-dbf90d3bd478', (SELECT id FROM meta_values WHERE value = 'true')),
 (nuovo_id, 'f40a8c4c-09cf-4385-a612-dbf90d3bd478', (SELECT id FROM meta_values WHERE value = 'true')),
 (giovane_id, 'f40a8c4c-09cf-4385-a612-dbf90d3bd478', (SELECT id FROM meta_values WHERE value = 'true')),
-(italiano_id, 'f40a8c4c-09cf-4385-a612-dbf90d3bd478', (SELECT id FROM meta_values WHERE value = 'true'));
+(vecchio_id, 'f40a8c4c-09cf-4385-a612-dbf90d3bd478', (SELECT id FROM meta_values WHERE value = 'true')),
+(blu_id, 'f40a8c4c-09cf-4385-a612-dbf90d3bd478', (SELECT id FROM meta_values WHERE value = 'true')),
+(verde_id, 'f40a8c4c-09cf-4385-a612-dbf90d3bd478', (SELECT id FROM meta_values WHERE value = 'true')),
+(italiano_id, 'f40a8c4c-09cf-4385-a612-dbf90d3bd478', (SELECT id FROM meta_values WHERE value = 'true')),
+(francese_id, 'f40a8c4c-09cf-4385-a612-dbf90d3bd478', (SELECT id FROM meta_values WHERE value = 'true'));
 
 -- Form pattern metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -261,7 +314,11 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 (buono_id, '36e6b866-c2cf-48b5-ba67-2fa70a1522b5', (SELECT id FROM meta_values WHERE value = '4-form')),
 (nuovo_id, '36e6b866-c2cf-48b5-ba67-2fa70a1522b5', (SELECT id FROM meta_values WHERE value = '4-form')),
 (giovane_id, '36e6b866-c2cf-48b5-ba67-2fa70a1522b5', (SELECT id FROM meta_values WHERE value = '2-form')),
-(italiano_id, '36e6b866-c2cf-48b5-ba67-2fa70a1522b5', (SELECT id FROM meta_values WHERE value = '4-form'));
+(vecchio_id, '36e6b866-c2cf-48b5-ba67-2fa70a1522b5', (SELECT id FROM meta_values WHERE value = '4-form')),
+(blu_id, '36e6b866-c2cf-48b5-ba67-2fa70a1522b5', (SELECT id FROM meta_values WHERE value = 'invariant')),
+(verde_id, '36e6b866-c2cf-48b5-ba67-2fa70a1522b5', (SELECT id FROM meta_values WHERE value = '2-form')),
+(italiano_id, '36e6b866-c2cf-48b5-ba67-2fa70a1522b5', (SELECT id FROM meta_values WHERE value = '4-form')),
+(francese_id, '36e6b866-c2cf-48b5-ba67-2fa70a1522b5', (SELECT id FROM meta_values WHERE value = '2-form'));
 
 -- CEFR levels (A1-A2 fundamental adjectives)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -272,7 +329,11 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 (buono_id, '554a6624-fd30-4d1c-b664-5f8433dfe576', (SELECT id FROM meta_values WHERE value = 'A1')),
 (nuovo_id, '554a6624-fd30-4d1c-b664-5f8433dfe576', (SELECT id FROM meta_values WHERE value = 'A1')),
 (giovane_id, '554a6624-fd30-4d1c-b664-5f8433dfe576', (SELECT id FROM meta_values WHERE value = 'A1')),
-(italiano_id, '554a6624-fd30-4d1c-b664-5f8433dfe576', (SELECT id FROM meta_values WHERE value = 'A2'));
+(vecchio_id, '554a6624-fd30-4d1c-b664-5f8433dfe576', (SELECT id FROM meta_values WHERE value = 'A1')),
+(blu_id, '554a6624-fd30-4d1c-b664-5f8433dfe576', (SELECT id FROM meta_values WHERE value = 'A1')),
+(verde_id, '554a6624-fd30-4d1c-b664-5f8433dfe576', (SELECT id FROM meta_values WHERE value = 'A1')),
+(italiano_id, '554a6624-fd30-4d1c-b664-5f8433dfe576', (SELECT id FROM meta_values WHERE value = 'A2')),
+(francese_id, '554a6624-fd30-4d1c-b664-5f8433dfe576', (SELECT id FROM meta_values WHERE value = 'A2'));
 
 -- Frequency tier (top 100 - top 1000 essential words)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -283,7 +344,11 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 (buono_id, '3c909352-4588-4951-8076-6f23081d99be', (SELECT id FROM meta_values WHERE value = 'top100')),
 (nuovo_id, '3c909352-4588-4951-8076-6f23081d99be', (SELECT id FROM meta_values WHERE value = 'top100')),
 (giovane_id, '3c909352-4588-4951-8076-6f23081d99be', (SELECT id FROM meta_values WHERE value = 'top500')),
-(italiano_id, '3c909352-4588-4951-8076-6f23081d99be', (SELECT id FROM meta_values WHERE value = 'top500'));
+(vecchio_id, '3c909352-4588-4951-8076-6f23081d99be', (SELECT id FROM meta_values WHERE value = 'top500')),
+(blu_id, '3c909352-4588-4951-8076-6f23081d99be', (SELECT id FROM meta_values WHERE value = 'top500')),
+(verde_id, '3c909352-4588-4951-8076-6f23081d99be', (SELECT id FROM meta_values WHERE value = 'top500')),
+(italiano_id, '3c909352-4588-4951-8076-6f23081d99be', (SELECT id FROM meta_values WHERE value = 'top500')),
+(francese_id, '3c909352-4588-4951-8076-6f23081d99be', (SELECT id FROM meta_values WHERE value = 'top1000'));
 ```
 
 #### Complete Form-Level Metadata
@@ -346,6 +411,18 @@ INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUE
 
 **Architecture Strategy**: Each fixed comparative adjective = separate entry, agreement forms = forms of base adjective
 
+---
+
+## 🔧 FIXED COMPARATIVE ADJECTIVES - PRODUCTION-READY EXAMPLES
+
+This section provides comprehensive coverage of fixed comparative adjectives with all semantic contexts:
+- **Spatial comparatives**: superiore, inferiore (upper/lower)
+- **Size/importance comparatives**: maggiore, minore (major/minor)
+- **Temporal comparatives**: anteriore, posteriore (earlier/later)
+- **Quality comparatives**: esteriore, interiore (outer/inner)
+
+All fixed comparatives follow the **2-form pattern** (invariant singular, -i plural) and are **NOT gradable** (cannot take più/meno).
+
 #### Dictionary Entries
 
 ```sql
@@ -402,14 +479,14 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Adjective type classification for fixed comparative adjectives
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(superiore_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
-(maggiore_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
-(inferiore_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
-(minore_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
-(anteriore_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
-(posteriore_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
-(esteriore_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
-(interiore_id, 'adjective_type_attr_id', (SELECT id FROM meta_values WHERE value = 'fixed-comparative'));
+(superiore_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
+(maggiore_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
+(inferiore_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
+(minore_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
+(anteriore_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
+(posteriore_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
+(esteriore_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'fixed-comparative')),
+(interiore_id, 'de1a2f93-8b7c-4e21-a9f0-3c5d9e4b8a7c', (SELECT id FROM meta_values WHERE value = 'fixed-comparative'));
 
 -- Gradable metadata (fixed comparative adjectives are NOT gradable)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -508,6 +585,12 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 
 ---
 
+---
+
+## 📝 TRANSLATION ARCHITECTURE - COMPREHENSIVE EXAMPLES
+
+This section provides production-ready translation examples with educational usage notes, covering context-dependent meanings and position-sensitive translations.
+
 ## 6. Translation Architecture
 
 ### 6.1 Context-Dependent Translation Approach
@@ -588,9 +671,28 @@ INSERT INTO word_translations (word_id, translation, display_priority, usage_not
 (giovane_id, 'young', 1, 'AGE DESCRIPTION: "ragazzo giovane" (young boy), "donna giovane" (young woman). Use when GIOVANE indicates youthful age or recent maturity.', 0.90),
 (giovane_id, 'youthful', 2, 'VITALITY & ENERGY: "spirito giovane" (youthful spirit), "energia giovane" (youthful energy). Use when GIOVANE describes vitality associated with youth.', 0.10);
 
+-- VECCHIO translations with age emphasis
+INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate) VALUES
+(vecchio_id, 'old', 1, 'AGE DESCRIPTION: "uomo vecchio" (old man), "casa vecchia" (old house). Use when VECCHIO indicates advanced age or something from the past.', 0.80),
+(vecchio_id, 'ancient', 2, 'HISTORICAL CONTEXT: "città vecchia" (ancient city), "tradizione vecchia" (ancient tradition). Use for historical or long-established entities.', 0.15),
+(vecchio_id, 'former', 3, 'PREVIOUS STATE: "il vecchio sistema" (the former system). Use when VECCHIO indicates something that existed before.', 0.05);
+
+-- BLU translations with color emphasis
+INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate) VALUES
+(blu_id, 'blue', 1, 'COLOR DESCRIPTION: "cielo blu" (blue sky), "mare blu" (blue sea). Primary color adjective describing blue hues and shades. Note: BLU is invariant (no agreement forms).', 1.0);
+
+-- VERDE translations with color emphasis
+INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate) VALUES
+(verde_id, 'green', 1, 'COLOR DESCRIPTION: "erba verde" (green grass), "occhi verdi" (green eyes). Primary color adjective describing green hues, shades, and environmental contexts.', 0.85),
+(verde_id, 'environmental', 2, 'ECOLOGICAL CONTEXT: "energia verde" (green energy), "politica verde" (environmental policy). Use when VERDE refers to environmental or ecological concepts.', 0.15);
+
 -- ITALIANO translations with nationality emphasis
 INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate) VALUES
 (italiano_id, 'Italian', 1, 'NATIONALITY & ORIGIN: "cucina italiana" (Italian cuisine), "uomo italiano" (Italian man). Use when ITALIANO indicates Italian nationality, origin, or cultural affiliation.', 1.0);
+
+-- FRANCESE translations with nationality emphasis
+INSERT INTO word_translations (word_id, translation, display_priority, usage_notes, frequency_estimate) VALUES
+(francese_id, 'French', 1, 'NATIONALITY & ORIGIN: "cucina francese" (French cuisine), "lingua francese" (French language). Use when FRANCESE indicates French nationality, origin, or cultural affiliation.', 1.0);
 ```
 
 ---
@@ -601,8 +703,8 @@ INSERT INTO word_translations (word_id, translation, display_priority, usage_not
 
 The following critical metadata attributes have complete coverage across all adjective categories:
 
-- **✅ Complete adjective_type coverage (NEW ATTRIBUTE NEEDED)**
-  - All base words will have adjective type metadata (qualitative/fixed-comparative)
+- **✅ Complete adjective_type coverage (metaattr030)**
+  - All base words have adjective type metadata (qualitative/fixed-comparative)
   - Two adjective types properly classified for educational distinction
   - Category-specific learning and filtering enabled
 
@@ -681,8 +783,8 @@ All implementation examples meet production-ready standards:
   - Both phonetic_pronunciation and ipa_pronunciation properly populated
   - Audio learning support enabled through complete phonetic coverage
 
-- **⚠️ NEW ATTRIBUTE REQUIRED: adjective_type**
-  - New metadata attribute needed for qualitative/fixed-comparative classification
+- **✅ adjective_type attribute (metaattr030)**
+  - Metadata attribute for qualitative/fixed-comparative classification
   - Word-level only classification (does not apply to forms)
   - Critical for educational filtering and grammatical competence development
 
