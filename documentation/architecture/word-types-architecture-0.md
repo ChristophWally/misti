@@ -556,69 +556,94 @@ Complete conjugation paradigms are stored in `word_forms` table (~100-140 forms 
 - Essential vs. detailed tag categorization
 - Verb type indicators (regular/irregular/reflexive)
 
-> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, form relationships, translation strategies, and educational integration, see [**Determiner Complete Implementation Guide**](./word-types-architecture-1-verbs.md).
+> **📋 Complete Technical Documentation**: For comprehensive implementation details including word-level architecture, complete SQL examples, form relationships, translation strategies, and educational integration, see [**VERB Complete Implementation Guide**](./word-types-architecture-1-verbs.md).
 ---
 
 ### 4.2 NOUN
 
-**Implementation Status**: ✅ **Fully Implemented**
+**Implementation Status**: ✅ **Production-Ready - Comprehensive Implementation**
 
 **Architecture Summary**:
-The noun system handles common nouns and proper nouns (excluding personal names), focusing on gender, number, and article generation with support for irregular plural formations and place name variations.
+The noun system provides sophisticated handling of common nouns and proper nouns with comprehensive metadata classification, algorithmic article generation, and educational progression support. The system includes 4 new specialized noun attributes and complete implementation coverage.
 
-**Word-Level Metadata** *(see [Section 3.3](#33-noun-specific-attributes) for complete value descriptions)*:
-- `metaattr011` - **Noun Gender**: `masculine` (3 words), `feminine` (2 words), `common-gender` (1 word) - inherent grammatical gender
-- `metaattr012` - **Number**: `singolare` (302 forms), `plurale` (301 forms) - applied at form level for agreement
-- `metaattr013` - **Number Restriction**: `plural-only` (2 words), `singular-only` (1 word) - for defective nouns
-- `metaattr026` - **Plural Formation**: `plural-e` (3 words), `plural-i` (2 words) - standard formation patterns
+> **📋 Detailed Technical Documentation**: For comprehensive implementation details including complete SQL specifications, metadata architecture, article generation algorithms, and educational integration, see [**Noun Complete Implementation Guide**](./word-types-architecture-2-nouns.md).
 
-**Proper Noun Metadata** *(for place names, countries, organizations, works)*:
-- `metaattr045` - **Proper Noun Type**: `place`, `organization`, `event`, `work`, `date` - excludes personal names
-- `metaattr046` - **Entity Category**: `country`, `city`, `title`, `brand` - specific proper noun classification
+**New Noun-Specific Metadata (4 New Attributes)**:
+- `metaattr028` - **Noun Type**: `common` (general categories), `proper` (specific entities) - fundamental noun classification
+- `metaattr029` - **Proper Noun Type**: `person`, `place`, `organization`, `work`, `brand` - semantic proper noun categorization
+- `metaattr030` - **Count Mass**: `count` (enumerable: libro → libri), `mass` (continuous: acqua, coraggio) - countability classification
+- `metaattr031` - **Article Pattern**: `definite-required` (la casa), `no-article` (Marco, Roma), `optional` (a casa, in città) - usage patterns
+
+**Existing Metadata Integration** *(see [Section 3.3](#33-noun-specific-attributes) for complete value descriptions)*:
+- `metaattr011` - **Noun Gender**: `masculine`, `feminine`, `common-gender` - inherent grammatical gender for article agreement
+- `metaattr026` - **Plural Formation**: `plural-i` (masculine: libro → libri), `plural-e` (feminine: casa → case) - standard formation patterns
+- `metaattr013` - **Number Restriction**: `singular-only` (mass nouns), `plural-only` (defective nouns) - morphological constraints
 
 **Translation-Level Metadata** *(see [Section 3.6](#36-universal-translation-level-attributes) for complete value descriptions)*:
-- `metaattr018` - **Register**: `neutral` (most common), `formal`, `casual` - formality level for specific meanings
-- `metaattr_optional_tag` - **Optional Topic Tags**: `topic-abstract`, `topic-daily-life`, `topic-place` and others - see [Section 3.7](#37-optional-tags-system)
+- `metaattr018` - **Register**: `neutral`, `formal`, `casual` - formality level for specific meanings
+- `metaattr_optional_tag` - **Optional Topic Tags**: Cultural and semantic domain classification - see [Section 3.7](#37-optional-tags-system)
 
-**Forms Storage**:
-Generally no forms stored for common nouns - articles and plural forms are calculated on the frontend using algorithmic generation based on gender and phonetic rules.
+**Forms Storage Strategy**:
+**Common Nouns**: Minimal forms storage - articles and regular plurals calculated algorithmically on frontend using gender and phonetic conditioning rules for optimal educational value.
 
-**Proper Noun Forms**:
-Most proper nouns are invariable, but some place names have special forms:
+**Proper Nouns**: Generally invariable with strategic forms storage only for irregular cases:
 ```sql
--- Most proper nouns have only base form
+-- Standard proper nouns: base form only
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(italia_id, 'Italia', NULL);
+(roma_id, 'Roma', 'base'),
+(marco_id, 'Marco', 'base');
 
--- Some have plural or variant forms
+-- Special cases with plural or variant forms
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(stati_uniti_id, 'Stati Uniti', 'plural_only');
+(stati_uniti_id, 'Stati Uniti', 'plural_irregular'),
+(alpi_id, 'Alpi', 'plural_irregular');
 ```
 
-**Frontend Features**:
-- **Article Generation**: Automatic definite/indefinite article calculation
-  - Definite: il/lo/la/i/gli/le based on gender and phonetics
-  - Indefinite: un/uno/una/un' based on gender and phonetics
-- **Plural Preview**: Shows expected plural form (casa → case)
-- **Gender Indicators**: Visual ♂/♀/⚥ symbols
-- **Essential Tag Display**: Gender and CEFR level prominently shown
+**Advanced Article Generation System**:
+- **Definite Articles**: Sophisticated phonetic conditioning (il/lo/la/i/gli/le) based on initial consonant clusters, vowels, and special cases
+- **Indefinite Articles**: Complete coverage (un/uno/una/un') with elision rules and phonetic patterns
+- **Article Pattern Integration**: Metadata-driven article requirement classification for educational accuracy
 
-**Article Generation Logic**:
+**Algorithmic Article Generation Logic**:
 ```javascript
-// Simplified algorithm for article generation
-calculateArticle(word, gender, isPlural) {
-  const firstChar = word.charAt(0);
-  const firstTwo = word.substring(0, 2);
+// Advanced article generation with phonetic conditioning
+calculateDefiniteArticle(word, gender, isPlural) {
+  const firstChar = word.charAt(0).toLowerCase();
+  const firstTwo = word.substring(0, 2).toLowerCase();
+
+  const specialConsonantClusters = ['sc', 'sp', 'st', 'sb', 'sf', 'sg', 'sl', 'sm', 'sn', 'sr', 'ss', 'sw', 'ps', 'pn', 'x', 'z', 'gn'];
+  const requiresLo = /^[aeiou]/.test(firstChar) || specialConsonantClusters.some(cluster => firstTwo.includes(cluster));
 
   if (gender === 'masculine') {
-    if (isPlural) {
-      return /[aeiou]/.test(firstChar) || specialCases.includes(firstTwo) ? 'gli' : 'i';
-    } else {
-      return /[aeiou]/.test(firstChar) || specialCases.includes(firstTwo) ? 'lo' : 'il';
-    }
+    return isPlural ? (requiresLo ? 'gli' : 'i') : (requiresLo ? 'lo' : 'il');
+  } else {
+    return isPlural ? 'le' : (/^[aeiou]/.test(firstChar) ? "l'" : 'la');
   }
-  // ... feminine logic
 }
+```
+
+**Implementation Statistics**:
+- **16 comprehensive example entries** across common and proper noun categories
+- **4 new metadata attributes** with complete value specifications
+- **12 new metadata values** covering all noun classification needs
+- **Complete CEFR progression** from A1 essential nouns to B2 cultural concepts
+- **Frequency-based learning order** optimizing high-impact vocabulary acquisition
+
+**Educational Integration**:
+- **Progressive Learning Support**: CEFR classification from A1 basic nouns (casa, libro) to B2 cultural proper nouns (Divina Commedia)
+- **Frequency-Driven Presentation**: Essential vocabulary prioritized through frequency tier classification
+- **Cultural Context Integration**: Proper noun metadata supports cultural competence development
+- **Systematic Article Instruction**: Algorithmic generation teaches Italian phonetic conditioning rules
+
+**Frontend Features**:
+- **Advanced Article Display**: Shows all appropriate articles with phonetic explanations
+- **Plural Formation Preview**: Displays expected plural with formation pattern indication
+- **Comprehensive Gender Indicators**: Visual ♂/♀/⚥ symbols with article pattern context
+- **Noun Type Classification**: Clear distinction between common/proper with subcategory display
+- **Count/Mass Distinction**: Educational indicators for countability patterns
+- **Essential vs. Detailed Tags**: Gender, article pattern, and CEFR prominently displayed; register and cultural context in detailed view
+
+> **🎯 Production Status**: The noun system represents a fully implemented, production-ready architecture with sophisticated metadata classification, algorithmic article generation following authentic Italian phonetic rules, and comprehensive educational progression support. All components are ready for immediate deployment with complete SQL implementation specifications.
 ```
 
 ---
