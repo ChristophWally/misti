@@ -163,11 +163,15 @@ Based on Italian linguistic research and traditional grammatical analysis:
 
 ### 3.1 General Storage Strategy
 
-**Store ALL Interjection Forms**: Given the cultural specificity and context-dependent usage of interjections, all significant forms are stored explicitly rather than calculated. This includes:
-- **Base forms**: Core interjection entries
-- **Punctuation variants**: Exclamatory forms (ah → ah!)
-- **Lengthened forms**: Emphatic variations (ah → aaah)
-- **Repeated forms**: Emphasis through repetition (no → no no no)
+**Store ALL Interjection Forms**: Given the cultural specificity and context-dependent usage of interjections, all significant forms are stored explicitly rather than calculated using the unified `expression` form_type system. This includes:
+- **Base forms**: Core interjection entries (marked as 'base' variant)
+- **Exclamatory forms**: With punctuation (ah → ah!, marked as 'exclamatory' variant)
+- **Lengthened forms**: Emphatic variations (ah → aaah, marked as 'lengthened' variant)
+- **Repeated forms**: Emphasis through repetition (no → no no no, marked as 'repeated' variant)
+- **Questioning forms**: With question mark (eh → eh?, marked as 'questioning' variant)
+- **Capitalized forms**: Sentence-initial (ciao → Ciao, marked as 'capitalized' variant)
+
+**Unified Architecture**: All forms use the `expression` form_type with specific variants captured through the Expression Variant attribute (metaattr052).
 
 **Searchability Priority**: Every significant interjection form receives searchable entry status for comprehensive learner support.
 
@@ -197,14 +201,39 @@ Based on Italian linguistic research and traditional grammatical analysis:
 - `doubt` - Uncertainty markers (mah, boh)
 - `high-sensitivity` - Cultural expressions requiring special usage awareness (madonna, religious/generational concerns)
 
+**`metaattr052` - Expression Variant**:
+- `base` - Base form of the interjection (ah, ciao, mamma mia)
+- `exclamatory` - With exclamation point (ah!, Ciao!, mamma mia!)
+- `lengthened` - Emotional lengthening (aaah, oooh, beeh)
+- `questioning` - With question mark (eh?, mah?)
+- `capitalized` - Sentence-initial forms (Ciao, Salve)
+- `repeated` - Emphatic repetition (no no no, ah ah)
+
 ### 3.3 Form Type Requirements
 
-**Interjection Form Variations**:
+**Unified Form Type System**: Following the established verb pattern (verbs use `conjugation` + mood/tense attributes), interjections use a unified form_type with expression variant attributes.
+
+**Single Form Type**:
+- `expression` - All interjection forms use this unified form_type
+
+**Expression Variant Values** (metaattr052):
+- `base` - Base form of the interjection (ah, ciao, mamma mia)
+- `exclamatory` - With exclamation point (ah!, Ciao!, mamma mia!)
+- `lengthened` - Emotional lengthening (aaah, oooh, beeh)
+- `questioning` - With question mark (eh?, mah?)
 - `capitalized` - Sentence-initial forms (Ciao, Salve)
-- `exclamatory` - With exclamation point (Ah!, Mamma mia!)
 - `repeated` - Emphatic repetition (no no no, ah ah)
-- `lengthened` - Emotional lengthening (aaah, oooh)
-- `questioning` - With question mark (eh?, davvero?)
+
+**Architecture Pattern**:
+```sql
+-- Forms use unified form_type
+INSERT INTO word_forms (word_id, form_text, form_type, ...) VALUES
+(ah_id, 'ah!', 'expression', ...);
+
+-- Variants captured as attributes
+INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
+(ah_exclamatory_form_id, 'expression_variant_attr_id', 'exclamatory_value_id');
+```
 
 ### 3.4 Form Variant Grammar Rules
 
@@ -347,20 +376,32 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 #### 4.1.2 Form Variations
 
 ```sql
--- Emotional lengthening and emphasis
+-- Emotional lengthening and emphasis - using unified form_type
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(ah_id, 'ah!', 'exclamatory', 'AH', '/a/'),
-(ah_id, 'aaah', 'lengthened', 'AAH-ah', '/ˈa.a.a/'),
-(oh_id, 'oh!', 'exclamatory', 'OH', '/o/'),
-(oh_id, 'oooh', 'lengthened', 'OOH-oh', '/ˈo.o.o/'),
-(eh_id, 'eh?', 'questioning', 'EH', '/e/'),
-(uff_id, 'uffa', 'lengthened', 'UF-fa', '/ˈuf.fa/');
+(ah_id, 'ah!', 'expression', 'AH', '/a/'),
+(ah_id, 'aaah', 'expression', 'AAH-ah', '/ˈa.a.a/'),
+(oh_id, 'oh!', 'expression', 'OH', '/o/'),
+(oh_id, 'oooh', 'expression', 'OOH-oh', '/ˈo.o.o/'),
+(eh_id, 'eh?', 'expression', 'EH', '/e/'),
+(uff_id, 'uffa', 'expression', 'UF-fa', '/ˈuf.fa/');
 
--- Processing marker emphasis
+-- Processing marker emphasis - using unified form_type
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(beh_id, 'beeh', 'lengthened', 'BEH-eh', '/ˈbe.e/'),
-(mah_id, 'maah', 'lengthened', 'MAH-ah', '/ˈma.a/'),
-(ecco_id, 'ecco!', 'exclamatory', 'EK-ko', '/ˈek.ko/');
+(beh_id, 'beeh', 'expression', 'BEH-eh', '/ˈbe.e/'),
+(mah_id, 'maah', 'expression', 'MAH-ah', '/ˈma.a/'),
+(ecco_id, 'ecco!', 'expression', 'EK-ko', '/ˈek.ko/');
+
+-- Expression variant attribute assignments
+INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
+((SELECT id FROM word_forms WHERE form_text = 'ah!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'aaah'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'lengthened')),
+((SELECT id FROM word_forms WHERE form_text = 'oh!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory')),
+((SELECT id FROM word_forms WHERE form_text = 'oooh'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'lengthened')),
+((SELECT id FROM word_forms WHERE form_text = 'eh?'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'questioning')),
+((SELECT id FROM word_forms WHERE form_text = 'uffa'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'lengthened')),
+((SELECT id FROM word_forms WHERE form_text = 'beeh'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'lengthened')),
+((SELECT id FROM word_forms WHERE form_text = 'maah'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'lengthened')),
+((SELECT id FROM word_forms WHERE form_text = 'ecco!'), (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr052'), (SELECT id FROM meta_values WHERE value = 'exclamatory'));
 ```
 
 #### 4.1.3 Complete Metadata Assignment
@@ -511,13 +552,77 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 ---
 
-## 5. Cultural Context and Usage
+## 5. Form-Level Architecture
 
-### 5.1 Register Sensitivity
+### 5.1 Unified Form Type System
+
+**Architectural Decision**: Following the established verb pattern, interjections implement a unified form_type system with attribute-based variants. This creates consistency across word types and simplifies form management.
+
+**Verb Pattern Analogy**:
+- **Verbs**: Use `conjugation` form_type + mood/tense attributes
+- **Interjections**: Use `expression` form_type + expression_variant attributes
+
+### 5.2 Architecture Components
+
+#### 5.2.1 Single Form Type
+All interjection forms use the unified `expression` form_type, eliminating the need for multiple form_type values (`exclamatory`, `lengthened`, `questioning`, etc.).
+
+#### 5.2.2 Expression Variant Attribute System
+The new `metaattr052 - Expression Variant` attribute captures the specific variant type:
+- **base**: Base form of the interjection (ah, ciao, mamma mia)
+- **exclamatory**: With exclamation point (ah!, Ciao!, mamma mia!)
+- **lengthened**: Emotional lengthening (aaah, oooh, beeh)
+- **questioning**: With question mark (eh?, mah?)
+- **capitalized**: Sentence-initial forms (Ciao, Salve)
+- **repeated**: Emphatic repetition (no no no, ah ah)
+
+### 5.3 Implementation Benefits
+
+#### 5.3.1 Consistency with Verb Architecture
+This approach maintains architectural consistency with the established verb conjugation system, where a single form_type is combined with attributes for specific variations.
+
+#### 5.3.2 Simplified Form Management
+- **Single form_type**: All forms use `expression`, reducing complexity
+- **Attribute-based variants**: Specific characteristics captured as metadata
+- **Scalability**: Easy to add new expression variants without new form_types
+
+#### 5.3.3 Database Architecture Advantages
+```sql
+-- Simplified form insertion
+INSERT INTO word_forms (word_id, form_text, form_type, ...) VALUES
+(ah_id, 'ah!', 'expression', ...),    -- All use same form_type
+(ah_id, 'aaah', 'expression', ...),   -- Form_type consistency
+(ciao_id, 'Ciao!', 'expression', ...); -- Unified approach
+
+-- Variant specificity through attributes
+INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
+(ah_exclamatory_id, expression_variant_attr_id, exclamatory_value_id),
+(ah_lengthened_id, expression_variant_attr_id, lengthened_value_id),
+(ciao_exclamatory_id, expression_variant_attr_id, exclamatory_value_id);
+```
+
+### 5.4 Educational Value
+
+#### 5.4.1 Learner Interface Benefits
+- **Consistent categorization**: Learners see all interjection forms as "expressions"
+- **Clear variant distinctions**: Attributes explain specific form characteristics
+- **Reduced cognitive load**: Single form type with clear attribute system
+
+#### 5.4.2 Teaching Integration
+The unified system supports pedagogical goals by providing:
+- **Grammatical consistency**: Aligns with established architectural patterns
+- **Clear progression**: Base forms → variant forms with explained characteristics
+- **Cultural sensitivity**: Attribute system can flag culturally sensitive variants
+
+---
+
+## 6. Cultural Context and Usage
+
+### 6.1 Register Sensitivity
 
 **Critical Importance**: Italian interjections carry significant social implications. Inappropriate register usage can cause social awkwardness or offense.
 
-#### 5.1.1 Formality Levels
+#### 6.1.1 Formality Levels
 
 **Informal Context (Family, Friends, Peers)**:
 - ciao, mamma mia, madonna, accidenti
@@ -531,9 +636,9 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 - salve, arrivederci, perbacco
 - Usage: Required with professors, bosses, elderly strangers
 
-### 5.2 Cultural Appropriateness
+### 6.2 Cultural Appropriateness
 
-#### 5.2.1 High Cultural Sensitivity Items
+#### 6.2.1 High Cultural Sensitivity Items
 
 **"madonna"** - Religious reference requiring careful usage:
 - Contains religious content that some may find inappropriate
@@ -549,9 +654,9 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 - May sound dated to younger Italians
 - Educational value for literary/historical comprehension
 
-### 5.3 Educational Guidance
+### 6.3 Educational Guidance
 
-#### 5.3.1 Progressive Learning Approach
+#### 6.3.1 Progressive Learning Approach
 
 **Stage 1 (A1): Essential Social Interaction**
 - Core greetings: ciao, buongiorno (with clear register boundaries)
@@ -573,14 +678,14 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 - Intensity management: madonna (with cultural sensitivity)
 - Regional variation awareness
 
-#### 5.3.2 Teaching Priorities
+#### 6.3.2 Teaching Priorities
 
 1. **Social Safety**: Appropriate register selection prevents social problems
 2. **Cultural Respect**: Understanding cultural significance prevents stereotyping
 3. **Authentic Expression**: Natural integration in conversational contexts
 4. **Gesture Coordination**: Many interjections involve accompanying gestures (boh + shoulder shrug)
 
-#### 5.3.3 Assessment Integration
+#### 6.3.3 Assessment Integration
 
 **Cultural Appropriateness Scenarios**: Context-appropriate usage exercises
 **Register Selection Practice**: Formal vs informal interjection choice

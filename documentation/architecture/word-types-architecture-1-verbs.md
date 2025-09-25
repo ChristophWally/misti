@@ -379,21 +379,21 @@ Three forms are **critical** for the materialization architecture:
 
 #### Past Participle (participio-passato)
 - **Required for**: All 8 compound perfect tenses
-- **Storage**: `word_forms` table with tags `['participio', 'participio-passato', 'simple']`
+- **Storage**: `word_forms` table with normalized metadata via `entity_meta_values` referencing `mood: "participio"`, `tense: "participio-passato"`, `form_type: "conjugation"`
 - **Examples**: parlato, creduto, finito
 - **Irregulars**: fatto (fare), detto (dire), stato (essere/stare)
 - **Impact if missing**: Cannot materialize any compound tense for that verb
 
 #### Present Gerund (gerundio-presente)  
 - **Required for**: All 5 progressive tenses
-- **Storage**: `word_forms` table with tags `['gerundio', 'gerundio-presente', 'simple']`
+- **Storage**: `word_forms` table with normalized metadata via `entity_meta_values` referencing `mood: "gerundio"`, `tense: "gerundio-presente"`, `form_type: "conjugation"`
 - **Examples**: parlando, credendo, finendo  
 - **Irregulars**: facendo (fare), dicendo (dire), stando (stare)
 - **Impact if missing**: Cannot materialize any progressive tense for that verb
 
 #### Present Infinitive (infinito-presente)
 - **Required for**: Negative imperatives, clitic attachment (future scope)
-- **Storage**: `word_forms` table with tags `['infinito', 'infinito-presente', 'simple']`
+- **Storage**: `word_forms` table with normalized metadata via `entity_meta_values` referencing `mood: "infinito"`, `tense: "infinito-presente"`, `form_type: "conjugation"`
 - **Examples**: parlare, credere, finire
 - **Note**: Usually identical to dictionary headword
 - **Impact if missing**: Cannot form negative commands (non parlare!)

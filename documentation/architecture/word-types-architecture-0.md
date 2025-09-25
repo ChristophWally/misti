@@ -459,7 +459,37 @@ INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, descript
 | `governs_da` | GOV_DA | Forms constructions with preposition "da": lontano da | 0 |
 | `invariable` | INVAR | Cannot form prepositional constructions: qui, là, oggi, ieri | 0 |
 
-### 3.6 Universal Translation-Level Attributes
+### 3.6 Standardized Functional Form Types
+
+The misti system uses consistent functional form types that describe grammatical function:
+
+#### **Core Form Types:**
+- **`conjugation`** - All verb forms (finite and non-finite)
+  - Uses `form_mood`, `form_tense`, `form_person` attributes for specifics
+  - Examples: parlo, parlava, parlare, parlando, parlato
+
+- **`number`** - All noun number forms
+  - Uses `form_number` attribute: 'singular' or 'plural'
+  - Examples: libri (plural of libro), forbice (singular of forbici)
+
+- **`agreement`** - All adjective gender/number agreement forms
+  - Uses `form_gender`, `form_number` metadata for specifics
+  - Examples: bella, belli, belle (forms of bello)
+
+- **`contraction`** - All preposition contracted forms
+  - Uses `form_gender`, `form_number` metadata for article agreement
+  - Examples: del, alla, nei (contractions of di, a, in + articles)
+
+- **`expression`** - All interjection expression forms
+  - Uses `expression_variant` attribute: 'base', 'exclamatory', 'lengthened', 'questioning', 'capitalized'
+  - Examples: ah!, aaah, eh? (variants of ah, eh)
+
+#### **Architectural Consistency:**
+- **form_type** = Core grammatical function
+- **Attributes** = Specific variants within that function
+- **Metadata** = Gender/number/other linguistic properties
+
+### 3.7 Universal Translation-Level Attributes
 
 #### Position (`metaattr016`)
 **Purpose**: Position preference for adjectives and adverbs
@@ -486,7 +516,7 @@ INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, descript
 | `casual` | CASU | Casual/colloquial usage | 2 |
 | `mixed` | MIX | Used in both formal and informal contexts | 0 |
 
-### 3.7 Optional Tags System
+### 3.8 Optional Tags System
 
 #### Optional Tags (`metaattr_optional_tag`)
 **Purpose**: Unified optional contextual metadata tags applicable at any level - consolidates form, translation, and word optional tags
@@ -534,7 +564,7 @@ The verb system represents the most complex word type implementation, serving as
 - `metaattr002` - **Auxiliary Verb**: `avere` (13 uses), `essere` (10 uses) - for compound tenses
 - `metaattr020` - **Transitivity**: `transitive` (5 uses), `intransitive` (4 uses), `ambitransitive` (4 uses)
 - `metaattr021` - **Verb Type**: `direct-reflexive` (1 use), `reciprocal` (1 use), `meteorological-verb` (1 use)
-- `metaattr018` - **Register**: `neutral` (36 uses), `formal` (4 uses), `casual` (2 uses) - see [Section 3.6](#36-universal-translation-level-attributes)
+- `metaattr018` - **Register**: `neutral` (36 uses), `formal` (4 uses), `casual` (2 uses) - see [Section 3.7](#37-universal-translation-level-attributes)
 
 **Form-Level Metadata** *(see [Section 3.2](#32-verb-specific-attributes) for complete value descriptions)*:
 - `metaattr010` - **Mood**: `indicativo` (358 forms), `congiuntivo` (133 forms), `condizionale` (60 forms), `imperativo` (29 forms), `gerundio` (9 forms), `infinito` (9 forms), `participio` (8 forms)
@@ -579,9 +609,9 @@ The noun system provides sophisticated handling of common nouns and proper nouns
 - `metaattr026` - **Plural Formation**: `plural-i` (masculine: libro → libri), `plural-e` (feminine: casa → case) - standard formation patterns
 - `metaattr013` - **Number Restriction**: `singular-only` (mass nouns), `plural-only` (defective nouns) - morphological constraints
 
-**Translation-Level Metadata** *(see [Section 3.6](#36-universal-translation-level-attributes) for complete value descriptions)*:
+**Translation-Level Metadata** *(see [Section 3.7](#37-universal-translation-level-attributes) for complete value descriptions)*:
 - `metaattr018` - **Register**: `neutral`, `formal`, `casual` - formality level for specific meanings
-- `metaattr_optional_tag` - **Optional Topic Tags**: Cultural and semantic domain classification - see [Section 3.7](#37-optional-tags-system)
+- `metaattr_optional_tag` - **Optional Topic Tags**: Cultural and semantic domain classification - see [Section 3.8](#38-optional-tags-system)
 
 **Forms Storage Strategy**:
 **Common Nouns**: Minimal forms storage - articles and regular plurals calculated algorithmically on frontend using gender and phonetic conditioning rules for optimal educational value.
@@ -661,7 +691,7 @@ The adjective system handles agreement patterns, position preferences, and grada
 - `metaattr011` - **Noun Gender**: inherited for agreement purposes - see [Section 3.3](#33-noun-specific-attributes)
 - `metaattr056` - **Interrogative Function**: Cross-word-type attribute marking interrogative adjectives (quale, quanto) for filtering and grouping
 
-**Translation-Level Metadata** *(see [Section 3.4](#34-adjective-specific-attributes) and [Section 3.6](#36-universal-translation-level-attributes) for complete value descriptions)*:
+**Translation-Level Metadata** *(see [Section 3.4](#34-adjective-specific-attributes) and [Section 3.7](#37-universal-translation-level-attributes) for complete value descriptions)*:
 - `metaattr008` - **Gender Usage**: `male-only` (2 translations), `female-only` (1 translation) - gender-specific meanings like "handsome" (bello)
 - `metaattr016` - **Position**: `before/after` (5 uses), `after` (5 uses), `before` (1 use) - placement relative to noun
 - `metaattr018` - **Register**: `neutral`, `formal`, `casual` - formality level for specific meanings
@@ -714,7 +744,7 @@ The adverb system classifies by semantic type and position, with sophisticated s
   - `governs_da` - Distance adverbs forming constructions with "da": lontano da, distante da
   - `invariable` - Simple adverbs that cannot form prepositional constructions: qui, là, oggi, ieri
 
-**Translation-Level Metadata** *(see [Section 3.6](#36-universal-translation-level-attributes) for complete value descriptions)*:
+**Translation-Level Metadata** *(see [Section 3.7](#37-universal-translation-level-attributes) for complete value descriptions)*:
 - `metaattr016` - **Position**: `before/after`, `after`, `before` - sentence position preferences
 - `metaattr018` - **Register**: `neutral` (most common), `formal`, `casual` - formality level for specific uses
 

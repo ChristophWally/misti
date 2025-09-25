@@ -24,7 +24,7 @@
    - 4.3 [Article Pattern Integration](#43-article-pattern-integration)
 
 5. [Form-Level Architecture](#5-form-level-architecture)
-   - 5.1 [Plural Formation System](#51-plural-formation-system)
+   - 5.1 [Number Formation System](#51-number-formation-system)
    - 5.2 [Article Generation Algorithm](#52-article-generation-algorithm)
    - 5.3 [Word Relationships for Diminutives](#53-word-relationships-for-diminutives)
 
@@ -115,9 +115,9 @@
 ### 3.1 General Storage Strategy
 
 **Algorithmic Generation (No Storage)**:
-Given the systematic nature of Italian article agreement and plural formation, all article combinations and regular plural forms are generated algorithmically rather than stored in the database.
+Given the systematic nature of Italian article agreement and number formation, all article combinations and regular number forms are generated algorithmically rather than stored in the database.
 
-**Minimal Forms Storage**: Store only irregular plural forms and exceptional patterns in `word_forms`.
+**Minimal Forms Storage**: Store only irregular number forms and exceptional patterns in `word_forms`.
 
 ### 3.2 Applicable Metadata Attributes
 
@@ -141,8 +141,12 @@ Given the systematic nature of Italian article agreement and plural formation, a
 
 **Database Column Values**:
 - `base` - Standard noun base forms
-- `plural_irregular` - Irregular plural forms only
+- `number` - Number forms (both singular and plural) using form_number attribute
 - Use gender/number metadata attributes for complete classification
+
+**Form Number Values**:
+- `plural` - Plural number forms (libri, uomini, forbici)
+- `singular` - Singular number forms (libro, uomo, forbice)
 
 ### 3.4 Pronunciation Column Requirements
 
@@ -161,12 +165,12 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 
 **Universal Pattern for ALL Noun Categories**:
 - **Different semantic content** = **separate dictionary entries**
-- **Irregular plurals only** = **forms of the base noun**
+- **Irregular number forms only** = **forms of the base noun**
 - **Gender/number agreement** = **word-level metadata with algorithmic generation**
 
 ### 4.1 Common Nouns - Complete Implementation
 
-**Architecture Strategy**: Each common noun = separate entry, irregular plurals = forms of base noun
+**Architecture Strategy**: Each common noun = separate entry, irregular number forms = forms of base noun
 
 #### New Metadata Attributes Creation
 
@@ -426,20 +430,40 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 ## 5. Form-Level Architecture
 
-### 5.1 Plural Formation System
+### 5.1 Number Formation System
 
-**Regular Plural Formation Patterns**:
+**Number Agreement Function**: The unified form type system captures the crucial grammatical function of number agreement in Italian nouns. Whether forming plurals from singular lemmas (libro → libri) or singulars from plural-only lemmas (forbici → forbice), the system recognizes both directions as manifestations of the same underlying number agreement function.
 
-**Masculine -o → -i**: libro → libri, tavolo → tavoli
-**Feminine -a → -e**: casa → case, persona → persone
-**Both -e → -i**: problema → problemi (masc), nazione → nazioni (fem)
+**Number Formation Patterns**:
 
-**Irregular Plurals Storage Strategy**:
+**Standard Direction (Singular → Plural)**:
+- **Masculine -o → -i**: libro → libri (form_type = 'number', form_number = 'plural')
+- **Feminine -a → -e**: casa → case (form_type = 'number', form_number = 'plural')
+- **Both -e → -i**: problema → problemi (masc), nazione → nazioni (fem)
+
+**Reverse Direction (Plural → Singular)**:
+- **Plural-only lemmas**: forbici → forbice (form_type = 'number', form_number = 'singular')
+- **Standard plurals**: libri → libro (form_type = 'number', form_number = 'singular')
+
+**Bidirectional Number System Examples**:
 ```sql
--- Store ONLY irregular plurals as forms
-INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(uomo_id, 'uomini', 'plural_irregular', 'UO-mi-ni', '/ˈwo.mi.ni/'),
-(uovo_id, 'uova', 'plural_irregular', 'UO-va', '/ˈwo.va/');
+-- Standard pattern: singular lemma with plural form
+INSERT INTO dictionary (italian, word_type) VALUES ('libro', 'noun');
+INSERT INTO word_forms (word_id, form_text, form_type, form_number) VALUES
+(libro_id, 'libri', 'number', 'plural');
+
+-- Reverse pattern: plural lemma with singular form
+INSERT INTO dictionary (italian, word_type) VALUES ('forbici', 'noun');
+INSERT INTO word_forms (word_id, form_text, form_type, form_number) VALUES
+(forbici_id, 'forbice', 'number', 'singular');
+```
+
+**Irregular Number Forms Storage Strategy**:
+```sql
+-- Store ONLY irregular number forms
+INSERT INTO word_forms (word_id, form_text, form_type, form_number, phonetic_pronunciation, ipa_pronunciation) VALUES
+(uomo_id, 'uomini', 'number', 'plural', 'UO-mi-ni', '/ˈwo.mi.ni/'),
+(uovo_id, 'uova', 'number', 'plural', 'UO-va', '/ˈwo.va/');
 ```
 
 ### 5.2 Article Generation Algorithm
@@ -604,10 +628,10 @@ The noun system implements sophisticated form management with minimal storage:
   - No storage required - all article forms calculated on-demand
   - Phonetic conditioning rules properly captured (il/lo/l', un/uno)
 
-- **✅ Regular Plural Generation**
-  - Systematic plural formation for standard patterns (plural-i, plural-e)
-  - Only irregular plurals stored as forms (uomo → uomini, uovo → uova)
-  - Efficient storage strategy with complete paradigm coverage
+- **✅ Regular Number Formation**
+  - Systematic number formation for standard patterns (plural-i, plural-e)
+  - Only irregular number forms stored as forms (uomo → uomini, uovo → uova, forbici → forbice)
+  - Efficient storage strategy with complete paradigm coverage for both singular and plural directions
 
 - **✅ Word Relationship Architecture**
   - Diminutives/augmentatives as separate entries with relationship links
@@ -654,12 +678,13 @@ The noun architecture represents a fully specified, production-ready implementat
 - **16 example base entries** across common and proper noun categories
 - **4 new metadata attributes** with complete constraint documentation
 - **Complete metadata coverage** for all critical linguistic and educational attributes
+- **Unified form type system** using form_type = 'number' with bidirectional form_number support
 - **Algorithmic article generation** following Italian phonetic conditioning rules
 - **Educational progression** from A1 basic nouns to B2 cultural proper nouns
 - **Sophisticated translation architecture** with cultural context integration
 - **Minimal storage strategy** with maximum pedagogical functionality
 
-This implementation provides the foundation for comprehensive Italian noun learning, supporting both basic vocabulary acquisition and advanced grammatical competence in noun usage, article agreement, and cultural knowledge integration, with complete integration of production-ready metadata SQL statements and ready-to-execute implementation specifications.
+This implementation provides the foundation for comprehensive Italian noun learning, supporting both basic vocabulary acquisition and advanced grammatical competence in noun usage, article agreement, and cultural knowledge integration. The unified number form system captures both singular and plural directions as manifestations of the same grammatical function, with complete integration of production-ready metadata SQL statements and ready-to-execute implementation specifications.
 
 ---
 

@@ -118,7 +118,7 @@
 **Store ALL Adjective Forms (No Calculation)**:
 Given the complexity of gender/number agreement patterns, positional meaning differences, and high frequency usage, all adjective forms are stored in the database rather than calculated on-demand.
 
-**Atomic Base Storage**: Store only fundamental adjectival lemmas in the `dictionary` table, with all inflected forms as searchable entries in `word_forms`.
+**Atomic Base Storage**: Store only fundamental adjectival lemmas in the `dictionary` table, with all agreement forms as searchable entries in `word_forms`.
 
 ### 3.2 Applicable Metadata Attributes
 
@@ -137,7 +137,7 @@ Given the complexity of gender/number agreement patterns, positional meaning dif
 
 **Database Column Values**:
 - `base` - Dictionary lemma forms (masculine singular)
-- `inflected` - Gender/number agreement forms
+- `agreement` - Gender/number agreement forms
 - Use gender/number metadata attributes for complete classification
 
 ### 3.4 Pronunciation Column Requirements
@@ -162,7 +162,7 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 
 ### 4.1 Qualitative Adjectives - Complete Implementation
 
-**Architecture Strategy**: Each qualitative adjective = separate entry, inflected forms = forms of base adjective
+**Architecture Strategy**: Each qualitative adjective = separate entry, agreement forms = forms of base adjective
 
 #### Dictionary Entries and Forms
 
@@ -184,47 +184,47 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- BELLO forms (4-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(bello_id, 'bella', 'inflected', 'BEL-la', '/ˈbel.la/'),
-(bello_id, 'belli', 'inflected', 'BEL-li', '/ˈbel.li/'),
-(bello_id, 'belle', 'inflected', 'BEL-le', '/ˈbel.le/');
+(bello_id, 'bella', 'agreement', 'BEL-la', '/ˈbel.la/'),
+(bello_id, 'belli', 'agreement', 'BEL-li', '/ˈbel.li/'),
+(bello_id, 'belle', 'agreement', 'BEL-le', '/ˈbel.le/');
 
 -- GRANDE forms (2-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(grande_id, 'grandi', 'inflected', 'GRAN-di', '/ˈɡran.di/');
+(grande_id, 'grandi', 'agreement', 'GRAN-di', '/ˈɡran.di/');
 
 -- ROSSO forms (4-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(rosso_id, 'rossa', 'inflected', 'ROS-sa', '/ˈros.sa/'),
-(rosso_id, 'rossi', 'inflected', 'ROS-si', '/ˈros.si/'),
-(rosso_id, 'rosse', 'inflected', 'ROS-se', '/ˈros.se/');
+(rosso_id, 'rossa', 'agreement', 'ROS-sa', '/ˈros.sa/'),
+(rosso_id, 'rossi', 'agreement', 'ROS-si', '/ˈros.si/'),
+(rosso_id, 'rosse', 'agreement', 'ROS-se', '/ˈros.se/');
 
 -- PICCOLO forms (4-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(piccolo_id, 'piccola', 'inflected', 'PIC-co-la', '/ˈpik.ko.la/'),
-(piccolo_id, 'piccoli', 'inflected', 'PIC-co-li', '/ˈpik.ko.li/'),
-(piccolo_id, 'piccole', 'inflected', 'PIC-co-le', '/ˈpik.ko.le/');
+(piccolo_id, 'piccola', 'agreement', 'PIC-co-la', '/ˈpik.ko.la/'),
+(piccolo_id, 'piccoli', 'agreement', 'PIC-co-li', '/ˈpik.ko.li/'),
+(piccolo_id, 'piccole', 'agreement', 'PIC-co-le', '/ˈpik.ko.le/');
 
 -- BUONO forms (4-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(buono_id, 'buona', 'inflected', 'BUO-na', '/ˈbwo.na/'),
-(buono_id, 'buoni', 'inflected', 'BUO-ni', '/ˈbwo.ni/'),
-(buono_id, 'buone', 'inflected', 'BUO-ne', '/ˈbwo.ne/');
+(buono_id, 'buona', 'agreement', 'BUO-na', '/ˈbwo.na/'),
+(buono_id, 'buoni', 'agreement', 'BUO-ni', '/ˈbwo.ni/'),
+(buono_id, 'buone', 'agreement', 'BUO-ne', '/ˈbwo.ne/');
 
 -- NUOVO forms (4-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(nuovo_id, 'nuova', 'inflected', 'NUO-va', '/ˈnwo.va/'),
-(nuovo_id, 'nuovi', 'inflected', 'NUO-vi', '/ˈnwo.vi/'),
-(nuovo_id, 'nuove', 'inflected', 'NUO-ve', '/ˈnwo.ve/');
+(nuovo_id, 'nuova', 'agreement', 'NUO-va', '/ˈnwo.va/'),
+(nuovo_id, 'nuovi', 'agreement', 'NUO-vi', '/ˈnwo.vi/'),
+(nuovo_id, 'nuove', 'agreement', 'NUO-ve', '/ˈnwo.ve/');
 
 -- GIOVANE forms (2-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(giovane_id, 'giovani', 'inflected', 'gio-VA-ni', '/d͡ʒoˈva.ni/');
+(giovane_id, 'giovani', 'agreement', 'gio-VA-ni', '/d͡ʒoˈva.ni/');
 
 -- ITALIANO forms (4-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(italiano_id, 'italiana', 'inflected', 'i-ta-li-A-na', '/itaˈlja.na/'),
-(italiano_id, 'italiani', 'inflected', 'i-ta-li-A-ni', '/itaˈlja.ni/'),
-(italiano_id, 'italiane', 'inflected', 'i-ta-li-A-ne', '/itaˈlja.ne/');
+(italiano_id, 'italiana', 'agreement', 'i-ta-li-A-na', '/itaˈlja.na/'),
+(italiano_id, 'italiani', 'agreement', 'i-ta-li-A-ni', '/itaˈlja.ni/'),
+(italiano_id, 'italiane', 'agreement', 'i-ta-li-A-ne', '/itaˈlja.ne/');
 ```
 
 #### Complete Metadata Assignment
@@ -289,7 +289,7 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 #### Complete Form-Level Metadata
 
 ```sql
--- Gender metadata for all inflected forms
+-- Gender metadata for all agreement forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
 -- BELLO forms
 (bella_form_id, '08a37467-3de5-42b2-a22a-29127c58c942', (SELECT id FROM meta_values WHERE value = 'feminine')),
@@ -316,7 +316,7 @@ INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUE
 (italiani_form_id, '08a37467-3de5-42b2-a22a-29127c58c942', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (italiane_form_id, '08a37467-3de5-42b2-a22a-29127c58c942', (SELECT id FROM meta_values WHERE value = 'feminine'));
 
--- Number metadata for all inflected forms
+-- Number metadata for all agreement forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
 -- Singular forms
 (bella_form_id, number_attr_id, (SELECT id FROM meta_values WHERE value = 'singular')),
@@ -344,7 +344,7 @@ INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUE
 
 ### 4.2 Fixed Comparative Adjectives - Complete Implementation
 
-**Architecture Strategy**: Each fixed comparative adjective = separate entry, inflected forms = forms of base adjective
+**Architecture Strategy**: Each fixed comparative adjective = separate entry, agreement forms = forms of base adjective
 
 #### Dictionary Entries
 
@@ -366,35 +366,35 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- SUPERIORE forms (2-form pattern - ends in -e)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(superiore_id, 'superiori', 'inflected', 'su-pe-ri-O-ri', '/supeˈrjo.ri/');
+(superiore_id, 'superiori', 'agreement', 'su-pe-ri-O-ri', '/supeˈrjo.ri/');
 
 -- MAGGIORE forms (2-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(maggiore_id, 'maggiori', 'inflected', 'mag-gi-O-ri', '/madˈd͡ʒo.ri/');
+(maggiore_id, 'maggiori', 'agreement', 'mag-gi-O-ri', '/madˈd͡ʒo.ri/');
 
 -- INFERIORE forms (2-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(inferiore_id, 'inferiori', 'inflected', 'in-fe-ri-O-ri', '/infeˈrjo.ri/');
+(inferiore_id, 'inferiori', 'agreement', 'in-fe-ri-O-ri', '/infeˈrjo.ri/');
 
 -- MINORE forms (2-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(minore_id, 'minori', 'inflected', 'mi-NO-ri', '/miˈno.ri/');
+(minore_id, 'minori', 'agreement', 'mi-NO-ri', '/miˈno.ri/');
 
 -- ANTERIORE forms (2-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(anteriore_id, 'anteriori', 'inflected', 'an-te-ri-O-ri', '/anteˈrjo.ri/');
+(anteriore_id, 'anteriori', 'agreement', 'an-te-ri-O-ri', '/anteˈrjo.ri/');
 
 -- POSTERIORE forms (2-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(posteriore_id, 'posteriori', 'inflected', 'pos-te-ri-O-ri', '/posteˈrjo.ri/');
+(posteriore_id, 'posteriori', 'agreement', 'pos-te-ri-O-ri', '/posteˈrjo.ri/');
 
 -- ESTERIORE forms (2-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(esteriore_id, 'esteriori', 'inflected', 'e-ste-ri-O-ri', '/esteˈrjo.ri/');
+(esteriore_id, 'esteriori', 'agreement', 'e-ste-ri-O-ri', '/esteˈrjo.ri/');
 
 -- INTERIORE forms (2-form pattern)
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(interiore_id, 'interiori', 'inflected', 'in-te-ri-O-ri', '/inteˈrjo.ri/');
+(interiore_id, 'interiori', 'agreement', 'in-te-ri-O-ri', '/inteˈrjo.ri/');
 ```
 
 #### Complete Metadata Assignment
@@ -498,12 +498,12 @@ casa grande (f.sg) → case grandi (f.pl)
 
 **Form Architecture Pattern**:
 ```sql
--- All inflected forms are forms of their base adjective
+-- All agreement forms are forms of their base adjective
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(bello_id, 'bella', 'inflected'),      -- 'bella' is form of base word 'bello'
-(bello_id, 'belli', 'inflected'),      -- 'belli' is form of base word 'bello'
-(grande_id, 'grandi', 'inflected'),    -- 'grandi' is form of base word 'grande'
-(superiore_id, 'superiori', 'inflected'); -- 'superiori' is form of base word 'superiore'
+(bello_id, 'bella', 'agreement'),      -- 'bella' is form of base word 'bello'
+(bello_id, 'belli', 'agreement'),      -- 'belli' is form of base word 'bello'
+(grande_id, 'grandi', 'agreement'),    -- 'grandi' is form of base word 'grande'
+(superiore_id, 'superiori', 'agreement'); -- 'superiori' is form of base word 'superiore'
 ```
 
 ---
@@ -618,12 +618,12 @@ The following critical metadata attributes have complete coverage across all adj
   - Educational scaffolding through systematic pattern recognition
 
 - **✅ Complete metaattr011 (gender) coverage**
-  - All inflected forms have gender metadata (masculine/feminine)
-  - Gender agreement patterns captured for all inflected forms
+  - All agreement forms have gender metadata (masculine/feminine)
+  - Gender agreement patterns captured for all agreement forms
   - Base adjectives do not require gender (varies by agreement)
 
 - **✅ Complete metaattr012 (number) coverage**
-  - All inflected forms have number metadata (singular/plural)
+  - All agreement forms have number metadata (singular/plural)
   - Number agreement architecture supports complete paradigm display
   - Base adjectives do not require number (varies by agreement)
 
@@ -643,7 +643,7 @@ The adjective system implements complete form coverage across both major categor
 
 - **✅ Qualitative Adjectives (8 base entries)**
   - Core adjectives: bello, grande, rosso, piccolo, buono, nuovo, giovane, italiano
-  - All qualitative adjectives with complete inflected form coverage
+  - All qualitative adjectives with complete agreement form coverage
   - Agreement patterns properly captured through form relationships (4-form and 2-form)
 
 - **✅ Fixed Comparative Adjectives (8 base entries)**
@@ -651,7 +651,7 @@ The adjective system implements complete form coverage across both major categor
   - Spatial, qualitative, and temporal comparative forms included
   - Advanced learning supported through A2-B1 level classification
 
-- **✅ Agreement Form Coverage (32+ inflected forms total)**
+- **✅ Agreement Form Coverage (32+ agreement forms total)**
   - Complete gender/number combinations covered systematically
   - 4-form pattern adjectives: full masculine/feminine × singular/plural coverage
   - 2-form pattern adjectives: singular/plural coverage with common gender
@@ -672,7 +672,7 @@ All implementation examples meet production-ready standards:
   - Consistent metadata architecture across all adjective categories
 
 - **✅ Established form relationships**
-  - All inflected forms properly established as forms of base adjectives
+  - All agreement forms properly established as forms of base adjectives
   - Parent-child relationships maintain semantic and morphological integrity
   - Form inheritance patterns support complete paradigm reconstruction
 
@@ -690,7 +690,7 @@ All implementation examples meet production-ready standards:
 The adjective architecture represents a fully specified, production-ready implementation covering:
 
 - **16 total base entries** across two adjective categories
-- **32+ inflected forms** with complete gender/number metadata
+- **32+ agreement forms** with complete gender/number metadata
 - **Complete metadata coverage** for all critical linguistic attributes
 - **Systematic agreement generation** following mandatory Italian grammar rules
 - **Educational progression** from A1 basic adjectives to B1 advanced constructions

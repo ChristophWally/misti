@@ -129,7 +129,7 @@ Given the mandatory nature of contractions, phonetic conditioning complexity, an
 ### 3.3 Form Type Requirements
 
 **Database Column Values**:
-- `prep_contraction` - Contracted forms (del, al, dalla, etc.)
+- `contraction` - Contracted forms (del, al, dalla, etc.)
 - `base` - Simple preposition base forms
 - Use gender/number metadata attributes for complete classification
 
@@ -222,48 +222,48 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 ```sql
 -- DI contractions as forms
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(di_id, 'del', 'prep_contraction', 'DEL', '/del/'),
-(di_id, 'dello', 'prep_contraction', 'DEL-lo', '/ˈdel.lo/'),
-(di_id, 'della', 'prep_contraction', 'DEL-la', '/ˈdel.la/'),
-(di_id, 'dei', 'prep_contraction', 'DEI', '/dei/'),
-(di_id, 'degli', 'prep_contraction', 'DE-gli', '/ˈde.ʎi/'),
-(di_id, 'delle', 'prep_contraction', 'DEL-le', '/ˈdel.le/');
+(di_id, 'del', 'contraction', 'DEL', '/del/'),
+(di_id, 'dello', 'contraction', 'DEL-lo', '/ˈdel.lo/'),
+(di_id, 'della', 'contraction', 'DEL-la', '/ˈdel.la/'),
+(di_id, 'dei', 'contraction', 'DEI', '/dei/'),
+(di_id, 'degli', 'contraction', 'DE-gli', '/ˈde.ʎi/'),
+(di_id, 'delle', 'contraction', 'DEL-le', '/ˈdel.le/');
 
 -- A contractions as forms
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(a_id, 'al', 'prep_contraction', 'AL', '/al/'),
-(a_id, 'allo', 'prep_contraction', 'AL-lo', '/ˈal.lo/'),
-(a_id, 'alla', 'prep_contraction', 'AL-la', '/ˈal.la/'),
-(a_id, 'ai', 'prep_contraction', 'AI', '/ai/'),
-(a_id, 'agli', 'prep_contraction', 'A-gli', '/ˈa.ʎi/'),
-(a_id, 'alle', 'prep_contraction', 'AL-le', '/ˈal.le/');
+(a_id, 'al', 'contraction', 'AL', '/al/'),
+(a_id, 'allo', 'contraction', 'AL-lo', '/ˈal.lo/'),
+(a_id, 'alla', 'contraction', 'AL-la', '/ˈal.la/'),
+(a_id, 'ai', 'contraction', 'AI', '/ai/'),
+(a_id, 'agli', 'contraction', 'A-gli', '/ˈa.ʎi/'),
+(a_id, 'alle', 'contraction', 'AL-le', '/ˈal.le/');
 
 -- DA contractions as forms
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(da_id, 'dal', 'prep_contraction', 'DAL', '/dal/'),
-(da_id, 'dallo', 'prep_contraction', 'DAL-lo', '/ˈdal.lo/'),
-(da_id, 'dalla', 'prep_contraction', 'DAL-la', '/ˈdal.la/'),
-(da_id, 'dai', 'prep_contraction', 'DAI', '/dai/'),
-(da_id, 'dagli', 'prep_contraction', 'DA-gli', '/ˈda.ʎi/'),
-(da_id, 'dalle', 'prep_contraction', 'DAL-le', '/ˈdal.le/');
+(da_id, 'dal', 'contraction', 'DAL', '/dal/'),
+(da_id, 'dallo', 'contraction', 'DAL-lo', '/ˈdal.lo/'),
+(da_id, 'dalla', 'contraction', 'DAL-la', '/ˈdal.la/'),
+(da_id, 'dai', 'contraction', 'DAI', '/dai/'),
+(da_id, 'dagli', 'contraction', 'DA-gli', '/ˈda.ʎi/'),
+(da_id, 'dalle', 'contraction', 'DAL-le', '/ˈdal.le/');
 
 -- IN contractions as forms
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(in_id, 'nel', 'prep_contraction', 'NEL', '/nel/'),
-(in_id, 'nello', 'prep_contraction', 'NEL-lo', '/ˈnel.lo/'),
-(in_id, 'nella', 'prep_contraction', 'NEL-la', '/ˈnel.la/'),
-(in_id, 'nei', 'prep_contraction', 'NEI', '/nei/'),
-(in_id, 'negli', 'prep_contraction', 'NE-gli', '/ˈne.ʎi/'),
-(in_id, 'nelle', 'prep_contraction', 'NEL-le', '/ˈnel.le/');
+(in_id, 'nel', 'contraction', 'NEL', '/nel/'),
+(in_id, 'nello', 'contraction', 'NEL-lo', '/ˈnel.lo/'),
+(in_id, 'nella', 'contraction', 'NEL-la', '/ˈnel.la/'),
+(in_id, 'nei', 'contraction', 'NEI', '/nei/'),
+(in_id, 'negli', 'contraction', 'NE-gli', '/ˈne.ʎi/'),
+(in_id, 'nelle', 'contraction', 'NEL-le', '/ˈnel.le/');
 
 -- SU contractions as forms
 INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation) VALUES
-(su_id, 'sul', 'prep_contraction', 'SUL', '/sul/'),
-(su_id, 'sullo', 'prep_contraction', 'SUL-lo', '/ˈsul.lo/'),
-(su_id, 'sulla', 'prep_contraction', 'SUL-la', '/ˈsul.la/'),
-(su_id, 'sui', 'prep_contraction', 'SUI', '/sui/'),
-(su_id, 'sugli', 'prep_contraction', 'SU-gli', '/ˈsu.ʎi/'),
-(su_id, 'sulle', 'prep_contraction', 'SUL-le', '/ˈsul.le/');
+(su_id, 'sul', 'contraction', 'SUL', '/sul/'),
+(su_id, 'sullo', 'contraction', 'SUL-lo', '/ˈsul.lo/'),
+(su_id, 'sulla', 'contraction', 'SUL-la', '/ˈsul.la/'),
+(su_id, 'sui', 'contraction', 'SUI', '/sui/'),
+(su_id, 'sugli', 'contraction', 'SU-gli', '/ˈsu.ʎi/'),
+(su_id, 'sulle', 'contraction', 'SUL-le', '/ˈsul.le/');
 ```
 
 #### Complete Contracted Form Metadata
@@ -489,10 +489,10 @@ su + il = sul    |  su + lo = sullo  |  su + la = sulla
 ```sql
 -- All contracted forms are forms of their base preposition
 INSERT INTO word_forms (word_id, form_text, form_type) VALUES
-(di_id, 'del', 'prep_contraction'),     -- 'del' is form of base word 'di'
-(di_id, 'della', 'prep_contraction'),   -- 'della' is form of base word 'di'
-(a_id, 'al', 'prep_contraction'),       -- 'al' is form of base word 'a'
-(a_id, 'alla', 'prep_contraction');     -- 'alla' is form of base word 'a'
+(di_id, 'del', 'contraction'),     -- 'del' is form of base word 'di'
+(di_id, 'della', 'contraction'),   -- 'della' is form of base word 'di'
+(a_id, 'al', 'contraction'),       -- 'al' is form of base word 'a'
+(a_id, 'alla', 'contraction');     -- 'alla' is form of base word 'a'
 ```
 
 ---
