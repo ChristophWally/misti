@@ -680,14 +680,21 @@ calculateDefiniteArticle(word, gender, isPlural) {
 
 ### 4.3 ADJECTIVE
 
-**Implementation Status**: ✅ **Fully Implemented**
+**Implementation Status**: ✅ **Fully Implemented - Production-Ready Architecture**
 
 **Architecture Summary**:
-The adjective system handles agreement patterns, position preferences, and gradability.
+The adjective system provides comprehensive handling of Italian adjectives with sophisticated metadata classification, agreement patterns, and educational progression support. The implementation covers two major adjective categories with complete form paradigms and systematic position-based translation strategies.
+
+> **📋 Detailed Technical Documentation**: For comprehensive implementation details including complete SQL specifications, metadata architecture, form generation patterns, and educational integration, see [**Italian Adjective Architecture - Complete Implementation Guide**](./word-types-architecture-3-adjectives.md).
+
+**Two Major Categories**:
+1. **Qualitative Adjectives** (16 base entries) - Descriptive adjectives expressing inherent qualities (bello, grande, rosso, piccolo, buono, nuovo, giovane, vecchio, blu, verde, italiano, francese) with full agreement paradigms
+2. **Fixed Comparative Adjectives** (8 base entries) - Pre-comparative forms with independent meanings (superiore, maggiore, inferiore, minore, anteriore, posteriore, esteriore, interiore) that cannot take further comparative constructions
 
 **Word-Level Metadata** *(see [Section 3.4](#34-adjective-specific-attributes) for complete value descriptions)*:
-- `metaattr009` - **Gradable**: `full-gradability` (3 words), `analytical-gradability` (1 word), `non-gradable` (1 word) - comparative/superlative capability
-- `metaattr006` - **Form Pattern**: `form-4` (2 words), `form-2` (2 words) - agreement variations (rosso/rossa/rossi/rosse vs grande/grandi)
+- `metaattr030` - **Adjective Type**: `qualitative` (16 words), `fixed-comparative` (8 words) - fundamental category classification for educational distinction and grammatical competence
+- `metaattr009` - **Gradable**: `true` (qualitative adjectives), `false` (fixed comparatives) - comparative/superlative capability with grammatical accuracy
+- `metaattr006` - **Form Pattern**: `4-form` (masculine/feminine distinction), `2-form` (common gender), `invariant` (no agreement) - systematic agreement pattern classification
 - `metaattr011` - **Noun Gender**: inherited for agreement purposes - see [Section 3.3](#33-noun-specific-attributes)
 - `metaattr056` - **Interrogative Function**: Cross-word-type attribute marking interrogative adjectives (quale, quanto) for filtering and grouping
 
@@ -696,8 +703,13 @@ The adjective system handles agreement patterns, position preferences, and grada
 - `metaattr016` - **Position**: `before/after` (5 uses), `after` (5 uses), `before` (1 use) - placement relative to noun
 - `metaattr018` - **Register**: `neutral`, `formal`, `casual` - formality level for specific meanings
 
-**Forms Storage**:
-Minimal forms storage - agreement forms are typically calculated on frontend based on regular patterns (alto/alta/alti/alte).
+**Forms Storage Strategy**:
+Complete forms storage for all adjectives due to complexity of agreement patterns, position-dependent meanings, and high frequency usage. All gender/number combinations are stored as searchable entries in `word_forms` table:
+- **4-Form Pattern**: Complete masculine/feminine × singular/plural coverage (bello/bella/belli/belle)
+- **2-Form Pattern**: Singular/plural coverage with common gender (grande/grandi)
+- **Invariant Pattern**: No agreement forms needed (blu remains unchanged)
+
+**Agreement Form Coverage**: 32+ agreement forms total with complete gender/number metadata for each form
 
 **Interrogative Adjectives**:
 Italian interrogative adjectives form questions about identity, quantity, and selection:
@@ -720,119 +732,152 @@ Many Italian adjectives can be used exclamatorily to express strong reactions, s
 - Can form comparative and superlative constructions: "È incredibilissimo!" (It's extremely incredible!)
 - Register varies from neutral (esatto) to informal (incredibile, assurdo) depending on context
 
+**Implementation Statistics**:
+- **24 total base entries** across two adjective categories
+- **32+ agreement forms** with complete gender/number metadata
+- **Complete metadata coverage** for all critical linguistic attributes
+- **Systematic agreement generation** following mandatory Italian grammar rules
+- **Educational progression** from A1 basic adjectives to B1 advanced constructions
+- **Position-sensitive translations** supporting advanced comprehension
+
+**Educational Integration**:
+- **Progressive Learning Support**: CEFR classification from A1 basic adjectives (bello, grande, rosso) to B1 advanced forms (superiore, maggiore)
+- **Frequency-Driven Presentation**: Essential vocabulary prioritized through frequency tier classification (top100-top2500)
+- **Agreement Pattern Instruction**: Systematic 4-form and 2-form pattern recognition for grammatical competence
+- **Position-Based Translation**: Pre-nominal vs. post-nominal meaning differences captured in context-dependent translations
+
 **Frontend Features**:
-- **Position Indicators**: Shows preferred placement relative to noun
-- **Gradability Display**: Indicates if adjective can be compared (più alto, altissimo)
-- **Agreement Preview**: Shows masculine/feminine forms
-- **Essential vs. Detailed Tags**: Position and gradability as essential, register as detailed
+- **Adjective Type Classification**: Clear distinction between qualitative/fixed-comparative with educational explanations
+- **Agreement Preview**: Complete gender/number paradigm display with pattern recognition
+- **Gradability Indicators**: Shows comparative/superlative capability with grammatical accuracy
+- **Position-Sensitive Display**: Pre-nominal vs. post-nominal meaning variations
+- **Essential vs. Detailed Tags**: Adjective type, gradability, and agreement pattern prominently displayed; register and position in detailed view
 
 ---
 
 ### 4.4 ADVERB
 
-**Implementation Status**: ✅ **Fully Implemented**
+**Implementation Status**: ✅ **Fully Implemented - Comprehensive 13-Category Architecture**
 
 **Architecture Summary**:
-The adverb system classifies by semantic type and position, with sophisticated support for adverb-preposition constructions that form systematic grammatical patterns in Italian.
+The adverb system provides comprehensive coverage of Italian adverbs with sophisticated semantic classification, government patterns, and cross-word-type features. The implementation encompasses four major functional categories with 13 total subcategories, systematic government pattern integration, and advanced educational progression support.
+
+> **📋 Detailed Technical Documentation**: For comprehensive implementation details including complete SQL specifications, all 13 categories, government pattern systems, and educational integration, see [**Italian Adverb Architecture - Complete Implementation Guide**](./word-types-architecture-4-adverbs.md).
+
+**Four Major Categories with 13 Subcategories**:
+1. **Semantic Adverbs** (10 subcategories) - Content adverbs expressing manner, time, place, quantity, frequency, affirmation, negation, evaluation, emphasis, doubt
+2. **Conjunctive Adverbs** - Discourse-connecting adverbs (tuttavia, infatti, dunque, pertanto) that link clauses and provide logical relationships
+3. **Exclamative Adverbs** - Emotional expression adverbs (come!, dove!, quando!) for strong reactions, separate from interrogative forms
+4. **Presentative Adverbs** - Introduction/presentation adverbs (ecco) with systematic clitic attachment patterns (eccomi, eccoti, eccolo)
 
 **Word-Level Metadata** *(see [Section 3.5](#35-adverb-specific-attributes) for complete value descriptions)*:
-- `metaattr001` - **Adverb Type**: 10 semantic categories (interrogative function now handled separately) - `manner` (2 uses), `affirmation` (2 uses), `negation` (2 uses), `time` (2 uses), `emphasis` (3 uses), `evaluation` (3 uses), `quantity`, `doubt`, `place`, `frequency` (1 use each)
-- `metaattr056` - **Interrogative Function**: Cross-word-type attribute marking interrogative adverbs (come, quando, dove, perché) for filtering and grouping
-- `metaattr055` - **Adverb Government**: NEW systematic classification for prepositional constructions:
+- `metaattr001` - **Adverb Type**: 13 comprehensive categories covering all functional types - `manner`, `time`, `place`, `quantity`, `frequency`, `affirmation`, `negation`, `evaluation`, `emphasis`, `doubt`, `conjunctive`, `exclamative`, `presentative`
+- `metaattr056` - **Interrogative Function**: Cross-word-type attribute marking interrogative adverbs (come, quando, dove, perché) for filtering and grouping across word types
+- `metaattr055` - **Adverb Government**: Systematic classification for prepositional constructions with educational value:
   - `governs_a` - Spatial adverbs forming constructions with "a": davanti a, dietro a, accanto a, vicino a
   - `governs_di` - Temporal adverbs forming constructions with "di": prima di, dopo di, invece di
   - `governs_da` - Distance adverbs forming constructions with "da": lontano da, distante da
   - `invariable` - Simple adverbs that cannot form prepositional constructions: qui, là, oggi, ieri
+- `metaattrXXX` - **Clitic Capability**: `supports_clitics` (presentative adverbs with clitic attachment patterns), `no_clitics` (standard invariable adverbs)
 
 **Translation-Level Metadata** *(see [Section 3.7](#37-universal-translation-level-attributes) for complete value descriptions)*:
 - `metaattr016` - **Position**: `before/after`, `after`, `before` - sentence position preferences
 - `metaattr018` - **Register**: `neutral` (most common), `formal`, `casual` - formality level for specific uses
 
-**Systematic Adverb-Preposition Patterns**:
+**Advanced Category Examples**:
 
-**Spatial Adverbs + "a"** (Physical Position/Direction):
-- davanti a (in front of), dietro a (behind), accanto a (next to)
-- vicino a (near to), intorno a (around), attorno a (around)
-- sopra a (above), sotto a (below), dentro a (inside)
+**Conjunctive Adverbs** (Discourse Connection):
+- **tuttavia** (however) - contrastive: "È difficile, tuttavia ci proverò" (It's difficult, however I'll try)
+- **infatti** (indeed/in fact) - confirmatory: "È bravo, infatti ha vinto" (He's good, indeed he won)
+- **dunque** (therefore) - consequential: "Piove, dunque resto a casa" (It's raining, therefore I stay home)
+- **pertanto** (therefore/hence) - formal consequence: "È malato, pertanto non viene" (He's sick, therefore he's not coming)
 
-**Temporal Adverbs + "di"** (Time Relations):
-- prima di (before), dopo di (after), invece di (instead of)
-- prima di tutto (first of all), prima di dormire (before sleeping)
+**Exclamative Adverbs** (Emotional Expression):
+- **come!** (how!) - emotional reaction: "Come sei bravo!" (How good you are!)
+- **dove!** (where!) - strong reaction: "Dove sei stato!" (Where have you been!)
+- **quando!** (when!) - impatience: "Quando arriverà!" (When will he arrive!)
 
-**Distance Adverbs + "da"** (Separation/Origin):
-- lontano da (far from), distante da (distant from)
-- via da (away from), fuori da (outside of)
+**Presentative Adverbs** (Introduction/Presentation):
+- **ecco** (here/there it is) - basic presentation: "Ecco il libro!" (Here's the book!)
+- **eccomi** (here I am) - self-presentation with clitic attachment
+- **eccoti/eccolo/eccola** (here you are/here he is/here she is) - systematic clitic patterns
+- **eccoci/eccovi/eccoli/eccole** (here we are/here you all are/here they are) - complete paradigm
 
-**Interrogative Adverbs**:
-Italian interrogative adverbs form questions about manner, time, place, and reason:
-- **come** (how) - manner interrogation: "Come stai?" (How are you?)
-- **quando** (when) - temporal interrogation: "Quando arrivi?" (When do you arrive?)
-- **dove** (where) - spatial interrogation: "Dove vai?" (Where are you going?)
-- **perché** (why) - causal interrogation: "Perché piangi?" (Why are you crying?)
+**Systematic Government Patterns** (Educational Value):
+- **Spatial + "a"**: davanti a, dietro a, accanto a, vicino a (physical position)
+- **Temporal + "di"**: prima di, dopo di, invece di (time relations)
+- **Distance + "da"**: lontano da, distante da, via da (separation/origin)
 
-These adverbs are marked with `interrogative_function: interrogative` for cross-word-type filtering while maintaining their adverb classification.
+**Cross-Word-Type Integration**:
+- **Interrogative Adverbs**: Italian interrogative adverbs (come, quando, dove, perché) are marked with `interrogative_function: interrogative` for cross-word-type filtering while maintaining their adverb classification. This enables learners to find all question words together across adjectives, adverbs, and pronouns.
 
-**Response and Discourse Adverbs**:
-Italian includes a important set of adverbs that function primarily in conversational contexts for affirmation, negation, temporal relations, evaluation, and emphasis:
+**Forms Storage Strategy**:
+Minimal forms storage due to invariable nature, with strategic exceptions:
+- **Base Forms Only**: Single canonical form per adverb for most categories (oggi, velocemente, bene)
+- **Exclamative Separation**: Separate entries for exclamative forms (come vs come!) with distinct emotional/emphatic function
+- **Presentative Contractions**: Complete clitic-attached forms stored (eccomi, eccoti, eccolo, eccola, eccoci, eccovi, eccoli, eccole)
+- **Government Constructions**: Captured via metadata, not stored forms, for systematic pattern instruction
 
-**Affirmation and Negation**:
-- **sì** (yes) - affirmation adverb: "Sì, vengo anch'io" (Yes, I'm coming too)
-- **no** (no) - negation adverb: "No, non posso" (No, I can't)
+**Implementation Statistics**:
+- **60+ total base entries** across four major categories with 13 subcategories
+- **Complete metadata coverage** for all semantic and functional classifications
+- **Systematic government patterns** for educational prepositional construction learning
+- **Cross-word-type integration** through interrogative function attribute
+- **Educational progression** from A1 basic adverbs to B2+ advanced discourse functions
 
-**Temporal and Sequential Relations**:
-- **già** (already) - temporal adverb: "Sono già arrivato" (I have already arrived)
+**Educational Integration**:
+- **Progressive Learning Support**: CEFR classification from A1 basic adverbs (bene, oggi, qui) to B2 advanced conjunctive discourse functions
+- **Semantic Category Learning**: Systematic 13-category classification helps learners understand adverbial functions
+- **Government Pattern Instruction**: Helps learners understand systematic adverb + preposition constructions, making apparent "compound prepositions" learnable
+- **Cross-Word-Type Features**: Interrogative function enables learners to find all question words together while maintaining proper grammatical classification
 
-**Evaluative and Confirmatory**:
-- **appunto** (exactly/precisely) - evaluation adverb: "Appunto, è quello che pensavo" (Exactly, that's what I thought)
-- **infatti** (indeed/in fact) - evaluation adverb: "Infatti, hai ragione" (Indeed, you're right)
-
-**Emphatic and Modal**:
-- **proprio** (really/exactly) - emphasis adverb: "È proprio vero" (It's really true)
-- **davvero** (really/truly) - emphasis adverb: "È davvero bello" (It's really beautiful)
-
-These adverbs are frequently used in spoken Italian and serve important pragmatic functions in discourse organization and interpersonal communication. While they may sometimes appear interjection-like due to their conversational nature, they function grammatically as adverbs modifying verbs, adjectives, or entire sentences.
-
-**Educational Value**:
-These systematic patterns help learners understand that many apparent "compound prepositions" are actually predictable adverb + preposition constructions, making Italian prepositional phrases more learnable and systematic.
-
-**Forms Storage**:
-Generally no forms stored - adverbs are typically invariable in Italian. However, the systematic government patterns are captured through metadata for educational presentation.
+**Advanced Architectural Features**:
+- **13-Category Classification**: Complete functional coverage including new conjunctive, exclamative, and presentative categories
+- **Government Pattern System**: Systematic adverb-preposition construction patterns with educational scaffolding
+- **Cross-Word-Type Integration**: Interrogative function attribute enables filtering across adjectives, adverbs, and pronouns
+- **Clitic Contraction Support**: Systematic presentative + clitic combinations (ecco + pronoun → eccomi, eccoti, etc.)
+- **Discourse Function Recognition**: Conjunctive adverbs support advanced discourse competence development
 
 **Frontend Features**:
-- **Type Classification**: Clear semantic category display (manner, time, place, etc.)
-- **Government Pattern Display**: Shows which preposition (if any) the adverb governs
-- **Construction Examples**: Displays complete prepositional constructions (davanti a casa)
-- **Position Indicators**: Shows typical sentence position
-- **Frequency Emphasis**: High-frequency adverbs prominently displayed
-- **Pattern Education**: Helps users understand systematic construction rules
+- **Major Category Display**: Four-category organization (semantic, conjunctive, exclamative, presentative) with subcategory breakdown
+- **Government Pattern Display**: Shows systematic adverb + preposition constructions with educational explanations
+- **Clitic Combination Preview**: Displays all clitic-attached forms for presentative adverbs
+- **Cross-Word-Type Filtering**: Interrogative adverbs grouped with interrogative adjectives and pronouns
+- **Discourse Function Indicators**: Conjunctive adverbs marked with logical relationship types (contrast, confirmation, consequence)
+- **Essential vs. Detailed Tags**: Adverb type and government pattern prominently displayed; register and position preferences in detailed view
 
-**Current Filter Integration**:
+**Advanced Filter Integration**:
 ```javascript
-// From enhanced-dictionary-system.js
+// Complete 13-category adverb type mapping
 const adverbTypeMap = {
-  'adverb-manner': 'manner',      // come, bene, male
-  'adverb-time': 'time',          // oggi, ieri, sempre
-  'adverb-place': 'place',        // qui, là, dove
-  'adverb-quantity': 'quantity',  // molto, poco, abbastanza
-  'adverb-frequency': 'frequency', // spesso, mai, sempre
-  'adverb-affirmation': 'affirmation', // sì, certo
-  'adverb-doubt': 'doubt',        // forse, probabilmente
-  'adverb-negation': 'negation',  // non, mai
-  'adverb-evaluation': 'evaluation', // bene, male
-  'adverb-emphasis': 'emphasis'   // proprio, davvero
+  // Semantic Adverbs (10 subcategories)
+  'adverb-manner': 'manner',           // bene, male, velocemente
+  'adverb-time': 'time',               // oggi, ieri, sempre, mai
+  'adverb-place': 'place',             // qui, là, dove, sopra
+  'adverb-quantity': 'quantity',       // molto, poco, abbastanza
+  'adverb-frequency': 'frequency',     // spesso, raramente, mai
+  'adverb-affirmation': 'affirmation', // sì, certamente, certo
+  'adverb-negation': 'negation',       // no, non, nemmeno
+  'adverb-evaluation': 'evaluation',   // appunto, infatti, fortunatamente
+  'adverb-emphasis': 'emphasis',       // davvero, proprio, assolutamente
+  'adverb-doubt': 'doubt',            // forse, probabilmente, magari
+  // New Major Categories
+  'adverb-conjunctive': 'conjunctive', // tuttavia, infatti, dunque
+  'adverb-exclamative': 'exclamative', // come!, dove!, quando!
+  'adverb-presentative': 'presentative' // ecco, eccomi, eccoti
 };
 
-// NEW: Cross-word-type interrogative filtering
+// Cross-word-type interrogative filtering
 const interrogativeFunctionMap = {
-  'interrogative': 'question-words'    // come, quando, dove, chi, quale, etc.
+  'interrogative': 'question-words'    // come, quando, dove, chi, quale, quanto
 };
 
-// NEW: Adverb government pattern integration
+// Government pattern classification for educational construction learning
 const adverbGovernmentMap = {
-  'governs_a': 'spatial-constructions',     // davanti a, dietro a
-  'governs_di': 'temporal-constructions',   // prima di, dopo di
-  'governs_da': 'distance-constructions',   // lontano da
-  'invariable': 'simple-adverbs'           // qui, là, oggi
+  'governs_a': 'spatial-constructions',     // davanti a, dietro a, accanto a
+  'governs_di': 'temporal-constructions',   // prima di, dopo di, invece di
+  'governs_da': 'distance-constructions',   // lontano da, distante da
+  'invariable': 'simple-adverbs'           // qui, là, oggi, ieri
 };
 ```
 
