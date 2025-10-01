@@ -600,7 +600,7 @@ Rank 5001-10000→ frequency_tier: "top10000"
 **Content**: Ranked Italian lemmas with POS tags from PAISÀ web corpus analysis
 **Usage**: Reference lemma position in file to determine appropriate frequency_tier value
 
-**Materialization Priority**: High-frequency + low-CEFR verbs receive complete 137-form sets first (top100 + A1 = highest priority).
+**Materialization Priority**: High-frequency + low-CEFR verbs receive complete 130-form sets first (top100 + A1 = highest priority).
 
 ---
 

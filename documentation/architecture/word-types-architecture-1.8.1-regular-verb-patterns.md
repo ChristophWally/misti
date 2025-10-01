@@ -9,7 +9,7 @@
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the regular verb "mangiare" in the Misti system. This demonstrates complete metadata structures, coverage matrices, and architectural patterns for regular Italian verbs.
 
-**Total Forms**: 137 (51 simple + 49 compound + 37 progressive)
+**Total Forms**: 130 (51 simple + 49 compound + 30 progressive)
 
 ## Dictionary Entry
 ```sql
@@ -42,7 +42,7 @@ value_id → metaattr002val014 (auxiliary: "avere")
 value_id → metaattr020val099 (transitivity: "transitive")
 ```
 
-## Complete Form Inventory (137 Total Forms)
+## Complete Form Inventory (130 Total Forms)
 
 ### Metadata Architecture
 All forms use the consolidated Entity Meta Values architecture:
@@ -162,7 +162,7 @@ All forms use the consolidated Entity Meta Values architecture:
 | 099 | avendo mangiato | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato") + metaattr022val108 (verb_form_type: "compound") | having eaten |
 | 100 | aver mangiato | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato") + metaattr022val108 (verb_form_type: "compound") | to have eaten |
 
-### Progressive Forms with stare auxiliary (37 forms)
+### Progressive Forms with stare auxiliary (30 forms)
 
 | Form ID | Form Text | Entity Meta Values | Translation Coverage |
 |---------|-----------|-----------|---------------------|
@@ -190,23 +190,17 @@ All forms use the consolidated Entity Meta Values architecture:
 | 122 | stiamo mangiando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) we be eating |
 | 123 | stiate mangiando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) you be eating |
 | 124 | stiano mangiando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) they be eating |
-| 125 | stessi mangiando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) I were eating |
-| 126 | stessi mangiando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) you were eating |
-| 127 | stesse mangiando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) he/she were eating |
-| 128 | stessimo mangiando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) we were eating |
-| 129 | steste mangiando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) you were eating |
-| 130 | stessero mangiando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) they were eating |
 | 131 | starei mangiando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | I would be eating |
 | 132 | staresti mangiando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | you would be eating |
 | 133 | starebbe mangiando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | he/she would be eating |
 | 134 | staremmo mangiando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | we would be eating |
 | 135 | stareste mangiando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | you would be eating |
 | 136 | starebbero mangiando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | they would be eating |
-| 137 | stando mangiando | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo") + metaattr022val109 (verb_form_type: "progressive") | being eating |
+ 
 
 ## Form_Translations Coverage
 
-**Complete Coverage**: All 137 forms link to the single "to eat" translation with no restrictions. This demonstrates the standard transitive verb pattern where all forms are semantically valid and accessible.
+**Complete Coverage**: All 130 forms link to the single "to eat" translation with no restrictions. This demonstrates the standard transitive verb pattern where all forms are semantically valid and accessible.
 
 ## Architectural Significance
 
@@ -215,6 +209,6 @@ Section 8.1 establishes the baseline architectural pattern for all other verb ty
 1. **Complete Form Generation**: Every grammatically possible form exists in the system
 2. **Consistent Metavalue Structure**: All forms use the same architectural pattern
 3. **Translation Universality**: Regular verbs support all forms without semantic restrictions
-4. **Database Blueprint**: This exact structure scales to all 137 forms for every regular Italian verb
+4. **Database Blueprint**: This exact structure scales to all 130 forms for every regular Italian verb
 
 This complete inventory serves as the definitive reference for implementing the verb conjugation system in the Misti database.

@@ -9,7 +9,7 @@
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the defective verb "vigere" in the Misti system. This demonstrates defective verb metadata structures, semantic restrictions, and architectural patterns for Latin-derived verbs with limited forms.
 
-**Total Forms**: 67 (primarily 3rd person due to semantic restrictions)
+**Total Forms**: 48 (third-person-only restriction: 42 finite + 6 non-finite)
 
 ## Dictionary Entry
 ```sql
@@ -76,7 +76,7 @@ value_id → metaattr018val130 (register: "literary")
 value_id → metaattr013val129 (restriction: "third-person-only")
 ```
 
-## Complete Form Inventory (67 Total Forms)
+## Complete Form Inventory (third-person-only restriction)
 
 ### Metadata Architecture
 All forms use the consolidated Entity Meta Values architecture:
@@ -86,7 +86,7 @@ All forms use the consolidated Entity Meta Values architecture:
 - **Number**: metaattr012val054 (singolare), metaattr012val055 (plurale)
 - **Verb Form Type**: metaattr022val107 (simple), metaattr022val108 (compound), metaattr022val109 (progressive)
 
-### Simple Forms (19 forms - Limited to semantically valid forms)
+### Simple Forms (Limited to semantically valid forms)
 
 | Form ID | Form Text | Entity Meta Values | Translation Coverage |
 |---------|-----------|-----------|---------------------|
@@ -96,7 +96,7 @@ All forms use the consolidated Entity Meta Values architecture:
 | 1004 | vigevano | metaattr010val054 (mood: "indicativo") + metaattr019val097 (tense: "imperfetto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple")  | they were in force |
 | 1005 | visse | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple")  | it was in force |
 | 1006 | vissero | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple")  | they were in force |
-| 1007 | vissero | metaattr010val054 (mood: "indicativo") + metaattr019val098 (tense: "passato-remoto") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple")  | they were in force |
+ 
 | 1008 | vigerà | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple")  | it will be in force |
 | 1009 | vigeranno | metaattr010val054 (mood: "indicativo") + metaattr019val099 (tense: "futuro-semplice") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple")  | they will be in force |
 | 1010 | viga | metaattr010val055 (mood: "congiuntivo") + metaattr019val102 (tense: "congiuntivo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple")  | (that) it be in force |
@@ -106,11 +106,14 @@ All forms use the consolidated Entity Meta Values architecture:
 | 1014 | vigerebbe | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple")  | it would be in force |
 | 1015 | vigerebbero | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple")  | they would be in force |
 | 1016 | vigere | metaattr010val058 (mood: "infinito") + metaattr019val106 (tense: "infinito-presente")  + metaattr022val107 (verb_form_type: "simple") | to be in force |
-| 1017 | essere vissuto | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato")  + metaattr022val107 (verb_form_type: "simple") | to have been in force |
+
 | 1018 | vigente | metaattr010val059 (mood: "participio") + metaattr019val107 (tense: "participio-presente")  + metaattr022val107 (verb_form_type: "simple") | being in force |
 | 1019 | vigendo | metaattr010val060 (mood: "gerundio") + metaattr019val109 (tense: "gerundio-presente")  + metaattr022val107 (verb_form_type: "simple") | being in force |
+| 1017 | vissuto | metaattr010val059 (mood: "participio") + metaattr019val108 (tense: "participio-passato")  + metaattr022val107 (verb_form_type: "simple") | been in force |
+| 1017a | viga | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple")  | be in force! |
+| 1017b | vigano | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple")  | be in force! |
 
-### Compound Forms with essere auxiliary (24 forms - Limited to 3rd person)
+### Compound Forms with essere auxiliary (Limited to 3rd person; includes non-finite compounds)
 
 | Form ID | Form Text | Entity Meta Values | Translation Coverage |
 |---------|-----------|-----------|---------------------|
@@ -129,9 +132,9 @@ All forms use the consolidated Entity Meta Values architecture:
 | 1032 | sarebbe vissuto | metaattr010val056 (mood: "condizionale") + metaattr019val116 (tense: "condizionale-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound")  | it would have been in force |
 | 1033 | sarebbero vissuti | metaattr010val056 (mood: "condizionale") + metaattr019val116 (tense: "condizionale-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound")  | they would have been in force |
 | 1034 | essere vissuto | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato")  + metaattr022val108 (verb_form_type: "compound") | to have been in force |
-| 1035 | essere vissuti | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato")  + metaattr022val108 (verb_form_type: "compound") | to have been in force |
 | 1036 | essendo vissuto | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato")  + metaattr022val108 (verb_form_type: "compound") | having been in force |
-| 1037 | essendo vissuti | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato")  + metaattr022val108 (verb_form_type: "compound") | having been in force |
+| 1037a | sia vissuto | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val108 (verb_form_type: "compound") | have been in force! |
+| 1037b | siano vissuti | metaattr010val057 (mood: "imperativo") + metaattr019val117 (tense: "imperativo-passato") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val108 (verb_form_type: "compound") | have been in force! |
 
 ### Progressive Forms with stare auxiliary (24 forms - Limited to 3rd person)
 
@@ -145,11 +148,10 @@ All forms use the consolidated Entity Meta Values architecture:
 | 1043 | staranno vigendo | metaattr010val054 (mood: "indicativo") + metaattr019val122 (tense: "futuro-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | they will be being in force |
 | 1044 | stia vigendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive")  | (that) it be being in force |
 | 1045 | stiano vigendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | (that) they be being in force |
-| 1046 | stesse vigendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive")  | (that) it were being in force |
-| 1047 | stessero vigendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | (that) they were being in force |
+ 
 | 1048 | starebbe vigendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive")  | it would be being in force |
 | 1049 | starebbero vigendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | they would be being in force |
-| 1050 | stando vigendo | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo")  + metaattr022val109 (verb_form_type: "progressive") | being being in force |
+ 
 
 ## Missing Forms Documentation
 
@@ -163,8 +165,8 @@ All forms use the consolidated Entity Meta Values architecture:
 - Missing: vigi, vigevi, viguisti, vigerai, viga, vigessi, vigeresti, etc.
 - Reason: Semantic restriction - imperative and direct address forms inappropriate
 
-**Imperative Forms (5 missing)**: Commands to "be in force" are not semantically coherent
-- Missing: vigi (tu), vigete (voi), vigano (loro)
+**Imperative Forms (3 missing)**: 2nd-singular, 1st-plural, and 2nd-plural imperatives are not semantically coherent
+ - Missing persons: 2sg, 1pl, 2pl (third-person imperatives are available)
 - Reason: Laws enter force through legal processes, not commands
 
 **Third Person Perfect Participle**: viguto (theoretical form, exists only for compound tenses)
@@ -172,7 +174,7 @@ All forms use the consolidated Entity Meta Values architecture:
 
 ## Form_Translations Coverage
 
-**Restricted Coverage**: All 67 forms link to the single "to be in force" translation but with semantic restrictions limiting usage to:
+**Restricted Coverage**: All 48 forms link to the single "to be in force" translation but with semantic restrictions limiting usage to:
 - Laws, regulations, customs, traditions
 - Abstract concepts that can have legal or social force
 - Third-person contexts only due to semantic constraints

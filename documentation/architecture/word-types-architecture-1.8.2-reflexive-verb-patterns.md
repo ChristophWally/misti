@@ -9,7 +9,7 @@
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the reflexive verb "lavarsi" in the Misti system. This demonstrates reflexive clitic integration, dual translation patterns, and architectural patterns for reflexive Italian verbs.
 
-**Total Forms**: 137 (51 simple + 49 compound + 37 progressive)  
+**Total Forms**: 130 (51 simple + 49 compound + 30 progressive)  
 **Key Feature**: Integrated reflexive pronouns (mi, ti, si, ci, vi, si) in all forms
 **Dual Translations**: "to wash oneself" (singular/plural) + "to wash each other" (plural only)
 
@@ -61,7 +61,7 @@ value_id → metaattr021val103 (verb_type: "reciprocal")
 value_id → metaattr013val056 (number_restriction: "plural-only")
 ```
 
-## Complete Form Inventory with Integrated Clitics (137 Total Forms)
+## Complete Form Inventory with Integrated Clitics (130 Total Forms)
 
 ### Reflexive Metadata Architecture
 Each form includes reflexive clitic integration with same metavalue stable_ids as Scenario A, plus:
@@ -206,24 +206,18 @@ Each form includes reflexive clitic integration with same metavalue stable_ids a
 | 322 | ci stiamo lavando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | (that) we be washing ourselves | (that) we be washing each other |
 | 323 | vi stiate lavando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | (that) you be washing yourselves | (that) you be washing each other |
 | 324 | si stiano lavando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | (that) they be washing themselves | (that) they be washing each other |
-| 325 | mi stessi lavando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive")  | (that) I were washing myself | - |
-| 326 | ti stessi lavando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive")  | (that) you were washing yourself | - |
-| 327 | si stesse lavando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive")  | (that) he/she were washing himself/herself | - |
-| 328 | ci stessimo lavando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | (that) we were washing ourselves | (that) we were washing each other |
-| 329 | vi steste lavando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | (that) you were washing yourselves | (that) you were washing each other |
-| 330 | si stessero lavando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | (that) they were washing themselves | (that) they were washing each other |
 | 331 | mi starei lavando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive")  | I would be washing myself | - |
 | 332 | ti staresti lavando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive")  | you would be washing yourself | - |
 | 333 | si starebbe lavando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive")  | he/she would be washing himself/herself | - |
 | 334 | ci staremmo lavando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | we would be washing ourselves | we would be washing each other |
 | 335 | vi stareste lavando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | you would be washing yourselves | you would be washing each other |
 | 336 | si starebbero lavando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive")  | they would be washing themselves | they would be washing each other |
-| 337 | standosi lavando | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo")  + metaattr022val109 (verb_form_type: "progressive")  | being washing oneself | being washing each other |
+ 
 
 ## Form_Translations Coverage
 
-**Translation 1**: "to wash oneself" - covers ALL 137 forms  
-**Translation 2**: "to wash each other" - covers only PLURAL forms (52 forms total: 17 simple + 17 compound + 18 progressive)
+**Translation 1**: "to wash oneself" - covers ALL 130 forms  
+**Translation 2**: "to wash each other" - covers only PLURAL forms (69 forms per canonical plural-only restriction)
 
 **Architectural Pattern**: Demonstrates translation-level restrictions where reciprocal interpretation applies only to semantically appropriate plural forms.
 

@@ -11,12 +11,23 @@ Each verb translation has a restriction type that determines which grammatical f
 | Group | Restriction Type | Description | Total Forms |
 |-------|------------------|-------------|-------------|
 | 0 | Normal - No Restriction | All standard forms allowed | 130 |
-| 1 | plural-only | Only plural persons allowed | 60 |
+| 1 | plural-only | Only plural persons allowed | 69 |
 | 2 | third-singular-only | Only 3rd person singular + non-finite | 27 |
 | 3 | third-person-only | Only 3rd person singular/plural + non-finite | 48 |
-| 4 | missing-first-second-person | 3rd person + all plural + non-finite | 81 |
+| 4 | missing-first-second-person | 3rd person + all plural + non-finite | 90 |
 | 5 | missing-imperative | All forms except imperative mood | 120 |
-| 6 | singular-only | Only singular persons + non-finite | 69 |
+| 6 | singular-only | Only singular persons + non-finite | 67 |
+
+## Progressive Tense Set Used
+
+We include exactly five progressive tenses across all restrictions that allow them:
+- Indicativo: presente-progressivo, passato-progressivo, futuro-progressivo
+- Congiuntivo: congiuntivo-presente-progressivo
+- Condizionale: condizionale-presente-progressivo
+
+Excluded as non-canonical and thus not counted:
+- Congiuntivo-imperfetto-progressivo
+- Gerundio-progressivo
 
 ## Complete Restriction Validity Matrix
 
@@ -170,11 +181,11 @@ The following table shows exactly which person/number combinations are valid for
 | simple | gerundio | gerundio-presente | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
 | compound | gerundio | gerundio-passato | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
 
-**Total missing-first-second-person Forms: 81**
+**Total missing-first-second-person Forms: 90**
 - Finite forms: 19 regular tenses × 4 persons (3sg + 1pl + 2pl + 3pl) = 76
 - Imperative forms: 2 tenses × 4 persons (3sg + 1pl + 2pl + 3pl) = 8
 - Non-finite forms: 6 forms × 1 = 6
-- **Total: 76 + 8 + 6 = 90** (Recalculated - need to verify from actual CSV sum)
+- **Total: 76 + 8 + 6 = 90**
 
 ### missing-imperative (Group 5):
 | Type | Mood | Tense | 1sg | 2sg | 3sg | 1pl | 2pl | 3pl | inf |
@@ -244,11 +255,11 @@ The following table shows exactly which person/number combinations are valid for
 | simple | gerundio | gerundio-presente | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
 | compound | gerundio | gerundio-passato | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
 
-**Total singular-only Forms: 69**
+**Total singular-only Forms: 67**
 - Finite forms: 19 regular tenses × 3 persons (1sg + 2sg + 3sg) = 57
 - Imperative forms: 2 tenses × 2 persons (2sg + 3sg, no 1sg) = 4
 - Non-finite forms: 6 forms × 1 = 6
-- **Total: 57 + 4 + 6 = 67** (Need to verify this matches CSV sum of 69)
+- **Total: 57 + 4 + 6 = 67**
 
 ### plural-only (Group 1):
 | Type | Mood | Tense | 1sg | 2sg | 3sg | 1pl | 2pl | 3pl | inf |
@@ -281,11 +292,11 @@ The following table shows exactly which person/number combinations are valid for
 | simple | gerundio | gerundio-presente | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
 | compound | gerundio | gerundio-passato | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
 
-**Total plural-only Forms: 60**
+**Total plural-only Forms: 69**
 - Finite forms: 19 regular tenses × 3 persons (1pl + 2pl + 3pl) = 57
 - Imperative forms: 2 tenses × 3 persons (1pl + 2pl + 3pl) = 6
 - Non-finite forms: 6 forms × 1 = 6
-- **Total: 57 + 6 + 6 = 69** (Need to verify this matches CSV sum of 60)
+- **Total: 57 + 6 + 6 = 69**
 
 ## Calculation Methodology
 

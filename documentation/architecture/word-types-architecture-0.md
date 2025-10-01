@@ -164,11 +164,11 @@ This section provides comprehensive documentation of all metadata attributes and
 **Purpose**: Form deviates from conjugation pattern
 **Source Level**: form
 **Display Level**: word
-**Database Usage**: 137 forms marked as irregular
+**Database Usage**: 130 forms marked as irregular
 
 | Value | Shorthand | Description | Usage Count |
 |-------|-----------|-------------|-------------|
-| `irregular` | irreg | Form deviates from conjugation pattern | 137 |
+| `irregular` | irreg | Form deviates from conjugation pattern | 130 |
 
 #### Interrogative Function (`metaattr056`)
 **Purpose**: Cross-word-type attribute marking words that function as question words

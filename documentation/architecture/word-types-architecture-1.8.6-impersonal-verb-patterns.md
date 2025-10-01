@@ -9,7 +9,7 @@
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the impersonal verb "importare" in the Misti system. This demonstrates complete metadata structures, coverage matrices, and architectural patterns for impersonal Italian verbs with full conjugation availability but specialized usage patterns.
 
-**Total Forms**: 186 (51 simple + 49 essere compound + 49 avere compound + 37 progressive)
+**Total Forms**: 179 (51 simple + 49 essere compound + 49 avere compound + 30 progressive)
 
 ## Dictionary Entry
 ```sql
@@ -57,7 +57,7 @@ value_id → metaattr002val014 (auxiliary: "avere")
 value_id → metaattr020val099 (transitivity: "transitive")
 ```
 
-## Complete Form Inventory (137 Total Forms)
+## Complete Form Inventory (179 Total Forms)
 
 ### Metadata Architecture
 All forms use the consolidated Entity Meta Values architecture:
@@ -257,19 +257,12 @@ All forms use the consolidated Entity Meta Values architecture:
 | 1238 | stiamo importando | metaattr010val055 + metaattr019val123 + metaattr014val060 + metaattr012val055 + metaattr022val109 | | (that) we be importing |
 | 1239 | stiate importando | metaattr010val055 + metaattr019val123 + metaattr014val061 + metaattr012val055 + metaattr022val109 | | (that) you be importing |
 | 1240 | stiano importando | metaattr010val055 + metaattr019val123 + metaattr014val062 + metaattr012val055 + metaattr022val109 | (that) they be mattering/being important | (that) they be importing |
-| 1241 | stessi importando | metaattr010val055 + metaattr019val124 + metaattr014val060 + metaattr012val054 + metaattr022val109 | | (that) I were importing |
-| 1242 | stessi importando | metaattr010val055 + metaattr019val124 + metaattr014val061 + metaattr012val054 + metaattr022val109 | | (that) you were importing |
-| 1243 | stesse importando | metaattr010val055 + metaattr019val124 + metaattr014val062 + metaattr012val054 + metaattr022val109 | (that) it were mattering/being important | (that) it were importing |
-| 1244 | stessimo importando | metaattr010val055 + metaattr019val124 + metaattr014val060 + metaattr012val055 + metaattr022val109 | | (that) we were importing |
-| 1245 | steste importando | metaattr010val055 + metaattr019val124 + metaattr014val061 + metaattr012val055 + metaattr022val109 | | (that) you were importing |
-| 1246 | stessero importando | metaattr010val055 + metaattr019val124 + metaattr014val062 + metaattr012val055 + metaattr022val109 | (that) they were mattering/being important | (that) they were importing |
 | 1247 | starei importando | metaattr010val056 + metaattr019val125 + metaattr014val060 + metaattr012val054 + metaattr022val109 | | I would be importing |
 | 1248 | staresti importando | metaattr010val056 + metaattr019val125 + metaattr014val061 + metaattr012val054 + metaattr022val109 | | you would be importing |
 | 1249 | starebbe importando | metaattr010val056 + metaattr019val125 + metaattr014val062 + metaattr012val054 + metaattr022val109 | it would be mattering/being important | it would be importing |
 | 1250 | staremmo importando | metaattr010val056 + metaattr019val125 + metaattr014val060 + metaattr012val055 + metaattr022val109 | | we would be importing |
 | 1251 | stareste importando | metaattr010val056 + metaattr019val125 + metaattr014val061 + metaattr012val055 + metaattr022val109 | | you would be importing |
 | 1252 | starebbero importando | metaattr010val056 + metaattr019val125 + metaattr014val062 + metaattr012val055 + metaattr022val109 | they would be mattering/being important | they would be importing |
-| 1253 | stando importando | metaattr010val060 + metaattr019val126 + metaattr022val109 | being mattering/being important | being importing | 
 ## Form_Translations Coverage
 
 **Selective Translation Coverage**: Forms link to translations based on semantic appropriateness:
@@ -292,7 +285,7 @@ All forms use the consolidated Entity Meta Values architecture:
 
 Section 8.6 demonstrates the impersonal verb architectural pattern in the Misti system:
 
-1. **Complete Form Generation**: Every grammatically possible form exists (137 total), demonstrating architectural completeness
+1. **Complete Form Generation**: Every grammatically possible form exists (179 total), demonstrating architectural completeness
 2. **Translation-Level Metadata**: Impersonal verb type and semantic restrictions properly placed at translation level
 3. **Dual Auxiliary Support**: Translation 1 uses essere auxiliary, Translation 2 uses avere auxiliary
 4. **Semantic Restrictions**: Third-person-only restriction applied at translation level, not form level

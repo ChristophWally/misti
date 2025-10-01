@@ -9,7 +9,7 @@
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the irregular verb "andare" in the Misti system. This demonstrates irregular verb architecture with proper irregularity marking, essere auxiliary usage, and complete coverage matrices for Italian irregular verbs.
 
-**Total Forms**: 137 (51 simple + 49 compound + 37 progressive)
+**Total Forms**: 130 (51 simple + 49 compound + 30 progressive)
 
 ## Dictionary Entry
 ```sql
@@ -41,7 +41,7 @@ value_id → metaattr002val015 (auxiliary: "essere")
 value_id → metaattr020val100 (transitivity: "intransitive")
 ```
 
-## Complete Form Inventory (137 Total Forms)
+## Complete Form Inventory (130 Total Forms)
 
 ### Metadata Architecture
 All forms use the consolidated Entity Meta Values architecture:
@@ -162,7 +162,7 @@ All forms use the consolidated Entity Meta Values architecture:
 | 1370 | essendo andato | metaattr010val060 (mood: "gerundio") + metaattr019val118 (tense: "gerundio-passato")  + metaattr022val108 (verb_form_type: "compound") | having gone |
 | 1371 | essere andato | metaattr010val058 (mood: "infinito") + metaattr019val119 (tense: "infinito-passato")  + metaattr022val108 (verb_form_type: "compound") | to have gone |
 
-### Progressive Forms with stare auxiliary (37 forms)
+### Progressive Forms with stare auxiliary (30 forms)
 
 | Form ID | Form Text | Entity Meta Values | Translation Coverage |
 |---------|-----------|-----------|---------------------|
@@ -190,23 +190,17 @@ All forms use the consolidated Entity Meta Values architecture:
 | 1393 | stiamo andando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) we be going |
 | 1394 | stiate andando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) you be going |
 | 1395 | stiano andando | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) they be going |
-| 1396 | stessi andando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) I were going |
-| 1397 | stessi andando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) you were going |
-| 1398 | stesse andando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) he/she were going |
-| 1399 | stessimo andando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) we were going |
-| 1400 | steste andando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) you were going |
-| 1401 | stessero andando | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) they were going |
 | 1402 | starei andando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | I would be going |
 | 1403 | staresti andando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | you would be going |
 | 1404 | starebbe andando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | he/she would be going |
 | 1405 | staremmo andando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | we would be going |
 | 1406 | stareste andando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | you would be going |
 | 1407 | starebbero andando | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | they would be going |
-| 1408 | stando andando | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo")  + metaattr022val109 (verb_form_type: "progressive") | being going |
+ 
 
 ## Form_Translations Coverage
 
-**Complete Coverage**: All 137 forms link to the single "to go" translation with no restrictions. This demonstrates the standard intransitive verb pattern where all forms are semantically valid and accessible.
+**Complete Coverage**: All 130 forms link to the single "to go" translation with no restrictions. This demonstrates the standard intransitive verb pattern where all forms are semantically valid and accessible.
 
 ## Architectural Significance
 

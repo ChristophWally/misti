@@ -9,7 +9,7 @@
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the modal verb "dovere" in the Misti system. This demonstrates modal verb architecture with dual semantic meanings, complex auxiliary patterns, and translation coverage matrices for Italian modal verbs.
 
-**Total Forms**: 137 (51 simple + 49 compound + 37 progressive)
+**Total Forms**: 130 (51 simple + 49 compound + 30 progressive)
 
 ## Dictionary Entry
 ```sql
@@ -56,7 +56,7 @@ value_id → metaattr002val014 (auxiliary: "avere")
 value_id → metaattr020val099 (transitivity: "transitive")
 ```
 
-## Complete Form Inventory (137 Total Forms)
+## Complete Form Inventory (130 Total Forms)
 
 ### Metadata Architecture
 All forms use the consolidated Entity Meta Values architecture:
@@ -112,7 +112,6 @@ All forms use the consolidated Entity Meta Values architecture:
 | 670 | dovremmo | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | we should/would have to | we would owe |
 | 671 | dovreste | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | you should/would have to | you would owe |
 | 672 | dovrebbero | metaattr010val056 (mood: "condizionale") + metaattr019val104 (tense: "condizionale-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | they should/would have to | they would owe |
-| 673 | (no form) | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | (no command form) | (no command form) |
 | 674 | devi | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | must! (rare) | owe! (rare) |
 | 675 | deva | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val107 (verb_form_type: "simple") | let him/her have to! (rare) | let him/her owe! (rare) |
 | 676 | dobbiamo | metaattr010val057 (mood: "imperativo") + metaattr019val105 (tense: "imperativo-presente") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val107 (verb_form_type: "simple") | let's have to! (rare) | let's owe! (rare) |
@@ -205,23 +204,17 @@ All forms use the consolidated Entity Meta Values architecture:
 | 753 | stiamo dovendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) we be having to | (that) we be owing |
 | 754 | stiate dovendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) you be having to | (that) you be owing |
 | 755 | stiano dovendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) they be having to | (that) they be owing |
-| 756 | stessi dovendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) I were having to | (that) I were owing |
-| 757 | stessi dovendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) you were having to | (that) you were owing |
-| 758 | stesse dovendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) he/she were having to | (that) he/she were owing |
-| 759 | stessimo dovendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) we were having to | (that) we were owing |
-| 760 | steste dovendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) you were having to | (that) you were owing |
-| 761 | stessero dovendo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) they were having to | (that) they were owing |
 | 762 | starei dovendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | I would be having to | I would be owing |
 | 763 | staresti dovendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | you would be having to | you would be owing |
 | 764 | starebbe dovendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | he/she would be having to | he/she would be owing |
 | 765 | staremmo dovendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | we would be having to | we would be owing |
 | 766 | stareste dovendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | you would be having to | you would be owing |
 | 767 | starebbero dovendo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | they would be having to | they would be owing |
-| 768 | stando dovendo | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo")  + metaattr022val109 (verb_form_type: "progressive") | being having to | being owing |
+ 
 
 ## Form_Translations Coverage
 
-**Dual Translation Coverage**: All 137 forms link to both translations with specific contextual usage:
+**Dual Translation Coverage**: All 130 forms link to both translations with specific contextual usage:
 
 ### Translation 1: "must/have to" (Modal Usage)
 - **Coverage**: All forms support modal meaning expressing necessity/obligation
@@ -239,7 +232,7 @@ Section 8.4 demonstrates the most complex verb architecture in the Misti system:
 
 1. **Modal Verb Complexity**: Dual semantic functions requiring separate translation coverage
 2. **Auxiliary Selection**: Inherits auxiliary from complement verb type in modal usage
-3. **Complete Form Generation**: All 137 forms exist with dual translation potential
+3. **Complete Form Generation**: All 130 forms exist with dual translation potential
 4. **Translation-Level Metadata**: Verb type classification moved from word-level to translation-level
 5. **Database Architecture**: Requires sophisticated handling of dual meanings and auxiliary inheritance
 

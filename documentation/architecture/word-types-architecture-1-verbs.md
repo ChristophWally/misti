@@ -1270,7 +1270,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 - **Form Level**: metaattr010val[ID] (mood), metaattr019val[ID] (tense), metaattr014val[ID] (person), metaattr012val[ID] (number), metaattr022val[ID] (form_type)
 
 **Key Architectural Pattern**: Standard are-conjugation baseline pattern with universal form coverage and single translation.
-**Coverage**: 137 total forms (51 simple, 49 compound, 37 progressive)
+**Coverage**: 130 total forms (51 simple, 49 compound, 30 progressive)
 
 ---
 
@@ -1285,7 +1285,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 - **Form Level**: Standard form metadata plus reflexive clitic integration
 
 **Key Architectural Pattern**: Direct-reflexive pattern with dual translations - universal reflexive meaning plus plural-restricted reciprocal meaning.
-**Coverage**: 182 total form_translations (137 reflexive + 45 reciprocal)
+**Coverage**: Reflexive meaning covers all 130 forms; reciprocal adds plural-only coverage per restriction.
 
 ---
 
@@ -1300,7 +1300,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 - **Form Level**: Standard form metadata with shared simple/progressive forms across translations
 
 **Key Architectural Pattern**: Dual-auxiliary pattern where meaning determines auxiliary selection - shared forms with different auxiliary assignments.
-**Coverage**: 274 total form_translations (186 distinct forms with dual auxiliary assignments)
+**Coverage**: Dual-auxiliary assignments across 179 distinct forms (compound forms per auxiliary).
 
 ---
 
@@ -1315,7 +1315,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 - **Form Level**: Standard form metadata with modal auxiliary inheritance behavior
 
 **Key Architectural Pattern**: Modal-verb pattern with dual semantics and auxiliary inheritance - standalone uses "avere", modal+infinitive inherits auxiliary from dependent verb.
-**Coverage**: 274 total form_translations (137 forms × 2 meanings)
+**Coverage**: Both meanings cover the 130 standard forms (modal constructions are frontend-generated).
 
 ---
 
@@ -1345,7 +1345,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 - **Form Level**: Standard form metadata with selective translation coverage based on semantic appropriateness
 
 **Key Architectural Pattern**: Impersonal-verb pattern with dual semantics - "to matter" (3rd person only) vs "to import" (all persons) using different auxiliaries.
-**Coverage**: 162 total form_translations (25 impersonal + 137 transitive)
+**Coverage**: 25 impersonal + 130 transitive form_translations (restriction vs normal coverage).
 
 ---
 
@@ -1360,7 +1360,7 @@ This section provides comprehensive form inventories showing EVERY form and form
 - **Form Level**: Standard form metadata plus irregularity markers for irregular forms
 
 **Key Architectural Pattern**: Irregular-verb pattern with multiple stems and unpredictable changes - materialized forms rather than rule-based generation.
-**Coverage**: 137 total forms (complete irregular paradigm with stem alternations)
+**Coverage**: 130 total forms (complete irregular paradigm with stem alternations)
 
 ---
 ## Updated Coverage Calculations Summary
@@ -1369,17 +1369,17 @@ This section provides comprehensive form inventories showing EVERY form and form
 
 | Verb Pattern | Example | Total Forms | Translation 1 Coverage | Translation 2 Coverage | Total Form_Translations |
 |--------------|---------|-------------|----------------------|----------------------|----------------------|
-| Regular | mangiare | 137 | 137 (all forms) | - | 137 |
-| Reflexive | lavarsi | 137 | 137 (all forms) | 45 (plural only) | 182 |
-| Dual Auxiliary | correre | 186 | 137 (all forms) | 137 (all forms) | 274 |
-| Modal | dovere | 137** | 137 (all standard forms) | 137 (all standard forms) | 274 |
+| Regular | mangiare | 130 | 130 (all forms) | - | varies |
+| Reflexive | lavarsi | 130 | 130 (all forms) | plural-only (per restriction) | varies |
+| Dual Auxiliary | correre | 179 | 130 (shared simple/progressive) | 130 (shared simple/progressive) | varies |
+| Modal | dovere | 130** | 130 (all standard forms) | 130 (all standard forms) | varies |
 | Defective | vigere | 67 | 67 (existing forms only) | - | 67 |
-| Impersonal | importare | 137 | 25 (3rd person only) | 137 (all forms) | 162 |
-| Irregular | andare | 137 | 137 (all forms) | - | 137 |
+| Impersonal | importare | 130 | 25 (3rd person only) | 130 (all forms) | varies |
+| Irregular | andare | 130 | 130 (all forms) | - | varies |
 
 **Mathematical Explanations:**
-- *Dual Auxiliary Corrected: correre has 186 total forms (51 simple + 49 compound with avere + 49 compound with essere + 37 progressive). Dual auxiliary creates additional compound forms with both avere and essere auxiliaries.
-- **Modal Corrected: Only standard 137 forms stored in database. Modal constructions (dovere + infinitive) are frontend-generated, NOT stored as separate forms.
+- Dual Auxiliary: 179 total forms (51 simple + 49 compound with avere + 49 compound with essere + 30 progressive). Compound forms multiply by auxiliary; simple/progressive are shared.
+- Modal: Only standard 130 forms are stored. Modal constructions (dovere + infinitive) are frontend-generated, NOT stored as separate forms.
 
 ### Meta Attribute Integration Patterns
 

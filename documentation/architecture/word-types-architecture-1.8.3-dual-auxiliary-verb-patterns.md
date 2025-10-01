@@ -9,7 +9,7 @@
 ## Overview
 This section provides a comprehensive form inventory showing EVERY form and form_translation for the dual auxiliary verb "correre" in the Misti system. This demonstrates critical auxiliary selection mechanics, dual translation patterns, and architectural patterns for Italian verbs with multiple auxiliary options.
 
-**Total Forms**: 186 (51 simple + 49 compound with avere + 49 compound with essere + 37 progressive)
+**Total Forms**: 179 (51 simple + 49 compound with avere + 49 compound with essere + 30 progressive)
 
 ## Dictionary Entry
 ```sql
@@ -55,7 +55,7 @@ value_id → metaattr002val015 (auxiliary: "essere")
 value_id → metaattr020val100 (transitivity: "intransitive")
 ```
 
-## Complete Form Inventory (186 Total Forms)
+## Complete Form Inventory (179 Total Forms)
 
 ### Metadata Architecture
 All forms use the consolidated Entity Meta Values architecture:
@@ -259,19 +259,13 @@ All forms use the consolidated Entity Meta Values architecture:
 | 571 | stiamo correndo | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) we be running (sport) | (that) we be rushing |
 | 572 | stiate correndo | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) you be running (sport) | (that) you be rushing |
 | 573 | stiano correndo | metaattr010val055 (mood: "congiuntivo") + metaattr019val123 (tense: "congiuntivo-presente-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) they be running (sport) | (that) they be rushing |
-| 574 | stessi correndo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) I were running (sport) | (that) I were rushing |
-| 575 | stessi correndo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) you were running (sport) | (that) you were rushing |
-| 576 | stesse correndo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | (that) he/she were running (sport) | (that) he/she were rushing |
-| 577 | stessimo correndo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) we were running (sport) | (that) we were rushing |
-| 578 | steste correndo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) you were running (sport) | (that) you were rushing |
-| 579 | stessero correndo | metaattr010val055 (mood: "congiuntivo") + metaattr019val124 (tense: "congiuntivo-imperfetto-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | (that) they were running (sport) | (that) they were rushing |
 | 580 | starei correndo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | I would be running (sport) | I would be rushing |
 | 581 | staresti correndo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | you would be running (sport) | you would be rushing |
 | 582 | starebbe correndo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val054 (number: "singolare") + metaattr022val109 (verb_form_type: "progressive") | he/she would be running (sport) | he/she would be rushing |
 | 583 | staremmo correndo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val060 (person: "prima-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | we would be running (sport) | we would be rushing |
 | 584 | stareste correndo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val061 (person: "seconda-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | you would be running (sport) | you would be rushing |
 | 585 | starebbero correndo | metaattr010val056 (mood: "condizionale") + metaattr019val125 (tense: "condizionale-progressivo") + metaattr014val062 (person: "terza-persona") + metaattr012val055 (number: "plurale") + metaattr022val109 (verb_form_type: "progressive") | they would be running (sport) | they would be rushing |
-| 586 | stando correndo | metaattr010val060 (mood: "gerundio") + metaattr019val126 (tense: "gerundio-progressivo")  + metaattr022val109 (verb_form_type: "progressive") | being running (sport) | being rushing |
+ 
 
 ## Form_Translations Coverage
 
@@ -291,4 +285,4 @@ Section 8.3 establishes the dual auxiliary architectural pattern for the Misti s
 4. **Meaning Differentiation**: Auxiliary selection fundamentally changes verb meaning and grammatical behavior  
 5. **Database Efficiency**: Single form supports multiple interpretations through translation-specific linking
 
-This complete inventory serves as the definitive reference for implementing dual auxiliary verbs in the Misti database, demonstrating how auxiliary selection affects both semantic interpretation and grammatical requirements across all 186 possible forms.
+This complete inventory serves as the definitive reference for implementing dual auxiliary verbs in the Misti database, demonstrating how auxiliary selection affects both semantic interpretation and grammatical requirements across all 179 possible forms.
