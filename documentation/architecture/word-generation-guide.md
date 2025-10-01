@@ -1,19 +1,20 @@
 # Comprehensive Guide: Adding New Words to the Italian Learning Database
 
-**Version:** 1.0
-**Last Updated:** 2025-09-30
+**Version:** 2.0
+**Last Updated:** 2025-10-01
 **Database:** Supabase PostgreSQL
 
 ---
 
 ## Table of Contents
 1. [Overview](#overview)
-2. [Database Architecture](#database-architecture)
-3. [Step-by-Step Word Generation](#step-by-step-word-generation)
-4. [Decision Trees by Word Type](#decision-trees-by-word-type)
-5. [Metadata Tag Reference](#metadata-tag-reference)
-6. [Validation Rules](#validation-rules)
-7. [Examples](#examples)
+2. [Word Type Taxonomy](#word-type-taxonomy)
+3. [Database Architecture](#database-architecture)
+4. [Metadata System & Propagation](#metadata-system--propagation)
+5. [Step-by-Step Word Generation](#step-by-step-word-generation)
+6. [Decision Trees by Word Type](#decision-trees-by-word-type)
+7. [Validation Rules](#validation-rules)
+8. [Examples](#examples)
 
 ---
 
@@ -21,12 +22,155 @@
 
 This guide provides a comprehensive framework for adding new Italian words to the database. The system uses a flexible metadata architecture where all linguistic properties are stored as tags in the `entity_meta_values` table rather than as direct columns.
 
+**📘 For Complete Metadata Reference**: See [metadata-reference.md](./metadata-reference.md) for all attribute IDs, value IDs, and propagation rules.
+
 ### Key Principles
+
 - **Separation of Concerns**: Base words, forms, translations, and form-translations are separate entities
 - **Tag-Based Metadata**: All linguistic properties use the entity_meta_values system
+- **Translations are Critical**: Translations carry essential metadata (auxiliary, transitivity, verb_type, register) that determines form behavior
 - **Masculine Base Forms**: Always store the base masculine singular form in dictionary
 - **Complete Conjugations**: Generate all expected forms based on word type and restrictions
-- **Translation Multipliers**: Each form may link to multiple translations
+- **Inflected Form Translations**: Form translations must be inflected (e.g., "I was", not "to be")
+- **Translation Multipliers**: Each form may link to multiple translations based on auxiliary and restrictions
+
+### Critical Columns to Fill
+
+When creating database records, ensure these **required columns** are always populated:
+
+| Table | Column | Required Value | Notes |
+|-------|--------|----------------|-------|
+| dictionary | italian | text | Base form |
+| dictionary | word_type | noun, verb, adjective, adverb, preposition | Lowercase only |
+| word_forms | form_text | text | Inflected form |
+| word_forms | **form_type** | text | **DEPRECATED but required** - Use metadata instead |
+| word_translations | translation | text | Base English translation |
+| word_translations | display_priority | integer | 1 = primary |
+| form_translations | translation | text | **INFLECTED English** (I speak, not to speak) |
+
+**⚠️ IMPORTANT**: The `form_type` column in `word_forms` is deprecated but still required by database schema. Always set it to a default value like 'simple', 'form', or 'conjugated'. Use the `verb_form_type` **metadata attribute** for actual classification.
+
+---
+
+## Word Type Taxonomy
+
+Understanding word types and their variations is essential for generating correct forms and metadata.
+
+### Nouns
+
+**Basic Types:**
+- **Common Nouns**: Standard nouns with gender (libro, casa, ragazzo)
+- **Proper Nouns**: Names of people, places (Roma, Giovanni)
+
+**Gender Patterns:**
+- **Masculine (-o)**: libro → libri
+- **Feminine (-a)**: casa → case
+- **Common Gender**: Can be masculine or feminine
+
+**Special Cases:**
+- **Plural-only**: Some nouns exist only in plural (le forbici - scissors)
+- **Singular-only**: Some nouns don't pluralize (il latte - milk)
+
+### Verbs
+
+Italian verbs have significant complexity. Understanding verb types is crucial for correct form generation.
+
+#### Verb Categories by Conjugation
+
+| Type | Ending | Examples | Form Count |
+|------|--------|----------|------------|
+| **First Conjugation** | -are | parlare, amare, mangiare | 130 |
+| **Second Conjugation** | -ere | credere, vendere, vedere | 130 |
+| **Third Conjugation** | -ire | dormire, partire | 130 |
+| **Third -isc Conjugation** | -ire | finire, capire, preferire | 130 |
+
+#### Verb Categories by Behavior
+
+**1. Regular Verbs**
+- Follow standard conjugation patterns
+- 130 forms: 51 simple + 49 compound + 30 progressive
+- Examples: parlare (to speak), dormire (to sleep)
+
+**2. Dual-Auxiliary Verbs**
+- Use **both** essere and avere depending on meaning
+- 179 forms: 51 simple + 98 compound (49 × 2) + 30 progressive
+- Examples:
+  - finire: "ho finito il lavoro" (avere - completed something) vs "è finito il film" (essere - something ended)
+  - correre: "ho corso veloce" (avere - ran fast) vs "sono corso a casa" (essere - ran to a location)
+
+**3. Reflexive Verbs**
+- Require reflexive pronouns (mi, ti, si, ci, vi, si)
+- Always use essere in compound tenses
+- May have multiple translations with restrictions
+- Examples:
+  - lavarsi: "mi lavo" (I wash myself) vs "ci laviamo" (we wash ourselves/each other)
+  - vestirsi: to dress oneself
+
+**4. Modal Verbs**
+- Auxiliary verbs expressing necessity, possibility, permission, ability
+- Missing some forms (especially imperative)
+- Examples: dovere (must), potere (can), volere (want), sapere (know how)
+- Restriction: `missing-imperative`
+
+**5. Impersonal Verbs**
+- Used without specific subject, often in third person
+- Examples: importare (to matter), bisognare (to need), servire (to be needed)
+- Restrictions: `third-person-only` or `third-singular-only`
+
+**6. Meteorological Verbs**
+- Weather verbs used only in third person singular
+- Examples: piovere (to rain), nevicare (to snow), grandinare (to hail)
+- Restriction: `third-singular-only`
+
+**7. Defective Verbs**
+- Missing certain forms (typically 1st/2nd person or imperative)
+- Examples: vigere (to be in force), solere (to be accustomed), vertere (to turn)
+- Restrictions: `missing-first-second-person`, `missing-imperative`
+
+#### Verb Form Count Matrix
+
+| Verb Type | Simple | Compound | Progressive | **Total** |
+|-----------|--------|----------|-------------|-----------|
+| Regular (single auxiliary) | 51 | 49 | 30 | **130** |
+| Dual-auxiliary | 51 | 98 (49×2) | 30 | **179** |
+| Modal (missing imperative) | 46 | 44 | 30 | **120** |
+| Impersonal (3rd person only) | 17 | 16 | 10 | **43** |
+| Meteorological (3sg only) | 7 | 7 | 5 | **19** |
+
+### Adjectives
+
+**Form Patterns:**
+- **form-4**: Full agreement - bello/bella/belli/belle (4 distinct forms)
+- **form-2**: Limited agreement - grande/grande/grandi/grandi (2 distinct forms)
+
+**Gradability:**
+- **Full gradability**: Can form both analytical (più bello) and synthetic (bellissimo)
+- **Analytical gradability**: Only analytical comparatives (più intelligente)
+- **Non-gradable**: Cannot form comparatives (morto, perfetto)
+
+### Adverbs
+
+**Semantic Types:**
+- **Manner**: How - velocemente, bene, male
+- **Time**: When - oggi, sempre, mai
+- **Place**: Where - qui, là, sopra
+- **Quantity**: How much - molto, poco, troppo
+- **Frequency**: How often - spesso, raramente, mai
+- **Affirmation**: Confirmation - sì, certamente, certo
+- **Doubt**: Uncertainty - forse, probabilmente, magari
+- **Negation**: Negative - non, niente, nessuno
+- **Evaluation**: Opinion - fortunatamente, purtroppo
+- **Emphasis**: Amplification - assolutamente, proprio
+
+**Formation:**
+- Most adverbs are invariable (1 form only)
+- Some derived from adjectives with -mente suffix
+
+### Prepositions
+
+- Invariable words (1 form only)
+- Express relationships between words
+- Examples: di, a, da, in, con, su, per, tra, fra
 
 ---
 
@@ -125,6 +269,197 @@ Stores valid values for each attribute.
 - `value` (text): The actual value (e.g., 'masculine', 'indicativo', 'singular')
 - `description` (text): Explanation of this value
 - `sort_order` (int): Display order
+
+---
+
+## Metadata System & Propagation
+
+### Understanding Metadata Levels
+
+The metadata system operates across four entity types, each serving a specific purpose in the word generation hierarchy:
+
+| Entity Type | Level | Purpose | Example |
+|------------|-------|---------|---------|
+| `word` | Dictionary entry | Base word properties | gender: masculine |
+| `form` | Inflected form | Form-specific properties | tense: presente, person: prima-persona |
+| `word_translation` | Base translation | Translation-specific properties | auxiliary: avere, transitivity: transitive |
+| `form_translation` | Form translation | Form-translation properties | (rarely used) |
+
+### Source Level vs Display Level
+
+Every metadata attribute has two level specifications:
+
+**source_level**: Where you **assign** the tag (word, form, translation, or comma-separated)
+**display_level**: Where it **appears in UI** (may aggregate from multiple sources)
+
+Example: `auxiliary` attribute
+- **source_level**: `form,translation` (can be assigned to both forms and translations)
+- **display_level**: `word` (displayed at word level, aggregating all auxiliary values from translations and forms)
+
+### Propagation Rules Explained
+
+Propagation rules determine how metadata flows from where it's assigned to where it's displayed.
+
+#### 1. ADMIN_ONLY (No Propagation)
+
+**Behavior**: Direct assignment only, no automatic propagation
+
+**Use Case**: Core structural attributes that must be explicitly set
+
+**Examples**:
+- `gender` (word): Must explicitly tag each noun as masculine/feminine
+- `mood` (form): Must explicitly tag each verb form with its mood
+- `tense` (form): Must explicitly tag each verb form with its tense
+- `person` (form): Must explicitly tag each verb form with its person
+- `number` (form): Must explicitly tag each verb form with its number
+
+```
+Word: ragazzo
+└─ gender: masculine (explicitly assigned)
+   └─ Display: Shows "masculine" (no propagation, direct value)
+```
+
+#### 2. FIRST_WINS (Single Value Priority)
+
+**Behavior**: First value encountered wins, subsequent values ignored
+
+**Use Case**: Attributes that should have only one value displayed
+
+**Examples**:
+- `register` (translation): formal, casual, neutral
+- `adverb_type` (word): manner, time, place
+
+```
+Word: parlare
+├─ Translation 1: register: formal (first)
+└─ Translation 2: register: casual (second)
+   └─ Display: Shows "formal" (first wins)
+```
+
+#### 3. COMBINE (Merge All Values)
+
+**Behavior**: All unique values are combined and displayed together
+
+**Use Case**: Attributes that can legitimately have multiple values
+
+**Examples**:
+- `auxiliary` (form,translation): essere, avere
+- `transitivity` (translation): transitive, intransitive, ambitransitive
+
+```
+Word: finire
+├─ Translation 1: auxiliary: avere
+└─ Translation 2: auxiliary: essere
+   └─ Display: Shows "avere, essere" (both combined)
+```
+
+#### 4. ANY_MATCH (Boolean-like)
+
+**Behavior**: Display if ANY related entity has the attribute
+
+**Use Case**: Boolean-like attributes indicating presence of a property
+
+**Examples**:
+- `form_irregular` (form): irregular
+- `interrogative_function` (word): interrogative
+
+```
+Word: andare
+├─ Form 1: "vado" → form_irregular: irregular
+├─ Form 2: "vai" → form_irregular: irregular
+└─ Form 3: "va" → form_irregular: irregular
+   └─ Display: Shows "irregular" (at least one form is irregular)
+```
+
+### Why Translations Are Critical
+
+**🔥 CRITICAL CONCEPT**: Translations are not just text—they carry essential metadata that determines form behavior and relationships.
+
+#### Translation-Level Metadata Determines:
+
+**1. Compound Form Generation (auxiliary)**
+- Forms tagged with `auxiliary='essere'` link ONLY to translations with `auxiliary='essere'`
+- Forms tagged with `auxiliary='avere'` link ONLY to translations with `auxiliary='avere'`
+
+```
+Example: finire (dual-auxiliary verb)
+
+Translation 1: "to finish" → auxiliary: avere
+Translation 2: "to end" → auxiliary: essere
+
+Form: "ho finito" (compound with avere)
+└─ Links ONLY to Translation 1 ("to finish")
+└─ Does NOT link to Translation 2 (wrong auxiliary)
+
+Form: "è finito" (compound with essere)
+└─ Links ONLY to Translation 2 ("to end")
+└─ Does NOT link to Translation 1 (wrong auxiliary)
+```
+
+**2. Form Translation Matrix (word_restriction)**
+- Translations with `word_restriction='plural-only'` link ONLY to plural forms
+- Translations with no restrictions link to ALL applicable forms
+
+```
+Example: lavarsi (reflexive verb with restriction)
+
+Translation 1: "to wash oneself" (no restriction)
+Translation 2: "to wash each other" → word_restriction: plural-only
+
+Form: "mi lavo" (singular)
+└─ Links ONLY to Translation 1
+└─ Does NOT link to Translation 2 (plural-only restriction)
+
+Form: "ci laviamo" (plural)
+└─ Links to Translation 1 (no restriction)
+└─ Links to Translation 2 (plural restriction matches)
+```
+
+**3. Semantic and Grammatical Classification**
+- `transitivity`: Determines if verb can take direct objects
+- `verb_type`: Special verb categories (modal, impersonal, reciprocal, etc.)
+- `register`: Social context (formal, casual, neutral)
+- `gender_usage`: Gender-specific meanings
+
+#### Without Proper Translation Metadata:
+
+❌ Compound forms won't link to correct translations
+❌ Dual-auxiliary verbs will fail
+❌ Restriction-based translations won't work
+❌ Form × translation matrix will be incorrect
+❌ Expected form_translation counts will be wrong
+
+### Metadata Assignment Workflow
+
+**Step 1: Assign at Source Level**
+```sql
+-- Word level: Assign gender to dictionary entry
+INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id)
+VALUES ('word', 'word-uuid', 'gender-attr-id', 'masculine-value-id');
+
+-- Translation level: Assign auxiliary to word_translation
+INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id)
+VALUES ('word_translation', 'translation-uuid', 'auxiliary-attr-id', 'avere-value-id');
+
+-- Form level: Assign tense to word_form
+INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id)
+VALUES ('form', 'form-uuid', 'tense-attr-id', 'presente-value-id');
+```
+
+**Step 2: System Applies Propagation Rules**
+
+The system automatically propagates metadata according to rules:
+- ADMIN_ONLY: No propagation (shows direct value)
+- FIRST_WINS: First value propagates up
+- COMBINE: All values merge and propagate up
+- ANY_MATCH: Presence indicator propagates up
+
+**Step 3: Display at Display Level**
+
+UI displays metadata at display_level, showing propagated values:
+- Word-level display: Shows word tags + propagated translation/form tags
+- Form-level display: Shows form tags only
+- Translation-level display: Shows translation tags only
 
 ---
 
@@ -383,17 +718,30 @@ form-2: grande, grande, grandi, grandi
 
 #### 3.4 Insert word_forms
 
+**⚠️ IMPORTANT: form_type Column Requirement**
+
+The `form_type` column in `word_forms` is **deprecated but still required** by the database schema. You MUST provide a value for this column even though we use metadata for actual classification.
+
+**Recommended default values:**
+- For verbs: `'simple'`, `'compound'`, or `'progressive'` (matches the verb_form_type metadata)
+- For nouns/adjectives: `'form'` or `'inflected'`
+- For adverbs/prepositions: `'base'` or `'form'`
+
+**The actual classification comes from metadata attributes**, not this column. Always use the `verb_form_type` metadata attribute for proper classification.
+
 ```sql
 INSERT INTO word_forms (id, word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation)
 VALUES (
   gen_random_uuid(),
   '...',            -- word_id from dictionary
   'parlo',          -- Conjugated form
-  'simple',         -- Deprecated but required
-  'PAR-lo',         -- Phonetic
-  '/ˈparlo/'        -- IPA
+  'simple',         -- ⚠️ REQUIRED but deprecated - Use verb_form_type metadata for actual classification
+  'PAR-lo',         -- Phonetic (optional)
+  '/ˈparlo/'        -- IPA (optional)
 );
 ```
+
+**Remember:** After inserting the form, immediately tag it with the correct `verb_form_type` metadata attribute (simple, compound, or progressive).
 
 #### 3.5 Apply Form-Level Metadata Tags
 
@@ -490,24 +838,78 @@ WHERE ma.name = 'number' AND mv.value = 'singolare';
 
 #### 4.2 Generate Translation Text
 
-**Format:** Combine form conjugation with English translation
+**🔥 CRITICAL RULE: Form translations MUST be inflected to match the Italian form**
 
-**Examples:**
+The `translation` column in `form_translations` must contain the **fully conjugated/inflected English translation**, NOT the base translation from `word_translations`.
 
-| Form (Italian) | Translation Base | Form Translation |
-|----------------|------------------|------------------|
-| parlo | to speak | I speak |
-| parlo | to talk | I talk |
-| parlavi | to speak | you were speaking |
-| ho parlato | to speak | I have spoken |
-| che io parli | to speak | that I speak |
-| parla! | to speak | speak! |
+**❌ WRONG:**
+```
+Form: "parlavo" → Translation: "to speak" (base infinitive)
+Form: "ho parlato" → Translation: "to speak" (base infinitive)
+```
 
-**Rules:**
-- Add English pronouns (I, you, he/she, we, you all, they)
-- Match tense in English (present, past, future, conditional, subjunctive)
-- For imperativo: Use imperative form without pronoun ("speak!", not "you speak!")
-- For congiuntivo: Prefix with "that" ("that I speak")
+**✅ CORRECT:**
+```
+Form: "parlavo" → Translation: "I was speaking" (inflected past continuous)
+Form: "ho parlato" → Translation: "I have spoken" (inflected present perfect)
+```
+
+**Format:** Combine Italian form conjugation with properly inflected English
+
+**Complete Examples:**
+
+| Italian Form | Base Translation | **Form Translation (INFLECTED)** |
+|-------------|------------------|----------------------------------|
+| parlo | to speak | **I speak** |
+| parli | to speak | **you speak** |
+| parlavi | to speak | **you were speaking** |
+| parlavo | to speak | **I was speaking** |
+| ho parlato | to speak | **I have spoken** |
+| avevo parlato | to speak | **I had spoken** |
+| parlerò | to speak | **I will speak** |
+| che io parli | to speak | **that I speak** |
+| che io parlassi | to speak | **that I spoke** |
+| parlerei | to speak | **I would speak** |
+| parla! | to speak | **speak!** |
+| parlate! | to speak | **you all speak!** |
+| sto parlando | to speak | **I am speaking** |
+
+**English Inflection Rules:**
+
+**Present Tense:**
+- io parlo → I speak
+- tu parli → you speak
+- lui/lei parla → he/she speaks (add -s)
+- noi parliamo → we speak
+- voi parlate → you all speak
+- loro parlano → they speak
+
+**Past Tenses:**
+- Imperfetto (parlavo) → was/were + -ing: "I was speaking"
+- Passato prossimo (ho parlato) → have/has + past participle: "I have spoken"
+- Passato remoto (parlai) → simple past: "I spoke"
+- Trapassato (avevo parlato) → had + past participle: "I had spoken"
+
+**Future:**
+- Futuro semplice (parlerò) → will + infinitive: "I will speak"
+- Futuro anteriore (avrò parlato) → will have + past participle: "I will have spoken"
+
+**Conditional:**
+- Condizionale presente (parlerei) → would + infinitive: "I would speak"
+- Condizionale passato (avrei parlato) → would have + past participle: "I would have spoken"
+
+**Subjunctive:**
+- Congiuntivo presente (che io parli) → that + present: "that I speak"
+- Congiuntivo imperfetto (che io parlassi) → that + past: "that I spoke"
+- Congiuntivo passato (che io abbia parlato) → that + present perfect: "that I have spoken"
+
+**Imperative:**
+- Imperativo (parla!) → imperative form: "speak!" (no pronoun)
+- Imperativo (parlate!) → imperative form: "you all speak!" (with pronoun for clarity)
+
+**Progressive:**
+- Presente progressivo (sto parlando) → am/is/are + -ing: "I am speaking"
+- Imperfetto progressivo (stavo parlando) → was/were + -ing: "I was speaking"
 
 #### 4.3 Insert form_translations
 
@@ -517,7 +919,7 @@ VALUES (
   gen_random_uuid(),
   '...',           -- form_id from word_forms
   '...',           -- word_translation_id from word_translations
-  'I speak',       -- Complete English translation
+  'I speak',       -- ⚠️ INFLECTED English translation (NOT "to speak")
   'automatic',     -- How this was assigned
   1.0              -- Confidence level
 );
