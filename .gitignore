@@ -2,3 +2,89 @@ node_modules/
 .next/
 package-lock.json
 
+# Backup archives and local agent/config state
+backup-archive/
+.claude/
+.codex/
+AGENTS.md
+CLAUDE.md
+agent.md
+.env.local
+.env.*
+!.env.local.example
+
+# Historical docs and local planning/analysis
+documentation/plans/
+documentation/claude-agent-analysis/
+documentation/EPICS/
+documentation/DEV_LOG.md
+documentation/Development Diary.md
+documentation/tagging and db design.md
+documentation/KAKKI python migration tools/
+
+# Local scratch/debug/test artifacts
+.DS_Store
+*.log
+dev.log
+.dev.log
+debug_*.log
+validation_*.log
+app/debug/
+app/analysis/debug/
+app/test/
+
+# Backup/temp files
+*.bak
+*.backup
+*.orig
+*.tmp
+
+# Root-level research/report artifacts
+/*_ANALYSIS*.md
+/*_ANALYSIS*.txt
+/*_RESEARCH*.md
+/*_RESEARCH*.txt
+/*_FINDINGS*.md
+/*_FINDINGS*.txt
+/*_SUMMARY*.md
+/*_SUMMARY*.txt
+/*_DELIVERABLES*.md
+/*_DELIVERABLES*.txt
+/*_REPORT*.md
+/*_REPORT*.txt
+/*_INDEX*.md
+/*_INDEX*.txt
+/*_REFERENCE*.md
+/*_REFERENCE*.txt
+/*_QUICK_REFERENCE*.md
+/*_QUICK_REFERENCE*.txt
+/*_VISUAL*.txt
+/*_TEST_CASES*.csv
+/*_DATABASE_VALUES*.csv
+/*_DATABASE_VALUES*.txt
+/*_ACTUAL_VALUES*.json
+/query_*.js
+/research_*.js
+/research_*.py
+/explore_schema.js
+/misti.db
+/meta_values.b64
+
+# Admin scratch routes and component backups
+app/admin/migration-tools-refactored.bak/
+app/admin/simple-migration-test.bak/
+app/admin/simple-migration-test/
+app/admin/migration-tools/test-page.tsx
+app/admin/migration-tools/page.tsx.bak
+app/admin/migration-tools/components/Test*.tsx
+app/admin/migration-tools/components/UltraMinimal.tsx
+app/admin/migration-tools/components/MinimalRuleManager.tsx
+app/admin/migration-tools/components/SafeRuleManager.tsx
+app/admin/migration-tools/components/SimpleRuleManager.tsx
+app/admin/migration-tools/components/StepByStepRuleManager.tsx
+app/admin/migration-tools/components/RuleBuilder.tsx.backup
+components/admin/*.bak
+components/admin/SimpleMigrationTest.tsx
+
+# Historical docs retained locally only
+documentation/Tagging and Database Design v2.md
