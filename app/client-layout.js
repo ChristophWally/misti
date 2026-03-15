@@ -36,6 +36,8 @@ export default function ClientLayout({ children }) {
               >
                 📚 Dictionary
               </button>
+
+
               <button className="text-white hover:text-cyan-200 transition-colors">
                 My Decks
               </button>
