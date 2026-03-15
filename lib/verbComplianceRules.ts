@@ -290,7 +290,7 @@ export const CROSS_TABLE_VALIDATION_RULES = {
   },
 
   'form-translation-assignments': {
-    rule: 'All word_forms.id should have corresponding entries in form_translations table',
+    rule: 'All word_forms.id should have corresponding canonical form assignments',
     priority: 'medium' as ValidationPriority,
     epicRequirement: 'Complete English translation coverage for learning interface',
     autoFixable: false,

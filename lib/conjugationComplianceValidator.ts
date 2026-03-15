@@ -364,7 +364,7 @@ export class ConjugationComplianceValidator {
       
       if (formIds.length > 0) {
         const { data: assignments, error: assignmentsError } = await this.supabase
-          .from('form_translations')
+          .from('vw_form_translation_assignments')
           .select(`
             id,
             form_id,
@@ -670,10 +670,10 @@ export class ConjugationComplianceValidator {
         issues.push({
           ruleId: 'broken-form-translation-reference',
           severity: 'critical',
-          message: `Form_translation ${assignment.id} references missing form or translation`,
+          message: `Form assignment ${assignment.id} references missing form or translation`,
           currentValue: assignment,
           expectedValue: 'Valid form_id and word_translation_id',
-          manualSteps: ['Remove invalid assignment', 'Create missing record', 'Verify form_translations entries'],
+          manualSteps: ['Remove invalid assignment', 'Create missing record', 'Verify canonical form assignments'],
           epicContext: 'Translation-to-form relationship integrity essential'
         });
         continue;
@@ -702,7 +702,7 @@ export class ConjugationComplianceValidator {
   private async validateFormTranslationRelationships(verbData: VerbData): Promise<ComplianceIssue[]> {
     const issues: ComplianceIssue[] = [];
 
-    // Count expected form_translations based on auxiliary variations
+    // Count expected canonical form assignments based on auxiliary variations.
     const auxiliaries = new Set(
       verbData.translations.map(t => t.context_metadata?.auxiliary).filter(Boolean)
     );
@@ -722,9 +722,9 @@ export class ConjugationComplianceValidator {
           severity: 'critical',
           message: `Translation "${translation.translation}" covers no forms`,
           currentValue: 0,
-          expectedValue: `~${expectedCount} form_translations`,
+          expectedValue: `~${expectedCount} canonical form assignments`,
           manualSteps: [
-            'Create form_translations entries linking this translation to appropriate forms',
+            'Create canonical form assignments linking this translation to appropriate forms',
             `Link to forms with matching auxiliary type (${translation.context_metadata?.auxiliary})`
           ],
           epicContext: 'Each translation must cover its auxiliary-appropriate forms'
@@ -735,9 +735,9 @@ export class ConjugationComplianceValidator {
           severity: 'high',
           message: `Translation "${translation.translation}" has incomplete form coverage`,
           currentValue: translationFormTranslations.length,
-          expectedValue: `~${expectedCount} form_translations`,
+          expectedValue: `~${expectedCount} canonical form assignments`,
           manualSteps: [
-            `Add ${expectedCount - translationFormTranslations.length} missing form_translations`,
+            `Add ${expectedCount - translationFormTranslations.length} missing canonical form assignments`,
             'Ensure all tenses are covered for this meaning'
           ],
           epicContext: 'Complete form coverage required for proper conjugation display'
@@ -1388,14 +1388,14 @@ export class ConjugationComplianceValidator {
 
       const formIds = (forms || []).map(f => f.id);
       const { data: formTranslations } = await this.supabase
-        .from('form_translations')
+        .from('vw_form_translation_assignments')
         .select('*')
         .in('form_id', formIds);
-      debugLog(`  Total form_translations found: ${formTranslations?.length || 0}`);
+      debugLog(`  Total canonical form assignments found: ${formTranslations?.length || 0}`);
 
       // Remove any reference to form_ids arrays
       debugLog(`  📊 Architecture validation:`);
-      debugLog(`    ✅ Using proper many-to-many relationship via form_translations`);
+      debugLog(`    ✅ Using proper many-to-many relationship via canonical FTG-backed assignments`);
       debugLog(`    ✅ No direct form_ids arrays needed in translations`);
 
       // EXTRACT REAL DATA FOR FRONTEND
@@ -1689,7 +1689,7 @@ export class ConjugationComplianceValidator {
           'Add record to word_translations table',
           'Set translation to English meaning',
           'Set context_metadata.auxiliary to avere/essere',
-          'Create form_translations entries to link forms to this translation'
+          'Create canonical form assignments to link forms to this translation'
         ],
         epicContext: 'Translation-driven architecture requires meaning definitions'
       });

@@ -12,9 +12,7 @@ import TranslationSelector from './TranslationSelector'
 import { AuxiliaryPatternService } from '../lib/auxiliary-pattern-service'
 import {
   deriveWordTagsFromTranslations,
-  hydrateBundleForm,
-  hydrateBundleTranslation,
-  hydrateBundleWord,
+  hydrateCanonicalWordBundle,
 } from '../lib/dictionary-bundle-compat'
 
 // Helper utilities for dynamic compound generation
@@ -231,9 +229,10 @@ export default function ConjugationModal({
 
       if (error) throw error
 
-      const bundle = Array.isArray(data) ? data[0] : data
-      const hydratedTranslations = (bundle?.translations || []).map(hydrateBundleTranslation)
-      const hydratedWord = hydrateBundleWord(bundle?.word || activeWord)
+      const rawBundle = Array.isArray(data) ? data[0] : data
+      const bundle = hydrateCanonicalWordBundle(rawBundle || {}, activeWord)
+      const hydratedTranslations = bundle.translations || []
+      const hydratedWord = bundle.word || activeWord
       const mergedWordTags = Array.from(
         new Set([
           ...(hydratedWord.tags || []),
@@ -242,7 +241,6 @@ export default function ConjugationModal({
       )
       const hydratedForms = (bundle?.forms || [])
         .filter((form) => form.form_type === 'conjugation')
-        .map(hydrateBundleForm)
 
       setResolvedWord({
         ...hydratedWord,
@@ -384,8 +382,9 @@ const loadConjugations = async () => {
             )
 
             if (generated) {
-              // Add form_translations assignments from the participle
-              generated.form_translations = participle.form_translations || []
+              // Carry canonical FTG-linked translation assignments forward.
+              generated.resolved_translation_groups =
+                participle.resolved_translation_groups || []
               // Attach pronoun tag for correct display
               const pronounMap = {
                 'prima-persona': { singolare: 'io', plurale: 'noi' },
@@ -450,8 +449,9 @@ const loadConjugations = async () => {
             )
 
             if (generated) {
-              // Add form_translations assignments from the gerund
-              generated.form_translations = gerund.form_translations || []
+              // Carry canonical FTG-linked translation assignments forward.
+              generated.resolved_translation_groups =
+                gerund.resolved_translation_groups || []
               const pronounMap = {
                 'prima-persona': { singolare: 'io', plurale: 'noi' },
                 'seconda-persona': { singolare: 'tu', plurale: 'voi' },
@@ -495,7 +495,7 @@ const loadConjugations = async () => {
   // Get appropriate translation for person/plurality combination
   const getTranslationForPersonPlurality = (buildingBlock, person, plurality) => {
     // Find form_translation for selected translation
-    const assignment = buildingBlock.form_translations?.find(
+    const assignment = buildingBlock.resolved_translation_groups?.find(
       ft => ft.word_translation_id === selectedTranslationId
     )
 
@@ -608,7 +608,7 @@ const loadConjugations = async () => {
 
     // Filter forms that have assignments for the selected translation
     const formsWithAssignments = baseForms.filter(form =>
-      form.form_translations?.some(
+      form.resolved_translation_groups?.some(
         ft => ft.word_translation_id === selectedTranslationId
       )
     )
@@ -835,13 +835,13 @@ const loadConjugations = async () => {
   // Lookup translation text for the currently selected meaning
   const getTranslationForSelectedTranslation = (form) => {
     console.log('🔍 Looking up translation for form:', form.form_text, 'Selected translation ID:', selectedTranslationId)
-    console.log('📋 Form translation assignments:', form.form_translations?.map(ft => ({
+    console.log('📋 Form translation assignments:', form.resolved_translation_groups?.map(ft => ({
       id: ft.word_translation_id,
       translation: ft.word_translation?.translation || ft.translation,
-      method: ft.assignment_method
+      method: 'canonical-ftg'
     })))
 
-    const assignment = form.form_translations?.find(
+    const assignment = form.resolved_translation_groups?.find(
       ft => ft.word_translation_id === selectedTranslationId
     )
 
@@ -947,7 +947,7 @@ const loadConjugations = async () => {
     )
 
     if (calculatedVariant) {
-      console.log('✅ Found feminine variant:', calculatedVariant.form_text, 'with translation assignments:', calculatedVariant.form_translations?.length)
+      console.log('✅ Found feminine variant:', calculatedVariant.form_text, 'with translation assignments:', calculatedVariant.resolved_translation_groups?.length)
       return calculatedVariant
     }
 
@@ -1689,7 +1689,8 @@ function ConjugationRow({
           <AudioButton
             wordId={form.id}
             italianText={audioText}
-            audioFilename={form.audio_filename}
+            audioObjectKey={form.audio_object_key}
+            audioBucket={form.audio_bucket}
             size="lg"
             colorClass={colors.audio}
           />

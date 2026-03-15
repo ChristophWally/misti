@@ -784,12 +784,16 @@ as $$
       'id', d.id,
       'italian', d.italian,
       'word_type', d.word_type,
-      'audio_filename', wp.audio_filename,
-      'audio_bucket', wp.storage_bucket,
-      'ipa_pronunciation', coalesce(wp.ipa_pronunciation, d.ipa_pronunciation),
-      'phonetic_pronunciation', coalesce(wp.phonetic_pronunciation, d.phonetic_pronunciation),
       'word_core_tags', public.app_entity_core_tags_json('word', d.id),
-      'word_optional_tags', public.app_entity_optional_tags_json('word', d.id)
+      'word_optional_tags', public.app_entity_optional_tags_json('word', d.id),
+      'primary_pronunciation_link_id', wp.pronunciation_link_id,
+      'primary_pronunciation_id', wp.pronunciation_id,
+      'primary_audio_asset_id', wp.media_asset_id,
+      'primary_audio_bucket', wp.storage_bucket,
+      'primary_audio_object_key', wp.audio_filename,
+      'primary_audio_voice_name', wp.voice_name,
+      'primary_ipa', coalesce(wp.ipa_pronunciation, d.ipa_pronunciation),
+      'primary_phonetic', coalesce(wp.phonetic_pronunciation, d.phonetic_pronunciation)
     ),
     'translations',
     coalesce((
@@ -831,30 +835,16 @@ as $$
           'id', wf.id,
           'form_text', wf.form_text,
           'form_type', wf.form_type,
-          'audio_filename', fp.audio_filename,
-          'audio_bucket', fp.storage_bucket,
-          'audio_voice_name', fp.voice_name,
-          'ipa_pronunciation', coalesce(fp.ipa_pronunciation, wf.ipa_pronunciation),
-          'phonetic_pronunciation', coalesce(fp.phonetic_pronunciation, wf.phonetic_pronunciation),
           'core_tags', public.app_entity_core_tags_json('form', wf.id),
           'optional_tags', public.app_entity_optional_tags_json('form', wf.id),
-          'form_translations', coalesce((
-            select jsonb_agg(
-              jsonb_build_object(
-                'id', vfta.id,
-                'form_translation_group_id', vfta.form_translation_group_id,
-                'word_translation_id', vfta.word_translation_id,
-                'translation', vfta.translation,
-                'usage_notes', vfta.usage_notes,
-                'usage_examples', vfta.usage_examples,
-                'assignment_method', vfta.assignment_method,
-                'confidence_score', vfta.confidence_score
-              )
-              order by vfta.translation, vfta.id
-            )
-            from public.vw_form_translation_assignments vfta
-            where vfta.form_id = wf.id
-          ), '[]'::jsonb)
+          'primary_pronunciation_link_id', fp.pronunciation_link_id,
+          'primary_pronunciation_id', fp.pronunciation_id,
+          'primary_audio_asset_id', fp.media_asset_id,
+          'primary_audio_bucket', fp.storage_bucket,
+          'primary_audio_object_key', fp.audio_filename,
+          'primary_audio_voice_name', fp.voice_name,
+          'primary_ipa', coalesce(fp.ipa_pronunciation, wf.ipa_pronunciation),
+          'primary_phonetic', coalesce(fp.phonetic_pronunciation, wf.phonetic_pronunciation)
         )
         order by wf.form_text, wf.id
       )
@@ -901,10 +891,259 @@ as $$
       join public.word_translations wt on wt.id = ftg.word_translation_id
       where wt.word_id = d.id
     ), '[]'::jsonb),
+    'pronunciation_links',
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', vpr.pronunciation_link_id,
+          'external_id', vpr.pronunciation_link_external_id,
+          'entity_type', vpr.entity_type,
+          'entity_id', vpr.entity_id,
+          'variant_order', vpr.variant_order,
+          'usage_label', vpr.usage_label,
+          'note', vpr.note,
+          'pronunciation_id', vpr.pronunciation_id,
+          'media_asset_id', vpr.media_asset_id,
+          'accent', vpr.accent,
+          'ipa_pronunciation', vpr.ipa_pronunciation,
+          'phonetic_pronunciation', vpr.phonetic_pronunciation,
+          'storage_bucket', vpr.storage_bucket,
+          'audio_filename', vpr.audio_filename,
+          'voice_name', vpr.voice_name,
+          'key_version', vpr.key_version
+        )
+        order by vpr.entity_type, vpr.entity_id, vpr.variant_order, vpr.pronunciation_link_id
+      )
+      from public.vw_pronunciation_links_resolved vpr
+      where (vpr.entity_type = 'word' and vpr.entity_id = d.id)
+         or (vpr.entity_type = 'word_translation' and exists (
+              select 1
+              from public.word_translations wt
+              where wt.id = vpr.entity_id
+                and wt.word_id = d.id
+            ))
+         or (vpr.entity_type = 'form' and exists (
+              select 1
+              from public.word_forms wf
+              where wf.id = vpr.entity_id
+                and wf.word_id = d.id
+            ))
+         or (vpr.entity_type = 'form_translation_group_link' and exists (
+              select 1
+              from public.form_translation_group_links ftgl
+              join public.form_translation_groups ftg
+                on ftg.id = ftgl.form_translation_group_id
+              join public.word_translations wt
+                on wt.id = ftg.word_translation_id
+              where ftgl.id = vpr.entity_id
+                and wt.word_id = d.id
+            ))
+    ), '[]'::jsonb),
+    'pronunciations',
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', p.id,
+          'external_id', p.external_id,
+          'accent', p.accent,
+          'ipa_pronunciation', p.ipa_pronunciation,
+          'phonetic_pronunciation', p.phonetic_pronunciation,
+          'pronunciation_source', p.pronunciation_source,
+          'source_ref', p.source_ref,
+          'notes', p.notes,
+          'media_asset_id', p.media_asset_id
+        )
+        order by p.id
+      )
+      from (
+        select distinct
+          vpr.pronunciation_id as id,
+          vpr.pronunciation_external_id as external_id,
+          vpr.accent,
+          vpr.ipa_pronunciation,
+          vpr.phonetic_pronunciation,
+          vpr.pronunciation_source,
+          vpr.source_ref,
+          vpr.pronunciation_notes as notes,
+          vpr.media_asset_id
+        from public.vw_pronunciation_links_resolved vpr
+        where (vpr.entity_type = 'word' and vpr.entity_id = d.id)
+           or (vpr.entity_type = 'word_translation' and exists (
+                select 1
+                from public.word_translations wt
+                where wt.id = vpr.entity_id
+                  and wt.word_id = d.id
+              ))
+           or (vpr.entity_type = 'form' and exists (
+                select 1
+                from public.word_forms wf
+                where wf.id = vpr.entity_id
+                  and wf.word_id = d.id
+              ))
+           or (vpr.entity_type = 'form_translation_group_link' and exists (
+                select 1
+                from public.form_translation_group_links ftgl
+                join public.form_translation_groups ftg
+                  on ftg.id = ftgl.form_translation_group_id
+                join public.word_translations wt
+                  on wt.id = ftg.word_translation_id
+                where ftgl.id = vpr.entity_id
+                  and wt.word_id = d.id
+              ))
+      ) p
+    ), '[]'::jsonb),
+    'media_assets',
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', ma.id,
+          'external_id', ma.external_id,
+          'media_kind', ma.media_kind,
+          'storage_backend', ma.storage_backend,
+          'storage_bucket', ma.storage_bucket,
+          'object_key', ma.object_key,
+          'key_version', ma.key_version,
+          'content_sha256', ma.content_sha256,
+          'mime_type', ma.mime_type,
+          'file_ext', ma.file_ext,
+          'display_name', ma.display_name,
+          'voice_name', ma.voice_name,
+          'generation_tool', ma.generation_tool,
+          'generation_type', ma.generation_type,
+          'selected_bytes', ma.selected_bytes,
+          'duration_seconds', ma.duration_seconds,
+          'sample_rate', ma.sample_rate,
+          'bit_rate', ma.bit_rate,
+          'width_px', ma.width_px,
+          'height_px', ma.height_px
+        )
+        order by ma.media_kind, ma.id
+      )
+      from (
+        select distinct ma.*
+        from public.media_assets ma
+        where ma.id in (
+          select vpr.media_asset_id
+          from public.vw_pronunciation_links_resolved vpr
+          where vpr.media_asset_id is not null
+            and (
+              (vpr.entity_type = 'word' and vpr.entity_id = d.id)
+              or (vpr.entity_type = 'word_translation' and exists (
+                    select 1
+                    from public.word_translations wt
+                    where wt.id = vpr.entity_id
+                      and wt.word_id = d.id
+                  ))
+              or (vpr.entity_type = 'form' and exists (
+                    select 1
+                    from public.word_forms wf
+                    where wf.id = vpr.entity_id
+                      and wf.word_id = d.id
+                  ))
+              or (vpr.entity_type = 'form_translation_group_link' and exists (
+                    select 1
+                    from public.form_translation_group_links ftgl
+                    join public.form_translation_groups ftg
+                      on ftg.id = ftgl.form_translation_group_id
+                    join public.word_translations wt
+                      on wt.id = ftg.word_translation_id
+                    where ftgl.id = vpr.entity_id
+                      and wt.word_id = d.id
+                  ))
+            )
+          union
+          select ml.media_asset_id
+          from public.media_links ml
+          where (ml.entity_type = 'word_translation' and exists (
+                  select 1
+                  from public.word_translations wt
+                  where wt.id = ml.entity_id
+                    and wt.word_id = d.id
+                ))
+             or (ml.entity_type = 'form_translation_group' and exists (
+                  select 1
+                  from public.form_translation_groups ftg
+                  join public.word_translations wt
+                    on wt.id = ftg.word_translation_id
+                  where ftg.id = ml.entity_id
+                    and wt.word_id = d.id
+                ))
+             or (ml.entity_type = 'etymology_document' and exists (
+                  select 1
+                  from public.etymology_links el
+                  where el.etymology_document_id = ml.entity_id
+                    and (
+                      (el.entity_type = 'word' and el.entity_id = d.id)
+                      or (
+                        el.entity_type = 'word_translation'
+                        and exists (
+                          select 1
+                          from public.word_translations wt
+                          where wt.id = el.entity_id
+                            and wt.word_id = d.id
+                        )
+                      )
+                    )
+                ))
+        )
+      ) ma
+    ), '[]'::jsonb),
+    'media_links',
+    coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', ml.id,
+          'external_id', ml.external_id,
+          'media_asset_id', ml.media_asset_id,
+          'entity_type', ml.entity_type,
+          'entity_id', ml.entity_id,
+          'media_role', ml.media_role,
+          'link_order', ml.link_order
+        )
+        order by ml.entity_type, ml.entity_id, ml.link_order, ml.id
+      )
+      from public.media_links ml
+      where (ml.entity_type = 'word_translation' and exists (
+              select 1
+              from public.word_translations wt
+              where wt.id = ml.entity_id
+                and wt.word_id = d.id
+            ))
+         or (ml.entity_type = 'form_translation_group' and exists (
+              select 1
+              from public.form_translation_groups ftg
+              join public.word_translations wt
+                on wt.id = ftg.word_translation_id
+              where ftg.id = ml.entity_id
+                and wt.word_id = d.id
+            ))
+         or (ml.entity_type = 'etymology_document' and exists (
+              select 1
+              from public.etymology_links el
+              where el.etymology_document_id = ml.entity_id
+                and (
+                  (el.entity_type = 'word' and el.entity_id = d.id)
+                  or (
+                    el.entity_type = 'word_translation'
+                    and exists (
+                      select 1
+                      from public.word_translations wt
+                      where wt.id = el.entity_id
+                        and wt.word_id = d.id
+                    )
+                  )
+                )
+            ))
+    ), '[]'::jsonb),
     'etymologies',
     coalesce((
       select jsonb_agg(
         jsonb_build_object(
+          'link_id', el.id,
+          'link_external_id', el.external_id,
+          'entity_type', el.entity_type,
+          'entity_id', el.entity_id,
+          'link_order', el.link_order,
           'id', ed.id,
           'external_id', ed.external_id,
           'body_text', ed.body_text,
@@ -931,6 +1170,24 @@ as $$
   where d.id = p_word_id;
 $$;
 
+drop function if exists public.app_get_dictionary_listing(
+  text,
+  text[],
+  jsonb,
+  uuid[],
+  integer,
+  integer,
+  boolean,
+  boolean,
+  boolean,
+  boolean,
+  boolean,
+  boolean,
+  boolean,
+  boolean,
+  boolean
+);
+
 create or replace function public.app_get_dictionary_listing(
   q text default null,
   word_types text[] default null,
@@ -951,13 +1208,13 @@ create or replace function public.app_get_dictionary_listing(
   word_id uuid,
   italian text,
   word_type text,
-  audio_filename text,
-  ipa_pronunciation text,
+  primary_translation jsonb,
+  primary_pronunciation jsonb,
+  primary_media jsonb,
   word_core_tags jsonb,
   word_optional_tags jsonb,
   translations jsonb,
   forms jsonb,
-  form_translations jsonb,
   total_count integer
 )
 language plpgsql
@@ -1022,8 +1279,32 @@ begin
     w.id as word_id,
     w.italian,
     w.word_type,
-    case when include_audio then wp.audio_filename else null end as audio_filename,
-    case when include_audio then coalesce(wp.ipa_pronunciation, d.ipa_pronunciation) else null end as ipa_pronunciation,
+    (
+      select jsonb_build_object(
+        'id', wt.id,
+        'translation', wt.translation,
+        'display_priority', wt.display_priority,
+        'usage_notes', wt.usage_notes
+      )
+      from public.word_translations wt
+      where wt.word_id = w.id
+      order by wt.display_priority, wt.created_at, wt.id
+      limit 1
+    ) as primary_translation,
+    case when include_audio then jsonb_build_object(
+      'pronunciation_link_id', wp.pronunciation_link_id,
+      'pronunciation_id', wp.pronunciation_id,
+      'accent', wp.accent,
+      'ipa_pronunciation', coalesce(wp.ipa_pronunciation, d.ipa_pronunciation),
+      'phonetic_pronunciation', coalesce(wp.phonetic_pronunciation, d.phonetic_pronunciation)
+    ) else null end as primary_pronunciation,
+    case when include_audio and wp.media_asset_id is not null then jsonb_build_object(
+      'id', wp.media_asset_id,
+      'storage_bucket', wp.storage_bucket,
+      'object_key', wp.audio_filename,
+      'voice_name', wp.voice_name,
+      'key_version', wp.key_version
+    ) else null end as primary_media,
     case when include_word_core then public.app_entity_core_tags_json('word', w.id) else null end as word_core_tags,
     case when include_word_optional then public.app_entity_optional_tags_json('word', w.id) else null end as word_optional_tags,
     coalesce((
@@ -1048,11 +1329,22 @@ begin
           'id', wf.id,
           'form_text', wf.form_text,
           'form_type', wf.form_type,
-          'audio_filename', case when include_audio then fp.audio_filename else null end,
-          'ipa_pronunciation', case when include_audio then coalesce(fp.ipa_pronunciation, wf.ipa_pronunciation) else null end,
-          'phonetic_pronunciation', case when include_audio then coalesce(fp.phonetic_pronunciation, wf.phonetic_pronunciation) else null end,
-          'core_tags', case when include_form_core then public.app_entity_core_tags_json('form', wf.id) else null end,
-          'optional_tags', case when include_form_optional then public.app_entity_optional_tags_json('form', wf.id) else null end
+          'core_tags', case when include_form_core then public.app_entity_core_tags_json('form', wf.id) else '[]'::jsonb end,
+          'optional_tags', case when include_form_optional then public.app_entity_optional_tags_json('form', wf.id) else '[]'::jsonb end,
+          'primary_pronunciation', case when include_audio then jsonb_build_object(
+            'pronunciation_link_id', fp.pronunciation_link_id,
+            'pronunciation_id', fp.pronunciation_id,
+            'accent', fp.accent,
+            'ipa_pronunciation', coalesce(fp.ipa_pronunciation, wf.ipa_pronunciation),
+            'phonetic_pronunciation', coalesce(fp.phonetic_pronunciation, wf.phonetic_pronunciation)
+          ) else null end,
+          'primary_media', case when include_audio and fp.media_asset_id is not null then jsonb_build_object(
+            'id', fp.media_asset_id,
+            'storage_bucket', fp.storage_bucket,
+            'object_key', fp.audio_filename,
+            'voice_name', fp.voice_name,
+            'key_version', fp.key_version
+          ) else null end
         )
         order by wf.form_text, wf.id
       )
@@ -1067,23 +1359,6 @@ begin
       ) fp on true
       where wf.word_id = w.id
     ), '[]'::jsonb) else '[]'::jsonb end as forms,
-    case when include_form_translations then coalesce((
-      select jsonb_agg(
-        jsonb_build_object(
-          'id', vfta.id,
-          'form_id', vfta.form_id,
-          'word_translation_id', vfta.word_translation_id,
-          'translation', vfta.translation,
-          'usage_examples', vfta.usage_examples,
-          'assignment_method', vfta.assignment_method,
-          'confidence_score', vfta.confidence_score
-        )
-        order by vfta.translation, vfta.id
-      )
-      from public.vw_form_translation_assignments vfta
-      join public.word_forms wf on wf.id = vfta.form_id
-      where wf.word_id = w.id
-    ), '[]'::jsonb) else null end as form_translations,
     w.total_count
   from words_with_count w
   join public.dictionary d on d.id = w.id

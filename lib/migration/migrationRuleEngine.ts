@@ -148,6 +148,9 @@ export interface MigrationExecution {
   duplicatesPreventedCount?: number;
 }
 
+const isFormAssignmentTable = (tableName: string) =>
+  tableName === 'form_translations' || tableName === 'vw_form_translation_assignments';
+
 export class EnhancedMigrationRuleEngine {
   private supabase: any;
   private executionLog: MigrationExecution[] = [];
@@ -165,17 +168,7 @@ export class EnhancedMigrationRuleEngine {
     
     let query = this.supabase
       .from('dictionary')
-      .select(`
-        id,
-        italian,
-        word_type,
-        tags,
-        word_forms:word_forms(count),
-        word_translations:word_translations(count),
-        form_translations:word_translations!inner(
-          form_translations(count)
-        )
-      `)
+      .select('id, italian, word_type, tags')
       .ilike('italian', `%${searchTerm}%`);
 
     if (wordType) {
@@ -188,14 +181,40 @@ export class EnhancedMigrationRuleEngine {
       throw new Error(`Word search failed: ${error.message}`);
     }
 
-    return (data || []).map((word: any) => ({
+    const words = data || [];
+    const wordIds = words.map((word: any) => word.id);
+
+    const [{ data: forms }, { data: translations }] = await Promise.all([
+      wordIds.length
+        ? this.supabase.from('word_forms').select('id, word_id').in('word_id', wordIds)
+        : Promise.resolve({ data: [] }),
+      wordIds.length
+        ? this.supabase.from('word_translations').select('id, word_id').in('word_id', wordIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const translationIds = (translations || []).map((translation: any) => translation.id);
+    const { data: assignments } = translationIds.length
+      ? await this.supabase
+          .from('vw_form_translation_assignments')
+          .select('id, word_translation_id')
+          .in('word_translation_id', translationIds)
+      : { data: [] };
+
+    return words.map((word: any) => ({
       wordId: word.id,
       italian: word.italian,
       wordType: word.word_type,
       tags: word.tags || [],
-      formsCount: word.word_forms?.length || 0,
-      translationsCount: word.word_translations?.length || 0,
-      formTranslationsCount: word.form_translations?.length || 0
+      formsCount: (forms || []).filter((form: any) => form.word_id === word.id).length,
+      translationsCount: (translations || []).filter((translation: any) => translation.word_id === word.id).length,
+      formTranslationsCount: (assignments || []).filter((assignment: any) =>
+        (translations || []).some(
+          (translation: any) =>
+            translation.word_id === word.id &&
+            translation.id === assignment.word_translation_id
+        )
+      ).length
     }));
   }
 
@@ -233,7 +252,7 @@ export class EnhancedMigrationRuleEngine {
 
       // Get form translations count
       const { data: formTranslations, error: ftError } = await this.supabase
-        .from('form_translations')
+        .from('vw_form_translation_assignments')
         .select('id, word_translation_id')
         .in('word_translation_id', (translations || []).map(t => t.id));
 
@@ -372,8 +391,8 @@ export class EnhancedMigrationRuleEngine {
           { columnName: 'created_at', dataType: 'timestamp', isArray: false, isJson: false, nullable: true }
         ]
       },
-      form_translations: {
-        tableName: 'form_translations',
+      vw_form_translation_assignments: {
+        tableName: 'vw_form_translation_assignments',
         columns: [
           { columnName: 'id', dataType: 'uuid', isArray: false, isJson: false, nullable: false },
           { columnName: 'form_id', dataType: 'uuid', isArray: false, isJson: false, nullable: false },
@@ -498,8 +517,8 @@ export class EnhancedMigrationRuleEngine {
         query = query.in('id', rule.pattern.targetWordIds);
       } else if (['word_forms', 'word_translations'].includes(rule.pattern.table)) {
         query = query.in('word_id', rule.pattern.targetWordIds);
-      } else if (rule.pattern.table === 'form_translations') {
-        // For form_translations, need to join through word_translations
+      } else if (isFormAssignmentTable(rule.pattern.table)) {
+        // Form assignment rows are anchored through word_translations.
         const { data: targetTranslations } = await this.supabase
           .from('word_translations')
           .select('id')
@@ -663,7 +682,7 @@ export class EnhancedMigrationRuleEngine {
       return ` AND id IN (${wordIds})`;
     } else if (['word_forms', 'word_translations'].includes(rule.pattern.table)) {
       return ` AND word_id IN (${wordIds})`;
-    } else if (rule.pattern.table === 'form_translations') {
+    } else if (isFormAssignmentTable(rule.pattern.table)) {
       return ` AND word_translation_id IN (SELECT id FROM word_translations WHERE word_id IN (${wordIds}))`;
     }
     
@@ -904,4 +923,3 @@ export class EnhancedMigrationRuleEngine {
 console.log('✅ Enhanced Migration Rule Engine loaded');
 console.log('🎯 New features: Word targeting, duplicate prevention, dynamic schemas, tag deletion');
 console.log('📊 Supports precise, surgical database migrations with advanced safety checks');
-

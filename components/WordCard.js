@@ -18,7 +18,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   const [tooltip, setTooltip] = useState({ show: false, content: '', x: 0, y: 0 })
 
   // Get audio information
-  const { hasPremiumAudio, audioFilename, voiceName } = checkPremiumAudio(word)
+  const { hasPremiumAudio, audioObjectKey, audioBucket, voiceName } = checkPremiumAudio(word)
 
   // Get word type colors
   const getWordTypeColors = (wordType) => {
@@ -829,7 +829,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           <AudioButton
             wordId={word.id}
             italianText={word.italian}
-            audioFilename={audioFilename}
+            audioObjectKey={audioObjectKey}
+            audioBucket={audioBucket}
             size="md"
             title={hasPremiumAudio ? `Play premium audio (${voiceName})` : 'Play pronunciation'}
             colorClass="bg-emerald-600 hover:bg-emerald-700"

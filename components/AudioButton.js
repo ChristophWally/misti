@@ -9,7 +9,8 @@ import { playAudio } from '../lib/audio-utils'
 export default function AudioButton({
   wordId,
   italianText,
-  audioFilename = null,
+  audioObjectKey = null,
+  audioBucket = null,
   size = 'md',
   className = '',
   title = null,
@@ -19,11 +20,11 @@ export default function AudioButton({
   const [isError, setIsError] = useState(false)
 
   // Determine if this is premium audio
-  const hasPremiumAudio = audioFilename && 
-                         audioFilename !== 'null' && 
-                         audioFilename !== null && 
-                         audioFilename.trim() !== '' &&
-                         typeof audioFilename === 'string'
+  const hasPremiumAudio = audioObjectKey &&
+                         audioObjectKey !== 'null' &&
+                         audioObjectKey !== null &&
+                         audioObjectKey.trim() !== '' &&
+                         typeof audioObjectKey === 'string'
 
   // Size classes
   const sizeClasses = {
@@ -41,7 +42,7 @@ export default function AudioButton({
     setIsError(false)
 
     try {
-      await playAudio(wordId, italianText, audioFilename)
+      await playAudio(wordId, italianText, audioObjectKey, audioBucket)
     } catch (error) {
       console.error('Audio playback failed:', error)
       setIsError(true)
