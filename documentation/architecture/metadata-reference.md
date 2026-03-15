@@ -32,13 +32,14 @@ All linguistic properties are stored as **tags** in the `entity_meta_values` (EM
 
 ### Entity Types
 
-Tags can be attached to four entity types:
+Tags can be attached to five entity types:
 
 | Entity Type | Description | Example |
 |------------|-------------|---------|
 | `word` | Base dictionary entry | "parlare" (verb) |
 | `form` | Inflected form | "parlo" (I speak) |
 | `word_translation` | Translation of base word | "to speak" |
+| `translation_synonym` | Synonym variant of translation | "handsome" (for "bello" → "beautiful") |
 | `form_translation` | Translation of specific form | "I speak" |
 
 ### Attribute Levels
@@ -48,7 +49,8 @@ Each attribute has a `source_level` that determines where it can be **assigned**
 - **word**: Tag assigned to dictionary entry
 - **form**: Tag assigned to word_forms
 - **translation**: Tag assigned to word_translations
-- **Multi-level**: Comma-separated (e.g., `form,translation`)
+- **translation_synonym**: Tag assigned to translation_synonyms ✨ **NEW**
+- **Multi-level**: Comma-separated (e.g., `form,translation` or `translation,translation_synonym`)
 
 ### Display vs Source Level
 
@@ -103,6 +105,44 @@ Word Display: Shows "formal" (first wins)
 
 ---
 
+## Active Meta Rules (metaval_rules)
+
+This section summarizes active `metaval_rules` driving conditional behavior and word-type requirements.
+
+- Prepositions (word_type=preposition)
+  - For contracted forms, enforce `number` (metaattr012) and `gender` (metaattr011) at form level with FIRST_WINS.
+
+- Verbs (word_type=verb)
+  - Mandatory: `conjugation_type`, `mood`, `tense`, `number` (form-level), `person` (finite forms), `verb_form_type`, `transitivity`; `auxiliary` required at translation level and on compound forms.
+  - Derivations:
+    - `mood` is implied by `tense` (automatic mapping).
+    - `verb_form_type` is derived from `tense` families (simple/compound/progressive patterns).
+  - Conditional: Allow `auxiliary` at form level only for compound tenses; agreement required for essere compounds.
+
+- Adjectives (word_type=adjective)
+  - Mandatory: `form_pattern`, `gradable`, `adjective_type`.
+  - Recommended: `government` when adjective governs a preposition (contento di, pronto a).
+  - `number` used at form level for agreement with nouns.
+  - `register` optional at translation level.
+
+- Nouns (word_type=noun)
+  - Mandatory: `gender`, `cefr_level`, `countable`.
+  - Recommended: `article_pattern` (definite-required vs no-article).
+  - Optional: `plural_formation`.
+  - `number` used at both word and form level for inherent concept and inflectional realization.
+
+- Adverbs (word_type=adverb)
+  - Mandatory: `adverb_type`, `cefr_level`.
+  - Recommended: `government` when adverb governs a preposition (davanti a, prima di, lontano da).
+  - Optional: `register`.
+
+- Interjections (planned word_type)
+  - Mandatory: `interjection_type` (exclamation/greeting/cultural-phrase) and `expression_variant` on forms with `form_type=expression`.
+
+Note: `word_restriction` (metaattr013) now supports `source_level='word,translation'`, enabling both lemma-level and translation-level restrictions.
+
+---
+
 ## Complete Attribute Reference
 
 ### Summary Table
@@ -117,25 +157,427 @@ Word Display: Shows "formal" (first wins)
 | 36e6b866-c2cf-48b5-ba67-2fa70a1522b5 | form_pattern | word | word | ADMIN_ONLY | 2 |
 | 3c909352-4588-4951-8076-6f23081d99be | frequency_tier | word | word | ADMIN_ONLY | 6 |
 | 08a37467-3de5-42b2-a22a-29127c58c942 | gender | word | word | ADMIN_ONLY | 3 |
-| 7b1a301d-4f4c-405f-b6d7-01af1efb8574 | gender_usage | translation | translation | ADMIN_ONLY | 2 |
+| 7b1a301d-4f4c-405f-b6d7-01af1efb8574 | gender_usage | translation,translation_synonym | translation | ADMIN_ONLY | 2 |
 | f40a8c4c-09cf-4385-a612-dbf90d3bd478 | gradable | word | word | ADMIN_ONLY | 3 |
 | 675f063f-137a-4a5a-a28d-5045cd0f178a | interrogative_function | word | word | ANY_MATCH | 1 |
 | 379ac74b-7851-4d17-a01e-fb6881062688 | mood | form | form | ADMIN_ONLY | 7 |
-| b83d846f-ec8e-4f01-842b-e1afe1cda090 | number | form | word | ADMIN_ONLY | 2 |
+| b83d846f-ec8e-4f01-842b-e1afe1cda090 | number | word,form | word | ADMIN_ONLY | 2 |
 | 3c562db9-763c-44e9-918a-845d83acbb56 | optional_tag | word | word | null | 44 |
 | f284ff99-816e-4dfd-a18d-e52612458bb4 | person | form | form | ADMIN_ONLY | 3 |
 | 17c23a79-4828-439b-8560-1741b165bc07 | plural_formation | word | word | ADMIN_ONLY | 2 |
 | d55410e7-8b1f-4f1f-8517-02645c0c2996 | plural_only | translation | translation | ADMIN_ONLY | 1 |
-| 7e9e8be7-8cf0-4560-baeb-82105be43873 | position | translation | translation | ADMIN_ONLY | 3 |
+| 7e9e8be7-8cf0-4560-baeb-82105be43873 | position | translation,translation_synonym | translation | ADMIN_ONLY | 3 |
 | ac7dbcf5-28bb-4432-9210-f6a0a90098e4 | reflexive | word | word | ADMIN_ONLY | 1 |
-| f3e4381a-e48b-4317-b581-56634fa63879 | register | translation | translation | FIRST_WINS | 4 |
+| f3e4381a-e48b-4317-b581-56634fa63879 | register | translation,translation_synonym | translation | FIRST_WINS | 4 |
 | 4478177c-a43a-49aa-926c-278bc546e035 | tense | form | form | ADMIN_ONLY | 27 |
 | 1647e6f1-9387-47b7-be5d-3cd0df1dde4c | transitivity | translation | word | COMBINE | 3 |
 | 5772c0c9-40c3-46b7-85ac-27442184a794 | verb_form_type | form | form | ADMIN_ONLY | 3 |
 | 88358c12-5112-45f9-b0a0-a6239c41a064 | verb_type | translation | translation | ADMIN_ONLY | 9 |
-| 6aa64a52-2009-4d0c-ad77-a6c57b69ebce | word_restriction | word | word | ADMIN_ONLY | 6 |
+| 6aa64a52-2009-4d0c-ad77-a6c57b69ebce | word_restriction | word,translation | word | ADMIN_ONLY | 6 |
+| 63fe57ca-eb1a-4722-bc97-655e1cdf38c5 | noun_type | word | word | ADMIN_ONLY | 2 |
+| 2ddbff75-b08e-4325-a9e8-cd81bc850fb6 | proper_noun_type | word | word | ADMIN_ONLY | 5 |
+| 22fb6af7-8c1d-4594-a87d-fe190bb8541a | clitic_availability | word | word | ADMIN_ONLY | 2 |
+| 39e10191-413c-411e-988d-e9041f18e3b9 | preposition_type | word,form | word | COMBINE | 3 |
+| 6c6d50bf-8da0-4b9d-af62-936b7dd7cb54 | determiner_type | word | word | ADMIN_ONLY | 6 |
+| c8ee6286-5eb9-49e7-8564-b990e148dfdf | conjunction_type | word | word | ADMIN_ONLY | 3 |
+| 906bbf21-bd17-414f-8ca5-c960bbca79dc | logical_relationship | word | word | ADMIN_ONLY | 6 |
+| b06607dd-d225-42e6-bff2-41281329e806 | syntactic_level | word | word | ADMIN_ONLY | 3 |
+| 02775012-a4a7-4c1f-8cb0-4ed8e28411c0 | pronoun_type | word | word | ANY_MATCH | 6 |
+| 4f471e49-f647-453b-86dc-5d180e2312ad | pronoun_form | word,form | word | ANY_MATCH | 4 |
+| 357409a6-7eb2-4f34-90d7-58446b89b76d | particle_function | word,form | word | COMBINE | 4 |
+| a2f8150d-de73-45d0-ae65-b2d083ee4d06 | indefinite_type | word | word | ADMIN_ONLY | 3 |
+| 0790c16b-02ad-411c-80d1-09c136d1b305 | case_system | word | word | ADMIN_ONLY | 3 |
+| 6001afc2-38a5-4b44-9204-2bef1f96921d | case | word,form | word | ANY_MATCH | 4 |
+| b39bae95-5a7f-4071-91b9-1a7d02c84f30 | syntactic_function | translation | translation | ANY_MATCH | 8 |
 
 ---
+
+## New Attributes (Implemented)
+
+These attributes have been added to the database and are ready for tagging. Descriptions include explicit usage and recommended word types. See also metaval_rules for guidance rules.
+
+1) government (formerly “adverb_government”)
+- stable_id: metaattr055
+- name/display_name: government / Government
+- description: Indicates which preposition (if any) a word governs in prepositional constructions (e.g., davanti a, prima di)
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr055val001: governs_a (GOV_A)
+  - metaattr055val002: governs_di (GOV_DI)
+  - metaattr055val003: governs_da (GOV_DA)
+  - metaattr055val004: invariable (INVAR)
+
+2) adjective_type
+- stable_id: metaattr030
+- name/display_name: adjective_type / Adjective Type
+- description: Major adjective category distinctions
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr030val001: qualitative (QUAL)
+  - metaattr030val002: fixed-comparative (FIXCOMP)
+
+3) article_pattern
+- stable_id: metaattr031
+- name/display_name: article_pattern / Article Pattern
+- description: Article usage pattern for nouns and proper nouns
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr031val001: definite-required (ART_DEF_REQ)
+  - metaattr031val002: no-article (ART_NONE)
+
+4) countable
+- stable_id: metaattr032
+- name/display_name: countable / Countable
+- description: Whether a noun is countable or uncountable
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr032val001: countable (COUNT)
+  - metaattr032val002: uncountable (UNCT)
+
+5) interjection_type
+- stable_id: metaattr050
+- name/display_name: interjection_type / Interjection Type
+- description: Linguistic type of interjection
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr050val001: exclamation (EXCLAM)
+  - metaattr050val002: greeting (GREETING)
+  - metaattr050val003: cultural-phrase (CULT_PHRASE)
+
+6) emotional_tone
+- stable_id: metaattr051
+- name/display_name: emotional_tone / Emotional Tone
+- description: Emotional polarity/type commonly conveyed by the interjection
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr051val001: positive (POS)
+  - metaattr051val002: negative (NEG)
+  - metaattr051val003: neutral (NEUT)
+  - metaattr051val004: surprise (SURP)
+  - metaattr051val005: doubt (DOUBT)
+  - metaattr051val006: high-sensitivity (HSENS)
+
+7) expression_variant
+- stable_id: metaattr052
+- name/display_name: expression_variant / Expression Variant
+- description: Orthographic/phonetic expression variants of interjections
+- source_level: form
+- display_level: form
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr052val001: base (BASE)
+  - metaattr052val002: exclamatory (EXCL)
+  - metaattr052val003: lengthened (LENGTH)
+  - metaattr052val004: questioning (QUEST)
+ - metaattr052val005: capitalized (CAP)
+ - metaattr052val006: repeated (REPEAT)
+
+8) noun_type
+- stable_id: metaattr057
+- name/display_name: noun_type / Noun Type
+- description: Primary noun classification (common vs proper)
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr057val001: common (COMMON)
+  - metaattr057val002: proper (PROPER)
+
+9) proper_noun_type
+- stable_id: metaattr058
+- name/display_name: proper_noun_type / Proper Noun Type
+- description: Semantic subtype classification for proper nouns
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr058val001: person (PERSON)
+  - metaattr058val002: place (PLACE)
+  - metaattr058val003: organization (ORG)
+  - metaattr058val004: work (WORK)
+  - metaattr058val005: brand (BRAND)
+
+10) clitic_availability
+- stable_id: metaattr059
+- name/display_name: clitic_availability / Clitic Availability
+- description: Whether an adverb supports cliticised variants
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr059val001: supports_clitics (SUPPORTS)
+  - metaattr059val002: no_clitics (NOCLIT)
+
+11) preposition_type
+- stable_id: metaattr060
+- name/display_name: preposition_type / Preposition Type
+- description: Structural class for prepositions (simple, complex, contracted)
+- source_level: word,form
+- display_level: word
+- propagation_rule: COMBINE
+- values:
+  - metaattr060val001: simple (SIMPLE)
+  - metaattr060val002: complex (COMPLEX)
+  - metaattr060val003: contracted (CONTR)
+
+12) determiner_type
+- stable_id: metaattr061
+- name/display_name: determiner_type / Determiner Type
+- description: Functional class of determiners (articles, demonstratives, etc.)
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr061val001: article (ART)
+  - metaattr061val006: indefinite-article (INDEF_ART)
+  - metaattr061val002: demonstrative (DEM)
+  - metaattr061val003: possessive (POSS)
+  - metaattr061val004: quantifier (QUANT)
+  - metaattr061val005: interrogative (INT)
+
+13) conjunction_type
+- stable_id: metaattr062
+- name/display_name: conjunction_type / Conjunction Type
+- description: Syntactic role of a conjunction (coordinating, subordinating, correlative)
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr062val001: coordinating (COORD)
+  - metaattr062val002: subordinating (SUB)
+  - metaattr062val003: correlative (CORR)
+
+14) logical_relationship
+- stable_id: metaattr063
+- name/display_name: logical_relationship / Logical Relationship
+- description: Discourse logic expressed by conjunctions
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr063val001: addition (ADD)
+  - metaattr063val002: contrast (CONTR)
+  - metaattr063val003: disjunction (DISJ)
+  - metaattr063val004: causal (CAUS)
+  - metaattr063val005: temporal (TEMP)
+  - metaattr063val006: conditional (COND)
+
+15) syntactic_level
+- stable_id: metaattr064
+- name/display_name: syntactic_level / Syntactic Level
+- description: Syntactic scope where a conjunction operates
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr064val001: word_level (WORD)
+  - metaattr064val002: phrase_level (PHRASE)
+  - metaattr064val003: clause_level (CLAUSE)
+
+16) pronoun_type
+- stable_id: metaattr040
+- name/display_name: pronoun_type / Pronoun Type
+- description: Functional classification of pronouns (personal, clitic, etc.)
+- source_level: word
+- display_level: word
+- propagation_rule: ANY_MATCH
+- values:
+  - metaattr040val001: personal (PERS)
+  - metaattr040val002: clitic (CLIT)
+  - metaattr040val003: partitive (PART)
+  - metaattr040val004: indefinite (INDEF)
+  - metaattr040val005: relative (REL)
+  - metaattr040val006: demonstrative (DEM)
+
+17) pronoun_form
+- stable_id: metaattr041
+- name/display_name: pronoun_form / Pronoun Form
+- description: Surface realisation class for pronouns (full, clitic, combined, elision)
+- source_level: word,form
+- display_level: word
+- propagation_rule: ANY_MATCH
+- values:
+  - metaattr041val001: full (FULL)
+  - metaattr041val002: clitic (CLIT)
+  - metaattr041val003: combined (COMB)
+  - metaattr041val004: elision (ELIS)
+
+18) particle_function
+- stable_id: metaattr065
+- name/display_name: particle_function / Particle Function
+- description: Functional role of pronominal particles (partitive, locative...)
+- source_level: word,form
+- display_level: word
+- propagation_rule: COMBINE
+- values:
+  - metaattr065val001: partitive (PART)
+  - metaattr065val002: locative (LOC)
+  - metaattr065val003: possessive (POSS)
+  - metaattr065val004: indefinite (INDEF)
+
+19) indefinite_type
+- stable_id: metaattr066
+- name/display_name: indefinite_type / Indefinite Type
+- description: Semantic subtype for indefinite pronouns
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr066val001: quantitative (QUANT)
+  - metaattr066val002: qualitative (QUAL)
+  - metaattr066val003: selective (SEL)
+
+20) case_system
+- stable_id: metaattr067
+- name/display_name: case_system / Case System
+- description: Available case paradigm for a pronoun entry
+- source_level: word
+- display_level: word
+- propagation_rule: ADMIN_ONLY
+- values:
+  - metaattr067val001: nominative_only (NOM_ONLY)
+  - metaattr067val002: accusative_dative (ACC_DAT)
+  - metaattr067val003: full_case (FULL)
+
+21) case
+- stable_id: metaattr068
+- name/display_name: case / Case
+- description: Grammatical case tagging for pronoun/determiner forms
+- source_level: word,form
+- display_level: word
+- propagation_rule: ANY_MATCH
+- values:
+  - metaattr068val001: nominative (NOM)
+  - metaattr068val002: accusative (ACC)
+  - metaattr068val003: dative (DAT)
+  - metaattr068val004: ablative (ABL)
+
+22) syntactic_function
+- stable_id: metaattr056
+- name/display_name: syntactic_function / Syntactic Function
+- description: Translation-level grammatical function for pronouns
+- source_level: translation
+- display_level: translation
+- propagation_rule: ANY_MATCH
+- values:
+  - metaattr056val001: subject (SUBJ)
+  - metaattr056val002: direct_object (DO)
+  - metaattr056val003: indirect_object (IO)
+  - metaattr056val004: prepositional_object (PO)
+  - metaattr056val005: relative_clause (REL)
+  - metaattr056val006: demonstrative_reference (DEM)
+  - metaattr056val007: indefinite_reference (INDEF)
+  - metaattr056val008: partitive (PART)
+
+---
+
+### SQL Templates (Safe to run once)
+
+Create meta_attributes
+```sql
+-- Government
+INSERT INTO meta_attributes (id, stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
+SELECT gen_random_uuid(), 'metaattr055', 'government', 'Government', 'Indicates which preposition (if any) a word governs in prepositional constructions', 'word', 'word', 'ADMIN_ONLY', true
+WHERE NOT EXISTS (SELECT 1 FROM meta_attributes WHERE stable_id='metaattr055');
+
+-- Adjective Type
+INSERT INTO meta_attributes (id, stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
+SELECT gen_random_uuid(), 'metaattr030', 'adjective_type', 'Adjective Type', 'Major adjective category distinctions', 'word', 'word', 'ADMIN_ONLY', true
+WHERE NOT EXISTS (SELECT 1 FROM meta_attributes WHERE stable_id='metaattr030');
+
+-- Article Pattern
+INSERT INTO meta_attributes (id, stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
+SELECT gen_random_uuid(), 'metaattr031', 'article_pattern', 'Article Pattern', 'Article usage pattern for nouns and proper nouns', 'word', 'word', 'ADMIN_ONLY', true
+WHERE NOT EXISTS (SELECT 1 FROM meta_attributes WHERE stable_id='metaattr031');
+
+-- Countable
+INSERT INTO meta_attributes (id, stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
+SELECT gen_random_uuid(), 'metaattr032', 'countable', 'Countable', 'Countability classification for nouns', 'word', 'word', 'ADMIN_ONLY', true
+WHERE NOT EXISTS (SELECT 1 FROM meta_attributes WHERE stable_id='metaattr032');
+
+-- Interjection Type
+INSERT INTO meta_attributes (id, stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
+SELECT gen_random_uuid(), 'metaattr050', 'interjection_type', 'Interjection Type', 'Linguistic type of interjection', 'word', 'word', 'ADMIN_ONLY', true
+WHERE NOT EXISTS (SELECT 1 FROM meta_attributes WHERE stable_id='metaattr050');
+
+-- Emotional Tone
+INSERT INTO meta_attributes (id, stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
+SELECT gen_random_uuid(), 'metaattr051', 'emotional_tone', 'Emotional Tone', 'Emotional polarity/type commonly conveyed by the interjection', 'word', 'word', 'ADMIN_ONLY', true
+WHERE NOT EXISTS (SELECT 1 FROM meta_attributes WHERE stable_id='metaattr051');
+
+-- Expression Variant
+INSERT INTO meta_attributes (id, stable_id, name, display_name, description, source_level, display_level, propagation_rule, is_active)
+SELECT gen_random_uuid(), 'metaattr052', 'expression_variant', 'Expression Variant', 'Orthographic/phonetic expression variants of interjections', 'form', 'form', 'ADMIN_ONLY', true
+WHERE NOT EXISTS (SELECT 1 FROM meta_attributes WHERE stable_id='metaattr052');
+```
+
+Create meta_values
+```sql
+-- Government values
+WITH attr AS (SELECT id FROM meta_attributes WHERE stable_id='metaattr055')
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description)
+SELECT gen_random_uuid(), attr.id, 'metaattr055val001', 'governs_a', 'GOV_A', 'Forms constructions with preposition "a"'
+FROM attr WHERE NOT EXISTS (SELECT 1 FROM meta_values WHERE stable_id='metaattr055val001');
+-- Repeat similarly for val002 governs_di, val003 governs_da, val004 invariable
+
+-- Adjective Type values
+WITH attr AS (SELECT id FROM meta_attributes WHERE stable_id='metaattr030')
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description)
+SELECT gen_random_uuid(), attr.id, 'metaattr030val001', 'qualitative', 'QUAL', 'Qualitative adjectives'
+FROM attr WHERE NOT EXISTS (SELECT 1 FROM meta_values WHERE stable_id='metaattr030val001');
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description)
+SELECT gen_random_uuid(), attr.id, 'metaattr030val002', 'fixed-comparative', 'FIXCOMP', 'Fixed comparative adjectives'
+FROM attr WHERE NOT EXISTS (SELECT 1 FROM meta_values WHERE stable_id='metaattr030val002');
+
+-- Article Pattern values
+WITH attr AS (SELECT id FROM meta_attributes WHERE stable_id='metaattr031')
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description)
+SELECT gen_random_uuid(), attr.id, 'metaattr031val001', 'definite-required', 'ART_DEF_REQ', 'Requires definite article'
+FROM attr WHERE NOT EXISTS (SELECT 1 FROM meta_values WHERE stable_id='metaattr031val001');
+-- val002 no-article, val003 optional
+
+-- Countable values
+WITH attr AS (SELECT id FROM meta_attributes WHERE stable_id='metaattr032')
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description)
+SELECT gen_random_uuid(), attr.id, 'metaattr032val001', 'count', 'COUNT', 'Count noun'
+FROM attr WHERE NOT EXISTS (SELECT 1 FROM meta_values WHERE stable_id='metaattr032val001');
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description)
+SELECT gen_random_uuid(), attr.id, 'metaattr032val002', 'mass', 'MASS', 'Mass noun'
+FROM attr WHERE NOT EXISTS (SELECT 1 FROM meta_values WHERE stable_id='metaattr032val002');
+
+-- Interjection Type values
+WITH attr AS (SELECT id FROM meta_attributes WHERE stable_id='metaattr050')
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description)
+SELECT gen_random_uuid(), attr.id, 'metaattr050val001', 'primary', 'PRIMARY', 'Primary interjection'
+FROM attr WHERE NOT EXISTS (SELECT 1 FROM meta_values WHERE stable_id='metaattr050val001');
+-- val002 greeting, val003 cultural-phrase
+
+-- Emotional Tone values
+WITH attr AS (SELECT id FROM meta_attributes WHERE stable_id='metaattr051')
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description)
+SELECT gen_random_uuid(), attr.id, 'metaattr051val001', 'positive', 'POS', 'Positive tone'
+FROM attr WHERE NOT EXISTS (SELECT 1 FROM meta_values WHERE stable_id='metaattr051val001');
+-- val002 negative, val003 neutral, val004 surprise, val005 doubt, val006 high-sensitivity
+
+-- Expression Variant values
+WITH attr AS (SELECT id FROM meta_attributes WHERE stable_id='metaattr052')
+INSERT INTO meta_values (id, attribute_id, stable_id, value, shorthand, description)
+SELECT gen_random_uuid(), attr.id, 'metaattr052val001', 'base', 'BASE', 'Base form'
+FROM attr WHERE NOT EXISTS (SELECT 1 FROM meta_values WHERE stable_id='metaattr052val001');
+-- val002 exclamatory, val003 lengthened, val004 questioning, val005 capitalized, val006 repeated
+```
 
 ## Attribute Details by Level
 
@@ -167,7 +609,7 @@ These attributes are assigned to word_forms entries.
 | 379ac74b-7851-4d17-a01e-fb6881062688 | mood | All verb forms | indicativo, congiuntivo, condizionale, imperativo, infinito, participio, gerundio |
 | 4478177c-a43a-49aa-926c-278bc546e035 | tense | All verb forms | 27 values (see below) |
 | f284ff99-816e-4dfd-a18d-e52612458bb4 | person | Verb forms (except infinitive/participle/gerund) | prima-persona, seconda-persona, terza-persona |
-| b83d846f-ec8e-4f01-842b-e1afe1cda090 | number | Verb/noun/adjective forms | singolare, plurale |
+| b83d846f-ec8e-4f01-842b-e1afe1cda090 | number | Nouns (word or form level), verb/adjective forms | singolare, plurale |
 | 65289998-b2c4-4dfd-8212-1f7cb9635dc4 | auxiliary | **Compound verb forms ONLY** | essere, avere |
 | 4dc48097-de1d-4dc8-9371-ab8a5d320203 | form_irregular | Irregular verb forms | irregular |
 
@@ -184,7 +626,33 @@ These attributes are assigned to word_translations entries.
 | 7b1a301d-4f4c-405f-b6d7-01af1efb8574 | gender_usage | Noun translations (if applicable) | male-only, female-only |
 | 7e9e8be7-8cf0-4560-baeb-82105be43873 | position | Adjective/adverb translations | before, after, before/after |
 | d55410e7-8b1f-4f1f-8517-02645c0c2996 | plural_only | Translations (if applicable) | plural only |
-| 6aa64a52-2009-4d0c-ad77-a6c57b69ebce | word_restriction | Translations (if applicable) | plural-only, singular-only, third-person-only, etc. |
+| 6aa64a52-2009-4d0c-ad77-a6c57b69ebce | word_restriction | Word or Translation (if applicable) | plural-only, singular-only, third-person-only, etc. |
+
+### Translation-Synonym-Level Attributes (source_level = 'translation_synonym') ✨ NEW
+
+These attributes can be assigned to translation_synonyms entries to provide metadata specific to individual synonym variants.
+
+| Attribute ID | Name | Required For | Values |
+|--------------|------|--------------|--------|
+| 7b1a301d-4f4c-405f-b6d7-01af1efb8574 | gender_usage | Synonyms with gender restrictions | male-only, female-only |
+| f3e4381a-e48b-4317-b581-56634fa63879 | register | Synonyms with register differences | formal, casual, neutral, mixed |
+| 7e9e8be7-8cf0-4560-baeb-82105be43873 | position | Synonym position variants | before, after, before/after |
+
+**Example: "bello" → "beautiful" with synonyms**
+```sql
+-- Main translation
+INSERT INTO word_translations (translation) VALUES ('beautiful');
+
+-- Synonym variants with metadata
+INSERT INTO translation_synonyms (word_translation_id, synonym, usage_notes, display_order) VALUES
+  (..., 'handsome', 'Use this translation exclusively when describing men''s physical appearance.', 1),
+  (..., 'attractive', 'This translation is more formal and professional.', 2);
+
+-- Synonym-specific metadata
+INSERT INTO entity_meta_values (entity_type, entity_id, value_id, attribute_id) VALUES
+  ('translation_synonym', <handsome_id>, <male-only_value_id>, <gender_usage_attr_id>),
+  ('translation_synonym', <attractive_id>, <formal_value_id>, <register_attr_id>);
+```
 
 ---
 
@@ -201,8 +669,10 @@ These attributes are assigned to word_translations entries.
 | 7c68cb0b-377a-4214-b626-3043cd46e3d3 | quantity | How much: molto, poco |
 | fc5f2f5f-7c34-402e-9960-416a20df2045 | frequency | How often: spesso, mai |
 | 0d7ae1dd-3b83-479e-a5b0-3c80507a1f34 | affirmation | Confirmation: sì, certamente |
+| 57be3ff7-be3c-4d5f-aba3-1ed33c10c13a | interrogative | Used in questions: come, dove, quando, perché |
 | f53d36b4-158c-4faa-94cb-2f5422462c62 | doubt | Uncertainty: forse, probabilmente |
 | 0a5cbf72-e7ae-404c-a65b-2b52fcb92269 | negation | Negative constructions: non, niente, nessuno |
+| d550b9b4-5a14-4959-8e22-75b747d63ede | conjunctive | Discourse connector linking clauses/ideas: quindi, invece, ciononostante |
 | a232932f-7f25-4b61-827e-037fe2d306e2 | evaluation | Speaker judgment/opinion: fortunatamente, purtroppo |
 | 269d9e82-741f-40bf-89e5-9c57722d332a | emphasis | Amplification/certainty: assolutamente, certamente |
 
@@ -284,12 +754,12 @@ These attributes are assigned to word_translations entries.
 | 916d9f96-915a-471a-b9d7-3ece13cea4d0 | common-gender | Can be either masculine or feminine |
 
 ### gender_usage (7b1a301d-4f4c-405f-b6d7-01af1efb8574)
-**Source Level:** translation | **Display Level:** translation | **Propagation:** ADMIN_ONLY
+**Source Level:** translation,translation_synonym | **Display Level:** translation | **Propagation:** ADMIN_ONLY
 
 | Value ID | Value | Description |
 |----------|-------|-------------|
-| 609ef2d8-bc82-4373-b874-c5ea0dc7c290 | male-only | Translation only applies to males: handsome (bello) |
-| a4660a80-8dd5-4e23-ad1e-ce99d660d399 | female-only | Translation only applies to females |
+| 609ef2d8-bc82-4373-b874-c5ea0dc7c290 | male-only | Translation/synonym only applies to males: handsome (bello) |
+| a4660a80-8dd5-4e23-ad1e-ce99d660d399 | female-only | Translation/synonym only applies to females |
 
 ### gradable (f40a8c4c-09cf-4385-a612-dbf90d3bd478)
 **Source Level:** word | **Display Level:** word | **Propagation:** ADMIN_ONLY
@@ -321,12 +791,12 @@ These attributes are assigned to word_translations entries.
 | dfb84eb3-3bbf-4a54-9312-de7771b5bd6a | gerundio | Gerund mood - verbal noun |
 
 ### number (b83d846f-ec8e-4f01-842b-e1afe1cda090)
-**Source Level:** form | **Display Level:** word | **Propagation:** ADMIN_ONLY
+**Source Level:** word,form | **Display Level:** word | **Propagation:** ADMIN_ONLY
 
 | Value ID | Value | Description |
 |----------|-------|-------------|
-| 8e65cc9f-5465-4b19-bbb2-99d46defa92a | singolare | Singular number |
-| 201fbe66-92a2-4319-b41a-d9a6ca73ea9a | plurale | Plural number |
+| 8e65cc9f-5465-4b19-bbb2-99d46defa92a | singolare | Singular number (can be at word level for base form or form level for inflections) |
+| 201fbe66-92a2-4319-b41a-d9a6ca73ea9a | plurale | Plural number (can be at word level for base form or form level for inflections) |
 
 ### person (f284ff99-816e-4dfd-a18d-e52612458bb4)
 **Source Level:** form | **Display Level:** form | **Propagation:** ADMIN_ONLY
@@ -353,12 +823,12 @@ These attributes are assigned to word_translations entries.
 | 179c4fcd-7ba0-463e-b7c0-2dbbbd7ecd70 | plural only | Requires plural subjects semantically |
 
 ### position (7e9e8be7-8cf0-4560-baeb-82105be43873)
-**Source Level:** translation | **Display Level:** translation | **Propagation:** ADMIN_ONLY
+**Source Level:** translation,translation_synonym | **Display Level:** translation | **Propagation:** ADMIN_ONLY
 
 | Value ID | Value | Description |
 |----------|-------|-------------|
-| 691b4904-3e52-4653-b851-7de671d9f495 | after | Adjective/adverb positioned after noun/verb |
-| e781fa53-5a1d-4b8c-8ecd-8e056b26f1c5 | before | Adjective/adverb positioned before noun/verb |
+| 691b4904-3e52-4653-b851-7de671d9f495 | after | Adjective/adverb/synonym positioned after noun/verb |
+| e781fa53-5a1d-4b8c-8ecd-8e056b26f1c5 | before | Adjective/adverb/synonym positioned before noun/verb |
 | fd9d4d8f-fe19-4744-94bc-ac856c74d6a6 | before/after | Can be positioned either before or after |
 
 ### reflexive (ac7dbcf5-28bb-4432-9210-f6a0a90098e4)
@@ -369,7 +839,7 @@ These attributes are assigned to word_translations entries.
 | 45660851-d2b2-4873-898c-5420fc410545 | reflexive | Requires reflexive pronouns (lavare vs lavarsi) |
 
 ### register (f3e4381a-e48b-4317-b581-56634fa63879)
-**Source Level:** translation | **Display Level:** translation | **Propagation:** FIRST_WINS
+**Source Level:** translation,translation_synonym | **Display Level:** translation | **Propagation:** FIRST_WINS
 
 | Value ID | Value | Description |
 |----------|-------|-------------|
@@ -392,7 +862,7 @@ These attributes are assigned to word_translations entries.
 | 9d63e2c1-0c77-40fc-8dc2-c36cc42c1790 | futuro-anteriore | Future perfect: io avrò parlato |
 | aabe019d-3f6d-4230-b7d9-7e26e5a8dfc1 | trapassato-remoto | Past anterior: io ebbi parlato |
 | 7b785c94-2e45-4e71-95ad-45f4ff18eaa0 | presente-progressivo | Present progressive: io sto parlando |
-| c0f862bd-54e5-4687-ae4f-6c117a22286e | imperfetto-progressivo | Past progressive: io stavo parlando |
+| c0f862bd-54e5-4687-ae4f-6c117a22286e | passato-progressivo | Past progressive: io stavo parlando |
 | f5ed186f-3194-4238-ab9d-a7584f71c6cc | futuro-progressivo | Future progressive: io starò parlando |
 | 9da99826-432d-4144-a3c6-954e5de24d2e | congiuntivo-presente | Present subjunctive: che io parli |
 | 988bda59-a162-48ec-a4d7-5b104b389ded | congiuntivo-imperfetto | Imperfect subjunctive: che io parlassi |

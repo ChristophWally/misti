@@ -208,8 +208,9 @@ Express degree or amount:
 #### Adverb-Specific Attributes
 - `metaattr001` - **Adverb Type**: manner, time, place, quantity, frequency, affirmation, negation, evaluation, emphasis, doubt, conjunctive, exclamative, presentative (13 values)
 - `metaattr055` - **Government**: governs_a, governs_di, governs_da, invariable (for prepositional construction patterns)
-- `metaattr056` - **Interrogative Function**: interrogative (for cross-word-type question word filtering)
-- `metaattrXXX` - **Clitic Capability**: supports_clitics, no_clitics (for presentative adverb clitic attachment patterns)
+  - Status: Implemented as metaattr055
+- `metaattr027` - **Interrogative Function**: interrogative (for cross-word-type question word filtering)
+- `metaattr059` - **Clitic Availability**: supports_clitics, no_clitics (for presentative adverb clitic attachment patterns)
 
 **Translation-Level Attributes** (source_level: 'translation'):
 - `metaattr016` - **Position**: before, after, before/after (sentence position preferences)
@@ -882,11 +883,11 @@ INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) 
 
 -- Interrogative function (cross-word-type - exclamatives also filter with question words)
 INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) VALUES
-('word', 'come_excl_id', 'metaattr056_id', 'metaattr056val001_id'), -- interrogative_function: interrogative
-('word', 'dove_excl_id', 'metaattr056_id', 'metaattr056val001_id'), -- interrogative_function: interrogative
-('word', 'quando_excl_id', 'metaattr056_id', 'metaattr056val001_id'), -- interrogative_function: interrogative
-('word', 'quanto_excl_id', 'metaattr056_id', 'metaattr056val001_id'), -- interrogative_function: interrogative
-('word', 'perche_excl_id', 'metaattr056_id', 'metaattr056val001_id'); -- interrogative_function: interrogative
+('word', 'come_excl_id', 'metaattr027_id', 'metaattr027val001_id'), -- interrogative_function: interrogative
+('word', 'dove_excl_id', 'metaattr027_id', 'metaattr027val001_id'), -- interrogative_function: interrogative
+('word', 'quando_excl_id', 'metaattr027_id', 'metaattr027val001_id'), -- interrogative_function: interrogative
+('word', 'quanto_excl_id', 'metaattr027_id', 'metaattr027val001_id'), -- interrogative_function: interrogative
+('word', 'perche_excl_id', 'metaattr027_id', 'metaattr027val001_id'); -- interrogative_function: interrogative
 
 -- Government classification (invariable)
 INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) VALUES
@@ -980,7 +981,7 @@ INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) 
 
 -- Clitic capability (NEW ATTRIBUTE - supports clitic attachment)
 INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) VALUES
-('word', 'ecco_id', 'metaattrXXX_id', 'metaattrXXXval001_id'); -- clitic_capability: supports_clitics
+('word', 'ecco_id', 'metaattr059_id', 'metaattr059val001_id'); -- clitic_availability: supports_clitics
 
 -- Government classification (invariable for base, contractions for attachments)
 INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) VALUES
@@ -1066,6 +1067,7 @@ INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) 
 #### Government Classification Values
 
 **`metaattr055` - Government** (renamed from "adverb_government" for cross-word-type application):
+Status: Implemented as metaattr055. Assign at word level for adverbs that govern prepositions.
 
 ```sql
 -- Government pattern values
@@ -1240,12 +1242,12 @@ The following critical metadata attributes have complete coverage across all 13 
 - **Cross-word-type architecture** ready for adjective and verb integration
 - **Pattern-based learning** supported for systematic Italian constructions
 
-#### ✅ **Complete metaattr056 (interrogative_function) coverage**
+#### ✅ **Complete metaattr027 (interrogative_function) coverage**
 - **Cross-word-type attribute** applied to interrogative and exclamative adverbs
 - **Unified filtering** enables question word searches across grammatical categories
 - **Educational integration** supports comprehensive interrogative word instruction
 
-#### ✅ **Complete metaattrXXX (clitic_capability) coverage**
+#### ✅ **Complete metaattr059 (clitic_availability) coverage**
 - **NEW attribute** applied to presentative adverbs
 - **Two values**: supports_clitics, no_clitics
 - **Extensible architecture** for future presentative adverb additions
@@ -1286,7 +1288,7 @@ The following critical metadata attributes have complete coverage across all 13 
 - **Form architecture**: Minimal storage requirements with strategic contraction handling
 
 #### ✅ **New Attribute Implementation**
-- **metaattrXXX - Clitic Capability**: Ready for database implementation with defined values and application scope
+- **metaattr059 - Clitic Availability**: Ready for database implementation with defined values and application scope
 - **Government attribute renaming**: metaattr055 architectural update for cross-word-type application
 - **Exclamative/Conjunctive/Presentative values**: New adverb_type values ready for meta_values table insertion
 

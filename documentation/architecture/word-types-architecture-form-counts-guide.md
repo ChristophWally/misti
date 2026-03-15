@@ -26,7 +26,7 @@ We include exactly five progressive tenses across all restrictions that allow th
 - Condizionale: condizionale-presente-progressivo
 
 Excluded as non-canonical and thus not counted:
-- Congiuntivo-imperfetto-progressivo
+- Congiuntivo-passato-progressivo
 - Gerundio-progressivo
 
 ## Complete Restriction Validity Matrix

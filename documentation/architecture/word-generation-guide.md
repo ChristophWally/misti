@@ -1,7 +1,7 @@
 # Comprehensive Guide: Adding New Words to the Italian Learning Database
 
-**Version:** 2.0
-**Last Updated:** 2025-10-01
+**Version:** 2.1
+**Last Updated:** 2026-02-15
 **Database:** Supabase PostgreSQL
 
 ---
@@ -38,17 +38,34 @@ This guide provides a comprehensive framework for adding new Italian words to th
 
 When creating database records, ensure these **required columns** are always populated:
 
-| Table | Column | Required Value | Notes |
-|-------|--------|----------------|-------|
-| dictionary | italian | text | Base form |
-| dictionary | word_type | noun, verb, adjective, adverb, preposition | Lowercase only |
-| word_forms | form_text | text | Inflected form |
-| word_forms | **form_type** | text | **DEPRECATED but required** - Use metadata instead |
-| word_translations | translation | text | Base English translation |
-| word_translations | display_priority | integer | 1 = primary |
-| form_translations | translation | text | **INFLECTED English** (I speak, not to speak) |
+| Table | Column | Required? | Value Type | Notes |
+|-------|--------|-----------|------------|-------|
+| **dictionary** | italian | **REQUIRED** | text | Base form (masculine singular for nouns/adjectives, infinitive for verbs) |
+| **dictionary** | word_type | **REQUIRED** | text | noun, verb, adjective, adverb, preposition (lowercase only) |
+| **dictionary** | phonetic_pronunciation | **MANDATORY** | text | Simplified: "par-LA-re" (capital = stress) |
+| **dictionary** | ipa_pronunciation | **MANDATORY** | text | IPA: "/parˈlare/" (ˈ before stressed syllable) |
+| **word_forms** | form_text | **REQUIRED** | text | Inflected form (parlo, parlavi, casa, case) |
+| **word_forms** | form_type | **REQUIRED** | text | Functional type: `conjugation` (verbs), `number` (nouns), `agreement` (adjectives), `contraction` (prepositions), `expression` (interjections) |
+| **word_forms** | phonetic_pronunciation | **MANDATORY** | text | Form-specific: "PAR-lo" (capital = stress) |
+| **word_forms** | ipa_pronunciation | **MANDATORY** | text | Form-specific: "/ˈparlo/" (ˈ before stressed syllable) |
+| **word_translations** | translation | **REQUIRED** | text | Base English translation (infinitive for verbs) |
+| **word_translations** | display_priority | **REQUIRED** | integer | 1 = primary, 2+ = secondary |
+| **form_translations** | translation | **REQUIRED** | text | **INFLECTED English** (I speak, NOT to speak) |
 
-**⚠️ IMPORTANT**: The `form_type` column in `word_forms` is deprecated but still required by database schema. Always set it to a default value like 'simple', 'form', or 'conjugated'. Use the `verb_form_type` **metadata attribute** for actual classification.
+**⚠️ IMPORTANT NOTES:**
+
+1. **form_type Column (Functional, not morphological labels)**: Use a small, consistent set describing the form’s grammatical function. Put specifics like plural/masculine in metadata.
+   - Verbs → `conjugation` (all finite and non‑finite forms)
+   - Nouns → `number` (all singular/plural forms)
+   - Adjectives → `agreement` (gender×number forms)
+   - Prepositions → `contraction` (article contractions)
+   - Interjections → `expression` (variants like base/exclamatory)
+   - For verbs, the `verb_form_type` metadata attribute classifies forms as simple/compound/progressive
+
+2. **Pronunciation Fields Are MANDATORY**: Both columns must be filled for dictionary and word_forms:
+   - **phonetic_pronunciation**: Simplified format with capitals for stress: "par-LA-re", "PAR-lo"
+   - **ipa_pronunciation**: Standard IPA with stress marker (ˈ) before stressed syllable: "/parˈlare/", "/ˈparlo/"
+   - These are essential for learning and accessibility - never leave null
 
 ---
 
@@ -127,15 +144,24 @@ Italian verbs have significant complexity. Understanding verb types is crucial f
 - Examples: vigere (to be in force), solere (to be accustomed), vertere (to turn)
 - Restrictions: `missing-first-second-person`, `missing-imperative`
 
-#### Verb Form Count Matrix
+#### Verb Form Count Matrix (canonical)
 
-| Verb Type | Simple | Compound | Progressive | **Total** |
-|-----------|--------|----------|-------------|-----------|
-| Regular (single auxiliary) | 51 | 49 | 30 | **130** |
-| Dual-auxiliary | 51 | 98 (49×2) | 30 | **179** |
-| Modal (missing imperative) | 46 | 44 | 30 | **120** |
-| Impersonal (3rd person only) | 17 | 16 | 10 | **43** |
-| Meteorological (3sg only) | 7 | 7 | 5 | **19** |
+Baseline (no restriction):
+- Regular (single auxiliary): 51 simple + 49 compound + 30 progressive = 130 total
+- Dual‑auxiliary: 51 simple + 98 compound (49×2) + 30 progressive = 179 total
+
+Restrictions (per translation; non‑finite forms are always included; progressive set = 5 tenses):
+- missing‑imperative: 46 simple + 44 compound + 30 progressive = 120 (dual‑aux: 46 + 88 + 30 = 164)
+- third‑person‑only: 20 simple + 18 compound + 10 progressive = 48 (dual‑aux: 20 + 36 + 10 = 66)
+- third‑singular‑only: 12 simple + 10 compound + 5 progressive = 27 (dual‑aux: 12 + 20 + 5 = 37)
+- plural‑only: 28 simple + 26 compound + 15 progressive = 69 (dual‑aux: 28 + 52 + 15 = 95)
+- singular‑only: 27 simple + 25 compound + 15 progressive = 67 (dual‑aux: 27 + 50 + 15 = 92)
+- missing‑first‑second‑person: 36 simple + 34 compound + 20 progressive = 90 (dual‑aux: 36 + 68 + 20 = 124)
+
+Conventions:
+- Imperative (present and past) is included unless the restriction is missing‑imperative.
+- Progressive tenses included: indicativo (presente‑progressivo, passato‑progressivo, futuro‑progressivo), congiuntivo‑presente‑progressivo, condizionale‑presente‑progressivo.
+- Use the naming “passato‑progressivo” consistently (not “imperfetto‑progressivo”).
 
 ### Adjectives
 
@@ -183,30 +209,74 @@ Stores the fundamental Italian word entry.
 
 **Columns:**
 - `id` (uuid, PK): Unique identifier
-- `italian` (text, required): The Italian word in base form
-- `word_type` (text, required): Type of word (noun, verb, adjective, adverb, preposition)
-- `phonetic_pronunciation` (text, nullable): Simplified pronunciation (e.g., "PAR-la-re")
-- `ipa_pronunciation` (text, nullable): IPA notation (e.g., "/parˈlare/")
+- `italian` (text, **REQUIRED**): The Italian word in base form
+- `word_type` (text, **REQUIRED**): Type of word (noun, verb, adjective, adverb, preposition)
+- `phonetic_pronunciation` (text, **MANDATORY**): Simplified pronunciation with CAPITALS for stress (e.g., "par-LA-re")
+- `ipa_pronunciation` (text, **MANDATORY**): IPA notation with ˈ before stressed syllable (e.g., "/parˈlare/")
 - `image_url` (text, nullable): Visual reference
 - `audio_url` (text, nullable): Audio file URL
 - `audio_filename` (text, nullable): Audio file name
 - `created_at` (timestamp): Creation timestamp
 - `updated_at` (timestamp): Last update timestamp
 
-**Word Types:** `noun`, `verb`, `adjective`, `adverb`, `preposition`
+**Word Types:** `noun`, `verb`, `adjective`, `adverb`, `preposition` (lowercase only)
+
+**Pronunciation Format:**
+- **phonetic_pronunciation**: Use hyphens to separate syllables, CAPITALS for stressed syllable
+  - Examples: "par-LA-re", "ES-se-re", "fi-NI-re", "CA-sa", "ra-GAZ-zo"
+- **ipa_pronunciation**: Standard IPA with stress marker (ˈ) immediately before stressed syllable
+  - Examples: "/parˈlare/", "/ˈɛssere/", "/fiˈnire/", "/ˈkasa/", "/raˈgattso/"
 
 #### 2. `word_translations` - English Translations
-Stores English translations for each word with usage context.
+Stores **distinct Italian senses** (polysemy) for each word with usage context.
+
+**Important**: This table stores DIFFERENT MEANINGS of the Italian word, NOT English synonym variations.
+- **Polysemy Example**: "bello" → "beautiful" (aesthetic), "nice" (weather), "good" (quality) = **3 separate translations**
+- **Synonymy Example**: "beautiful", "handsome", "lovely" are English synonyms → use `translation_synonyms` table
 
 **Columns:**
 - `id` (uuid, PK): Unique identifier
 - `word_id` (uuid, FK → dictionary): Links to base word
-- `translation` (text, required): English translation
-- `display_priority` (int, default 1): Priority for UI (1 = primary)
-- `usage_notes` (text, nullable): When/how to use this translation
+- `translation` (text, required): Primary English translation for this sense
+- `display_priority` (int, default 1): Priority for UI (1 = primary sense)
+- `usage_notes` (text, nullable): When/how to use this sense (teachable, sentence-like)
 - `frequency_estimate` (numeric, default 0.5): Usage frequency (0-1)
 - `created_at` (timestamp): Creation timestamp
 - `updated_at` (timestamp): Last update timestamp
+
+#### 2b. `translation_synonyms` - English Synonym Variants ✨ **INNOVATION**
+Stores English synonym choices for each translation sense with context-specific metadata.
+
+**Purpose**: Captures English translation equivalents that represent the SAME Italian sense but differ in usage context (gender, register, formality).
+
+**Columns:**
+- `id` (uuid, PK): Unique identifier
+- `word_translation_id` (uuid, FK → word_translations): Links to the core sense
+- `synonym` (text, required): English synonym variant
+- `usage_notes` (text, nullable): Teachable guidance on when to use this synonym (sentence-like, no examples)
+- `display_order` (int, default 1): Order for displaying synonyms
+- `created_at` (timestamp): Creation timestamp
+- `updated_at` (timestamp): Last update timestamp
+
+**Metadata Support**: Synonyms can have metadata via `entity_meta_values` with `entity_type='translation_synonym'`:
+- `gender_usage` (male-only, female-only, mixed-gender)
+- `register` (formal, casual, neutral)
+- `position` (before/after)
+
+**Example: "bello" aesthetic sense**
+```
+word_translation: "beautiful" (primary)
+translation_synonyms:
+  - "handsome" (usage_notes: "Use this translation exclusively when describing men's physical appearance. Never use for women or objects.", metadata: gender_usage=male-only)
+  - "good-looking" (usage_notes: "This translation works for both men and women when describing physical attractiveness in a neutral, casual way.")
+  - "lovely" (usage_notes: "This translation conveys endearment and affection. While it can describe men, it's more commonly used for women, children, or things you find charming.")
+  - "attractive" (usage_notes: "This translation is more formal and professional. It works for people of any gender and can also describe appealing qualities beyond just physical appearance.", metadata: register=formal)
+```
+
+**Lexicographic Philosophy**:
+- **Polysemy** (different Italian senses) → separate `word_translations`
+- **Synonymy** (English choices for same sense) → `translation_synonyms`
+- This follows bilingual lexicography best practices and enables metadata-driven synonym selection
 
 #### 3. `word_forms` - Conjugated/Inflected Forms
 Stores all inflected forms of a word (conjugations, plurals, feminine forms, etc.).
@@ -214,13 +284,26 @@ Stores all inflected forms of a word (conjugations, plurals, feminine forms, etc
 **Columns:**
 - `id` (uuid, PK): Unique identifier
 - `word_id` (uuid, FK → dictionary): Links to base word
-- `form_text` (text, required): The conjugated/inflected form
-- `form_type` (text, required): Simple classification (deprecated, use metadata)
-- `phonetic_pronunciation` (text, nullable): Form-specific pronunciation
-- `ipa_pronunciation` (text, nullable): Form-specific IPA
+- `form_text` (text, **REQUIRED**): The conjugated/inflected form
+- `form_type` (text, **REQUIRED**): Type of inflection - conjugation, plural, feminine, etc.
+- `phonetic_pronunciation` (text, **MANDATORY**): Form-specific simplified pronunciation with CAPITALS for stress
+- `ipa_pronunciation` (text, **MANDATORY**): Form-specific IPA with ˈ before stressed syllable
 - `audio_metadata_id` (uuid, nullable): Links to audio
 - `created_at` (timestamp): Creation timestamp
 - `updated_at` (timestamp): Last update timestamp
+
+**form_type Values (canonical):**
+- Verbs: `conjugation`
+- Nouns: `number`
+- Adjectives: `agreement`
+- Prepositions: `contraction`
+- Interjections: `expression`
+
+Adverbs are typically invariable and do not require `word_forms`. If a specific adverb subclass needs forms, prefer metadata over inventing new `form_type` values.
+
+**Pronunciation Format (same as dictionary):**
+- **phonetic_pronunciation**: "PAR-lo", "par-LA-vi", "HO par-LA-to"
+- **ipa_pronunciation**: "/ˈparlo/", "/parˈlavi/", "/ɔ parˈlato/"
 
 #### 4. `form_translations` - Form-Specific Translations
 Links specific forms to specific translations, creating the form × translation matrix.
@@ -237,10 +320,10 @@ Links specific forms to specific translations, creating the form × translation 
 - `updated_at` (timestamp): Last update timestamp
 
 #### 5. `entity_meta_values` - Metadata Tags
-Stores all metadata tags for words, forms, translations, and form_translations.
+Stores all metadata tags for words, forms, translations, form_translations, and **translation_synonyms**.
 
 **Columns:**
-- `entity_type` (text, PK): Type of entity ('word', 'form', 'word_translation', 'form_translation')
+- `entity_type` (text, PK): Type of entity ('word', 'form', 'word_translation', 'form_translation', 'translation_synonym')
 - `entity_id` (uuid, PK): ID of the entity
 - `value_id` (uuid, PK, FK → meta_values): The metadata value
 - `attribute_id` (uuid, FK → meta_attributes): The metadata attribute
@@ -249,6 +332,13 @@ Stores all metadata tags for words, forms, translations, and form_translations.
 - `derived_from` (text, nullable): How this was derived
 - `propagation_source_id` (uuid, nullable): Source of propagation
 - `propagation_method` (text, nullable): Propagation method
+
+**Entity Types Supported:**
+- `word` - Word-level metadata (gender, conjugation_type, CEFR level, etc.)
+- `form` - Form-level metadata (tense, mood, person, number)
+- `word_translation` - Translation-level metadata (auxiliary, transitivity, register)
+- `form_translation` - Form-translation-level metadata (currently minimal)
+- `translation_synonym` - Synonym-level metadata (gender_usage, register, position) ✨ **NEW**
 
 #### 6. `meta_attributes` - Metadata Attribute Definitions
 Defines available metadata attributes.
@@ -567,19 +657,32 @@ VALUES
 
 #### 2.3 Apply Translation-Level Metadata Tags
 
+**🔥 CRITICAL**: Translation-level metadata determines which forms link to which translations!
+
 Query meta_attributes where `source_level` includes 'translation':
 
-**Common Translation-Level Attributes:**
+**Translation-Level Attributes:**
 
-| Attribute | Values | When to Use |
-|-----------|--------|-------------|
-| `auxiliary` | essere, avere | **Required for verb translations** - determines compound tense formation |
-| `word_restriction` | plural-only, third-person-only, etc. | When translation applies only to specific forms |
-| `transitivity` | transitive, intransitive, ambitransitive | For verb translations |
-| `verb_type` | direct-reflexive, reciprocal, modal-verb, etc. | For special verb categories |
-| `register` | formal, casual, neutral, mixed | Social context |
-| `gender_usage` | male-only, female-only | When translation is gender-specific |
-| `position` | before, after, before/after | For adjectives/adverbs |
+| Attribute | Values | Required? | Purpose |
+|-----------|--------|-----------|---------|
+| `auxiliary` | essere, avere | **REQUIRED for verbs** | Determines compound form matching |
+| `word_restriction` | See below | **If applicable** | **CRITICAL**: Determines which forms link to this translation (also allowed at word level) |
+| `transitivity` | transitive, intransitive, ambitransitive | **RECOMMENDED for verbs** | Grammatical classification |
+| `verb_type` | direct-reflexive, reciprocal, modal-verb, impersonal-verb, meteorological-verb, defective-verb | If applicable | Special verb categories |
+| `register` | formal, casual, neutral, mixed | Optional | Social context |
+| `gender_usage` | male-only, female-only | If applicable | Gender-specific noun translations |
+| `position` | before, after, before/after | Optional | Adjective/adverb word order |
+
+**word_restriction Values (Translation-Level):**
+
+| Restriction | Effect on Form Linking | Use Case |
+|-------------|------------------------|----------|
+| `plural-only` | Links ONLY to plural forms (noi, voi, loro) | "to wash each other" (reciprocal action requires plural) |
+| `singular-only` | Links ONLY to singular forms (io, tu, lui/lei) | Meanings that only apply to singular subjects |
+| `third-person-only` | Links ONLY to 3rd person forms (lui/lei, loro) | Impersonal verbs like "importare" (to matter) |
+| `third-singular-only` | Links ONLY to 3sg forms (lui/lei) | Meteorological verbs like "piovere" (to rain) |
+| `missing-first-second-person` | Links ONLY to 3rd person, excludes 1st/2nd | Defective verbs missing certain conjugations |
+| `missing-imperative` | Links to all forms EXCEPT imperativo | Modal verbs that cannot form imperatives |
 
 **Critical Rule for Verbs: ALWAYS tag auxiliary**
 
@@ -660,9 +763,9 @@ WHERE ma.name = 'word_restriction' AND mv.value = 'plural-only';
   - Gerundio: passato (1)
 
 - **Progressive forms (30):**
-  - Indicativo: presente-progressivo (6), imperfetto-progressivo (6), futuro-progressivo (6)
-  - Congiuntivo: presente-progressivo (6)
-  - Condizionale: presente-progressivo (6)
+  - Indicativo: presente‑progressivo (6), passato‑progressivo (6), futuro‑progressivo (6)
+  - Congiuntivo: presente‑progressivo (6)
+  - Condizionale: presente‑progressivo (6)
 
 **Dual Auxiliary Note (finire):**
 - Verbs with 2 translations using different auxiliaries need **98 compound forms** (49 × 2)
@@ -705,29 +808,47 @@ Progressive: [stare conjugated] + [gerund]
 
 **Adjectives:**
 ```
-form-4: bello, bella, belli, belle
-form-2: grande, grande, grandi, grandi
+Agreement forms (always tag gender and number in metadata):
+  - form‑4: bello, bella, belli, belle
+  - form‑2: grande, grande, grandi, grandi
 ```
 
 **Special Rules for Verbs:**
-- **Congiuntivo forms**: ALWAYS prefix with "che " (e.g., "che io parli")
+- **Congiuntivo forms (finite only)**: Persist as teaching strings in CSV with explicit pronoun:
+  - `che io ...`, `che tu ...`, `che lui/lei ...`, `che noi ...`, `che voi ...`, `che loro ...`
 - **Imperativo forms**: ALWAYS suffix with "!" (e.g., "parla!")
 - **Compound forms**: Use proper auxiliary conjugation + participle
   - essere: "sono andato", "era andato", "sarà andato"
   - avere: "ho parlato", "aveva parlato", "avrà parlato"
+- **Progressive forms**: Keep explicit `stare + gerundio` surface in `form_text` (e.g., `sto parlando`)
+- **Other moods**: Keep canonical bare forms in CSV (e.g., `parlo`, `parlavo`, `parlerò`)
+
+**Verb ID and Variant Policy (CSV extraction contract):**
+- Verb form IDs must be slot-aware. Build deterministic IDs from:
+  - `lemma_id`, `form_type`, `verb_form_type`, `mood`, `tense`, `person`, `number`, `auxiliary`, and normalized `form_text`
+- Same-slot competing variants must prefer mainstream forms:
+  - Prefer variants without penalized register tags (`obsolete`, `archaic`, `regional`, `dialectal`, `traditional`, `poetic`)
+  - If tied, prefer non-clipped variants
+  - If still tied, keep first-seen stable order
+- Do not globally normalize Kaikki accent style; select better variants, but preserve source orthography style.
 
 #### 3.4 Insert word_forms
 
-**⚠️ IMPORTANT: form_type Column Requirement**
+**⚠️ IMPORTANT: Required Columns**
 
-The `form_type` column in `word_forms` is **deprecated but still required** by the database schema. You MUST provide a value for this column even though we use metadata for actual classification.
+All word_forms must include:
+1. **form_text**: The inflected/conjugated form
+2. **form_type**: Type of inflection (conjugation, plural, feminine, etc.)
+3. **phonetic_pronunciation**: Simplified pronunciation with CAPITALS for stress
+4. **ipa_pronunciation**: IPA notation with stress marker (ˈ) before stressed syllable
 
-**Recommended default values:**
-- For verbs: `'simple'`, `'compound'`, or `'progressive'` (matches the verb_form_type metadata)
-- For nouns/adjectives: `'form'` or `'inflected'`
-- For adverbs/prepositions: `'base'` or `'form'`
+**form_type Values by Word Type:**
+- **Verbs**: `'conjugation'` (for all conjugated verb forms)
+- **Nouns**: `'singular'`, `'plural'`
+- **Adjectives**: `'masculine'`, `'feminine'`, `'plural'`, `'masculine_plural'`, `'feminine_plural'`
+- **Adverbs/Prepositions**: `'base'` or `'invariable'`
 
-**The actual classification comes from metadata attributes**, not this column. Always use the `verb_form_type` metadata attribute for proper classification.
+**Note**: The `form_type` column describes the **type of word form** (plural, conjugation, etc.). For verb classification as simple/compound/progressive, use the `verb_form_type` **metadata attribute**.
 
 ```sql
 INSERT INTO word_forms (id, word_id, form_text, form_type, phonetic_pronunciation, ipa_pronunciation)
@@ -735,13 +856,19 @@ VALUES (
   gen_random_uuid(),
   '...',            -- word_id from dictionary
   'parlo',          -- Conjugated form
-  'simple',         -- ⚠️ REQUIRED but deprecated - Use verb_form_type metadata for actual classification
-  'PAR-lo',         -- Phonetic (optional)
-  '/ˈparlo/'        -- IPA (optional)
+  'conjugation',    -- Type of inflection (REQUIRED)
+  'PAR-lo',         -- Simplified pronunciation: CAPITALS = stress (MANDATORY)
+  '/ˈparlo/'        -- IPA: ˈ before stressed syllable (MANDATORY)
 );
 ```
 
-**Remember:** After inserting the form, immediately tag it with the correct `verb_form_type` metadata attribute (simple, compound, or progressive).
+**Pronunciation Format Examples:**
+- phonetic: "par-LA-re", "PAR-lo", "man-GIA-re", "CA-sa", "ca-SE"
+- IPA: "/parˈlare/", "/ˈparlo/", "/manˈdʒare/", "/ˈkasa/", "/ˈkaze/"
+
+**Remember:** After inserting the form, immediately tag it with metadata attributes:
+- For verbs: `verb_form_type` (simple/compound/progressive), `mood`, `tense`, `person`, `number`
+- For nouns/adjectives: `number` (singolare/plurale), `gender` (masculine/feminine)
 
 #### 3.5 Apply Form-Level Metadata Tags
 
@@ -763,8 +890,8 @@ Query meta_attributes where `source_level` includes 'form':
 
 | Attribute | Values | Notes |
 |-----------|--------|-------|
-| `number` | singolare, plurale | **Required** |
-| `gender` | masculine, feminine | **Required** (for gender-variant forms) |
+| `number` | singolare, plurale | **Required** (tag every noun/adjective form) |
+| `gender` | masculine, feminine | **Required for gendered nouns/adjectives; tag every form that is gendered** |
 
 **Example: Tag a verb form**
 ```sql
@@ -909,7 +1036,7 @@ Form: "ho parlato" → Translation: "I have spoken" (inflected present perfect)
 
 **Progressive:**
 - Presente progressivo (sto parlando) → am/is/are + -ing: "I am speaking"
-- Imperfetto progressivo (stavo parlando) → was/were + -ing: "I was speaking"
+- Passato progressivo (stavo parlando) → was/were + -ing: "I was speaking"
 
 #### 4.3 Insert form_translations
 
@@ -1029,11 +1156,6 @@ START: Adding Verb
 ├─ Tag word-level metadata
 │  ├─ conjugation_type: are/ere/ire/ire-isc [RECOMMENDED]
 │  ├─ reflexive: 'reflexive' [IF APPLICABLE]
-│  ├─ word_restriction: [IF APPLICABLE]
-│  │   ├─ plural-only
-│  │   ├─ third-person-only
-│  │   ├─ missing-imperative
-│  │   └─ etc.
 │  ├─ cefr_level: A1-C2 [OPTIONAL]
 │  └─ frequency_tier: top100-top10000 [OPTIONAL]
 │
@@ -1042,11 +1164,17 @@ START: Adding Verb
 │  │   ├─ translation: English infinitive with "to"
 │  │   ├─ display_priority: 1, 2, 3...
 │  │   ├─ usage_notes: When/how to use
-│  │   └─ Tag translation metadata:
+│  │   └─ Tag translation metadata: [CRITICAL FOR FORM GENERATION]
 │  │       ├─ auxiliary: essere/avere [REQUIRED]
 │  │       ├─ transitivity: transitive/intransitive/ambitransitive [RECOMMENDED]
-│  │       ├─ verb_type: direct-reflexive/reciprocal/modal-verb/etc. [IF APPLICABLE]
-│  │       ├─ word_restriction: plural-only/etc. [IF APPLICABLE]
+│  │       ├─ verb_type: direct-reflexive/reciprocal/modal-verb/impersonal-verb/etc. [IF APPLICABLE]
+│  │       ├─ word_restriction: [CRITICAL - DETERMINES WHICH FORMS LINK TO THIS TRANSLATION]
+│  │       │   ├─ plural-only (only links to plural forms)
+│  │       │   ├─ singular-only (only links to singular forms)
+│  │       │   ├─ third-person-only (only links to 3rd person forms)
+│  │       │   ├─ third-singular-only (only links to 3sg forms)
+│  │       │   ├─ missing-first-second-person (excludes 1st/2nd person)
+│  │       │   └─ missing-imperative (excludes imperative forms)
 │  │       └─ register: formal/casual/neutral [OPTIONAL]
 │  │
 │  └─ Dual auxiliary check:
@@ -1055,10 +1183,14 @@ START: Adding Verb
 │      │   └─ NO: Generate 130 forms (49 compound)
 │
 ├─ Calculate form count
-│  ├─ Check restrictions from word_restriction
-│  ├─ Standard: 51 simple + 49 compound + 30 progressive = 130
-│  ├─ Dual auxiliary: 51 simple + 98 compound + 30 progressive = 179
-│  └─ Apply restrictions to reduce counts
+│  ├─ Base counts:
+│  │   ├─ Standard verb: 51 simple + 49 compound + 30 progressive = 130
+│  │   └─ Dual auxiliary: 51 simple + 98 compound + 30 progressive = 179
+│  │
+│  └─ Apply translation restrictions (these reduce form counts):
+│      ├─ third-person-only: 17 simple + 16 compound + 15 progressive = 48 forms
+│      ├─ third-singular-only: 9 simple + 9 compound + 9 progressive = 27 forms
+│      └─ missing-imperative: 46 simple + 44 compound + 30 progressive = 120 forms
 │
 ├─ Generate forms
 │  │
@@ -1090,28 +1222,75 @@ START: Adding Verb
 │      ├─ Note: Do NOT tag auxiliary (stare is implicit)
 │      └─ Tag metadata: verb_form_type='progressive', mood, tense, person, number
 │
-└─ Create form_translations
+└─ Create form_translations [CRITICAL - FORMS × TRANSLATIONS MATRIX]
    │
    ├─ For SIMPLE/PROGRESSIVE forms:
-   │   └─ Link to ALL translations (unless restricted)
+   │   └─ Link to ALL translations (unless translation has word_restriction)
    │
    ├─ For COMPOUND forms:
    │   └─ Match auxiliary tag:
    │       ├─ Form auxiliary='essere' → Link only to translations with auxiliary='essere'
    │       └─ Form auxiliary='avere' → Link only to translations with auxiliary='avere'
    │
-   ├─ Apply restriction filtering:
-   │   ├─ plural-only: Only link plural forms
-   │   ├─ singular-only: Only link singular forms
-   │   ├─ third-person-only: Only link 3rd person forms
-   │   └─ etc.
+   ├─ Apply translation-level restriction filtering:
+   │   ├─ Translation has word_restriction='plural-only'
+   │   │   └─ Only link to plural forms (noi, voi, loro)
+   │   ├─ Translation has word_restriction='singular-only'
+   │   │   └─ Only link to singular forms (io, tu, lui/lei)
+   │   ├─ Translation has word_restriction='third-person-only'
+   │   │   └─ Only link to 3rd person forms (lui/lei, loro)
+   │   ├─ Translation has word_restriction='third-singular-only'
+   │   │   └─ Only link to 3sg forms (lui/lei only)
+   │   ├─ Translation has word_restriction='missing-first-second-person'
+   │   │   └─ Only link to 3rd person forms, exclude 1st/2nd person
+   │   ├─ Translation has word_restriction='missing-imperative'
+   │   │   └─ Link to all forms EXCEPT imperativo mood
+   │   └─ Translation has NO restriction
+   │       └─ Link to ALL applicable forms
    │
-   └─ Generate English translation text:
+   └─ Generate INFLECTED English translation text:
        ├─ Add pronouns: I, you, he/she, we, you all, they
        ├─ Match tense: present, past, future, conditional, subjunctive
        ├─ Imperativo: No pronoun, use imperative ("speak!")
        └─ Congiuntivo: Prefix "that" ("that I speak")
 ```
+
+---
+
+## Noun Gender Handling (Including Dual‑Gender Lemmas)
+
+Some nouns have gendered singulars and plurals that are all part of the same lemma (e.g., amico/amica → amici/amiche). Use these rules:
+
+1) Dictionary (word level)
+- `italian`: store the conventional headword (masculine singular where applicable)
+- `noun_gender` (word‑level): use `common-gender` for lemmas that realize both masculine and feminine forms (e.g., amico/amica)
+
+2) Forms (word_forms)
+- `form_type`: `number`
+- Store every surface form that students see: amico (M/SG), amica (F/SG), amici (M/PL), amiche (F/PL)
+- Tag every noun form with BOTH `number` and `gender` in metadata
+
+3) Plural formation metadata
+- Keep `plural_formation` at word level for standard patterns where a single pattern applies
+- For dual‑pattern lemmas (e.g., ‑co→‑ci vs ‑ca→‑che), prefer explicit form storage + form‑level gender/number tags over trying to encode two patterns in one attribute
+
+4) Search/UI behavior
+- Word‑level `noun_gender=common-gender` signals that both genders exist
+- Form‑level `gender` enables precise filtering and correct article generation in the UI
+
+Examples (storage sketch):
+```
+dictionary.italian = "amico"
+word_meta: noun_gender = common-gender
+
+word_forms (all with form_type = number):
+  amico  → gender=masculine, number=singolare
+  amica  → gender=feminine,  number=singolare
+  amici  → gender=masculine, number=plurale
+  amiche → gender=feminine,  number=plurale
+```
+
+This approach keeps `form_type` stable and shifts gender/number specifics to form‑level metadata, while preserving a single lemma.
 
 ### Adjective Decision Tree
 

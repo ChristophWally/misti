@@ -29,9 +29,10 @@
 
 **Translation-First Architecture**: The Misti dictionary prioritizes the relationship between Italian words and their English translations, with metadata attached at the appropriate linguistic level.
 
-**Three-Level Metadata System**:
+**Four-Level Metadata System**:
 - **Word-Level**: Inherent properties of the Italian lemma (gender, conjugation type, CEFR level)
 - **Translation-Level**: Properties specific to translation meanings (auxiliary verb, transitivity, register)
+- **Translation-Synonym-Level**: Properties of English synonym variants (gender_usage, register for specific synonyms)
 - **Form-Level**: Properties of conjugated/declined forms (tense, mood, person, number)
 
 **Forms Storage Strategy**:
@@ -43,12 +44,48 @@
 
 ```sql
 -- Core tables in the translation-first system
-dictionary              -- Base Italian words (lemmas)
-├── word_translations   -- Multiple English meanings per word
-├── word_forms         -- Conjugated/declined forms (primarily verbs)
-├── form_translations  -- Links between forms and translation meanings
-└── entity_meta_values -- UUID-based metadata system (replaces legacy tags)
+dictionary                -- Base Italian words (lemmas)
+├── word_translations     -- Multiple English meanings per word (polysemy)
+│   └── translation_synonyms -- English synonym variants per meaning (synonymy)
+├── word_forms           -- Conjugated/declined forms (primarily verbs)
+├── form_translations    -- Links between forms and translation meanings
+└── entity_meta_values   -- UUID-based metadata system (replaces legacy tags)
 ```
+
+### Translation Synonyms Innovation
+
+**Novel Lexicographic Architecture**: Misti implements a groundbreaking distinction between **polysemy** (different Italian senses) and **synonymy** (English translation choices).
+
+**Key Innovation:**
+- **word_translations** stores distinct Italian SENSES (polysemous meanings)
+- **translation_synonyms** stores English SYNONYM CHOICES for each sense
+
+**Example: "bello"**
+```
+word_translation: "beautiful" (aesthetic sense)
+  └── synonyms:
+      ├── "handsome" (male-only, metadata: gender_usage)
+      ├── "good-looking" (neutral)
+      ├── "lovely" (affectionate, female-preference)
+      └── "attractive" (formal register)
+
+word_translation: "nice" (weather/pleasant sense)
+  └── synonyms: (none - primary meaning)
+
+word_translation: "good" (quality sense)
+  └── synonyms: (none - primary meaning)
+```
+
+**Lexicographic Rationale:**
+Following best practices in bilingual lexicography, Misti separates:
+- **Italian polysemy** (different word senses) → separate `word_translations`
+- **English synonymy** (translation equivalents) → `translation_synonyms` with metadata
+
+This structure enables:
+- ✅ Metadata per synonym (gender_usage, register, position)
+- ✅ Educational progression (start with primary, introduce synonyms later)
+- ✅ Context-aware suggestions ("handsome" for male subjects)
+- ✅ Scalability without database explosion
 
 ---
 
@@ -170,7 +207,7 @@ This section provides comprehensive documentation of all metadata attributes and
 |-------|-----------|-------------|-------------|
 | `irregular` | irreg | Form deviates from conjugation pattern | 130 |
 
-#### Interrogative Function (`metaattr056`)
+#### Interrogative Function (`metaattr027`)
 **Purpose**: Cross-word-type attribute marking words that function as question words
 **Source Level**: word
 **Display Level**: word
@@ -241,7 +278,7 @@ This section provides comprehensive documentation of all metadata attributes and
 | `congiuntivo-imperfetto` | CIMPF | Imperfect subjunctive: che io parlassi | 36 |
 | `imperativo-presente` | IMPPRES | Present imperative: parla!, parlate! | 31 |
 | `trapassato-prossimo` | TPP | Past perfect: io avevo parlato | 30 |
-| `imperfetto-progressivo` | IPROG | Past progressive: io stavo parlando | 30 |
+| `passato-progressivo` | IPROG | Past progressive: io stavo parlando | 30 |
 | `futuro-anteriore` | FA | Future perfect: io avrò parlato | 30 |
 | `condizionale-passato` | CONDPASS | Past conditional: io avrei parlato | 30 |
 | `congiuntivo-passato` | CPASS | Present perfect subjunctive: che io abbia parlato | 25 |
@@ -297,11 +334,11 @@ This section provides comprehensive documentation of all metadata attributes and
 
 | Value | Shorthand | Description | Usage Count |
 |-------|-----------|-------------|-------------|
-| `meteorological-verb` | - | Weather verbs: piovere (rain), nevicare (snow), grandinare (hail) - third person singular only | 1 |
+| `meteorological-verb` | - | Weather verbs: piovere (rain), nevicare (snow), grandinare (hail) - genuinely third-person singular only (use with `restriction: "third-singular-only"`) | 1 |
 | `direct-reflexive` | DIR_REFL | Action on oneself: mi lavo (I wash myself) | 1 |
 | `reciprocal` | RECIP | Mutual action: ci laviamo (we wash each other) | 1 |
 | `modal-verb` | - | Modal auxiliary verbs: dovere (must), potere (can), volere (want), sapere (know how) | 0 |
-| `impersonal-verb` | - | Impersonal verbs: importare (matter), bisognare (need), servire (be needed) - used without specific subject | 0 |
+| `impersonal-verb` | - | **USAGE PATTERN, NOT RESTRICTION**: Verbs using indirect object pronouns with 3rd person forms (BOTH singular and plural) to express all persons. Pattern: mi importa/importano, ti importa/importano, gli importa/importano (verb number agrees with grammatical subject, not person). Generate ALL 130 forms. Do NOT use `restriction: "third-person-only"` | 0 |
 | `defective-verb` | - | Defective verbs: vigere (be in force), solere (be accustomed), vertere (turn) - missing some forms | 0 |
 
 #### Verb Form Type (`metaattr022`)
@@ -351,8 +388,8 @@ This section provides comprehensive documentation of all metadata attributes and
 |-------|-----------|-------------|-------------|
 | `plural-only` | SOLO_PL | Used only in plural form | 2 |
 | `singular-only` | SOLO_SG | Used only in singular form | 1 |
-| `third-singular-only` | - | Used only in third person singular (meteorological verbs like piovere) | 1 |
-| `third-person-only` | - | Used only in third person (impersonal verbs like importare) | 0 |
+| `third-singular-only` | - | **GENUINE RESTRICTION**: Weather/meteorological verbs that can ONLY conjugate in 3rd person singular (piovere, nevicare, grandinare) - generates only 48 forms | 1 |
+| `third-person-only` | - | **DO NOT USE FOR IMPERSONAL VERBS**: Only for genuinely defective verbs that cannot conjugate in 1st/2nd person. Impersonal verbs (mi importa, ti piace) use `verb_type: "impersonal"` instead and generate ALL forms | 0 |
 | `missing-first-second-person` | - | Missing first and second person forms (defective verbs like vigere) | 0 |
 | `missing-imperative` | - | Cannot form imperative commands (defective verbs like solere) | 0 |
 
@@ -425,6 +462,7 @@ This section provides comprehensive documentation of all metadata attributes and
 | `time` | TIME | When something happens: oggi, sempre | 1 |
 
 #### Adverb Government (`metaattr055`)
+Status: Implemented (word-level). Use for adverbs/adjectives that govern prepositions; do not assign to prepositions.
 **Purpose**: Indicates which preposition (if any) the adverb governs in prepositional constructions
 **Source Level**: word
 **Display Level**: word
@@ -599,10 +637,10 @@ The noun system provides sophisticated handling of common nouns and proper nouns
 > **📋 Detailed Technical Documentation**: For comprehensive implementation details including complete SQL specifications, metadata architecture, article generation algorithms, and educational integration, see [**Noun Complete Implementation Guide**](./word-types-architecture-2-nouns.md).
 
 **New Noun-Specific Metadata (4 New Attributes)**:
-- `metaattr028` - **Noun Type**: `common` (general categories), `proper` (specific entities) - fundamental noun classification
-- `metaattr029` - **Proper Noun Type**: `person`, `place`, `organization`, `work`, `brand` - semantic proper noun categorization
-- `metaattr030` - **Count Mass**: `count` (enumerable: libro → libri), `mass` (continuous: acqua, coraggio) - countability classification
-- `metaattr031` - **Article Pattern**: `definite-required` (la casa), `no-article` (Marco, Roma), `optional` (a casa, in città) - usage patterns
+- `metaattr057` - **Noun Type**: `common` (general categories), `proper` (specific entities) - fundamental noun classification
+- `metaattr058` - **Proper Noun Type**: `person`, `place`, `organization`, `work`, `brand` - semantic proper noun categorization
+- `metaattr032` - **Countable**: `countable`, `uncountable` - countability classification for nouns
+- `metaattr031` - **Article Pattern**: `definite-required` (la casa), `no-article` (Marco, Roma) - usage patterns
 
 **Existing Metadata Integration** *(see [Section 3.3](#33-noun-specific-attributes) for complete value descriptions)*:
 - `metaattr011` - **Noun Gender**: `masculine`, `feminine`, `common-gender` - inherent grammatical gender for article agreement
@@ -692,11 +730,11 @@ The adjective system provides comprehensive handling of Italian adjectives with 
 2. **Fixed Comparative Adjectives** (8 base entries) - Pre-comparative forms with independent meanings (superiore, maggiore, inferiore, minore, anteriore, posteriore, esteriore, interiore) that cannot take further comparative constructions
 
 **Word-Level Metadata** *(see [Section 3.4](#34-adjective-specific-attributes) for complete value descriptions)*:
-- `metaattr030` - **Adjective Type**: `qualitative` (16 words), `fixed-comparative` (8 words) - fundamental category classification for educational distinction and grammatical competence
+- `metaattr030` - **Adjective Type**: `qualitative`, `fixed-comparative` - fundamental category classification for educational distinction and grammatical competence
 - `metaattr009` - **Gradable**: `true` (qualitative adjectives), `false` (fixed comparatives) - comparative/superlative capability with grammatical accuracy
 - `metaattr006` - **Form Pattern**: `4-form` (masculine/feminine distinction), `2-form` (common gender), `invariant` (no agreement) - systematic agreement pattern classification
 - `metaattr011` - **Noun Gender**: inherited for agreement purposes - see [Section 3.3](#33-noun-specific-attributes)
-- `metaattr056` - **Interrogative Function**: Cross-word-type attribute marking interrogative adjectives (quale, quanto) for filtering and grouping
+- `metaattr027` - **Interrogative Function**: Cross-word-type attribute marking interrogative adjectives (quale, quanto) for filtering and grouping
 
 **Translation-Level Metadata** *(see [Section 3.4](#34-adjective-specific-attributes) and [Section 3.7](#37-universal-translation-level-attributes) for complete value descriptions)*:
 - `metaattr008` - **Gender Usage**: `male-only` (2 translations), `female-only` (1 translation) - gender-specific meanings like "handsome" (bello)
@@ -772,8 +810,8 @@ The adverb system provides comprehensive coverage of Italian adverbs with sophis
 
 **Word-Level Metadata** *(see [Section 3.5](#35-adverb-specific-attributes) for complete value descriptions)*:
 - `metaattr001` - **Adverb Type**: 13 comprehensive categories covering all functional types - `manner`, `time`, `place`, `quantity`, `frequency`, `affirmation`, `negation`, `evaluation`, `emphasis`, `doubt`, `conjunctive`, `exclamative`, `presentative`
-- `metaattr056` - **Interrogative Function**: Cross-word-type attribute marking interrogative adverbs (come, quando, dove, perché) for filtering and grouping across word types
-- `metaattr055` - **Adverb Government**: Systematic classification for prepositional constructions with educational value:
+- `metaattr027` - **Interrogative Function**: Cross-word-type attribute marking interrogative adverbs (come, quando, dove, perché) for filtering and grouping across word types
+- `metaattr055` - **Government**: Systematic classification for prepositional constructions with educational value
   - `governs_a` - Spatial adverbs forming constructions with "a": davanti a, dietro a, accanto a, vicino a
   - `governs_di` - Temporal adverbs forming constructions with "di": prima di, dopo di, invece di
   - `governs_da` - Distance adverbs forming constructions with "da": lontano da, distante da
@@ -950,7 +988,7 @@ The Italian determiner system encompasses six distinct categories, each with spe
 **Storage Strategy**: Store ALL determiner forms rather than calculate, due to irregular patterns, phonetic conditioning, and critical searchability requirements for language learners.
 
 **Metadata Architecture**:
-- **metaattr028** - Determiner Type (5 values: article, demonstrative, possessive, quantifier, interrogative)
+- **metaattr061** - Determiner Type (6 values: article, indefinite-article, demonstrative, possessive, quantifier, interrogative)
 - **metaattr014** - Person (possessives only: prima-persona, seconda-persona, terza-persona)
 - **metaattr011** - Gender (masculine, feminine, common-gender)
 - **metaattr012** - Number (singular, plural)

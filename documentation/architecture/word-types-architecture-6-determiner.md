@@ -118,7 +118,7 @@ Given the irregular patterns, phonetic conditioning, and high frequency of deter
 ### 3.2 Applicable Metadata Attributes
 
 **Core Determiner Metadata**:
-- **metaattr028** - Determiner Type (5 values: article, demonstrative, possessive, quantifier, interrogative)
+- **metaattr061** - Determiner Type (6 values: article, indefinite-article, demonstrative, possessive, quantifier, interrogative)
 - **metaattr014** - Person (3 values, possessives only: prima-persona, seconda-persona, terza-persona)
 - **metaattr011** - Gender (3 values, form-level: masculine, feminine, common-gender)
   * **masculine (M)** - Forms that agree with masculine nouns: il, un, questo, mio, quanto, molto, tutto
@@ -199,9 +199,9 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Determiner type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(il_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
-(la_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
-(lo_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article'));
+(il_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'definite-article')),
+(la_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'definite-article')),
+(lo_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'definite-article'));
 
 -- CEFR levels (A1 - fundamental)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -224,23 +224,23 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 -- Form-level metadata for plural and elision forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
 -- Plural forms get determiner type, gender, and number metadata
-(i_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(i_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'definite-article')),
 (i_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (i_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(le_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(le_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'definite-article')),
 (le_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (le_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(gli_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(gli_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'definite-article')),
 (gli_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (gli_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
 -- Elision forms maintain determiner type and singular metadata
-(l_il_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(l_il_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'definite-article')),
 (l_il_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (l_il_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(l_la_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(l_la_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'definite-article')),
 (l_la_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (l_la_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(l_lo_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(l_lo_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'definite-article')),
 (l_lo_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (l_lo_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular'));
 
@@ -272,9 +272,9 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Determiner type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(un_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
-(uno_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
-(una_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article'));
+(un_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'indefinite-article')),
+(uno_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'indefinite-article')),
+(una_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'indefinite-article'));
 
 -- CEFR levels (A1 - fundamental)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -296,7 +296,7 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Form-level metadata for elision form
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(un_elision_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'article')),
+(un_elision_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'indefinite-article')),
 (un_elision_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (un_elision_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular'));
 
@@ -332,10 +332,10 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Determiner type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(questa_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(quello_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
-(quella_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative'));
+(questo_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(questa_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(quello_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(quella_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'demonstrative'));
 
 -- Base gender metadata (inherent to word)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -353,16 +353,16 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Form-level metadata for plural forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(questi_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(questi_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
 (questi_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (questi_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(queste_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(queste_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
 (queste_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (queste_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(quelli_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(quelli_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
 (quelli_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (quelli_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(quelle_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
+(quelle_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'demonstrative')),
 (quelle_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (quelle_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural'));
 
@@ -423,17 +423,17 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Determiner type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(mio_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(mia_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(tuo_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(tua_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(suo_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(sua_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(nostro_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(nostra_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(vostro_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(vostra_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
-(loro_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive'));
+(mio_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(mia_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(tuo_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(tua_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(suo_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(sua_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(nostro_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(nostra_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(vostro_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(vostra_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(loro_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive'));
 
 -- Person metadata (critical for possessives)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -482,34 +482,34 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Form-level metadata for plural forms (determiner type, gender and number)
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(miei_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(miei_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
 (miei_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (miei_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(mie_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(mie_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
 (mie_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (mie_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(tuoi_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(tuoi_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
 (tuoi_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (tuoi_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(tue_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(tue_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
 (tue_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (tue_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(suoi_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(suoi_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
 (suoi_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (suoi_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(sue_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(sue_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
 (sue_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (sue_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(nostri_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(nostri_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
 (nostri_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (nostri_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(nostre_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(nostre_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
 (nostre_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (nostre_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(vostri_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(vostri_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
 (vostri_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (vostri_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(vostre_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'possessive')),
+(vostre_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'possessive')),
 (vostre_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (vostre_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural'));
 
@@ -591,13 +591,13 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Determiner type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(molto_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
-(poco_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
-(tutto_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
-(alcuni_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
-(alcune_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
-(ogni_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
-(qualche_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier'));
+(molto_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(poco_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(tutto_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(alcuni_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(alcune_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(ogni_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(qualche_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier'));
 
 -- Gender for quantifiers with inherent gender
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -621,31 +621,31 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Form-level metadata for gender/number forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(molta_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(molta_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
 (molta_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (molta_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(molti_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(molti_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
 (molti_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (molti_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(molte_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(molte_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
 (molte_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (molte_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(poca_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(poca_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
 (poca_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (poca_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(pochi_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(pochi_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
 (pochi_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (pochi_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(poche_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(poche_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
 (poche_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (poche_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(tutta_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(tutta_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
 (tutta_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (tutta_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'singular')),
-(tutti_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(tutti_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
 (tutti_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (tutti_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(tutte_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'quantifier')),
+(tutte_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'quantifier')),
 (tutte_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (tutte_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural'));
 
@@ -694,10 +694,10 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Determiner type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(quale_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative')),
-(quanto_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative')),
-(quanta_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative')),
-(che_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative'));
+(quale_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(quanto_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(quanta_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(che_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'interrogative'));
 
 -- Gender metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -715,13 +715,13 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Form-level metadata for plural forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(quali_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(quali_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'interrogative')),
 (quali_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'common-gender')),
 (quali_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(quanti_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(quanti_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'interrogative')),
 (quanti_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'masculine')),
 (quanti_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural')),
-(quante_form_id, 'metaattr028', (SELECT id FROM meta_values WHERE value = 'interrogative')),
+(quante_form_id, 'metaattr061', (SELECT id FROM meta_values WHERE value = 'interrogative')),
 (quante_form_id, 'metaattr011', (SELECT id FROM meta_values WHERE value = 'feminine')),
 (quante_form_id, 'metaattr012', (SELECT id FROM meta_values WHERE value = 'plural'));
 
@@ -748,7 +748,7 @@ This section provides comprehensive verification of the complete determiner impl
 
 The following critical metadata attributes have complete coverage across all determiner categories:
 
-- **✅ Complete metaattr028 (determiner_type) coverage**
+- **✅ Complete metaattr061 (determiner_type) coverage**
   - All base words and forms have determiner type metadata
   - Five determiner types properly classified: article, demonstrative, possessive, quantifier, interrogative
   - Form-level inheritance ensures complete searchability
@@ -928,14 +928,14 @@ INSERT INTO word_forms (word_id, form_text, form_type) VALUES
 **Complete Metadata Architecture Summary**:
 
 **Required for ALL Determiner Base Words**:
-- **metaattr028** - Determiner Type (5 values: article, demonstrative, possessive, quantifier, interrogative)
+- **metaattr061** - Determiner Type (6 values: article, indefinite-article, demonstrative, possessive, quantifier, interrogative)
 - **metaattr011** - Gender (3 values: masculine, feminine, common-gender)
 - **metaattr012** - Number (2 values: singular, plural)
 - **metaattr003** - CEFR Level (A1-C2 classification)
 - **metaattr007** - Frequency Tier (Usage frequency ranking)
 
 **Required for ALL Determiner Forms**:
-- **metaattr028** - Determiner Type (inherited from base word)
+- **metaattr061** - Determiner Type (inherited from base word)
 - **metaattr011** - Gender (masculine, feminine, common-gender)
 - **metaattr012** - Number (singular, plural)
 

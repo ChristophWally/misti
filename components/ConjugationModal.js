@@ -10,6 +10,12 @@ import SectionHeading from './SectionHeading'
 import { VariantCalculator, calculateVariants } from '../lib/variant-calculator'
 import TranslationSelector from './TranslationSelector'
 import { AuxiliaryPatternService } from '../lib/auxiliary-pattern-service'
+import {
+  deriveWordTagsFromTranslations,
+  hydrateBundleForm,
+  hydrateBundleTranslation,
+  hydrateBundleWord,
+} from '../lib/dictionary-bundle-compat'
 
 // Helper utilities for dynamic compound generation
 const mascEnding = (aux, isPlural) =>
@@ -108,11 +114,14 @@ export default function ConjugationModal({
   const [dropdownVisible, setDropdownVisible] = useState(false)
   const [selectedTranslationId, setSelectedTranslationId] = useState(null)
   const [wordTranslations, setWordTranslations] = useState([])
+  const [storedForms, setStoredForms] = useState([])
+  const [resolvedWord, setResolvedWord] = useState(word)
   const [isLoadingTranslations, setIsLoadingTranslations] = useState(false)
   const [auxiliaryService] = useState(() => new AuxiliaryPatternService(supabase))
 
   // Quick scratch/erase animation state to fade forms out and back in
   const [isContentChanging, setIsContentChanging] = useState(false)
+  const activeWord = resolvedWord || word
 
   // Extract tag values from tag array
   const extractTagValue = (tags, category) => {
@@ -210,50 +219,70 @@ export default function ConjugationModal({
     return auxiliary || 'avere'
   }
 
+  const loadWordBundle = async () => {
+    if (!activeWord?.id) return
+
+    setIsLoading(true)
+    setIsLoadingTranslations(true)
+    try {
+      const { data, error } = await supabase.rpc('app_get_word_bundle', {
+        p_word_id: activeWord.id,
+      })
+
+      if (error) throw error
+
+      const bundle = Array.isArray(data) ? data[0] : data
+      const hydratedTranslations = (bundle?.translations || []).map(hydrateBundleTranslation)
+      const hydratedWord = hydrateBundleWord(bundle?.word || activeWord)
+      const mergedWordTags = Array.from(
+        new Set([
+          ...(hydratedWord.tags || []),
+          ...deriveWordTagsFromTranslations(hydratedTranslations),
+        ])
+      )
+      const hydratedForms = (bundle?.forms || [])
+        .filter((form) => form.form_type === 'conjugation')
+        .map(hydrateBundleForm)
+
+      setResolvedWord({
+        ...hydratedWord,
+        tags: mergedWordTags,
+      })
+      setWordTranslations(hydratedTranslations)
+      setStoredForms(hydratedForms)
+
+      setSelectedTranslationId((currentSelected) => {
+        if (currentSelected && hydratedTranslations.some((translation) => translation.id === currentSelected)) {
+          return currentSelected
+        }
+
+        const primary = hydratedTranslations.find((translation) => translation.display_priority === 1) || hydratedTranslations[0]
+        return primary?.id || null
+      })
+    } catch (error) {
+      console.error('Error loading word bundle:', error)
+      setWordTranslations([])
+      setStoredForms([])
+      setResolvedWord(activeWord)
+    } finally {
+      setIsLoading(false)
+      setIsLoadingTranslations(false)
+    }
+  }
+
   // Load conjugations for the selected word
 const loadConjugations = async () => {
   setIsLoading(true)
   try {
-    console.log('🔄 Loading conjugations for:', word.italian)
+    console.log('🔄 Loading conjugations for:', activeWord?.italian)
     console.log('🔍 DIAGNOSTIC: selectedTranslationId:', selectedTranslationId)
     console.log('🔍 DIAGNOSTIC: wordTranslations length:', wordTranslations.length)
+    const processedData = storedForms || []
 
-    const { data, error } = await supabase
-      .from('word_forms')
-      .select(`
-        *,
-        form_translations (
-          word_translation_id,
-          translation,
-          assignment_method
-        ),
-        word_audio_metadata (audio_filename, azure_voice_name)
-      `)
-      .eq('word_id', word.id)
-      .eq('form_type', 'conjugation')
-      .order('tags')
-
-    if (error) throw error
-
-    console.log('📊 Raw forms loaded:', data?.length || 0)
-
-    const processedData = (data || []).map(form => {
-      const result = {
-        ...form,
-        audio_filename: form.word_audio_metadata?.audio_filename || null,
-        azure_voice_name: form.word_audio_metadata?.azure_voice_name || null,
-        form_translations: (form.form_translations || []).map(ft => ({
-          word_translation_id: ft.word_translation_id,
-          translation: ft.translation,
-          assignment_method: ft.assignment_method,
-          word_translation: ft.word_translations || null
-        }))
-      }
-      return result
-    })
+    console.log('📊 Raw forms loaded:', processedData.length)
 
     // STEP 1: Start with stored forms + calculated variants (NO dynamic compounds yet)
-    let allForms = VariantCalculator.getAllForms(processedData, word.tags || [])
+    let allForms = VariantCalculator.getAllForms(processedData, activeWord?.tags || [])
     console.log('✅ Base forms (stored + variants):', allForms.length)
 
     // STEP 2: Generate dynamic compounds ONLY if translation is selected
@@ -377,13 +406,16 @@ const loadConjugations = async () => {
 
               if (
                 auxiliaryType === 'essere' &&
-                !word.tags?.includes('essere-auxiliary')
+                !activeWord?.tags?.includes('essere-auxiliary')
               ) {
-                word.tags = [...(word.tags || []), 'essere-auxiliary']
+                setResolvedWord((currentWord) => ({
+                  ...(currentWord || activeWord),
+                  tags: Array.from(new Set([...(currentWord?.tags || activeWord?.tags || []), 'essere-auxiliary'])),
+                }))
               }
 
               generated.auxiliary_type = auxiliaryType
-              generated.word_tags = [...(word.tags || [])]
+              generated.word_tags = [...(activeWord?.tags || [])]
 
               generatedForms.push(generated)
             }
@@ -438,13 +470,16 @@ const loadConjugations = async () => {
 
               if (
                 auxiliaryType === 'essere' &&
-                !word.tags?.includes('essere-auxiliary')
+                !activeWord?.tags?.includes('essere-auxiliary')
               ) {
-                word.tags = [...(word.tags || []), 'essere-auxiliary']
+                setResolvedWord((currentWord) => ({
+                  ...(currentWord || activeWord),
+                  tags: Array.from(new Set([...(currentWord?.tags || activeWord?.tags || []), 'essere-auxiliary'])),
+                }))
               }
 
               generated.auxiliary_type = 'avere'
-              generated.word_tags = [...(word.tags || [])]
+              generated.word_tags = [...(activeWord?.tags || [])]
 
               generatedForms.push(generated)
             }
@@ -511,41 +546,6 @@ const loadConjugations = async () => {
   }
 
   // Load all translations for the current word
-const loadWordTranslations = async () => {
-  if (!word?.id) return
-
-  setIsLoadingTranslations(true)
-  try {
-    const { data: translations, error } = await supabase
-      .from('word_translations')
-      .select(`
-        id,
-        translation,
-        display_priority,
-        context_metadata,
-        usage_notes,
-        frequency_estimate
-      `)
-      .eq('word_id', word.id)
-      .order('display_priority')
-
-    if (error) throw error
-
-    setWordTranslations(translations)
-
-    // Set default selection to primary translation
-    if (translations.length > 0 && !selectedTranslationId) {
-      const primary = translations.find(t => t.display_priority === 1) || translations[0]
-      setSelectedTranslationId(primary.id)
-    }
-
-  } catch (error) {
-    console.error('Error loading word translations:', error)
-    setWordTranslations([])
-  } finally {
-    setIsLoadingTranslations(false)
-  }
-}
   // Get available mood/tense combinations for dropdown
   const getAvailableOptions = () => {
     const options = []
@@ -767,7 +767,7 @@ const loadWordTranslations = async () => {
 
       // Verb text changes only for essere compound tenses
       const verbChanges =
-        word?.tags?.includes('essere-auxiliary') &&
+        activeWord?.tags?.includes('essere-auxiliary') &&
         form.tags?.includes('compound') &&
         !form.tags?.includes('presente-progressivo') &&
         !form.tags?.includes('passato-progressivo') &&
@@ -813,7 +813,7 @@ const loadWordTranslations = async () => {
     if (pronoun === 'lui' || pronoun === 'lei') {
       // Check if this form has gender variants (ESSERE verbs with compound tenses)
       const hasGenderVariants =
-        word?.tags?.includes('essere-auxiliary') &&
+        activeWord?.tags?.includes('essere-auxiliary') &&
         form.tags?.includes('compound') &&
         !form.tags?.includes('presente-progressivo') &&
         !form.tags?.includes('passato-progressivo') &&
@@ -886,7 +886,7 @@ const loadWordTranslations = async () => {
       return translation
     }
     const hasGenderVariants =
-      word?.tags?.includes('essere-auxiliary') &&
+      activeWord?.tags?.includes('essere-auxiliary') &&
       displayForm.tags?.includes('compound') &&
       !displayForm.tags?.includes('presente-progressivo') &&
       !displayForm.tags?.includes('passato-progressivo') &&
@@ -1142,14 +1142,14 @@ const loadWordTranslations = async () => {
   }
 
   const renderConjugationTags = () => {
-    const colors = getConjugationColors(word?.tags || [])
+    const colors = getConjugationColors(activeWord?.tags || [])
     const tags = []
 
     // Conjugation type (filled)
     tags.push({ text: colors.name, filled: true, color: colors.primary })
 
     // Irregularity (filled red) - using RPC data
-    const hasIrregular = word?.word_core_tags?.some(tag => 
+    const hasIrregular = activeWord?.word_core_tags?.some(tag => 
       tag.attribute_stable_id === 'metaattr005' && tag.value_label === 'irregular'
     )
     if (hasIrregular) {
@@ -1157,21 +1157,21 @@ const loadWordTranslations = async () => {
     }
 
     // Auxiliary (outlined)
-    if (word?.tags?.includes('avere-auxiliary')) {
+    if (activeWord?.tags?.includes('avere-auxiliary')) {
       tags.push({ text: 'avere', filled: false })
-    } else if (word?.tags?.includes('essere-auxiliary')) {
+    } else if (activeWord?.tags?.includes('essere-auxiliary')) {
       tags.push({ text: 'essere', filled: false })
     }
 
     // Reflexive (outlined)
-    if (word?.tags?.includes('reflexive-verb')) {
+    if (activeWord?.tags?.includes('reflexive-verb')) {
       tags.push({ text: 'reflexive', filled: false })
     }
 
     // Transitivity (outlined)
-    if (word?.tags?.includes('transitive-verb')) {
+    if (activeWord?.tags?.includes('transitive-verb')) {
       tags.push({ text: 'transitive', filled: false })
-    } else if (word?.tags?.includes('intransitive-verb')) {
+    } else if (activeWord?.tags?.includes('intransitive-verb')) {
       tags.push({ text: 'intransitive', filled: false })
     }
 
@@ -1224,7 +1224,7 @@ const loadWordTranslations = async () => {
                   isCompound={compound}
                   selectedGender={selectedGender}
                   audioPreference={audioPreference}
-                  wordTags={word?.tags || []}
+                  wordTags={activeWord?.tags || []}
                   selectedFormality={selectedFormality}
                 />
               )
@@ -1249,7 +1249,7 @@ const loadWordTranslations = async () => {
                   isCompound={compound}
                   selectedGender={selectedGender}
                   audioPreference={audioPreference}
-                  wordTags={word?.tags || []}
+                  wordTags={activeWord?.tags || []}
                   selectedFormality={selectedFormality}
                 />
               )
@@ -1272,7 +1272,7 @@ const loadWordTranslations = async () => {
                   isCompound={compound}
                   selectedGender={selectedGender}
                   audioPreference={audioPreference}
-                  wordTags={word?.tags || []}
+                  wordTags={activeWord?.tags || []}
                   selectedFormality={selectedFormality}
                 />
               )
@@ -1284,15 +1284,16 @@ const loadWordTranslations = async () => {
   }
 
   useEffect(() => {
-    if (isOpen && word) {
-      if (selectedTranslationId !== null) {
-        loadConjugations()
-      }
-      if (selectedTranslationId === null) {
-        loadWordTranslations()
-      }
+    if (isOpen && word?.id) {
+      loadWordBundle()
     }
-  }, [isOpen, word, selectedTranslationId]) // CRITICAL: Add selectedTranslationId dependency
+  }, [isOpen, word?.id])
+
+  useEffect(() => {
+    if (isOpen && storedForms.length > 0 && selectedTranslationId !== null) {
+      loadConjugations()
+    }
+  }, [isOpen, storedForms, selectedTranslationId, wordTranslations, activeWord?.id])
 
   useEffect(() => {
     // Set default tense when mood changes
@@ -1340,7 +1341,7 @@ const loadWordTranslations = async () => {
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-br from-teal-500 to-cyan-600">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-white">
-                Conjugations: {word?.italian}
+                Conjugations: {activeWord?.italian}
               </h2>
           </div>
           <button

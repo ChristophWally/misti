@@ -1,5 +1,7 @@
 # Italian Interjection Architecture - Linguistically Accurate Implementation
 
+> Status: Planned. The specific interjection attributes referenced in this document (e.g., `metaattr050`, `metaattr051`, `metaattr052`) are not present in the current database. Treat them as proposals. When implementing, add corresponding meta_attributes and meta_values, or map to existing attributes if feasible.
+
 ## Table of Contents
 
 1. [Overview and Definition](#1-overview-and-definition)

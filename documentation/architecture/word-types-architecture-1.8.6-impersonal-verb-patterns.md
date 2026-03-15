@@ -40,7 +40,8 @@ display_priority: 1
 value_id → metaattr002val015 (auxiliary: "essere")
 value_id → metaattr020val100 (transitivity: "intransitive")
 value_id → metaattr021val118 (verb_type: "impersonal")
-value_id → metaattr013val129 (restriction: "third-person-only")
+-- NOTE: Impersonal verbs do NOT use "third-person-only" restriction
+-- They generate all 130 forms and use 3rd person forms with indirect pronouns
 ```
 
 ## Translation 2: "to import" (transitive meaning)
@@ -268,10 +269,16 @@ All forms use the consolidated Entity Meta Values architecture:
 **Selective Translation Coverage**: Forms link to translations based on semantic appropriateness:
 
 ### Translation 1: "to matter/to be important" (Impersonal Usage)
-- **Coverage**: Only 3rd person forms have Translation Coverage 1
-- **Form Coverage**: Simple forms (3rd person only), essere compound forms (3rd person only), progressive forms (3rd person only)
-- **Usage Context**: Impersonal constructions like "mi importa" (it matters to me)
-- **Restriction**: Third-person-only semantic restriction enforced at translation level
+- **Coverage**: ALL forms generated (130 total) - impersonal is a USAGE pattern, not a form restriction
+- **Form Coverage**: Simple forms (all 6 persons), essere compound forms (all 6 persons), progressive forms (all 6 persons)
+- **Usage Context**: Impersonal constructions with indirect object pronouns combining with 3rd person forms
+- **Key Pattern**: Uses 3rd person verb forms (BOTH singular and plural) with ALL persons via indirect pronouns
+  - **Singular subject**: mi importa, ti importa, gli/le importa, ci importa, vi importa, gli importa
+  - **Plural subject**: mi importano, ti importano, gli/le importano, ci importano, vi importano, gli importano
+- **Number Agreement**: Verb number agrees with grammatical SUBJECT, not the person (indirect pronoun)
+  - "Mi importa questo libro" (singular subject)
+  - "Mi importano questi libri" (plural subject)
+- **Semantic Meaning**: "mi importa" = "to me it matters" (indirect object + 3rd person verb)
 - **Auxiliary**: Uses essere auxiliary for compound forms
 
 ### Translation 2: "to import" (Transitive Usage)
@@ -286,9 +293,28 @@ All forms use the consolidated Entity Meta Values architecture:
 Section 8.6 demonstrates the impersonal verb architectural pattern in the Misti system:
 
 1. **Complete Form Generation**: Every grammatically possible form exists (179 total), demonstrating architectural completeness
-2. **Translation-Level Metadata**: Impersonal verb type and semantic restrictions properly placed at translation level
+2. **Translation-Level Metadata**: Impersonal verb type properly placed at translation level as a USAGE PATTERN attribute
 3. **Dual Auxiliary Support**: Translation 1 uses essere auxiliary, Translation 2 uses avere auxiliary
-4. **Semantic Restrictions**: Third-person-only restriction applied at translation level, not form level
+4. **Impersonal Usage Pattern**: Impersonal verbs generate ALL forms but use 3rd person forms with indirect object pronouns (mi importa, ti importa, gli importa) to express all persons semantically
 5. **Dual Translation Coverage**: Full support for both impersonal and transitive meanings with complete form coverage
 
-This complete inventory serves as the definitive reference for implementing impersonal verb conjugation with proper metadata architecture, demonstrating how semantic restrictions and verb types belong at the translation level while maintaining complete form availability.
+## Critical Distinction: Impersonal vs. Third-Person-Only
+
+**Impersonal Verbs (importare "to matter")**:
+- ✅ Generate ALL 130 forms (all persons, all tenses, all moods)
+- ✅ Use 3rd person forms (BOTH singular and plural) with indirect pronouns for all persons
+  - **Singular**: mi importa, ti importa, gli/le importa, ci importa, vi importa, gli importa
+  - **Plural**: mi importano, ti importano, gli/le importano, ci importano, vi importano, gli importano
+- ✅ Marked with `verb_type: "impersonal"` attribute on translation
+- ✅ Semantic pattern: [Indirect pronoun] + [3rd person verb (sg/pl)] + [subject/infinitive]
+- ✅ Number agreement: Verb agrees with grammatical SUBJECT, not person
+- ❌ Do NOT use `restriction: "third-person-only"`
+
+**Third-Person-Only Verbs (piovere "to rain")**:
+- ✅ Generate ONLY 48 forms (3rd person only, no imperatives)
+- ✅ Genuinely defective - cannot conjugate in other persons
+- ✅ Marked with `restriction: "third-person-only"` attribute
+- ✅ Weather/meteorological verbs: piovere, nevicare, grandinare
+- ❌ Do NOT use `verb_type: "impersonal"`
+
+This complete inventory serves as the definitive reference for implementing impersonal verb conjugation with proper metadata architecture, demonstrating that impersonal is a USAGE PATTERN (all forms with indirect pronouns) distinct from genuine form restrictions (third-person-only defective verbs).

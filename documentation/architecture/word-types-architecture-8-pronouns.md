@@ -143,12 +143,12 @@ Given the highly irregular case patterns, clitic positioning rules, and suppleti
 - **metaattr041** - Syntactic Function (translation-level: subject, direct_object, indirect_object, prepositional_object, relative_clause, demonstrative_reference, indefinite_reference, partitive)
 - **metaattr017** - Reflexive (existing: when applicable)
 - **metaattr027** - Interrogative Function (existing cross-word-type attribute: when applicable)
-- **metaattr049** - Particle Function (4 values for NE: partitive, locative, possessive, indefinite)
-- **metaattr054** - Indefinite Type (3 values: quantitative, qualitative, selective)
+- **metaattr065** - Particle Function (4 values for NE: partitive, locative, possessive, indefinite)
+- **metaattr066** - Indefinite Type (3 values: quantitative, qualitative, selective)
 - **metaattr014** - Person (3 values: prima-persona, seconda-persona, terza-persona)
 - **metaattr011** - Gender (3 values: masculine, feminine, common-gender)
 - **metaattr012** - Number (2 values: singular, plural)
-- **metaattr030** - Case (4 values: nominative, accusative, dative, ablative)
+- **metaattr068** - Case (4 values: nominative, accusative, dative, ablative)
 
 **Universal Attributes**:
 - **metaattr003** - CEFR Level (A1-C2 classification)
@@ -346,11 +346,11 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Case system classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042')), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042')), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042')), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042')), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042')), (SELECT id FROM meta_values WHERE value = 'accusative_dative'));
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067')), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067')), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067')), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067')), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067')), (SELECT id FROM meta_values WHERE value = 'accusative_dative'));
 
 -- Person metadata (critical for personal pronouns)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -362,11 +362,11 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Case metadata for base words
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030')), (SELECT id FROM meta_values WHERE value = 'nominative')),
-(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030')), (SELECT id FROM meta_values WHERE value = 'accusative')),
-(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030')), (SELECT id FROM meta_values WHERE value = 'accusative')),  -- primary function
-(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030')), (SELECT id FROM meta_values WHERE value = 'nominative')),
-(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030')), (SELECT id FROM meta_values WHERE value = 'accusative')); -- primary function
+(io_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068')), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(me_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068')), (SELECT id FROM meta_values WHERE value = 'accusative')),
+(mi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068')), (SELECT id FROM meta_values WHERE value = 'accusative')),  -- primary function
+(noi_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068')), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(ci_id, (SELECT id FROM meta_attributes WHERE stable_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068')), (SELECT id FROM meta_values WHERE value = 'accusative')); -- primary function
 
 -- Number metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -610,16 +610,16 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Case metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(lui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'nominative')),
-(lo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'accusative')),
-(gli_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'dative')),
-(li_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'accusative')),
-(lei_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'nominative')),
-(la_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'accusative')),
-(le_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'dative')),    -- primary function
-(loro_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'nominative')),
-(essi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'nominative')),
-(esse_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr030'), (SELECT id FROM meta_values WHERE value = 'nominative'));
+(lui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068'), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(lo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068'), (SELECT id FROM meta_values WHERE value = 'accusative')),
+(gli_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068'), (SELECT id FROM meta_values WHERE value = 'dative')),
+(li_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068'), (SELECT id FROM meta_values WHERE value = 'accusative')),
+(lei_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068'), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(la_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068'), (SELECT id FROM meta_values WHERE value = 'accusative')),
+(le_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068'), (SELECT id FROM meta_values WHERE value = 'dative')),    -- primary function
+(loro_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068'), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(essi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068'), (SELECT id FROM meta_values WHERE value = 'nominative')),
+(esse_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr068'), (SELECT id FROM meta_values WHERE value = 'nominative'));
 
 -- [Continue with pronoun type, pronoun form, case system, number, CEFR, frequency metadata]
 ```
@@ -688,8 +688,8 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- All combined clitics involve accusative_dative case system
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(glielo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(gliela_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(glielo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(gliela_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
 -- [Continue for all combined clitic forms]
 
 -- Gender metadata based on direct object component
@@ -741,10 +741,10 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Particle function metadata (multiple functions)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr049'), (SELECT id FROM meta_values WHERE value = 'partitive')),  -- primary function
-(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr049'), (SELECT id FROM meta_values WHERE value = 'locative')),
-(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr049'), (SELECT id FROM meta_values WHERE value = 'possessive')),
-(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr049'), (SELECT id FROM meta_values WHERE value = 'indefinite'));
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr065'), (SELECT id FROM meta_values WHERE value = 'partitive')),  -- primary function
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr065'), (SELECT id FROM meta_values WHERE value = 'locative')),
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr065'), (SELECT id FROM meta_values WHERE value = 'possessive')),
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr065'), (SELECT id FROM meta_values WHERE value = 'indefinite'));
 
 -- Gender metadata (common-gender - works with all)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -760,7 +760,7 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Case system (special particle case system)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')); -- complex case functions
+(ne_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'full_case')); -- complex case functions
 
 -- CEFR level (A2-B1 - important intermediate concept)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -774,7 +774,7 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
 (n_elision_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'personal')),
 (n_elision_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'clitic')),
-(n_elision_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr049'), (SELECT id FROM meta_values WHERE value = 'partitive'));
+(n_elision_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr065'), (SELECT id FROM meta_values WHERE value = 'partitive'));
 ```
 
 ### 4.4 Indefinite Pronouns - Complete Implementation
@@ -872,20 +872,20 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Indefinite type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'qualitative')),
-(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective')),
-(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective')),
-(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
-(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective')),
-(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective')),
-(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective')),
-(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'selective'));
+(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'selective')),
+(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'selective')),
+(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'quantitative')),
+(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'selective')),
+(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'selective')),
+(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'selective')),
+(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'selective'));
 
 -- Pronoun form classification (all full forms)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -940,20 +940,20 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Case system (most are nominative only)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- can take various cases
-(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
-(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case'));
+(tale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- can take various cases
+(alcuni_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(alcune_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(qualcuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(qualcosa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(tutto_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(tutti_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(tutte_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(niente_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(nulla_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'accusative_dative')),
+(nessuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(ognuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(ciascuno_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(chiunque_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'full_case'));
 
 -- CEFR levels (B1-B2 - intermediate to advanced)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -992,7 +992,7 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 -- Form-level metadata for tale → tali
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
 (tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr040'), (SELECT id FROM meta_values WHERE value = 'indefinite')),
-(tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr054'), (SELECT id FROM meta_values WHERE value = 'qualitative')),
+(tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr066'), (SELECT id FROM meta_values WHERE value = 'qualitative')),
 (tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr041'), (SELECT id FROM meta_values WHERE value = 'full')),
 (tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'), (SELECT id FROM meta_values WHERE value = 'common-gender')),
 (tali_form_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr012'), (SELECT id FROM meta_values WHERE value = 'plural'));
@@ -1057,10 +1057,10 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Case system
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(che_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- subject or object
-(cui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- with prepositions
-(quale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- various cases
-(chi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'full_case')); -- various functions
+(che_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- subject or object
+(cui_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- with prepositions
+(quale_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'full_case')), -- various cases
+(chi_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'full_case')); -- various functions
 
 -- Gender metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -1170,11 +1170,11 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Case system (nominative only for demonstrative pronouns)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(questo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(questa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(quello_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(quella_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
-(ciò_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr042'), (SELECT id FROM meta_values WHERE value = 'accusative_dative'));
+(questo_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(questa_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(quello_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(quella_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'nominative_only')),
+(ciò_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr067'), (SELECT id FROM meta_values WHERE value = 'accusative_dative'));
 
 -- Gender metadata
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -1261,7 +1261,7 @@ The following critical metadata attributes have complete coverage across all pro
   - Applied to interrogative pronouns distributed across base categories
   - Enables unified interrogative word searches
 
-- **✅ Complete metaattr030 (case) coverage**
+- **✅ Complete metaattr068 (case) coverage**
   - All base words and relevant forms have case metadata
   - Four-case system properly implemented: nominative, accusative, dative, ablative
   - Form-level case metadata captures functional variations
@@ -1282,8 +1282,8 @@ The following critical metadata attributes have complete coverage across all pro
   - Inherently plural forms (alcuni, alcune, tutti, tutte) properly classified
 
 - **✅ Specialized Metadata Coverage**
-  - **metaattr049** (particle_function): Complete coverage for NE particle functions
-  - **metaattr054** (indefinite_type): Complete coverage for indefinite pronoun classification
+  - **metaattr065** (particle_function): Complete coverage for NE particle functions
+  - **metaattr066** (indefinite_type): Complete coverage for indefinite pronoun classification
   - Quantitative, qualitative, and selective indefinite types properly distinguished
 
 - **✅ Universal metaattr003 (CEFR) coverage**
@@ -1492,8 +1492,8 @@ INSERT INTO dictionary (italian, word_type) VALUES
 **Optional Metadata (When Applicable)**:
 - **metaattr017** - Reflexive (for reflexive pronouns)
 - **metaattr027** - Interrogative Function (for interrogative pronouns distributed across categories)
-- **metaattr049** - Particle Function (for NE: partitive, locative, possessive, indefinite)
-- **metaattr054** - Indefinite Type (for indefinites: quantitative, qualitative, selective)
+- **metaattr065** - Particle Function (for NE: partitive, locative, possessive, indefinite)
+- **metaattr066** - Indefinite Type (for indefinites: quantitative, qualitative, selective)
 
 ---
 
@@ -1539,7 +1539,7 @@ INSERT INTO dictionary (italian, word_type) VALUES
 SELECT * FROM dictionary WHERE word_type = 'pronoun'
   AND metaattr003 = 'A1'
   AND metaattr040 = 'personal'
-  AND metaattr030 = 'nominative';
+  AND metaattr068 = 'nominative';
 
 -- A2 Priority: Basic clitic system
 SELECT * FROM dictionary WHERE word_type = 'pronoun'
@@ -1550,7 +1550,7 @@ SELECT * FROM dictionary WHERE word_type = 'pronoun'
 -- B1 Priority: Complex pronoun functions
 SELECT * FROM dictionary WHERE word_type = 'pronoun'
   AND metaattr003 = 'B1'
-  AND (metaattr049 IS NOT NULL OR metaattr054 IS NOT NULL);
+  AND (metaattr065 IS NOT NULL OR metaattr066 IS NOT NULL);
 
 -- B2 Priority: Advanced constructions
 SELECT * FROM dictionary WHERE word_type = 'pronoun'

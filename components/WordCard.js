@@ -333,6 +333,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           'doubt': { display: 'doubt', desc: 'Adverb type - Expresses uncertainty' },
           'negation': { display: 'negation', desc: 'Adverb type - Expresses denial or refusal' },
           'interrogative': { display: 'interrogative', desc: 'Adverb type - Used in questions' },
+          'conjunctive': { display: 'conjunctive', desc: 'Adverb type - Connects clauses/ideas (therefore/however/instead)' },
           'evaluation': { display: 'evaluation', desc: 'Adverb type - Expresses judgment or opinion' },
           'emphasis': { display: 'emphasis', desc: 'Adverb type - Adds emphasis or intensity' }
         }

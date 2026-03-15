@@ -118,7 +118,7 @@ Given the mandatory nature of contractions, phonetic conditioning complexity, an
 ### 3.2 Applicable Metadata Attributes
 
 **Core Preposition Metadata**:
-- **metaattr027** - Preposition Type (3 values: simple, complex, contracted)
+- **metaattr060** - Preposition Type (3 values: simple, complex, contracted)
 - **metaattr011** - Gender (3 values, form-level for contractions: masculine, feminine, common-gender)
 - **metaattr012** - Number (2 values, form-level for contractions: singular, plural)
 
@@ -178,15 +178,15 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- Preposition type classification for simple prepositions
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(di_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'simple')),
-(a_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'simple')),
-(da_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'simple')),
-(in_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'simple')),
-(con_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'simple')),
-(su_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'simple')),
-(per_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'simple')),
-(tra_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'simple')),
-(fra_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'simple'));
+(di_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'simple')),
+(a_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'simple')),
+(da_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'simple')),
+(in_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'simple')),
+(con_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'simple')),
+(su_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'simple')),
+(per_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'simple')),
+(tra_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'simple')),
+(fra_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'simple'));
 
 -- CEFR levels (A1 - fundamental)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -272,40 +272,40 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 -- Preposition type for all contracted forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
 -- DI contractions
-(del_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(dello_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(della_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(dei_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(degli_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(delle_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(del_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(dello_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(della_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(dei_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(degli_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(delle_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
 -- A contractions
-(al_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(allo_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(alla_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(ai_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(agli_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(alle_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(al_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(allo_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(alla_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(ai_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(agli_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(alle_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
 -- DA contractions
-(dal_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(dallo_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(dalla_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(dai_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(dagli_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(dalle_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(dal_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(dallo_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(dalla_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(dai_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(dagli_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(dalle_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
 -- IN contractions
-(nel_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(nello_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(nella_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(nei_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(negli_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(nelle_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(nel_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(nello_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(nella_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(nei_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(negli_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(nelle_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
 -- SU contractions
-(sul_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(sullo_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(sulla_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(sui_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(sugli_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted')),
-(sulle_form_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'contracted'));
+(sul_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(sullo_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(sulla_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(sui_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(sugli_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted')),
+(sulle_form_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'contracted'));
 
 -- Gender metadata for contracted forms
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
@@ -410,18 +410,18 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- Preposition type classification for complex prepositions
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(durante_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(attraverso_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(presso_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(mediante_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(nonostante_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(senza_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(sopra_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(sotto_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(dentro_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(fuori_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(oltre_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex')),
-(contro_id, 'metaattr027', (SELECT id FROM meta_values WHERE value = 'complex'));
+(durante_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(attraverso_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(presso_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(mediante_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(nonostante_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(senza_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(sopra_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(sotto_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(dentro_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(fuori_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(oltre_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex')),
+(contro_id, 'metaattr060', (SELECT id FROM meta_values WHERE value = 'complex'));
 
 -- CEFR levels (A2-B2 range for complex prepositions)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -584,7 +584,7 @@ INSERT INTO word_translations (word_id, translation, display_priority, usage_not
 
 The following critical metadata attributes have complete coverage across all preposition categories:
 
-- **✅ Complete metaattr027 (preposition_type) coverage**
+- **✅ Complete metaattr060 (preposition_type) coverage**
   - All base words and forms have preposition type metadata
   - Three preposition types properly classified: simple, complex, contracted
   - Form-level inheritance ensures complete searchability

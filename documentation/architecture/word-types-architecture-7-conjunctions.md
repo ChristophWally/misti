@@ -106,9 +106,9 @@ Given the primarily invariable nature of conjunctions, the storage strategy focu
 ### 3.2 Applicable Metadata Attributes
 
 **Core Conjunction Metadata**:
-- **metaattr037** - Conjunction Type (3 values: coordinating, subordinating, correlative)
-- **metaattr038** - Logical Relationship (6 values: addition, contrast, disjunction, causal, temporal, conditional)
-- **metaattr039** - Syntactic Level (3 values: word_level, phrase_level, clause_level)
+- **metaattr062** - Conjunction Type (3 values: coordinating, subordinating, correlative)
+- **metaattr063** - Logical Relationship (6 values: addition, contrast, disjunction, causal, temporal, conditional)
+- **metaattr064** - Syntactic Level (3 values: word_level, phrase_level, clause_level)
 
 **Universal Attributes**:
 - **metaattr003** - CEFR Level (A1-C2 classification)
@@ -162,15 +162,15 @@ INSERT INTO word_forms (word_id, form_text, form_type, phonetic_pronunciation, i
 ```sql
 -- Conjunction type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(e_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'coordinating'));
+(e_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'coordinating'));
 
 -- Logical relationship classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(e_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'addition'));
+(e_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'addition'));
 
 -- Syntactic level classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(e_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'word_level'));
+(e_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'word_level'));
 
 -- CEFR level (A1 - fundamental)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -182,9 +182,9 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 
 -- Form-level metadata for phonetic variant
 INSERT INTO entity_meta_values (form_id, meta_attribute_id, meta_value_id) VALUES
-(ed_form_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'coordinating')),
-(ed_form_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'addition')),
-(ed_form_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'word_level'));
+(ed_form_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'coordinating')),
+(ed_form_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'addition')),
+(ed_form_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'word_level'));
 ```
 
 #### 4.1.2 Contrast Conjunctions
@@ -201,18 +201,18 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- Conjunction type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ma_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'coordinating')),
-(pero_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'coordinating'));
+(ma_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'coordinating')),
+(pero_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'coordinating'));
 
 -- Logical relationship classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ma_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'contrast')),
-(pero_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'contrast'));
+(ma_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'contrast')),
+(pero_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'contrast'));
 
 -- Syntactic level classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(ma_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'word_level')),
-(pero_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level'));
+(ma_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'word_level')),
+(pero_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level'));
 
 -- CEFR levels
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -240,21 +240,21 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- Conjunction type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(o_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'coordinating')),
-(oppure_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'coordinating')),
-(ovvero_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'coordinating'));
+(o_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'coordinating')),
+(oppure_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'coordinating')),
+(ovvero_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'coordinating'));
 
 -- Logical relationship classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(o_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'disjunction')),
-(oppure_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'disjunction')),
-(ovvero_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'disjunction'));
+(o_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'disjunction')),
+(oppure_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'disjunction')),
+(ovvero_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'disjunction'));
 
 -- Syntactic level classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(o_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'word_level')),
-(oppure_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'phrase_level')),
-(ovvero_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level'));
+(o_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'word_level')),
+(oppure_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'phrase_level')),
+(ovvero_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level'));
 
 -- CEFR levels
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -288,21 +288,21 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- Conjunction type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(perche_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating')),
-(poiche_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating')),
-(siccome_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating'));
+(perche_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'subordinating')),
+(poiche_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'subordinating')),
+(siccome_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'subordinating'));
 
 -- Logical relationship classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(perche_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'causal')),
-(poiche_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'causal')),
-(siccome_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'causal'));
+(perche_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'causal')),
+(poiche_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'causal')),
+(siccome_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'causal'));
 
 -- Syntactic level classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(perche_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level')),
-(poiche_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level')),
-(siccome_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level'));
+(perche_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level')),
+(poiche_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level')),
+(siccome_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level'));
 
 -- CEFR levels
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -332,18 +332,18 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- Conjunction type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(quando_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating')),
-(mentre_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating'));
+(quando_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'subordinating')),
+(mentre_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'subordinating'));
 
 -- Logical relationship classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(quando_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'temporal')),
-(mentre_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'temporal'));
+(quando_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'temporal')),
+(mentre_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'temporal'));
 
 -- Syntactic level classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(quando_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level')),
-(mentre_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level'));
+(quando_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level')),
+(mentre_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level'));
 
 -- CEFR levels
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -372,21 +372,21 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- Conjunction type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(se_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating')),
-(qualora_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating')),
-(purche_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating'));
+(se_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'subordinating')),
+(qualora_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'subordinating')),
+(purche_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'subordinating'));
 
 -- Logical relationship classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(se_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'conditional')),
-(qualora_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'conditional')),
-(purche_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'conditional'));
+(se_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'conditional')),
+(qualora_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'conditional')),
+(purche_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'conditional'));
 
 -- Syntactic level classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(se_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level')),
-(qualora_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level')),
-(purche_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level'));
+(se_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level')),
+(qualora_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level')),
+(purche_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level'));
 
 -- CEFR levels
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -418,21 +418,21 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- Conjunction type classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(sia_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'correlative')),
-(ne_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'correlative')),
-(nonostante_id, 'metaattr037', (SELECT id FROM meta_values WHERE value = 'subordinating'));
+(sia_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'correlative')),
+(ne_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'correlative')),
+(nonostante_id, 'metaattr062', (SELECT id FROM meta_values WHERE value = 'subordinating'));
 
 -- Logical relationship classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(sia_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'addition')),
-(ne_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'contrast')),
-(nonostante_id, 'metaattr038', (SELECT id FROM meta_values WHERE value = 'contrast'));
+(sia_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'addition')),
+(ne_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'contrast')),
+(nonostante_id, 'metaattr063', (SELECT id FROM meta_values WHERE value = 'contrast'));
 
 -- Syntactic level classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(sia_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'phrase_level')),
-(ne_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'phrase_level')),
-(nonostante_id, 'metaattr039', (SELECT id FROM meta_values WHERE value = 'clause_level'));
+(sia_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'phrase_level')),
+(ne_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'phrase_level')),
+(nonostante_id, 'metaattr064', (SELECT id FROM meta_values WHERE value = 'clause_level'));
 
 -- CEFR levels
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -455,17 +455,17 @@ This section provides comprehensive verification of the complete conjunction imp
 
 The following critical metadata attributes have complete coverage across all conjunction categories:
 
-- **✅ Complete metaattr037 (conjunction_type) coverage**
+- **✅ Complete metaattr062 (conjunction_type) coverage**
   - All base words and forms have conjunction type metadata
   - Three conjunction types properly classified: coordinating, subordinating, correlative
   - Form-level inheritance ensures complete searchability
 
-- **✅ Complete metaattr038 (logical_relationship) coverage**
+- **✅ Complete metaattr063 (logical_relationship) coverage**
   - All base words and forms have logical relationship metadata
   - Six logical relationships properly classified: addition, contrast, disjunction, causal, temporal, conditional
   - Semantic precision maintained across all conjunction categories
 
-- **✅ Complete metaattr039 (syntactic_level) coverage**
+- **✅ Complete metaattr064 (syntactic_level) coverage**
   - All base words and forms have syntactic level metadata
   - Three syntactic levels properly classified: word_level, phrase_level, clause_level
   - Functional scope accurately captured for educational purposes

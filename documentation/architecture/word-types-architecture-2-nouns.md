@@ -27,6 +27,14 @@
    - 5.1 [Number Formation System](#51-number-formation-system)
    - 5.2 [Article Generation Algorithm](#52-article-generation-algorithm)
    - 5.3 [Word Relationships for Diminutives](#53-word-relationships-for-diminutives)
+   - 5.4 [Gender Variant Nouns - Complete Storage Architecture](#54-gender-variant-nouns---complete-storage-architecture)
+     - 5.4.1 [Gender Variant Storage Strategy](#541-gender-variant-storage-strategy)
+     - 5.4.2 [Italian Masculine Plural Mixed-Gender Convention](#542-italian-masculine-plural-mixed-gender-convention)
+     - 5.4.3 [Complete Implementation Pattern](#543-complete-implementation-pattern)
+     - 5.4.4 [Gender Usage Metadata Architecture](#544-gender-usage-metadata-architecture)
+     - 5.4.5 [Frontend Display Logic for Mixed-Gender Translations](#545-frontend-display-logic-for-mixed-gender-translations)
+     - 5.4.6 [Complete Example: zio/zia Family](#546-complete-example-ziozia-family)
+     - 5.4.7 [Additional Common Gender Variant Pairs](#547-additional-common-gender-variant-pairs)
 
 6. [Translation Architecture](#6-translation-architecture)
    - 6.1 [Context-Dependent Translation Approach](#61-context-dependent-translation-approach)
@@ -122,9 +130,9 @@ Given the systematic nature of Italian article agreement and number formation, a
 ### 3.2 Applicable Metadata Attributes
 
 **New Noun-Specific Metadata (4 attributes)**:
-- **metaattr028** - Noun Type (2 values: common, proper)
-- **metaattr029** - Proper Noun Type (5 values: person, place, organization, work, brand)
-- **metaattr030** - Count Mass (2 values: count, mass)
+- **metaattr057** - Noun Type (2 values: common, proper)
+- **metaattr058** - Proper Noun Type (5 values: person, place, organization, work, brand)
+- **metaattr032** - Countable (2 values: count, mass)
 - **metaattr031** - Article Pattern (3 values: definite-required, no-article, optional)
 
 **Existing Attributes (Reused)**:
@@ -177,28 +185,28 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 ```sql
 -- Create new noun-specific meta_attributes
 INSERT INTO meta_attributes (id, name, description, source_level, display_level, stable_id, display_name) VALUES
-('550e8400-e29b-41d4-a716-446655440028', 'noun_type', 'Primary noun classification', 'word', 'word', 'metaattr028', 'Noun Type'),
-('550e8400-e29b-41d4-a716-446655440029', 'proper_noun_type', 'Semantic classification of proper nouns', 'word', 'word', 'metaattr029', 'Proper Noun Type'),
-('550e8400-e29b-41d4-a716-446655440030', 'count_mass', 'Countability classification - distinct from number_restriction', 'word', 'word', 'metaattr030', 'Count/Mass'),
+('550e8400-e29b-41d4-a716-446655440028', 'noun_type', 'Primary noun classification', 'word', 'word', 'metaattr057', 'Noun Type'),
+('550e8400-e29b-41d4-a716-446655440029', 'proper_noun_type', 'Semantic classification of proper nouns', 'word', 'word', 'metaattr058', 'Proper Noun Type'),
+('550e8400-e29b-41d4-a716-446655440030', 'countable', 'Countability classification - distinct from number_restriction', 'word', 'word', 'metaattr032', 'Countable'),
 ('550e8400-e29b-41d4-a716-446655440031', 'article_pattern', 'Article usage patterns for Italian nouns', 'word', 'word', 'metaattr031', 'Article Pattern');
 
 -- Create meta_values for noun_type
 INSERT INTO meta_values (id, attribute_id, value, description, stable_id) VALUES
-('650e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440028', 'common', 'General categories of entities (casa, libro, acqua)', 'metaattr028val001'),
-('650e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440028', 'proper', 'Specific, unique entities (Roma, Marco, Ferrari)', 'metaattr028val002');
+('650e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440028', 'common', 'General categories of entities (casa, libro, acqua)', 'metaattr057val001'),
+('650e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440028', 'proper', 'Specific, unique entities (Roma, Marco, Ferrari)', 'metaattr057val002');
 
 -- Create meta_values for proper_noun_type
 INSERT INTO meta_values (id, attribute_id, value, description, stable_id) VALUES
-('650e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440029', 'person', 'Person names (Marco, Maria, Dante)', 'metaattr029val001'),
-('650e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440029', 'place', 'Geographic locations (Roma, Italia, Alpi)', 'metaattr029val002'),
-('650e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440029', 'organization', 'Organizations, institutions (Ferrari, Università di Bologna)', 'metaattr029val003'),
-('650e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440029', 'work', 'Works of art, literature (Divina Commedia, Monna Lisa)', 'metaattr029val004'),
-('650e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440029', 'brand', 'Commercial brands, companies (Apple, Nike)', 'metaattr029val005');
+('650e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440029', 'person', 'Person names (Marco, Maria, Dante)', 'metaattr058val001'),
+('650e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440029', 'place', 'Geographic locations (Roma, Italia, Alpi)', 'metaattr058val002'),
+('650e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440029', 'organization', 'Organizations, institutions (Ferrari, Università di Bologna)', 'metaattr058val003'),
+('650e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440029', 'work', 'Works of art, literature (Divina Commedia, Monna Lisa)', 'metaattr058val004'),
+('650e8400-e29b-41d4-a716-446655440007', '550e8400-e29b-41d4-a716-446655440029', 'brand', 'Commercial brands, companies (Apple, Nike)', 'metaattr058val005');
 
--- Create meta_values for count_mass
+-- Create meta_values for countable
 INSERT INTO meta_values (id, attribute_id, value, description, stable_id) VALUES
-('650e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440030', 'count', 'Can be enumerated and pluralized (libro → libri)', 'metaattr030val001'),
-('650e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440030', 'mass', 'Continuous substances or abstract concepts (acqua, coraggio)', 'metaattr030val002');
+('650e8400-e29b-41d4-a716-446655440008', '550e8400-e29b-41d4-a716-446655440030', 'count', 'Can be enumerated and pluralized (libro → libri)', 'metaattr032val001'),
+('650e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440030', 'mass', 'Continuous substances or abstract concepts (acqua, coraggio)', 'metaattr032val002');
 
 -- Create meta_values for article_pattern
 INSERT INTO meta_values (id, attribute_id, value, description, stable_id) VALUES
@@ -224,14 +232,14 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 -- Complete metadata assignment for common nouns
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 -- Noun type classification (all common)
-(casa_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440001'),
-(libro_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440001'),
-(acqua_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440001'),
-(tavolo_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440001'),
-(problema_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440001'),
-(felicità_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440001'),
-(coraggio_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440001'),
-(persona_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440001');
+(casa_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440001'),
+(libro_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440001'),
+(acqua_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440001'),
+(tavolo_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440001'),
+(problema_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440001'),
+(felicità_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440001'),
+(coraggio_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440001'),
+(persona_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440001');
 
 -- Gender classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -244,16 +252,16 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 (coraggio_id, 'metaattr011', (SELECT id FROM meta_values WHERE stable_id = 'metaattr011val053')), -- masculine
 (persona_id, 'metaattr011', (SELECT id FROM meta_values WHERE stable_id = 'metaattr011val052')); -- feminine
 
--- Count/Mass classification
+-- Countable classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(casa_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count
-(libro_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count
-(acqua_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440009'), -- mass
-(tavolo_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count
-(problema_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count
-(felicità_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440009'), -- mass
-(coraggio_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440009'), -- mass
-(persona_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'); -- count
+(casa_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count
+(libro_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count
+(acqua_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440009'), -- mass
+(tavolo_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count
+(problema_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count
+(felicità_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440009'), -- mass
+(coraggio_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440009'), -- mass
+(persona_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'); -- count
 
 -- Article pattern classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -326,25 +334,25 @@ INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunci
 -- Complete metadata assignment for proper nouns
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
 -- Noun type classification (all proper)
-(Roma_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440002'),
-(Marco_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440002'),
-(Italia_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440002'),
-(Ferrari_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440002'),
-(Dante_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440002'),
-(Alpi_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440002'),
-(Mediterraneo_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440002'),
-(Divina_Commedia_id, 'metaattr028', '650e8400-e29b-41d4-a716-446655440002');
+(Roma_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440002'),
+(Marco_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440002'),
+(Italia_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440002'),
+(Ferrari_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440002'),
+(Dante_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440002'),
+(Alpi_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440002'),
+(Mediterraneo_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440002'),
+(Divina_Commedia_id, 'metaattr057', '650e8400-e29b-41d4-a716-446655440002');
 
 -- Proper noun type classification (ONLY for proper nouns)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(Roma_id, 'metaattr029', '650e8400-e29b-41d4-a716-446655440004'), -- place
-(Marco_id, 'metaattr029', '650e8400-e29b-41d4-a716-446655440003'), -- person
-(Italia_id, 'metaattr029', '650e8400-e29b-41d4-a716-446655440004'), -- place
-(Ferrari_id, 'metaattr029', '650e8400-e29b-41d4-a716-446655440005'), -- brand
-(Dante_id, 'metaattr029', '650e8400-e29b-41d4-a716-446655440003'), -- person
-(Alpi_id, 'metaattr029', '650e8400-e29b-41d4-a716-446655440004'), -- place
-(Mediterraneo_id, 'metaattr029', '650e8400-e29b-41d4-a716-446655440004'), -- place
-(Divina_Commedia_id, 'metaattr029', '650e8400-e29b-41d4-a716-446655440006'); -- work
+(Roma_id, 'metaattr058', '650e8400-e29b-41d4-a716-446655440004'), -- place
+(Marco_id, 'metaattr058', '650e8400-e29b-41d4-a716-446655440003'), -- person
+(Italia_id, 'metaattr058', '650e8400-e29b-41d4-a716-446655440004'), -- place
+(Ferrari_id, 'metaattr058', '650e8400-e29b-41d4-a716-446655440005'), -- brand
+(Dante_id, 'metaattr058', '650e8400-e29b-41d4-a716-446655440003'), -- person
+(Alpi_id, 'metaattr058', '650e8400-e29b-41d4-a716-446655440004'), -- place
+(Mediterraneo_id, 'metaattr058', '650e8400-e29b-41d4-a716-446655440004'), -- place
+(Divina_Commedia_id, 'metaattr058', '650e8400-e29b-41d4-a716-446655440006'); -- work
 
 -- Gender classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -357,16 +365,16 @@ INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VAL
 (Mediterraneo_id, 'metaattr011', (SELECT id FROM meta_values WHERE stable_id = 'metaattr011val053')), -- masculine
 (Divina_Commedia_id, 'metaattr011', (SELECT id FROM meta_values WHERE stable_id = 'metaattr011val052')); -- feminine
 
--- Count/Mass classification (most proper nouns are singular-only)
+-- Countable classification (most proper nouns are singular-only)
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
-(Roma_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count (but singular-only)
-(Marco_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count (but singular-only)
-(Italia_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count (but singular-only)
-(Ferrari_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count (le Ferrari)
-(Dante_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count (but singular-only)
-(Alpi_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count (plural form)
-(Mediterraneo_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'), -- count (but singular-only)
-(Divina_Commedia_id, 'metaattr030', '650e8400-e29b-41d4-a716-446655440008'); -- count (but singular-only)
+(Roma_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count (but singular-only)
+(Marco_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count (but singular-only)
+(Italia_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count (but singular-only)
+(Ferrari_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count (le Ferrari)
+(Dante_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count (but singular-only)
+(Alpi_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count (plural form)
+(Mediterraneo_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'), -- count (but singular-only)
+(Divina_Commedia_id, 'metaattr032', '650e8400-e29b-41d4-a716-446655440008'); -- count (but singular-only)
 
 -- Article pattern classification
 INSERT INTO entity_meta_values (entity_id, meta_attribute_id, meta_value_id) VALUES
@@ -519,6 +527,298 @@ INSERT INTO word_relationships (parent_word_id, child_word_id, relationship_type
 (libro_id, libretto_id, 'diminutive');
 ```
 
+### 5.4 Gender Variant Nouns - Complete Storage Architecture
+
+**Critical Linguistic Pattern**: Italian nouns with gender variants (bambino/bambina, zio/zia, cameriere/cameriera) require special handling due to the masculine plural's dual meaning in Italian grammar.
+
+#### 5.4.1 Gender Variant Storage Strategy
+
+**Core Principle**: Following bilingual dictionary conventions and the principle that "different semantic content = separate dictionary entries," gender variants are stored as **separate, independently searchable dictionary entries** linked via word_relationships.
+
+**Rationale**:
+- **Searchability**: Users can look up either "bambino" or "bambina" directly
+- **Educational clarity**: Both forms visible for language learners
+- **Bilingual dictionary convention**: Cambridge, WordReference, and other learner dictionaries use separate entries
+- **Flexibility**: Each word can have its own metadata, translations, and usage patterns
+
+**Comparison with Traditional Italian Dictionaries**:
+- **Treccani (monolingual)**: Lists masculine as main entry with "s. m. (f. -a)" notation, BUT still provides full separate entries for words like "cameriera"
+- **Cambridge (bilingual)**: Full separate entries for both forms
+- **Misti approach**: Separate entries (following bilingual convention) with relationship links (preserving linguistic connection)
+
+#### 5.4.2 Italian Masculine Plural Mixed-Gender Convention
+
+**Linguistic Reality**: Italian masculine plural forms carry **dual semantics**:
+
+**Examples**:
+- **zii** = "uncles" (male-only) OR "uncles and aunts" (mixed-gender group)
+- **bambini** = "boys" (male-only) OR "children" (mixed-gender group)
+- **fratelli** = "brothers" (male-only) OR "siblings" (mixed-gender group)
+- **nonni** = "grandfathers" (male-only) OR "grandparents" (mixed-gender group)
+
+**Feminine plural forms have single semantics**:
+- **zie** = "aunts" (female-only) - no dual meaning
+- **bambine** = "girls" (female-only) - no dual meaning
+- **sorelle** = "sisters" (female-only) - no dual meaning
+
+#### 5.4.3 Complete Implementation Pattern
+
+**Pattern A: Regular Gender Pairs (bambino/bambina, cameriere/cameriera)**
+
+```sql
+-- 1. Create separate dictionary entries
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('bambino', 'noun', 'bam-BEE-no', '/bamˈbi.no/'),
+('bambina', 'noun', 'bam-BEE-na', '/bamˈbi.na/');
+
+-- 2. Assign word-level gender metadata
+INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) VALUES
+('word', bambino_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'),
+  (SELECT id FROM meta_values WHERE stable_id = 'metaattr011val053')), -- masculine
+('word', bambina_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'),
+  (SELECT id FROM meta_values WHERE stable_id = 'metaattr011val052')); -- feminine
+
+-- 3. Link as gender variants using word_relationships
+INSERT INTO word_relationships (source_word_id, target_word_id, relationship_type, relationship_direction) VALUES
+(bambino_id, bambina_id, 'gender-variant', 'related-to');
+
+-- 4. Create plural forms
+INSERT INTO word_forms (word_id, form_text, form_type, form_number) VALUES
+(bambino_id, 'bambini', 'number', 'plural'),
+(bambina_id, 'bambine', 'number', 'plural');
+
+-- 5. Base word translations (simple, no duplication)
+INSERT INTO word_translations (word_id, translation, display_priority) VALUES
+(bambino_id, 'boy', 1),
+(bambino_id, 'child', 2),  -- Can also mean child generically
+(bambina_id, 'girl', 1);
+
+-- 6. Form translations for bambine (feminine plural - simple case)
+INSERT INTO form_translations (form_id, word_translation_id, translation) VALUES
+(bambine_form_id, girl_translation_id, 'girls');
+
+-- Add gender_usage metadata
+INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) VALUES
+('form_translation', girls_ft_id,
+  (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr008'),
+  (SELECT id FROM meta_values WHERE stable_id = 'metaattr008val039')); -- female-only
+
+-- 7. Form translations for bambini (masculine plural - DUAL MEANING)
+INSERT INTO form_translations (form_id, word_translation_id, translation) VALUES
+(bambini_form_id, boy_translation_id, 'boys'),
+(bambini_form_id, child_translation_id, 'children');
+
+-- Add gender_usage metadata to differentiate
+INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) VALUES
+('form_translation', boys_ft_id,
+  (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr008'),
+  (SELECT id FROM meta_values WHERE stable_id = 'metaattr008val038')), -- male-only
+('form_translation', children_ft_id,
+  (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr008'),
+  (SELECT id FROM meta_values WHERE stable_id = 'metaattr008val040')); -- mixed-gender
+```
+
+**Pattern B: Family Relationship Nouns (zio/zia - "uncles and aunts")**
+
+```sql
+-- 1. Create separate dictionary entries
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('zio', 'noun', 'TSEE-o', '/ˈtsi.o/'),
+('zia', 'noun', 'TSEE-a', '/ˈtsi.a/');
+
+-- 2. Assign word-level gender metadata
+INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) VALUES
+('word', zio_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'),
+  (SELECT id FROM meta_values WHERE stable_id = 'metaattr011val053')), -- masculine
+('word', zia_id, (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr011'),
+  (SELECT id FROM meta_values WHERE stable_id = 'metaattr011val052')); -- feminine
+
+-- 3. Link as gender variants
+INSERT INTO word_relationships (source_word_id, target_word_id, relationship_type, relationship_direction) VALUES
+(zio_id, zia_id, 'gender-variant', 'related-to');
+
+-- 4. Create plural forms
+INSERT INTO word_forms (word_id, form_text, form_type, form_number) VALUES
+(zio_id, 'zii', 'number', 'plural'),
+(zia_id, 'zie', 'number', 'plural');
+
+-- 5. Base word translations
+INSERT INTO word_translations (word_id, translation, display_priority) VALUES
+(zio_id, 'uncle', 1),
+(zia_id, 'aunt', 1);
+
+-- 6. Form translations for zie (feminine plural - simple)
+INSERT INTO form_translations (form_id, word_translation_id, translation) VALUES
+(zie_form_id, aunt_translation_id, 'aunts');
+
+INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) VALUES
+('form_translation', aunts_ft_id,
+  (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr008'),
+  (SELECT id FROM meta_values WHERE stable_id = 'metaattr008val039')); -- female-only
+
+-- 7. Form translations for zii (masculine plural - DUAL MEANING with compound translation)
+INSERT INTO form_translations (form_id, word_translation_id, translation) VALUES
+(zii_form_id, uncle_translation_id, 'uncles'),
+(zii_form_id, uncle_translation_id, 'uncles and aunts'); -- Both link to same word_translation_id!
+
+INSERT INTO entity_meta_values (entity_type, entity_id, attribute_id, value_id) VALUES
+('form_translation', uncles_ft_id,
+  (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr008'),
+  (SELECT id FROM meta_values WHERE stable_id = 'metaattr008val038')), -- male-only
+('form_translation', uncles_and_aunts_ft_id,
+  (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr008'),
+  (SELECT id FROM meta_values WHERE stable_id = 'metaattr008val040')); -- mixed-gender
+```
+
+**Pattern C: Professional Titles (cameriere/cameriera)**
+
+```sql
+-- Same pattern as Pattern A
+INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES
+('cameriere', 'noun', 'ca-me-ri-EH-re', '/kameˈrjɛ.re/'),
+('cameriera', 'noun', 'ca-me-ri-EH-ra', '/kameˈrjɛ.ra/');
+
+-- Link as gender-variant, create forms, translations following Pattern A
+```
+
+#### 5.4.4 Gender Usage Metadata Architecture
+
+**Translation-Level Attribute: metaattr008 (gender_usage)**
+
+```sql
+-- Already exists: attribute definition
+SELECT * FROM meta_attributes WHERE stable_id = 'metaattr008';
+-- Returns: gender_usage (source_level: translation, display_level: translation)
+
+-- Gender usage values
+SELECT * FROM meta_values WHERE attribute_id = (SELECT id FROM meta_attributes WHERE stable_id = 'metaattr008');
+-- Returns:
+-- metaattr008val038: male-only (Translation only applies to males)
+-- metaattr008val039: female-only (Translation only applies to females)
+-- metaattr008val040: mixed-gender (Translation applies to both genders or mixed groups - Italian masculine plural convention)
+```
+
+**Usage Pattern**:
+- Applied to **form_translations** entities, NOT word-level entities
+- Differentiates between gender-specific and mixed-gender meanings of plural forms
+- Enables proper educational display and quiz logic
+
+#### 5.4.5 Frontend Display Logic for Mixed-Gender Translations
+
+**Challenge**: "uncles and aunts" lives only in the form_translations of "zii" (masculine plural), but semantically relates to both "zio" and "zia".
+
+**Solution**: Frontend checks gender-variant relationships to display mixed-gender translations across related words.
+
+**Implementation Algorithm**:
+
+```javascript
+// When displaying a word (e.g., "zia") with its forms
+function getCompleteFormTranslations(word) {
+  const formTranslations = [];
+
+  // 1. Get direct form translations for this word
+  const directForms = getFormsForWord(word.id); // zie → "aunts"
+  formTranslations.push(...directForms);
+
+  // 2. Check for gender-variant relationship
+  const genderVariant = getGenderVariantWord(word.id);
+  if (genderVariant) {
+    // 3. Get the variant's plural forms
+    const variantForms = getFormsForWord(genderVariant.id);
+
+    // 4. Filter for mixed-gender translations only
+    const mixedGenderForms = variantForms.filter(ft =>
+      ft.gender_usage === 'mixed-gender'
+    );
+
+    // 5. Display mixed-gender translations with indicator
+    mixedGenderForms.forEach(ft => {
+      formTranslations.push({
+        ...ft,
+        crossReference: true,
+        sourceWord: genderVariant.italian,
+        note: `From related masculine plural "${genderVariant.plural_form}"`
+      });
+    });
+  }
+
+  return formTranslations;
+}
+```
+
+**Example Display Output**:
+
+When viewing **"zia"**:
+```
+zia (aunt)
+  Forms:
+  - zie → "aunts" (female-only)
+  - zie → "uncles and aunts" ⚭ (from related masculine plural "zii")
+```
+
+When viewing **"zio"**:
+```
+zio (uncle)
+  Forms:
+  - zii → "uncles" (male-only)
+  - zii → "uncles and aunts" (mixed-gender)
+```
+
+**UI Indicators**:
+- ⚭ symbol or "mixed-gender" badge for mixed-gender translations
+- Subtle note indicating cross-reference from related word
+- Optional educational tooltip explaining Italian masculine plural convention
+
+#### 5.4.6 Complete Example: zio/zia Family
+
+**Database State**:
+
+```
+dictionary:
+  - zio (masculine, noun)
+  - zia (feminine, noun)
+
+word_relationships:
+  - zio ←[gender-variant]→ zia
+
+word_forms:
+  - zio → zii (plural)
+  - zia → zie (plural)
+
+word_translations:
+  - zio → "uncle"
+  - zia → "aunt"
+
+form_translations:
+  - zie → "aunts" (gender_usage: female-only)
+  - zii → "uncles" (gender_usage: male-only)
+  - zii → "uncles and aunts" (gender_usage: mixed-gender)
+```
+
+**No Data Duplication**: "uncles and aunts" exists exactly once, linked to zio's word_translation.
+
+**Frontend Displays**: Mixed-gender translation appears when viewing either zio or zia, using relationship traversal.
+
+#### 5.4.7 Additional Common Gender Variant Pairs
+
+**Family Relationships**:
+- nonno/nonna → nonni (grandfathers/grandparents), nonne (grandmothers)
+- fratello/sorella → fratelli (brothers/siblings), sorelle (sisters)
+- figlio/figlia → figli (sons/children), figlie (daughters)
+- nipote (masc)/nipote (fem) → nipoti (grandsons or nephews / grandchildren or nieces and nephews)
+
+**Professional Titles**:
+- dottore/dottoressa → dottori (doctors - male/all), dottoresse (female doctors)
+- professore/professoressa → professori (professors - male/all), professoresse (female professors)
+- maestro/maestra → maestri (teachers - male/all), maestre (female teachers)
+
+**People/Animals**:
+- ragazzo/ragazza → ragazzi (boys/kids), ragazze (girls)
+- amico/amica → amici (male friends/friends), amiche (female friends)
+- gatto/gatta → gatti (male cats/cats), gatte (female cats)
+
+**Implementation Pattern**: All follow the same architectural pattern as zio/zia with separate entries, gender-variant relationships, and gender_usage metadata on form_translations.
+
 ---
 
 ## 6. Translation Architecture
@@ -584,17 +884,17 @@ INSERT INTO word_translations (word_id, translation, display_priority, usage_not
 
 The following critical metadata attributes have complete coverage across all noun categories:
 
-- **✅ Complete metaattr028 (noun_type) coverage**
+- **✅ Complete metaattr057 (noun_type) coverage**
   - All base words have noun type metadata (common/proper)
   - Universal classification enables proper noun/common noun distinction
   - Proper semantic categorization for educational progression
 
-- **✅ Complete metaattr029 (proper_noun_type) coverage**
+- **✅ Complete metaattr058 (proper_noun_type) coverage**
   - **CRITICAL CONSTRAINT ENFORCED**: Only applied when noun_type = "proper"
   - Five semantic categories cover major proper noun types
   - Cultural learning supported through person/place/organization classification
 
-- **✅ Complete metaattr030 (count_mass) coverage**
+- **✅ Complete metaattr032 (countable) coverage**
   - Universal count/mass classification for all nouns
   - **DISTINCT FROM** metaattr013 (number_restriction): countability vs grammar
   - Educational distinction between enumerable and continuous entities
@@ -635,8 +935,17 @@ The noun system implements sophisticated form management with minimal storage:
 
 - **✅ Word Relationship Architecture**
   - Diminutives/augmentatives as separate entries with relationship links
+  - Gender variants (bambino/bambina, zio/zia) as separate entries with gender-variant relationships
   - Semantic connections preserved without form complexity
   - Scalable architecture for morphological word families
+
+- **✅ Gender Variant Implementation**
+  - Separate dictionary entries for masculine/feminine pairs (bambino/bambina, zio/zia, cameriere/cameriera)
+  - Word relationships with gender-variant type link related forms
+  - Italian masculine plural mixed-gender convention properly modeled (zii = uncles OR uncles and aunts)
+  - Translation-level gender_usage metadata (male-only, female-only, mixed-gender)
+  - Frontend cross-reference logic for displaying mixed-gender translations
+  - No data duplication: "uncles and aunts" exists once, displayed contextually via relationships
 
 - **✅ Mass Noun Handling**
   - Number restrictions properly applied to singular-only mass nouns
@@ -682,9 +991,12 @@ The noun architecture represents a fully specified, production-ready implementat
 - **Algorithmic article generation** following Italian phonetic conditioning rules
 - **Educational progression** from A1 basic nouns to B2 cultural proper nouns
 - **Sophisticated translation architecture** with cultural context integration
-- **Minimal storage strategy** with maximum pedagogical functionality
+- **Gender variant architecture** with separate entries, relationship links, and mixed-gender translation handling
+- **Translation-level gender_usage metadata** (male-only, female-only, mixed-gender) for Italian masculine plural convention
+- **Frontend cross-reference algorithm** for displaying mixed-gender translations across gender-variant pairs
+- **Minimal storage strategy** with maximum pedagogical functionality and zero data duplication
 
-This implementation provides the foundation for comprehensive Italian noun learning, supporting both basic vocabulary acquisition and advanced grammatical competence in noun usage, article agreement, and cultural knowledge integration. The unified number form system captures both singular and plural directions as manifestations of the same grammatical function, with complete integration of production-ready metadata SQL statements and ready-to-execute implementation specifications.
+This implementation provides the foundation for comprehensive Italian noun learning, supporting both basic vocabulary acquisition and advanced grammatical competence in noun usage, article agreement, gender variants, and cultural knowledge integration. The unified number form system captures both singular and plural directions as manifestations of the same grammatical function. The gender variant architecture elegantly handles Italian's masculine plural mixed-gender convention (zii = uncles/uncles and aunts, bambini = boys/children) through relationship-based cross-referencing without data duplication, with complete integration of production-ready metadata SQL statements and ready-to-execute implementation specifications.
 
 ---
 

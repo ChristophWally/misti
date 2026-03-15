@@ -232,7 +232,7 @@ INSERT INTO word_forms (word_id, form, form_type, gender, number) VALUES
 ```sql
 -- REMOVED: No longer store as preposition forms
 -- davanti a, prima di, lontano da are adverb constructions
--- handled via metaattr055 (Adverb Government) system
+-- NOTE: Government is implemented as metaattr055 (word-level). Use for adverbs/adjectives that govern prepositions; do not assign to prepositions.
 
 -- Store only true single-word prepositions
 INSERT INTO dictionary (italian, word_type, phonetic_pronunciation, ipa_pronunciation) VALUES

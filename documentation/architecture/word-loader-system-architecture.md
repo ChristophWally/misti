@@ -616,12 +616,30 @@ Rank 5001-10000→ frequency_tier: "top10000"
 **🎨 Available Values & Implementation Status**:
 - ✅ `"plural-only"` - Semantic plural requirement (reciprocal meanings) - **IMPLEMENTED**
 - ✅ `"singular-only"` - Semantic singular requirement (rare) - **IMPLEMENTED**
-- ✅ `"third-person-only"` - Impersonal verbs: `importare`, `bisognare`, `servire` - **IMPLEMENTED**
-- ✅ `"third-singular-only"` - Weather verbs: `piovere`, `nevicare`, `grandinare` - **IMPLEMENTED**
+- ⚠️ `"third-person-only"` - **DO NOT USE FOR IMPERSONAL VERBS** - Only for genuinely defective verbs that cannot conjugate in 1st/2nd person - **IMPLEMENTED**
+- ✅ `"third-singular-only"` - **GENUINE RESTRICTION**: Weather verbs that can ONLY exist in 3rd person singular: `piovere`, `nevicare`, `grandinare` - generates only 48 forms - **IMPLEMENTED**
 - ✅ `"missing-first-second-person"` - Defective verbs: `vigere`, `urgere` - **IMPLEMENTED**
 - ✅ `"missing-imperative"` - Defective verbs: `solere` (cannot form commands) - **IMPLEMENTED**
 
-**📋 Usage Guidelines**: Apply based on semantic and grammatical constraints. Impersonal verbs describe states/conditions without specific agents. Weather verbs are semantically restricted to third person singular.
+**📋 Usage Guidelines**:
+
+**CRITICAL DISTINCTION - Impersonal vs. Third-Person-Only**:
+
+**Impersonal Verbs** (importare "to matter", piacere "to like", andare "to feel like"):
+- ✅ Use `verb_type: "impersonal"` attribute (NOT a restriction)
+- ✅ Generate ALL 130 forms (all persons, all tenses, all moods)
+- ✅ Use 3rd person forms (BOTH singular and plural) with indirect pronouns to express all persons
+  - **Singular subject**: mi importa, ti importa, gli/le importa, ci importa, vi importa, gli importa
+  - **Plural subject**: mi importano, ti importano, gli/le importano, ci importano, vi importano, gli importano
+- ✅ Number agreement: Verb number agrees with grammatical SUBJECT, not the person (indirect pronoun)
+- ✅ Semantic pattern: [Indirect pronoun] + [3rd person verb (sg/pl)] + [subject/infinitive]
+- ❌ Do NOT use `restriction: "third-person-only"`
+
+**Third-Person-Only/Weather Verbs** (piovere "to rain", nevicare "to snow"):
+- ✅ Use `restriction: "third-singular-only"` for weather verbs
+- ✅ Generate ONLY 48 forms (3rd person only, no imperatives)
+- ✅ Genuinely defective - cannot conjugate in other persons
+- ❌ Do NOT use `verb_type: "impersonal"`
 
 **⚡ Function Implementation Status**: **ALL RESTRICTIONS IMPLEMENTED**
 - ✅ **Weather verbs**: `third-singular-only` validation prevents non-third-person or non-singular forms
@@ -684,9 +702,9 @@ Rank 5001-10000→ frequency_tier: "top10000"
 - `"modal-verb"` - Auxiliary modals: dovere (must), potere (can), volere (want), sapere (know how)
 - `"direct-reflexive"` - Action on oneself: mi lavo (I wash myself)
 - `"reciprocal"` - Mutual action: ci laviamo (we wash each other) - **must combine with plural-only restriction**
-- `"impersonal-verb"` - No specific subject: importare (matter), bisognare (need), servire (be needed)
+- `"impersonal-verb"` - **USAGE PATTERN, NOT RESTRICTION**: Verbs using indirect object pronouns with 3rd person forms (BOTH singular and plural) to express all persons. Pattern: mi importa/importano, ti piace/piacciono, gli va/vanno (verb number agrees with grammatical subject, not person). Generate ALL 130 forms. Examples: importare (matter), bisognare (need), piacere (to like), andare (to feel like). Do NOT use with `restriction: "third-person-only"`
 - `"defective-verb"` - Missing some forms: vigere (be in force), solere (be accustomed)
-- `"meteorological-verb"` - Weather phenomena: piovere (rain), nevicare (snow) - third singular only
+- `"meteorological-verb"` - **GENUINE RESTRICTION**: Weather phenomena that can ONLY conjugate in 3rd person singular: piovere (rain), nevicare (snow), grandinare (hail). Use with `restriction: "third-singular-only"` to generate only 48 forms
 
 **Deprecated Values** *(Do Not Use)*:
 - `"transitive-verb"`, `"intransitive-verb"`, `"intransitive"` - Use `transitivity` attribute instead
@@ -694,7 +712,8 @@ Rank 5001-10000→ frequency_tier: "top10000"
 **Usage Guidelines**:
 - **Modal verbs**: Can take bare infinitives, auxiliary selection varies based on dependent verb
 - **Reflexive/Reciprocal**: Reflexive verbs must have both direct-reflexive AND reciprocal translations
-- **Impersonal**: Describes states/conditions without specific agents, typically third person only
+- **Impersonal**: CRITICAL - This is a USAGE PATTERN attribute, not a form restriction. Impersonal verbs generate all 130 forms and use 3rd person forms with indirect object pronouns (mi/ti/gli/le/ci/vi/gli) to express all persons semantically. Pattern: [Indirect pronoun] + [3rd person verb] + [subject]. Example: "mi importa" = "to me it matters" (all persons expressed via pronouns, not verb conjugation)
+- **Meteorological**: These are genuinely defective - they can ONLY exist in 3rd person singular. Use the `restriction` attribute, not `verb_type`
 
 ---
 
@@ -780,7 +799,7 @@ Rank 5001-10000→ frequency_tier: "top10000"
 
 **Progressive Tenses**:
 - `"presente-progressivo"` - Present progressive: sto parlando
-- `"imperfetto-progressivo"` - Past progressive: stavo parlando
+- `"passato-progressivo"` - Past progressive: stavo parlando
 - `"futuro-progressivo"` - Future progressive: starò parlando
 - `"congiuntivo-presente-progressivo"` - Subjunctive progressive: che stia parlando
 - `"condizionale-presente-progressivo"` - Conditional progressive: starei parlando
