@@ -23,6 +23,19 @@ documentation/tagging and db design.md
 documentation/Tagging and Database Design v2.md
 documentation/KAKKI python migration tools/
 documentation/architecture/__pycache__/
+documentation/architecture/Dictionary_A1-B2_*.xlsx
+documentation/architecture/ITALIAN_A1_B2_SOURCE.md
+documentation/architecture/Italian C1-C2.csv
+documentation/architecture/Italian LoadWords A1-C2.csv
+documentation/architecture/cefr_sources/
+documentation/architecture/build_wikimt_lemma_freq.py
+documentation/architecture/extract_loadwords_it_cefr_from_html.py
+documentation/architecture/opussubs_it.freq
+documentation/architecture/paisa_top10k_with_pos_*.csv
+documentation/architecture/patch_*.py
+documentation/architecture/supabase_meta_values_add_*.sql
+documentation/architecture/wikiMT_lemma_freq.csv
+documentation/backup-archive-documentation.md
 
 # Development and local scratch files
 .DS_Store
@@ -56,8 +69,10 @@ app/test/
 /*_SUMMARY*.txt
 /*_DELIVERABLES*.md
 /*_DELIVERABLES*.txt
+/*_MANIFEST*.txt
 /*_REPORT*.md
 /*_REPORT*.txt
+/*_COMPLETE*.txt
 /*_INDEX*.md
 /*_INDEX*.txt
 /*_REFERENCE*.md
@@ -66,16 +81,39 @@ app/test/
 /*_QUICK_REFERENCE*.txt
 /*_VISUAL*.txt
 /*_IMPLEMENTATION*.py
+/*_PLANNING*.md
+/*_RESOLUTION*.txt
+/*_EXAMPLES*.md
+/*_WORKSHEET*.md
+/*_START_HERE.md
+/*_SCHEME*.md
 /*_TEST_CASES*.csv
 /*_DATABASE_VALUES*.csv
 /*_DATABASE_VALUES*.txt
 /*_ACTUAL_VALUES*.json
+/FREQUENCY_TIER_DATABASE_SUMMARY.csv
+/IMPLEMENTATION_PLAN_*.md
+/READ_ME_*.txt
+/START_*.md
+/SUPABASE_*_RESULTS.md
 /query_*.js
 /research_*.js
 /research_*.py
+/analyze_*.py
+/fix_*.py
+/missing_target_id_*.py
+/QUICK_TEST_SCRIPT_*.sh
 /explore_schema.js
 /misti.db
 /meta_values.b64
+documentation/*_INDEX*.txt
+documentation/*_REPORT*.txt
+documentation/*_SUMMARY*.md
+documentation/*_SUMMARY*.txt
+documentation/*_FINDINGS*.md
+documentation/*_COMPARISON*.md
+documentation/*_VERIFICATION*.txt
+documentation/*_COMPLETE*.txt
 
 # Admin scratch routes and component backups
 app/admin/migration-tools-refactored.bak/
@@ -92,3 +130,4 @@ app/admin/migration-tools/components/StepByStepRuleManager.tsx
 app/admin/migration-tools/components/RuleBuilder.tsx.backup
 components/admin/*.bak
 components/admin/SimpleMigrationTest.tsx
+tools/mcp-stdio-normalize.js
