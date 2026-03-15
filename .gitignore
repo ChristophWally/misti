@@ -9,6 +9,7 @@ backup-archive/
 AGENTS.md
 CLAUDE.md
 agent.md
+.github/workflows/claude.yml
 .env.local
 .env.*
 !.env.local.example
