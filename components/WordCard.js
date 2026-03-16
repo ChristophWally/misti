@@ -211,6 +211,18 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         }
       }
 
+      else if (attributeStableId === 'metaattr_matrix5_cefr_tier') {
+        const cefrTierDisplay = valueLabel === 'core' ? 'core' : valueLabel === 'extended' ? 'extended' : valueLabel
+        if (cefrTierDisplay) {
+          detailed.push({
+            tag: `cefr-tier-${cefrTierDisplay}`,
+            display: cefrTierDisplay,
+            class: 'bg-orange-500 text-white',
+            description: `CEFR tier: ${cefrTierDisplay}`
+          })
+        }
+      }
+
       // IRREGULAR FORMS MAPPING (essential)
       else if (isAttribute(tag, ATTRIBUTES.IRREGULAR_FORMS)) {
         if (valueLabel === 'irregular') {
@@ -377,6 +389,20 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           })
         }
       }
+      else if (attributeStableId === 'metaattr057' && wordType === 'NOUN') {
+        const nounTypeMap = {
+          common: 'common',
+          proper: 'proper'
+        }
+        if (nounTypeMap[valueLabel]) {
+          detailed.push({
+            tag: `noun-type-${valueLabel}`,
+            display: nounTypeMap[valueLabel],
+            class: 'bg-cyan-500 text-white',
+            description: `Noun type: ${nounTypeMap[valueLabel]}`
+          })
+        }
+      }
 
       // TRANSITIVITY MAPPING (detailed for verbs)
       else if (isAttribute(tag, ATTRIBUTES.TRANSITIVITY) && wordType === 'VERB') {
@@ -472,6 +498,14 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     }
   }
 
+  const formatPronunciationGroupLabel = (group) => {
+    if (!group) return ''
+    if (group.ipa_pronunciation) return group.ipa_pronunciation
+    if (group.phonetic_pronunciation) return group.phonetic_pronunciation
+    if (group.accent) return group.accent
+    return 'Pronunciation'
+  }
+
   useEffect(() => {
     document.addEventListener('click', hideTooltip)
     return () => {
@@ -480,7 +514,11 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   }, [])
 
   const colors = getWordTypeColors(word.word_type)
-  const processedTags = processRpcTagsForDisplay(word.word_core_tags || [], word.word_type)
+  const displayCoreTags = word.word_display_core_tags || word.word_core_tags || []
+  const processedTags = processRpcTagsForDisplay(displayCoreTags, word.word_type)
+  const pronunciationGroups = Array.isArray(word.pronunciation_groups)
+    ? word.pronunciation_groups
+    : []
 
   // Determine verb conjugation type for combined badge label using RPC tags
   const verbType = word.word_type === 'VERB' ? (() => {
@@ -589,7 +627,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
   // Count unique auxiliaries at word level to determine if translation-level auxiliary chips should be shown
   const wordLevelAuxiliaries = new Set()
-  const wordCoreTags = word.word_core_tags || []
+  const wordCoreTags = displayCoreTags
   wordCoreTags.forEach(tag => {
     if (tag.attribute_stable_id === 'metaattr002') {
       wordLevelAuxiliaries.add(String(tag.value_label || '').toLowerCase())
@@ -869,6 +907,59 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             </span>
           )}
         </div>
+
+          {pronunciationGroups.length > 0 && (
+            <div className="mt-2 flex flex-col gap-1">
+              {pronunciationGroups.map((group, index) => {
+                const audio = group?.primary_audio || null
+                const groupObjectKey = audio?.object_key || null
+                const groupBucket = audio?.storage_bucket || null
+                const groupVoice = audio?.voice_name || null
+                const linkedSenseCount = Array.isArray(group?.linked_translations)
+                  ? group.linked_translations.length
+                  : 0
+                const linkedFormCount = Array.isArray(group?.linked_forms)
+                  ? group.linked_forms.length
+                  : 0
+                const linkedFtgCount = Array.isArray(group?.linked_ftg_links)
+                  ? group.linked_ftg_links.length
+                  : 0
+
+                return (
+                  <div
+                    key={group?.id || `pron-group-${index}`}
+                    className="flex items-center gap-2 text-xs text-gray-600"
+                  >
+                    <AudioButton
+                      wordId={word.id}
+                      italianText={word.italian}
+                      audioObjectKey={groupObjectKey}
+                      audioBucket={groupBucket}
+                      size="sm"
+                      title={
+                        groupVoice
+                          ? `Play pronunciation variant (${groupVoice})`
+                          : 'Play pronunciation variant'
+                      }
+                      colorClass="bg-emerald-600 hover:bg-emerald-700"
+                    />
+                    <span className="font-medium text-gray-700">
+                      {formatPronunciationGroupLabel(group)}
+                    </span>
+                    {(linkedSenseCount + linkedFormCount + linkedFtgCount) > 0 && (
+                      <span className="text-[11px] text-gray-500">
+                        {[
+                          linkedSenseCount ? `${linkedSenseCount} sense${linkedSenseCount === 1 ? '' : 's'}` : null,
+                          linkedFormCount ? `${linkedFormCount} form${linkedFormCount === 1 ? '' : 's'}` : null,
+                          linkedFtgCount ? `${linkedFtgCount} FTG` : null,
+                        ].filter(Boolean).join(' • ')}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Multiple Translations Box - Grey Background */}
