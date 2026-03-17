@@ -821,7 +821,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             }
             return 0
           })
-          .filter(group => group.meaningItems.length > 0 || group?.primary_audio || formatPronunciationGroupLabel(group))
+          .filter(group => group.meaningItems.length > 0)
       })()
     : [
         {
