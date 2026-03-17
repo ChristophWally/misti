@@ -7,18 +7,12 @@
 import { useState, useEffect } from 'react'
 import AudioButton from './AudioButton'
 import ConjugationModal from './ConjugationModal'
-import { checkPremiumAudio } from '../lib/audio-utils'
 import { ATTRIBUTES, VALUES, TAG_DISPLAYS, isAttribute, isValue, hasAttributeValue } from '../lib/meta-constants'
 
 export default function WordCard({ word, onAddToDeck, className = '' }) {
-  const [showForms, setShowForms] = useState(false)
-  const [showRelationships, setShowRelationships] = useState(false)
   const [showConjugations, setShowConjugations] = useState(false)
-  const [showAdditionalMeanings, setShowAdditionalMeanings] = useState(false)
+  const [expandedMeaningGroups, setExpandedMeaningGroups] = useState({})
   const [tooltip, setTooltip] = useState({ show: false, content: '', x: 0, y: 0 })
-
-  // Get audio information
-  const { hasPremiumAudio, audioObjectKey, audioBucket, voiceName } = checkPremiumAudio(word)
 
   // Get word type colors
   const getWordTypeColors = (wordType) => {
@@ -121,7 +115,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
     coreTags.forEach(tag => {
       const valueId = tag.value_id
-      const attributeId = tag.attribute_id
       const valueLabel = tag.value_label || ''
       const attributeStableId = tag.attribute_stable_id
       
@@ -519,21 +512,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   const pronunciationGroups = Array.isArray(word.pronunciation_groups)
     ? word.pronunciation_groups
     : []
+  const maxVisibleMeaningsPerGroup = 2
 
-  // Determine verb conjugation type for combined badge label using RPC tags
-  const verbType = word.word_type === 'VERB' ? (() => {
-    const coreTags = word.word_core_tags || []
-    const conjugationTag = coreTags.find(tag => isAttribute(tag, ATTRIBUTES.CONJUGATION_TYPE))
-    if (conjugationTag?.value_label) {
-      // Map to simple display format for badge
-      const conjValue = conjugationTag.value_label
-      if (conjValue === 'ire-isc') return 'ire-isc'
-      return conjValue // are, ere, ire
-    }
-    return ''
-  })() : ''
-
-  const wordTypeLabel = verbType ? `${word.word_type} ┃${verbType}` : word.word_type
+  const wordTypeLabel = word.word_type
 
   // Convert filled tag classes to outlined style for less visual weight
   const outlinedClass = (cls) => {
@@ -592,19 +573,24 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   }
 
   // Extract gender and irregularity tags for header
-  const genderTag = processedTags.essential.find(tag =>
-    tag.display === '♂' || tag.display === '♀' || tag.display === '⚥'
-  )
-
-  const irregularTag = processedTags.essential.find(tag =>
-    tag.display.includes('IRREG')
-  )
+  const genderTag = (() => {
+    const genderValue = displayCoreTags.find(tag => isAttribute(tag, ATTRIBUTES.WORD_GENDER))?.value_label
+    if (genderValue === 'masculine') {
+      return { display: 'm', class: 'bg-blue-100 text-blue-700 border border-blue-300', description: 'Masculine gender' }
+    }
+    if (genderValue === 'feminine') {
+      return { display: 'f', class: 'bg-pink-100 text-pink-700 border border-pink-300', description: 'Feminine gender' }
+    }
+    if (genderValue === 'common-gender') {
+      return { display: 'c', class: 'bg-purple-100 text-purple-700 border border-purple-300', description: 'Common gender' }
+    }
+    return null
+  })()
 
   // All other tags go under translations
   const bottomTags = [
     ...processedTags.essential.filter(tag =>
-      tag.display !== '♂' && tag.display !== '♀' && tag.display !== '⚥' &&
-      !tag.display.includes('IRREG')
+      tag.display !== '♂' && tag.display !== '♀' && tag.display !== '⚥'
     ),
     ...processedTags.detailed.filter(tag =>
       ![
@@ -803,10 +789,110 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   })
   const hasMultipleWordLevelTransitivities = wordLevelTransitivities.size > 1
 
-  // Show first 2 translations, rest are "additional"
-  const visibleTranslations = translations.slice(0, 2)
-  const additionalTranslations = translations.slice(2)
-  const fallbackTranslation = translations[0]?.translation || ''
+  const translationsById = new Map(
+    translations
+      .filter(translation => translation?.id)
+      .map(translation => [translation.id, translation])
+  )
+
+  const normalizedPronunciationGroups = pronunciationGroups.length > 0
+    ? pronunciationGroups
+        .map((group, index) => {
+          const linkedTranslations = Array.isArray(group?.linked_translations) ? group.linked_translations : []
+          const linkedForms = Array.isArray(group?.linked_forms) ? group.linked_forms : []
+          const linkedFtgLinks = Array.isArray(group?.linked_ftg_links) ? group.linked_ftg_links : []
+
+          const meaningItems = linkedTranslations.map((linkedTranslation, translationIndex) => {
+            const fullTranslation = translationsById.get(linkedTranslation.id)
+            return {
+              key: linkedTranslation.pronunciation_link_id || linkedTranslation.id || `linked-translation-${translationIndex}`,
+              kind: 'translation',
+              translation: fullTranslation || {
+                id: linkedTranslation.id,
+                translation: linkedTranslation.translation,
+                isPrimary: translationIndex === 0,
+                usageNotes: linkedTranslation.note || linkedTranslation.usage_label || '',
+                rpc_core: [],
+                rpc_tags: []
+              },
+              usageLabel: linkedTranslation.usage_label || '',
+              note: linkedTranslation.note || ''
+            }
+          })
+
+          if (meaningItems.length === 0) {
+            linkedForms.forEach((linkedForm, formIndex) => {
+              meaningItems.push({
+                key: linkedForm.pronunciation_link_id || linkedForm.id || `linked-form-${formIndex}`,
+                kind: 'form',
+                label: linkedForm.form_text,
+                usageLabel: linkedForm.usage_label || '',
+                note: linkedForm.note || ''
+              })
+            })
+
+            linkedFtgLinks.forEach((linkedFtg, ftgIndex) => {
+              meaningItems.push({
+                key: linkedFtg.pronunciation_link_id || linkedFtg.id || `linked-ftg-${ftgIndex}`,
+                kind: 'ftg',
+                label: linkedFtg.translation,
+                usageLabel: linkedFtg.usage_label || '',
+                note: linkedFtg.note || ''
+              })
+            })
+          }
+
+          return {
+            ...group,
+            key: group?.id || `pronunciation-group-${index}`,
+            meaningItems
+          }
+        })
+        .sort((a, b) => {
+          const aVariantOrder = typeof a?.linked_word?.variant_order === 'number'
+            ? a.linked_word.variant_order
+            : Number.MAX_SAFE_INTEGER
+          const bVariantOrder = typeof b?.linked_word?.variant_order === 'number'
+            ? b.linked_word.variant_order
+            : Number.MAX_SAFE_INTEGER
+
+          if (aVariantOrder !== bVariantOrder) {
+            return aVariantOrder - bVariantOrder
+          }
+
+          const aTranslationPriority = (() => {
+            const translation = a.meaningItems.find(item => item.kind === 'translation')?.translation
+            return translation?.display_priority ?? Number.MAX_SAFE_INTEGER
+          })()
+
+          const bTranslationPriority = (() => {
+            const translation = b.meaningItems.find(item => item.kind === 'translation')?.translation
+            return translation?.display_priority ?? Number.MAX_SAFE_INTEGER
+          })()
+
+          if (aTranslationPriority !== bTranslationPriority) {
+            return aTranslationPriority - bTranslationPriority
+          }
+
+          const aLabel = formatPronunciationGroupLabel(a)
+          const bLabel = formatPronunciationGroupLabel(b)
+          return aLabel.localeCompare(bLabel)
+        })
+        .filter(group => group.meaningItems.length > 0 || group?.primary_audio || formatPronunciationGroupLabel(group))
+    : [
+        {
+          key: 'fallback-pronunciation-group',
+          id: 'fallback-pronunciation-group',
+          ipa_pronunciation: word.primary_ipa || null,
+          phonetic_pronunciation: word.primary_phonetic || null,
+          primary_audio: word.primary_audio || null,
+          meaningItems: translations.map((translation, index) => ({
+            key: translation.id || `fallback-translation-${index}`,
+            kind: 'translation',
+            translation
+          }))
+        }
+      ].filter(group => group.meaningItems.length > 0)
 
   // Format context hint for display
   const formatContextHint = (usageNotes) => {
@@ -817,19 +903,77 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     return ''
   }
 
-  // Article display for nouns with diamond separators
-  const renderArticleDisplay = () => {
-    if (word.word_type !== 'NOUN' || !word.articles) return null
+  const toggleMeaningGroup = (groupKey) => {
+    setExpandedMeaningGroups(prev => ({
+      ...prev,
+      [groupKey]: !prev[groupKey]
+    }))
+  }
+
+  const renderMeaningRow = (item, index, groupKey) => {
+    const isTranslation = item.kind === 'translation'
+    const translation = item.translation
+    const displayText = isTranslation ? translation?.translation : item.label
+    const usageText = isTranslation
+      ? formatContextHint(translation?.usageNotes || item.note || item.usageLabel)
+      : formatContextHint(item.note || item.usageLabel)
+    const meaningChips = isTranslation
+      ? renderTranslationChips(translation, hasMultipleWordLevelTransitivities)
+      : []
 
     return (
-      <div className="article-display mb-2 text-sm text-emerald-600 font-semibold">
-        {word.articles.singular} • {word.articles.plural} • {word.articles.indefinite.singular}
+      <div key={item.key || `${groupKey}-${index}`}>
+        <div className="flex items-start gap-2 py-1.5 min-h-[32px]">
+          <div className="w-5 flex-shrink-0 pt-0.5 text-sm font-bold text-gray-500">
+            {index + 1}.
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-base ${isTranslation ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+                {displayText}
+              </span>
+              {meaningChips.length > 0 && (
+                <span className="flex items-center gap-1 flex-wrap">
+                  {meaningChips.map((chip, chipIndex) => (
+                    <span
+                      key={`meaning-chip-${groupKey}-${index}-${chipIndex}`}
+                      className={`tag-essential ${chip.className}`}
+                      data-description={chip.title}
+                      onClick={handleTagClick}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      {chip.symbol}
+                    </span>
+                  ))}
+                </span>
+              )}
+            </div>
+            {usageText && (
+              <div className="mt-0.5 text-xs italic text-gray-500">
+                {usageText}
+              </div>
+            )}
+          </div>
+          {isTranslation && (
+            <div className="flex-shrink-0 pt-0.5">
+              <button
+                onClick={() => onAddToDeck && onAddToDeck(word, translation)}
+                className="bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
+                title={`Study: ${translation.translation}`}
+              >
+                +
+              </button>
+            </div>
+          )}
+        </div>
+        {item.usageLabel && !usageText && (
+          <div className="ml-7 text-xs italic text-gray-500">
+            {item.usageLabel}
+          </div>
+        )}
       </div>
     )
   }
-
-
-  // Render verb-specific features
 
   return (
     <>
@@ -855,291 +999,111 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         </div>
       )}
         {/* Main Word Header - New Layout */}
-        <div className="mb-2">
-          {renderArticleDisplay()}
-          <div className="flex items-center gap-2">
+        <div className="mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Italian Word */}
-            <h3 className={`text-2xl font-bold ${colors.text}`}>
+            <h3 className={`text-3xl font-bold ${colors.text}`}>
               {word.italian}
             </h3>
 
-          {/* Audio Button - Right next to word */}
-          <AudioButton
-            wordId={word.id}
-            italianText={word.italian}
-            audioObjectKey={audioObjectKey}
-            audioBucket={audioBucket}
-            size="md"
-            title={hasPremiumAudio ? `Play premium audio (${voiceName})` : 'Play pronunciation'}
-            colorClass="bg-emerald-600 hover:bg-emerald-700"
-          />
+            {/* Gender Tag */}
+            {genderTag && (
+              <span
+                className={`tag-essential text-xs px-2 py-1 rounded-full font-semibold ${genderTag.class}`}
+                data-description={genderTag.description}
+                onClick={handleTagClick}
+                style={{ cursor: 'pointer' }}
+              >
+                {genderTag.display}
+              </span>
+            )}
 
-          {/* Gender Tag - Early in header, before word type */}
-          {genderTag && (
-            <span
-              className={`tag-essential text-xs px-2 py-1 rounded-full font-semibold ${genderTag.class}`}
-              data-description={genderTag.description}
-              onClick={handleTagClick}
-              style={{ cursor: 'pointer' }}
-            >
-              {genderTag.display}
-            </span>
-          )}
-
-          {/* Word Type Badge - opens conjugations */}
-          <button
-            onClick={() => setShowConjugations(true)}
-            className={`px-3 py-1 rounded-full text-sm font-semibold border cursor-pointer active:translate-y-px transition-all ${colors.tag} ${colors.badgeHover}`}
-            title="View conjugations"
-          >
-            {wordTypeLabel}
-          </button>
-
-          {/* Irregularity Tag - After word type */}
-          {irregularTag && (
-            <span
-              className={`tag-essential text-xs px-2 py-1 rounded-full font-semibold ${irregularTag.class}`}
-              data-description={irregularTag.description}
-              onClick={handleTagClick}
-              style={{ cursor: 'pointer' }}
-            >
-              {irregularTag.display}
-            </span>
-          )}
+            {/* POS Chip */}
+            {word.word_type === 'VERB' ? (
+              <button
+                onClick={() => setShowConjugations(true)}
+                className="px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-[0.08em] border border-gray-300 text-gray-600 bg-white/70 hover:bg-white transition-colors cursor-pointer"
+                title="View conjugations"
+              >
+                {wordTypeLabel}
+              </button>
+            ) : (
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-[0.08em] border border-gray-300 text-gray-600 bg-white/70">
+                {wordTypeLabel}
+              </span>
+            )}
+          </div>
         </div>
 
-          {pronunciationGroups.length > 0 && (
-            <div className="mt-2 flex flex-col gap-1">
-              {pronunciationGroups.map((group, index) => {
-                const audio = group?.primary_audio || null
-                const groupObjectKey = audio?.object_key || null
-                const groupBucket = audio?.storage_bucket || null
-                const groupVoice = audio?.voice_name || null
-                const linkedSenseCount = Array.isArray(group?.linked_translations)
-                  ? group.linked_translations.length
-                  : 0
-                const linkedFormCount = Array.isArray(group?.linked_forms)
-                  ? group.linked_forms.length
-                  : 0
-                const linkedFtgCount = Array.isArray(group?.linked_ftg_links)
-                  ? group.linked_ftg_links.length
-                  : 0
+        {/* Pronunciation-led meanings */}
+        {normalizedPronunciationGroups.length > 0 && (
+          <div className="mb-3 space-y-3">
+            {normalizedPronunciationGroups.map((group) => {
+              const groupLabel = formatPronunciationGroupLabel(group)
+              const groupAudio = group?.primary_audio || null
+              const visibleItems = group.meaningItems.slice(0, maxVisibleMeaningsPerGroup)
+              const additionalItems = group.meaningItems.slice(maxVisibleMeaningsPerGroup)
+              const isExpanded = !!expandedMeaningGroups[group.key]
 
-                return (
-                  <div
-                    key={group?.id || `pron-group-${index}`}
-                    className="flex items-center gap-2 text-xs text-gray-600"
-                  >
+              return (
+                <div
+                  key={group.key}
+                  className="rounded-xl border border-white/70 bg-white/75 px-3 py-2 shadow-sm"
+                >
+                  <div className="mb-2 flex items-center gap-2 flex-wrap">
+                    <span className="text-lg font-semibold text-gray-900">
+                      {groupLabel}
+                    </span>
                     <AudioButton
                       wordId={word.id}
                       italianText={word.italian}
-                      audioObjectKey={groupObjectKey}
-                      audioBucket={groupBucket}
-                      size="sm"
+                      audioObjectKey={groupAudio?.object_key || null}
+                      audioBucket={groupAudio?.storage_bucket || null}
+                      size="chip"
                       title={
-                        groupVoice
-                          ? `Play pronunciation variant (${groupVoice})`
+                        groupAudio?.voice_name
+                          ? `Play pronunciation variant (${groupAudio.voice_name})`
                           : 'Play pronunciation variant'
                       }
                       colorClass="bg-emerald-600 hover:bg-emerald-700"
                     />
-                    <span className="font-medium text-gray-700">
-                      {formatPronunciationGroupLabel(group)}
-                    </span>
-                    {(linkedSenseCount + linkedFormCount + linkedFtgCount) > 0 && (
-                      <span className="text-[11px] text-gray-500">
-                        {[
-                          linkedSenseCount ? `${linkedSenseCount} sense${linkedSenseCount === 1 ? '' : 's'}` : null,
-                          linkedFormCount ? `${linkedFormCount} form${linkedFormCount === 1 ? '' : 's'}` : null,
-                          linkedFtgCount ? `${linkedFtgCount} FTG` : null,
-                        ].filter(Boolean).join(' • ')}
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Multiple Translations Box - Grey Background */}
-        {visibleTranslations.length > 0 ? (
-          <div className="bg-gray-50 rounded-lg p-2 mb-2">
-            {visibleTranslations.map((translation, index) => (
-              <div key={translation.id || index}>
-                {/* Translation Row */}
-                <div className="flex items-stretch py-1 min-h-[32px]">
-                  {/* Number - Fixed width */}
-                  <div className="w-6 flex-shrink-0 flex items-center">
-                    <span className="text-sm font-bold text-gray-600">
-                      {index + 1}.
-                    </span>
                   </div>
 
-                  {/* Translation Text - Natural width */}
-                  <div className="flex items-center mr-2">
-                    <span className="text-base text-gray-900 font-medium">
-                      {translation.translation}
-                    </span>
-                    {/* Translation-level chips group */}
-                    <span className="ml-2 flex items-center gap-1">
-                      {renderTranslationChips(translation, hasMultipleWordLevelTransitivities).map((chip, idx) => (
-                        <span
-                          key={`tchip-${translation.id}-${idx}`}
-                          className={`tag-essential ${chip.className}`}
-                          data-description={chip.title}
-                          onClick={handleTagClick}
-                          style={{ cursor: 'pointer' }}
+                  <div className="space-y-1">
+                    {visibleItems.map((item, index) => renderMeaningRow(item, index, group.key))}
+
+                    {additionalItems.length > 0 && (
+                      <>
+                        <button
+                          onClick={() => toggleMeaningGroup(group.key)}
+                          className="ml-7 text-sm text-gray-500 hover:text-gray-700 transition-colors"
                         >
-                          {chip.symbol}
-                        </span>
-                      ))}
-                    </span>
-                  </div>
+                          {isExpanded ? '▾' : '▸'} {additionalItems.length} additional meaning{additionalItems.length === 1 ? '' : 's'}
+                        </button>
 
-                  {/* Context Hint - Flexible space to push button right */}
-                  <div className="flex-1 flex items-center justify-end mr-2">
-                    <span className="text-xs text-gray-500 italic text-right">
-                      {formatContextHint(translation.usageNotes)}
-                    </span>
-                  </div>
-
-                  {/* Study This Translation Button - Right edge */}
-                  <div className="flex-shrink-0 flex items-center">
-                    <button
-                      onClick={() => {
-                        console.log('Translation button clicked:', { word: word.italian, translation: translation.translation, onAddToDeck: !!onAddToDeck })
-                        if (onAddToDeck) {
-                          onAddToDeck(word, translation)
-                        } else {
-                          console.error('onAddToDeck function not provided')
-                        }
-                      }}
-                      className="bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
-                      title={`Study: ${translation.translation}`}
-                    >
-                      +
-                    </button>
+                        {isExpanded && (
+                          <div className="space-y-1">
+                            {additionalItems.map((item, index) =>
+                              renderMeaningRow(item, visibleItems.length + index, group.key)
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
-
-                {/* Separator Line */}
-                {index < visibleTranslations.length - 1 && (
-                  <div className="border-b border-gray-200 my-1"></div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          /* Fallback for single translation */
-          <div className="bg-gray-50 rounded-lg p-2 mb-2">
-            <div className="flex items-stretch py-1 min-h-[32px]">
-              <div className="w-6 flex-shrink-0 flex items-center">
-                <span className="text-sm font-bold text-gray-600">1.</span>
-              </div>
-              <div className="flex items-center mr-2">
-                <span className="text-base text-gray-900 font-medium">
-                  {fallbackTranslation}
-                </span>
-              </div>
-              <div className="flex-1"></div>
-              <div className="flex-shrink-0 flex items-center">
-                <button
-                  onClick={() => onAddToDeck && onAddToDeck(word)}
-                  className="bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors"
-                  title="Study this word"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Additional Meanings Section */}
-        {additionalTranslations.length > 0 && (
-          <div className="mb-3">
-            <button
-              onClick={() => setShowAdditionalMeanings(!showAdditionalMeanings)}
-              className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
-            >
-              <span
-                className={`transform transition-transform duration-200 ${
-                  showAdditionalMeanings ? 'rotate-0' : '-rotate-90'
-                }`}
-              >
-                ▼
-              </span>
-              {additionalTranslations.length} additional meanings
-            </button>
-
-            {showAdditionalMeanings && (
-              <div className="bg-gray-50 rounded-lg p-2 mt-1">
-                {additionalTranslations.map((translation, index) => (
-                  <div key={translation.id || index}>
-                    <div className="flex items-stretch py-1 min-h-[32px]">
-                      <div className="w-6 flex-shrink-0 flex items-center">
-                        <span className="text-sm font-bold text-gray-600">
-                          {visibleTranslations.length + index + 1}.
-                        </span>
-                      </div>
-                      <div className="flex items-center mr-2">
-                        <span className="text-base text-gray-900 font-medium">
-                          {translation.translation}
-                        </span>
-                        <span className="ml-2 flex items-center gap-1">
-                          {renderTranslationChips(translation, hasMultipleWordLevelTransitivities).map((chip, idx) => (
-                            <span
-                              key={`tchip-b-${translation.id}-${idx}`}
-                              className={`tag-essential ${chip.className}`}
-                              data-description={chip.title}
-                              onClick={handleTagClick}
-                              style={{ cursor: 'pointer' }}
-                            >
-                              {chip.symbol}
-                            </span>
-                          ))}
-                        </span>
-                      </div>
-                      <div className="flex-1 flex items-center justify-end mr-2">
-                        <span className="text-xs text-gray-500 italic text-right">
-                          {formatContextHint(translation.usageNotes)}
-                        </span>
-                      </div>
-                      <div className="flex-shrink-0 flex items-center">
-                        <button
-                          onClick={() => {
-                            console.log('Additional translation button clicked:', { word: word.italian, translation: translation.translation })
-                            if (onAddToDeck) {
-                              onAddToDeck(word, translation)
-                            } else {
-                              console.error('onAddToDeck function not provided')
-                            }
-                          }}
-                          className="bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
-                          title={`Study: ${translation.translation}`}
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                    {index < additionalTranslations.length - 1 && (
-                      <div className="border-b border-gray-200 my-1"></div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+              )
+            })}
           </div>
         )}
 
         {/* Key Tags - Under Translations */}
         {bottomTags.length > 0 && (
-          <div className="flex gap-1 flex-wrap mb-3">
+          <div className="flex gap-1 flex-wrap pt-1">
             {bottomTags.map((tag, index) => (
               <span
                 key={index}
-                className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${tag.class}`}
+                className={`tag-detailed text-[11px] px-2 py-0.5 rounded-full font-medium bg-white/70 ${outlinedClass(tag.class)}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}

@@ -12,6 +12,7 @@ export default function AudioButton({
   audioObjectKey = null,
   audioBucket = null,
   size = 'md',
+  variant = 'icon',
   className = '',
   title = null,
   colorClass = 'bg-emerald-600 hover:bg-emerald-700'
@@ -31,7 +32,8 @@ export default function AudioButton({
     sm: 'w-6 h-6',
     md: 'w-7 h-7', 
     lg: 'w-8 h-8',
-    xl: 'w-10 h-10'
+    xl: 'w-10 h-10',
+    chip: 'w-8 h-8'
   }
 
   // Handle audio playback
@@ -65,7 +67,7 @@ export default function AudioButton({
       disabled={isPlaying}
       aria-label={buttonTitle}
       className={`
-        ${sizeClasses[size]}
+        ${sizeClasses[size] || sizeClasses.md}
         text-white rounded-full
         flex items-center justify-center
         transition-all duration-200
@@ -104,9 +106,11 @@ export default function AudioButton({
           <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>
         </svg>
       ) : (
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
-          <path d="M8 5v14l11-7z"/>
-        </svg>
+        <>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        </>
       )}
     </button>
   )
