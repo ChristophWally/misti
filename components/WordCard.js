@@ -598,6 +598,18 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     ...(word.word_type === 'VERB' ? renderFormTenseChips() : [])
   ]
 
+  const orderedBottomTags = (() => {
+    if (!Array.isArray(bottomTags) || bottomTags.length === 0) return []
+
+    const cefrLevelTags = bottomTags.filter((tag) => typeof tag?.tag === 'string' && tag.tag.startsWith('CEFR-'))
+    const cefrTierTags = bottomTags.filter((tag) => typeof tag?.tag === 'string' && tag.tag.startsWith('cefr-tier-'))
+    const otherTags = bottomTags.filter((tag) =>
+      !(typeof tag?.tag === 'string' && (tag.tag.startsWith('CEFR-') || tag.tag.startsWith('cefr-tier-')))
+    )
+
+    return [...cefrLevelTags, ...cefrTierTags, ...otherTags]
+  })()
+
   // Get translations - use processedTranslations from EnhancedDictionarySystem
   // Ensure translations are sorted by display_priority so the first item is truly the primary meaning
 
@@ -1041,9 +1053,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         )}
 
         {/* Key Tags - Under Translations */}
-        {bottomTags.length > 0 && (
+        {orderedBottomTags.length > 0 && (
           <div className="flex gap-1 flex-wrap pt-1">
-            {bottomTags.map((tag, index) => (
+            {orderedBottomTags.map((tag, index) => (
               <span
                 key={index}
                 className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${tag.class}`}
