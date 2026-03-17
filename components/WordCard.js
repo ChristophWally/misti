@@ -848,36 +848,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             meaningItems
           }
         })
-        .sort((a, b) => {
-          const aVariantOrder = typeof a?.linked_word?.variant_order === 'number'
-            ? a.linked_word.variant_order
-            : Number.MAX_SAFE_INTEGER
-          const bVariantOrder = typeof b?.linked_word?.variant_order === 'number'
-            ? b.linked_word.variant_order
-            : Number.MAX_SAFE_INTEGER
-
-          if (aVariantOrder !== bVariantOrder) {
-            return aVariantOrder - bVariantOrder
-          }
-
-          const aTranslationPriority = (() => {
-            const translation = a.meaningItems.find(item => item.kind === 'translation')?.translation
-            return translation?.display_priority ?? Number.MAX_SAFE_INTEGER
-          })()
-
-          const bTranslationPriority = (() => {
-            const translation = b.meaningItems.find(item => item.kind === 'translation')?.translation
-            return translation?.display_priority ?? Number.MAX_SAFE_INTEGER
-          })()
-
-          if (aTranslationPriority !== bTranslationPriority) {
-            return aTranslationPriority - bTranslationPriority
-          }
-
-          const aLabel = formatPronunciationGroupLabel(a)
-          const bLabel = formatPronunciationGroupLabel(b)
-          return aLabel.localeCompare(bLabel)
-        })
         .filter(group => group.meaningItems.length > 0 || group?.primary_audio || formatPronunciationGroupLabel(group))
     : [
         {
@@ -1103,7 +1073,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {bottomTags.map((tag, index) => (
               <span
                 key={index}
-                className={`tag-detailed text-[11px] px-2 py-0.5 rounded-full font-medium bg-white/70 ${outlinedClass(tag.class)}`}
+                className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${tag.class}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
