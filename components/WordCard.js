@@ -779,48 +779,17 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   })
   const hasMultipleWordLevelTransitivities = wordLevelTransitivities.size > 1
 
-  const translationsById = new Map(
-    translations
-      .filter(translation => translation?.id)
-      .map(translation => [translation.id, translation])
-  )
-
   const normalizedPronunciationGroups = pronunciationGroups.length > 0
     ? (() => {
         const groupsById = new Map()
 
         pronunciationGroups.forEach((group, index) => {
-          const linkedForms = Array.isArray(group?.linked_forms) ? group.linked_forms : []
-          const linkedFtgLinks = Array.isArray(group?.linked_ftg_links) ? group.linked_ftg_links : []
-
           groupsById.set(group?.id || `pronunciation-group-${index}`, {
             ...group,
             key: group?.id || `pronunciation-group-${index}`,
             meaningItems: [],
             firstTranslationOrder: Number.MAX_SAFE_INTEGER
           })
-
-          if (linkedForms.length > 0 || linkedFtgLinks.length > 0) {
-            const groupRef = groupsById.get(group?.id || `pronunciation-group-${index}`)
-            linkedForms.forEach((linkedForm, formIndex) => {
-              groupRef.meaningItems.push({
-                key: linkedForm.pronunciation_link_id || linkedForm.id || `linked-form-${formIndex}`,
-                kind: 'form',
-                label: linkedForm.form_text,
-                usageLabel: linkedForm.usage_label || '',
-                note: linkedForm.note || ''
-              })
-            })
-            linkedFtgLinks.forEach((linkedFtg, ftgIndex) => {
-              groupRef.meaningItems.push({
-                key: linkedFtg.pronunciation_link_id || linkedFtg.id || `linked-ftg-${ftgIndex}`,
-                kind: 'ftg',
-                label: linkedFtg.translation,
-                usageLabel: linkedFtg.usage_label || '',
-                note: linkedFtg.note || ''
-              })
-            })
-          }
         })
 
         translations.forEach((translation, translationIndex) => {
@@ -840,7 +809,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             key: linkedTranslation?.pronunciation_link_id || translation.id || `linked-translation-${translationIndex}`,
             kind: 'translation',
             translation,
-            usageLabel: linkedTranslation?.usage_label || '',
             note: linkedTranslation?.note || ''
           })
           groupRef.firstTranslationOrder = Math.min(groupRef.firstTranslationOrder, translationIndex)
@@ -853,7 +821,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             }
             return 0
           })
-          .filter(group => group.meaningItems.length > 0 || group?.primary_audio || formatPronunciationGroupLabel(group))
+          .filter(group => group.meaningItems.length > 0)
       })()
     : [
         {
@@ -891,8 +859,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     const translation = item.translation
     const displayText = isTranslation ? translation?.translation : item.label
     const usageText = isTranslation
-      ? formatContextHint(translation?.usageNotes || item.note || item.usageLabel)
-      : formatContextHint(item.note || item.usageLabel)
+      ? formatContextHint(translation?.usageNotes || item.note)
+      : formatContextHint(item.note)
     const meaningChips = isTranslation
       ? renderTranslationChips(translation, hasMultipleWordLevelTransitivities)
       : []
@@ -942,11 +910,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             </div>
           )}
         </div>
-        {item.usageLabel && !usageText && (
-          <div className="ml-7 text-xs italic text-gray-500">
-            {item.usageLabel}
-          </div>
-        )}
       </div>
     )
   }
