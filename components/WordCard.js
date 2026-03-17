@@ -573,19 +573,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   }
 
   // Extract gender and irregularity tags for header
-  const genderTag = (() => {
-    const genderValue = displayCoreTags.find(tag => isAttribute(tag, ATTRIBUTES.WORD_GENDER))?.value_label
-    if (genderValue === 'masculine') {
-      return { display: 'm', class: 'bg-blue-100 text-blue-700 border border-blue-300', description: 'Masculine gender' }
-    }
-    if (genderValue === 'feminine') {
-      return { display: 'f', class: 'bg-pink-100 text-pink-700 border border-pink-300', description: 'Feminine gender' }
-    }
-    if (genderValue === 'common-gender') {
-      return { display: 'c', class: 'bg-purple-100 text-purple-700 border border-purple-300', description: 'Common gender' }
-    }
-    return null
-  })()
+  const genderTag = processedTags.essential.find(tag =>
+    tag.display === '♂' || tag.display === '♀' || tag.display === '⚥'
+  )
 
   // All other tags go under translations
   const bottomTags = [
@@ -796,33 +786,24 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   )
 
   const normalizedPronunciationGroups = pronunciationGroups.length > 0
-    ? pronunciationGroups
-        .map((group, index) => {
-          const linkedTranslations = Array.isArray(group?.linked_translations) ? group.linked_translations : []
+    ? (() => {
+        const groupsById = new Map()
+
+        pronunciationGroups.forEach((group, index) => {
           const linkedForms = Array.isArray(group?.linked_forms) ? group.linked_forms : []
           const linkedFtgLinks = Array.isArray(group?.linked_ftg_links) ? group.linked_ftg_links : []
 
-          const meaningItems = linkedTranslations.map((linkedTranslation, translationIndex) => {
-            const fullTranslation = translationsById.get(linkedTranslation.id)
-            return {
-              key: linkedTranslation.pronunciation_link_id || linkedTranslation.id || `linked-translation-${translationIndex}`,
-              kind: 'translation',
-              translation: fullTranslation || {
-                id: linkedTranslation.id,
-                translation: linkedTranslation.translation,
-                isPrimary: translationIndex === 0,
-                usageNotes: linkedTranslation.note || linkedTranslation.usage_label || '',
-                rpc_core: [],
-                rpc_tags: []
-              },
-              usageLabel: linkedTranslation.usage_label || '',
-              note: linkedTranslation.note || ''
-            }
+          groupsById.set(group?.id || `pronunciation-group-${index}`, {
+            ...group,
+            key: group?.id || `pronunciation-group-${index}`,
+            meaningItems: [],
+            firstTranslationOrder: Number.MAX_SAFE_INTEGER
           })
 
-          if (meaningItems.length === 0) {
+          if (linkedForms.length > 0 || linkedFtgLinks.length > 0) {
+            const groupRef = groupsById.get(group?.id || `pronunciation-group-${index}`)
             linkedForms.forEach((linkedForm, formIndex) => {
-              meaningItems.push({
+              groupRef.meaningItems.push({
                 key: linkedForm.pronunciation_link_id || linkedForm.id || `linked-form-${formIndex}`,
                 kind: 'form',
                 label: linkedForm.form_text,
@@ -830,9 +811,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                 note: linkedForm.note || ''
               })
             })
-
             linkedFtgLinks.forEach((linkedFtg, ftgIndex) => {
-              meaningItems.push({
+              groupRef.meaningItems.push({
                 key: linkedFtg.pronunciation_link_id || linkedFtg.id || `linked-ftg-${ftgIndex}`,
                 kind: 'ftg',
                 label: linkedFtg.translation,
@@ -841,14 +821,40 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
               })
             })
           }
-
-          return {
-            ...group,
-            key: group?.id || `pronunciation-group-${index}`,
-            meaningItems
-          }
         })
-        .filter(group => group.meaningItems.length > 0 || group?.primary_audio || formatPronunciationGroupLabel(group))
+
+        translations.forEach((translation, translationIndex) => {
+          const matchingGroup = pronunciationGroups.find((group) =>
+            Array.isArray(group?.linked_translations) &&
+            group.linked_translations.some((linkedTranslation) => linkedTranslation.id === translation.id)
+          )
+
+          if (!matchingGroup) return
+
+          const groupKey = matchingGroup?.id || `pronunciation-group-${translationIndex}`
+          const groupRef = groupsById.get(groupKey)
+          if (!groupRef) return
+
+          const linkedTranslation = matchingGroup.linked_translations.find((item) => item.id === translation.id)
+          groupRef.meaningItems.push({
+            key: linkedTranslation?.pronunciation_link_id || translation.id || `linked-translation-${translationIndex}`,
+            kind: 'translation',
+            translation,
+            usageLabel: linkedTranslation?.usage_label || '',
+            note: linkedTranslation?.note || ''
+          })
+          groupRef.firstTranslationOrder = Math.min(groupRef.firstTranslationOrder, translationIndex)
+        })
+
+        return Array.from(groupsById.values())
+          .sort((a, b) => {
+            if (a.firstTranslationOrder !== b.firstTranslationOrder) {
+              return a.firstTranslationOrder - b.firstTranslationOrder
+            }
+            return 0
+          })
+          .filter(group => group.meaningItems.length > 0 || group?.primary_audio || formatPronunciationGroupLabel(group))
+      })()
     : [
         {
           key: 'fallback-pronunciation-group',
@@ -895,7 +901,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       <div key={item.key || `${groupKey}-${index}`}>
         <div className="flex items-start gap-2 py-1.5 min-h-[32px]">
           <div className="w-5 flex-shrink-0 pt-0.5 text-sm font-bold text-gray-500">
-            {index + 1}.
+            {index}.
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -992,13 +998,13 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {word.word_type === 'VERB' ? (
               <button
                 onClick={() => setShowConjugations(true)}
-                className="px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-[0.08em] border border-gray-300 text-gray-600 bg-white/70 hover:bg-white transition-colors cursor-pointer"
+                className={`px-3 py-1 rounded-full text-sm font-semibold border cursor-pointer active:translate-y-px transition-all ${colors.tag} ${colors.badgeHover}`}
                 title="View conjugations"
               >
                 {wordTypeLabel}
               </button>
             ) : (
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-[0.08em] border border-gray-300 text-gray-600 bg-white/70">
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${colors.tag}`}>
                 {wordTypeLabel}
               </span>
             )}
@@ -1014,6 +1020,10 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
               const visibleItems = group.meaningItems.slice(0, maxVisibleMeaningsPerGroup)
               const additionalItems = group.meaningItems.slice(maxVisibleMeaningsPerGroup)
               const isExpanded = !!expandedMeaningGroups[group.key]
+              const translationItems = group.meaningItems.filter(item => item.kind === 'translation')
+              const groupBaseNumber = translationItems.length > 0
+                ? translations.findIndex(translation => translation.id === translationItems[0].translation?.id) + 1
+                : 1
 
               return (
                 <div
@@ -1040,7 +1050,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                   </div>
 
                   <div className="space-y-1">
-                    {visibleItems.map((item, index) => renderMeaningRow(item, index, group.key))}
+                    {visibleItems.map((item, index) => renderMeaningRow(item, groupBaseNumber + index, group.key))}
 
                     {additionalItems.length > 0 && (
                       <>
@@ -1054,7 +1064,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                         {isExpanded && (
                           <div className="space-y-1">
                             {additionalItems.map((item, index) =>
-                              renderMeaningRow(item, visibleItems.length + index, group.key)
+                              renderMeaningRow(item, groupBaseNumber + visibleItems.length + index, group.key)
                             )}
                           </div>
                         )}
