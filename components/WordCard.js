@@ -54,13 +54,28 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   }
 
   // Process RPC tags for display - Comprehensive mapping of all original tags
-  const processRpcTagsForDisplay = (coreTags, wordType) => {
+  const processRpcTagsForDisplay = (coreTags, wordType, optionalTags = []) => {
     const essential = []
     const detailed = []
 
     if (!Array.isArray(coreTags)) {
       return { essential, detailed }
     }
+
+    const normalizeValue = (value) => String(value || '').trim().toLowerCase()
+    const formatSlugLabel = (value) =>
+      String(value || '')
+        .replace(/[_-]+/g, ' ')
+        .trim()
+
+    const wordThemeClass =
+      wordType === 'VERB'
+        ? 'bg-teal-500 text-white'
+        : wordType === 'ADJECTIVE'
+          ? 'bg-blue-500 text-white'
+          : wordType === 'ADVERB'
+            ? 'bg-purple-500 text-white'
+            : 'bg-cyan-500 text-white'
     
     // Track number restrictions to implement hierarchical display
     const hasNumberRestrictions = coreTags.some(tag => isAttribute(tag, ATTRIBUTES.NUMBER_RESTRICTION))
@@ -116,6 +131,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     coreTags.forEach(tag => {
       const valueId = tag.value_id
       const valueLabel = tag.value_label || ''
+      const normalizedValue = normalizeValue(valueLabel)
       const attributeStableId = tag.attribute_stable_id
       
       
@@ -138,8 +154,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         }
       }
 
-      // FREQUENCY TIER MAPPING (essential)
-      else if (isAttribute(tag, ATTRIBUTES.FREQUENCY_TIER)) {
+      // FREQUENCY RANK MAPPING (essential)
+      else if (isAttribute(tag, ATTRIBUTES.FREQUENCY_TIER) || attributeStableId === 'metaattr007') {
         const freqMap = {
           'top100': '100',
           'top500': '500', 
@@ -148,12 +164,31 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           'top5000': '5K',
           'top10000': '10K'
         }
-        if (freqMap[valueLabel]) {
+        if (freqMap[normalizedValue]) {
           essential.push({
-            tag: `freq-${valueLabel}`,
-            display: `⭐ ${freqMap[valueLabel]}`,
+            tag: `freq-rank-${normalizedValue}`,
+            display: `⭐ ${freqMap[normalizedValue]}`,
             class: 'bg-yellow-500 text-white',
-            description: `Top ${valueLabel.replace('top', '').replace('10000', '10,000')} most frequent words`
+            description: `Top ${normalizedValue.replace('top', '').replace('10000', '10,000')} most frequent words`
+          })
+        }
+      }
+
+      // FREQUENCY TIER MAPPING (detailed)
+      else if (attributeStableId === 'metaattr034') {
+        const tierMap = {
+          'very-common': 'very common',
+          'common': 'common',
+          'uncommon': 'uncommon',
+          'rare': 'rare',
+          'very-rare': 'very rare'
+        }
+        if (tierMap[normalizedValue]) {
+          detailed.push({
+            tag: `freq-tier-${normalizedValue}`,
+            display: tierMap[normalizedValue],
+            class: 'bg-yellow-500 text-white',
+            description: `Frequency tier: ${tierMap[normalizedValue]}`
           })
         }
       }
@@ -187,14 +222,14 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       // NUMBER MAPPING (essential for nouns at word-level)
       // Skip if number restrictions exist (hierarchical priority)
       else if (isAttribute(tag, ATTRIBUTES.NUMBER) && wordType === 'NOUN' && !hasNumberRestrictions) {
-        if (valueLabel === 'singolare') {
+        if (normalizedValue === 'singolare' || normalizedValue === 'singular') {
           essential.push({
             tag: 'singolare',
             display: 'sing.',
             class: 'bg-cyan-500 text-white', // NOUN theme
             description: 'Singular number form'
           })
-        } else if (valueLabel === 'plurale') {
+        } else if (normalizedValue === 'plurale' || normalizedValue === 'plural') {
           essential.push({
             tag: 'plurale',
             display: 'pl.',
@@ -243,6 +278,13 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             display: '2F',
             class: 'bg-blue-500 text-white', // ADJECTIVE theme
             description: 'Form pattern - Limited agreement: grande/grandi'
+          })
+        } else if (valueLabel === 'form-invariable') {
+          detailed.push({
+            tag: 'form-invariable',
+            display: 'INV',
+            class: 'bg-blue-500 text-white', // ADJECTIVE theme
+            description: 'Form pattern - Invariable adjective form'
           })
         }
       }
@@ -308,19 +350,54 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
       // REGISTER MAPPING (only show non-neutral)
       else if (isAttribute(tag, ATTRIBUTES.REGISTER)) {
-        if (valueLabel === 'formal') {
+        if (normalizedValue === 'formal') {
           detailed.push({
             tag: 'formal-register',
             display: 'formal',
             class: 'bg-gray-500 text-white', // Register is universal
             description: 'Formal contexts only'
           })
-        } else if (valueLabel === 'casual') {
+        } else if (normalizedValue === 'casual') {
           detailed.push({
             tag: 'casual-register', 
             display: 'casual',
             class: 'bg-gray-500 text-white', // Register is universal
             description: 'Casual/colloquial usage'
+          })
+        } else if (normalizedValue === 'archaic') {
+          detailed.push({
+            tag: 'archaic-register',
+            display: 'archaic',
+            class: 'bg-gray-500 text-white',
+            description: 'Archaic register'
+          })
+        } else if (normalizedValue === 'informal') {
+          detailed.push({
+            tag: 'informal-register',
+            display: 'informal',
+            class: 'bg-gray-500 text-white',
+            description: 'Informal register'
+          })
+        } else if (normalizedValue === 'literary') {
+          detailed.push({
+            tag: 'literary-register',
+            display: 'literary',
+            class: 'bg-gray-500 text-white',
+            description: 'Literary register'
+          })
+        } else if (normalizedValue === 'regional') {
+          detailed.push({
+            tag: 'regional-register',
+            display: 'regional',
+            class: 'bg-gray-500 text-white',
+            description: 'Regional register'
+          })
+        } else if (normalizedValue === 'vulgar') {
+          detailed.push({
+            tag: 'vulgar-register',
+            display: 'vulgar',
+            class: 'bg-gray-500 text-white',
+            description: 'Vulgar register'
           })
         }
         // Skip 'neutral' register - don't display
@@ -379,6 +456,180 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             display: 'plural-i',
             class: 'bg-cyan-500 text-white', // NOUN theme
             description: 'Forms plural by changing -o to -i (libro → libri)'
+          })
+        } else if (valueLabel === 'plural-e-to-i') {
+          detailed.push({
+            tag: 'plural-formation-e-to-i',
+            display: 'plural e→i',
+            class: 'bg-cyan-500 text-white',
+            description: 'Forms plural by changing -e to -i'
+          })
+        } else if (valueLabel === 'plural-invariable') {
+          detailed.push({
+            tag: 'plural-formation-invariable',
+            display: 'plural inv.',
+            class: 'bg-cyan-500 text-white',
+            description: 'Invariable plural form'
+          })
+        } else if (valueLabel === 'plural-irregular') {
+          detailed.push({
+            tag: 'plural-formation-irregular',
+            display: 'plural irreg.',
+            class: 'bg-cyan-500 text-white',
+            description: 'Irregular plural formation'
+          })
+        }
+      }
+      else if (attributeStableId === 'metaattr030') {
+        const adjectiveTypeMap = {
+          'qualitative': 'qualitative',
+          'fixed-comparative': 'fixed comp.',
+          'relational': 'relational'
+        }
+        if (adjectiveTypeMap[normalizedValue]) {
+          detailed.push({
+            tag: `adjective-type-${normalizedValue}`,
+            display: adjectiveTypeMap[normalizedValue],
+            class: wordThemeClass,
+            description: `Adjective type: ${adjectiveTypeMap[normalizedValue]}`
+          })
+        }
+      }
+      else if (attributeStableId === 'metaattr_matrix5_abbreviation_type') {
+        const abbreviationTypeMap = {
+          'initialism': 'initialism',
+          'acronym': 'acronym'
+        }
+        if (abbreviationTypeMap[normalizedValue]) {
+          detailed.push({
+            tag: `abbreviation-type-${normalizedValue}`,
+            display: abbreviationTypeMap[normalizedValue],
+            class: wordThemeClass,
+            description: `Abbreviation type: ${abbreviationTypeMap[normalizedValue]}`
+          })
+        }
+      }
+      else if (attributeStableId === 'metaattr_matrix5_affix_type') {
+        const affixTypeMap = {
+          'prefix': 'prefix'
+        }
+        if (affixTypeMap[normalizedValue]) {
+          detailed.push({
+            tag: `affix-type-${normalizedValue}`,
+            display: affixTypeMap[normalizedValue],
+            class: wordThemeClass,
+            description: `Affix type: ${affixTypeMap[normalizedValue]}`
+          })
+        }
+      }
+      else if (attributeStableId === 'metaattr062') {
+        const conjunctionTypeMap = {
+          'coordinating': 'coord.',
+          'subordinating': 'subord.',
+          'correlative': 'correl.'
+        }
+        if (conjunctionTypeMap[normalizedValue]) {
+          detailed.push({
+            tag: `conjunction-type-${normalizedValue}`,
+            display: conjunctionTypeMap[normalizedValue],
+            class: wordThemeClass,
+            description: `Conjunction type: ${formatSlugLabel(normalizedValue)}`
+          })
+        }
+      }
+      else if (attributeStableId === 'metaattr061') {
+        const determinerTypeMap = {
+          'article': 'article',
+          'demonstrative': 'demonstrative',
+          'indefinite-article': 'indef. article',
+          'interrogative': 'interrogative',
+          'possessive': 'possessive',
+          'quantifier': 'quantifier'
+        }
+        if (determinerTypeMap[normalizedValue]) {
+          detailed.push({
+            tag: `determiner-type-${normalizedValue}`,
+            display: determinerTypeMap[normalizedValue],
+            class: wordThemeClass,
+            description: `Determiner type: ${determinerTypeMap[normalizedValue]}`
+          })
+        }
+      }
+      else if (attributeStableId === 'metaattr069') {
+        const expressionTypeMap = {
+          'single-word': 'single word',
+          'multiword-expression': 'multiword'
+        }
+        if (expressionTypeMap[normalizedValue]) {
+          detailed.push({
+            tag: `expression-type-${normalizedValue}`,
+            display: expressionTypeMap[normalizedValue],
+            class: wordThemeClass,
+            description: `Expression type: ${expressionTypeMap[normalizedValue]}`
+          })
+        }
+      }
+      else if (attributeStableId === 'metaattr060') {
+        const prepositionTypeMap = {
+          'simple': 'simple prep.',
+          'complex': 'complex prep.',
+          'contracted': 'contracted prep.'
+        }
+        if (prepositionTypeMap[normalizedValue]) {
+          detailed.push({
+            tag: `preposition-type-${normalizedValue}`,
+            display: prepositionTypeMap[normalizedValue],
+            class: wordThemeClass,
+            description: `Preposition type: ${formatSlugLabel(normalizedValue)}`
+          })
+        }
+      }
+      else if (attributeStableId === 'metaattr041') {
+        const pronounFormMap = {
+          'full': 'full pron.',
+          'clitic': 'clitic pron.',
+          'combined': 'combined pron.',
+          'elision': 'elided pron.'
+        }
+        if (pronounFormMap[normalizedValue]) {
+          detailed.push({
+            tag: `pronoun-form-${normalizedValue}`,
+            display: pronounFormMap[normalizedValue],
+            class: wordThemeClass,
+            description: `Pronoun form: ${formatSlugLabel(normalizedValue)}`
+          })
+        }
+      }
+      else if (attributeStableId === 'metaattr040') {
+        const pronounTypeMap = {
+          'personal': 'personal pron.',
+          'clitic': 'clitic pron.',
+          'indefinite': 'indef. pron.',
+          'relative': 'relative pron.',
+          'demonstrative': 'demonstrative pron.'
+        }
+        if (pronounTypeMap[normalizedValue]) {
+          detailed.push({
+            tag: `pronoun-type-${normalizedValue}`,
+            display: pronounTypeMap[normalizedValue],
+            class: wordThemeClass,
+            description: `Pronoun type: ${formatSlugLabel(normalizedValue)}`
+          })
+        }
+      }
+      else if (attributeStableId === 'metaattr035') {
+        const phonologyPositionMap = {
+          'after-noun': 'post-nom.',
+          'before-most-consonants': 'pre consonant',
+          'before-impure-consonant': 'pre impure',
+          'before-vowel-or-h': 'pre vowel/h'
+        }
+        if (phonologyPositionMap[normalizedValue]) {
+          detailed.push({
+            tag: `phonology-position-${normalizedValue}`,
+            display: phonologyPositionMap[normalizedValue],
+            class: wordThemeClass,
+            description: `Phonology position: ${formatSlugLabel(normalizedValue)}`
           })
         }
       }
@@ -439,6 +690,31 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         }
       }
     })
+
+    if (Array.isArray(optionalTags)) {
+      optionalTags.forEach((tag, index) => {
+        const attributeStableId = tag?.attribute_stable_id
+        const normalizedValue = normalizeValue(tag?.value_label)
+        if (!normalizedValue) return
+        if (!(attributeStableId === 'metaattr_optional_tag' || String(attributeStableId || '').startsWith('metaattr_opt_tag_'))) {
+          return
+        }
+
+        const optionalTagMap = {
+          'multi_word_expression': 'MWE',
+          'prepositional_phrase': 'prep phrase',
+          'temporal_expression': 'temporal expr.'
+        }
+        const display = optionalTagMap[normalizedValue] || formatSlugLabel(normalizedValue)
+
+        detailed.push({
+          tag: `optional-tag-${normalizedValue}-${index}`,
+          display,
+          class: 'bg-gray-500 text-white',
+          description: `Optional tag: ${formatSlugLabel(normalizedValue)}`
+        })
+      })
+    }
 
     return { essential, detailed }
   }
@@ -508,7 +784,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
   const colors = getWordTypeColors(word.word_type)
   const displayCoreTags = word.word_display_core_tags || word.word_core_tags || []
-  const processedTags = processRpcTagsForDisplay(displayCoreTags, word.word_type)
+  const wordOptionalTags = Array.isArray(word.word_optional_tags) ? word.word_optional_tags : []
+  const processedTags = processRpcTagsForDisplay(displayCoreTags, word.word_type, wordOptionalTags)
   const pronunciationGroups = Array.isArray(word.pronunciation_groups)
     ? word.pronunciation_groups
     : []
@@ -627,7 +904,16 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   const renderTranslationChips = (translation, hasMultipleWordLevelTransitivities = false) => {
     const chips = []
     const core = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
-    const optional = Array.isArray(translation.rpc_tags) ? translation.rpc_tags : []
+    const normalizeValue = (value) => String(value || '').trim().toLowerCase()
+    const defaultChipClass = 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400'
+    const addTextChip = (symbol, title) => {
+      if (!symbol) return
+      chips.push({
+        symbol,
+        title,
+        className: defaultChipClass
+      })
+    }
 
     // Auxiliary Verb (metaattr002): ONLY show when multiple auxiliaries exist at word level
     if (hasMultipleWordLevelAuxiliaries) {
@@ -750,6 +1036,23 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       }
     })
 
+    // Additional register values currently present locally
+    core.forEach(tag => {
+      if (!isAttribute(tag, ATTRIBUTES.REGISTER)) return
+      const value = normalizeValue(tag.value_label)
+      const registerLabelMap = {
+        'archaic': 'archaic',
+        'informal': 'informal',
+        'literary': 'literary',
+        'regional': 'regional',
+        'vulgar': 'vulgar'
+      }
+      if (value === 'neutral') return
+      if (registerLabelMap[value]) {
+        addTextChip(registerLabelMap[value], `${registerLabelMap[value]} register`)
+      }
+    })
+
     // Transitivity chips (translation-level): ONLY show when multiple transitivity values exist at word level
     if (hasMultipleWordLevelTransitivities) {
       core.forEach(tag => {
@@ -765,6 +1068,125 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         }
       })
     }
+
+    // Additional translation-level mapping coverage
+    core.forEach(tag => {
+      const attributeStableId = tag.attribute_stable_id
+      const value = normalizeValue(tag.value_label)
+
+      if (attributeStableId === 'metaattr031') {
+        const articlePatternMap = {
+          'definite-required': 'def. article',
+          'no-article': 'no article',
+          'flexible-article': 'flex article',
+          'definite-or-partitive': 'def/partitive',
+          'optional-article': 'opt article',
+          'fixed-no-article': 'fixed no article'
+        }
+        if (articlePatternMap[value]) {
+          addTextChip(articlePatternMap[value], `Article pattern: ${articlePatternMap[value]}`)
+        }
+      } else if (attributeStableId === 'metaattr059') {
+        const cliticAvailabilityMap = {
+          'core-clitic': 'core clitic',
+          'supports_clitics': 'supports clitics',
+          'no_clitics': 'no clitics',
+          'no-clitics': 'no clitics',
+          'reflexive-clitic': 'refl clitic',
+          'indirect-clitic': 'indirect clitic',
+          'optional-clitic': 'opt clitic',
+          'reciprocal-clitic': 'recip clitic'
+        }
+        if (cliticAvailabilityMap[value]) {
+          addTextChip(cliticAvailabilityMap[value], `Clitic availability: ${cliticAvailabilityMap[value]}`)
+        }
+      } else if (attributeStableId === 'metaattr032') {
+        const countableMap = {
+          'countable': 'countable',
+          'uncountable': 'uncountable'
+        }
+        if (countableMap[value]) {
+          addTextChip(countableMap[value], `Countability: ${countableMap[value]}`)
+        }
+      } else if (attributeStableId === 'metaattr055') {
+        const governmentMap = {
+          'governs_a': 'gov. a',
+          'governs_di': 'gov. di',
+          'governs_da': 'gov. da',
+          'governs_in': 'gov. in',
+          'governs_con': 'gov. con',
+          'governs_su': 'gov. su',
+          'governs_per': 'gov. per',
+          'invariable': 'gov. invar'
+        }
+        if (governmentMap[value]) {
+          addTextChip(governmentMap[value], `Government: ${governmentMap[value]}`)
+        }
+      } else if (attributeStableId === 'metaattr009') {
+        const gradableMap = {
+          'analytical-gradability': 'analytical',
+          'full-gradability': 'full grad.',
+          'non-gradable': 'non-grad.'
+        }
+        if (gradableMap[value]) {
+          addTextChip(gradableMap[value], `Gradability: ${gradableMap[value]}`)
+        }
+      } else if (attributeStableId === 'metaattr050') {
+        const interjectionTypeMap = {
+          'acknowledgment': 'acknowledgment',
+          'cognitive': 'cognitive',
+          'greeting': 'greeting',
+          'exclamation': 'exclamation',
+          'cultural-phrase': 'cultural phrase'
+        }
+        if (interjectionTypeMap[value]) {
+          addTextChip(interjectionTypeMap[value], `Interjection type: ${interjectionTypeMap[value]}`)
+        }
+      } else if (attributeStableId === 'metaattr063') {
+        const logicalRelationshipMap = {
+          'addition': 'addition',
+          'contrast': 'contrast',
+          'disjunction': 'disjunction',
+          'causal': 'causal',
+          'conditional': 'conditional',
+          'temporal': 'temporal',
+          'purpose': 'purpose',
+          'relative': 'relative'
+        }
+        if (logicalRelationshipMap[value]) {
+          addTextChip(logicalRelationshipMap[value], `Logical relationship: ${logicalRelationshipMap[value]}`)
+        }
+      } else if (attributeStableId === 'metaattr021') {
+        const verbTypeMap = {
+          'defective-verb': 'defective',
+          'impersonal-verb': 'impersonal',
+          'meteorological-verb': 'meteorological',
+          'modal-verb': 'modal',
+          'direct-reflexive': 'direct reflexive',
+          'reciprocal': 'reciprocal',
+          'pronominal-variant': 'pronominal',
+          'transitive-verb': 'transitive',
+          'intransitive-verb': 'intransitive'
+        }
+        if (verbTypeMap[value]) {
+          addTextChip(verbTypeMap[value], `Verb type: ${verbTypeMap[value]}`)
+        }
+      } else if (attributeStableId === 'metaattr013') {
+        const wordRestrictionMap = {
+          'invariable': 'invariable',
+          'plural-only': 'plural only',
+          'only-plural': 'plural only',
+          'singular-only': 'singular only',
+          'third-person-only': '3rd person only',
+          'third-singular-only': '3sg only',
+          'missing-first-second-person': 'no 1st/2nd',
+          'missing-imperative': 'no imperative'
+        }
+        if (wordRestrictionMap[value]) {
+          addTextChip(wordRestrictionMap[value], `Word restriction: ${wordRestrictionMap[value]}`)
+        }
+      }
+    })
 
     return chips
   }
