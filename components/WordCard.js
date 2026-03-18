@@ -601,24 +601,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         }
       }
       else if (attributeStableId === 'metaattr069') {
-        const expressionTypeMap = {
-          'single-word': {
-            display: 'single word',
-            description: 'Expression type: one lexical word'
-          },
-          'multiword-expression': {
-            display: 'multiword',
-            description: 'Expression type: fixed or conventional multiword expression'
-          }
-        }
-        if (expressionTypeMap[normalizedValue]) {
-          detailed.push({
-            tag: `expression-type-${normalizedValue}`,
-            display: expressionTypeMap[normalizedValue].display,
-            class: wordThemeClass,
-            description: expressionTypeMap[normalizedValue].description
-          })
-        }
+        // expression_type is intentionally hidden on the word card
       }
       else if (attributeStableId === 'metaattr060') {
         const prepositionTypeMap = {
@@ -912,44 +895,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     return map[cls] || cls
   }
 
-  // Function to extract form-level tense chips from forms_json
-  const renderFormTenseChips = () => {
-    if (!word.forms_json || !Array.isArray(word.forms_json)) return []
-    
-    const tenseChips = []
-    const seenTenses = new Set()
-    
-    // Collect unique tenses from all forms
-    word.forms_json.forEach(form => {
-      if (form.core_tags && Array.isArray(form.core_tags)) {
-        form.core_tags.forEach(tag => {
-          if (isAttribute(tag, ATTRIBUTES.TENSE)) {
-            const valueId = tag.value_id
-            const valueLabel = tag.value_label
-            
-            // Skip if we've already seen this tense
-            if (!seenTenses.has(valueId)) {
-              seenTenses.add(valueId)
-              
-              // Map to display configuration from TAG_DISPLAYS
-              const displayConfig = TAG_DISPLAYS[valueId]
-              if (displayConfig) {
-                tenseChips.push({
-                  tag: `tense-${valueLabel}`,
-                  display: displayConfig.display,
-                  class: displayConfig.class,
-                  description: `Tense: ${valueLabel} (${form.form_text} example)`
-                })
-              }
-            }
-          }
-        })
-      }
-    })
-    
-    return tenseChips
-  }
-
   // Extract gender and irregularity tags for header
   const genderTag = processedTags.essential.find(tag =>
     tag.display === '♂' || tag.display === '♀' || tag.display === '⚥'
@@ -960,20 +905,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     ...processedTags.essential.filter(tag =>
       tag.display !== '♂' && tag.display !== '♀' && tag.display !== '⚥'
     ),
-    ...processedTags.detailed.filter(tag =>
-      ![
-        'are-conjugation',
-        'ere-conjugation',
-        'ire-conjugation',
-        'ire-isc-conjugation',
-        'ire-isc',
-        'are',
-        'ere',
-        'ire'
-      ].includes(tag.tag)
-    ),
-    // Add form-level tense chips for verbs
-    ...(word.word_type === 'VERB' ? renderFormTenseChips() : [])
+    ...processedTags.detailed
   ]
 
   const orderedBottomTags = (() => {
@@ -995,21 +927,62 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     return [...cefrLevelTags, ...cefrTierTags, ...frequencyRankTags, ...frequencyTierTags, ...otherTags]
   })()
 
-  // Get translations - use processedTranslations from EnhancedDictionarySystem
-  // Ensure translations are sorted by display_priority so the first item is truly the primary meaning
+  const primaryMetadataTags = orderedBottomTags.filter((tag) =>
+    typeof tag?.tag === 'string' && (
+      tag.tag.startsWith('CEFR-') ||
+      tag.tag.startsWith('cefr-tier-') ||
+      tag.tag.startsWith('freq-rank-') ||
+      tag.tag.startsWith('freq-tier-')
+    )
+  )
 
-  // Count unique auxiliaries at word level to determine if translation-level auxiliary chips should be shown
-  const wordLevelAuxiliaries = new Set()
-  const wordCoreTags = displayCoreTags
-  wordCoreTags.forEach(tag => {
-    if (tag.attribute_stable_id === 'metaattr002') {
-      wordLevelAuxiliaries.add(String(tag.value_label || '').toLowerCase())
-    }
-  })
-  const hasMultipleWordLevelAuxiliaries = wordLevelAuxiliaries.size > 1
+  const lexicalMetadataTags = orderedBottomTags.filter((tag) =>
+    typeof tag?.tag === 'string' && (
+      tag.tag.startsWith('abbreviation-type-') ||
+      tag.tag.startsWith('affix-type-') ||
+      tag.tag.startsWith('adjective-type-') ||
+      tag.tag.startsWith('adverb-') ||
+      tag.tag.startsWith('optional-tag-')
+    )
+  )
+
+  const grammarMetadataTags = orderedBottomTags.filter((tag) =>
+    typeof tag?.tag === 'string' && (
+      tag.tag === 'singolare' ||
+      tag.tag === 'plurale' ||
+      tag.tag === 'number-restriction-singular-only' ||
+      tag.tag === 'number-restriction-plural-only' ||
+      tag.tag === 'form-2' ||
+      tag.tag === 'form-4' ||
+      tag.tag === 'form-invariable' ||
+      tag.tag === 'reflexive' ||
+      tag.tag === 'reflexive-verb' ||
+      tag.tag === 'are-conjugation' ||
+      tag.tag === 'ere-conjugation' ||
+      tag.tag === 'ire-conjugation' ||
+      tag.tag === 'ire-isc-conjugation' ||
+      tag.tag.startsWith('plural-formation-') ||
+      tag.tag.startsWith('noun-type-') ||
+      tag.tag.startsWith('determiner-type-') ||
+      tag.tag.startsWith('preposition-type-') ||
+      tag.tag.startsWith('pronoun-form-') ||
+      tag.tag.startsWith('pronoun-type-') ||
+      tag.tag.startsWith('conjunction-type-') ||
+      tag.tag.startsWith('phonology-position-')
+    )
+  )
+
+  const themeOutlineChipClass =
+    word.word_type === 'VERB'
+      ? 'border border-teal-500 text-teal-700 bg-transparent'
+      : word.word_type === 'ADJECTIVE'
+        ? 'border border-blue-500 text-blue-700 bg-transparent'
+        : word.word_type === 'ADVERB'
+          ? 'border border-purple-500 text-purple-700 bg-transparent'
+          : 'border border-cyan-500 text-cyan-700 bg-transparent'
 
   // Translation-level chips: auxiliary, reciprocal, number restrictions, and gender restrictions
-  const renderTranslationChips = (translation, hasMultipleWordLevelTransitivities = false) => {
+  const renderTranslationChips = (translation) => {
     const chips = []
     const core = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
     const normalizeValue = (value) => String(value || '').trim().toLowerCase()
@@ -1022,101 +995,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         className: defaultChipClass
       })
     }
-
-    // Auxiliary Verb (metaattr002): ONLY show when multiple auxiliaries exist at word level
-    if (hasMultipleWordLevelAuxiliaries) {
-      const auxTags = core.filter((t) => t.attribute_stable_id === 'metaattr002')
-      if (auxTags.length > 0) {
-        // Each translation has only one auxiliary - show individual chip
-        const aux = auxTags[0]
-        const v = String(aux.value_label || '').toLowerCase()
-        const label = v === 'essere' ? 'ess.' : v === 'avere' ? 'av.' : (aux.value_shorthand || aux.value_label || '')
-        if (label) chips.push({ 
-          symbol: label, 
-          title: `Auxiliary: ${aux.value_label || label}`, 
-          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
-        })
-      }
-    }
-
-    // Reflexive Type (metaattr021): direct-reflexive/reciprocal
-    const reflexiveTypeTags = core.filter((t) => isAttribute(t, ATTRIBUTES.REFLEXIVE_TYPE))
-    reflexiveTypeTags.forEach(tag => {
-      if (isValue(tag, VALUES.REFLEXIVE_TYPE_DIRECT)) {
-        chips.push({ 
-          symbol: '🔄', 
-          title: TAG_DISPLAYS[VALUES.REFLEXIVE_TYPE_DIRECT].description, 
-          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
-        })
-      } else if (isValue(tag, VALUES.REFLEXIVE_TYPE_RECIPROCAL)) {
-        chips.push({ 
-          symbol: '🫂', 
-          title: TAG_DISPLAYS[VALUES.REFLEXIVE_TYPE_RECIPROCAL].description, 
-          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
-        })
-      }
-    })
-
-    // Number Restriction: detect from core tags for translation-level restrictions (e.g., reciprocal verbs)
-    const numberRestrictionTags = core.filter((t) => isAttribute(t, ATTRIBUTES.NUMBER_RESTRICTION))
-    numberRestrictionTags.forEach(tag => {
-      if (isValue(tag, VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE)) {
-        chips.push({ 
-          symbol: '👤', 
-          title: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_SINGOLARE].description, 
-          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
-        })
-      } else if (isValue(tag, VALUES.NUMBER_RESTRICTION_SOLO_PLURALE)) {
-        chips.push({ 
-          symbol: '👥', 
-          title: TAG_DISPLAYS[VALUES.NUMBER_RESTRICTION_SOLO_PLURALE].description, 
-          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent text-gray-700 border-gray-400' 
-        })
-      }
-    })
-
-    // Gender Usage Restrictions: consolidated logic from restriction-utils.js
-    core.forEach(tag => {
-      // Check for gender usage restrictions using UUID-based attribute/value matching
-      if (hasAttributeValue(tag, ATTRIBUTES.GENDER_USAGE, VALUES.GENDER_MALE_ONLY)) {
-        chips.push({ 
-          symbol: '♂', 
-          title: 'Use only with masculine subjects', 
-          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent border-blue-500 text-blue-600' 
-        })
-      } else if (hasAttributeValue(tag, ATTRIBUTES.GENDER_USAGE, VALUES.GENDER_FEMALE_ONLY)) {
-        chips.push({ 
-          symbol: '♀', 
-          title: 'Use only with feminine subjects', 
-          className: 'tag-detailed text-xs px-2 py-0.5 rounded-full font-semibold border bg-transparent border-pink-500 text-pink-600' 
-        })
-      }
-    })
-
-    // Position chips
-    core.forEach(tag => {
-      if (isAttribute(tag, ATTRIBUTES.POSITION)) {
-        if (isValue(tag, VALUES.POSITION_BEFORE)) {
-          chips.push({
-            symbol: '⬅️',
-            title: 'Positioned before another word',
-            className: 'tag-detailed text-xs px-1 py-0.5 rounded border border-gray-300 text-gray-600 bg-transparent'
-          })
-        } else if (isValue(tag, VALUES.POSITION_AFTER)) {
-          chips.push({
-            symbol: '➡️',
-            title: 'Positioned after another word',
-            className: 'tag-detailed text-xs px-1 py-0.5 rounded border border-gray-300 text-gray-600 bg-transparent'
-          })
-        } else if (isValue(tag, VALUES.POSITION_BEFORE_AFTER)) {
-          chips.push({
-            symbol: '↔️',
-            title: 'Can be positioned before or after another word',
-            className: 'tag-detailed text-xs px-1 py-0.5 rounded border border-gray-300 text-gray-600 bg-transparent'
-          })
-        }
-      }
-    })
 
     // Register chips (translation-level, emoji-only display)
     core.forEach(tag => {
@@ -1157,313 +1035,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       }
       if (value === 'neutral') return
       if (registerLabelMap[value]) {
-        addTextChip(registerLabelMap[value], `${registerLabelMap[value]} register`)
-      }
-    })
-
-    // Transitivity chips (translation-level): ONLY show when multiple transitivity values exist at word level
-    if (hasMultipleWordLevelTransitivities) {
-      core.forEach(tag => {
-        if (isAttribute(tag, ATTRIBUTES.TRANSITIVITY)) {
-          const displayConfig = TAG_DISPLAYS[tag.value_id]
-          if (displayConfig) {
-            chips.push({
-              symbol: displayConfig.display.split(' ')[0], // Use only emoji (🎯, 🌀, ⚖️)
-              title: displayConfig.description,
-              className: 'tag-detailed text-xs px-1 py-0.5 rounded border border-gray-300 text-gray-600 bg-transparent'
-            })
-          }
-        }
-      })
-    }
-
-    // Additional translation-level mapping coverage
-    core.forEach(tag => {
-      const attributeStableId = tag.attribute_stable_id
-      const value = normalizeValue(tag.value_label)
-
-      if (attributeStableId === 'metaattr031') {
-        const articlePatternMap = {
-          'definite-required': {
-            display: 'def. article',
-            description: 'Article pattern: this sense is normally used with a definite article'
-          },
-          'no-article': {
-            display: 'no article',
-            description: 'Article pattern: this sense is normally used without an article'
-          },
-          'flexible-article': {
-            display: 'flex article',
-            description: 'Article pattern: article choice varies by context'
-          },
-          'definite-or-partitive': {
-            display: 'def/partitive',
-            description: 'Article pattern: typically definite or partitive depending on meaning'
-          },
-          'optional-article': {
-            display: 'opt article',
-            description: 'Article pattern: article may be omitted in some standard contexts'
-          },
-          'fixed-no-article': {
-            display: 'fixed no article',
-            description: 'Article pattern: lexicalized fixed construction without article'
-          }
-        }
-        if (articlePatternMap[value]) {
-          addTextChip(articlePatternMap[value].display, articlePatternMap[value].description)
-        }
-      } else if (attributeStableId === 'metaattr059') {
-        const cliticAvailabilityMap = {
-          'core-clitic': {
-            display: 'core clitic',
-            description: 'Clitic availability: clitic usage is core/expected for this entry'
-          },
-          'supports_clitics': {
-            display: 'supports clitics',
-            description: 'Clitic availability: clitic usage is supported'
-          },
-          'no_clitics': {
-            display: 'no clitics',
-            description: 'Clitic availability: clitic forms are not used'
-          },
-          'no-clitics': {
-            display: 'no clitics',
-            description: 'Clitic availability: clitic forms are not used'
-          },
-          'reflexive-clitic': {
-            display: 'refl clitic',
-            description: 'Clitic availability: reflexive clitic usage'
-          },
-          'indirect-clitic': {
-            display: 'indirect clitic',
-            description: 'Clitic availability: indirect-object clitic usage'
-          },
-          'optional-clitic': {
-            display: 'opt clitic',
-            description: 'Clitic availability: clitic usage is optional'
-          },
-          'reciprocal-clitic': {
-            display: 'recip clitic',
-            description: 'Clitic availability: reciprocal clitic usage'
-          }
-        }
-        if (cliticAvailabilityMap[value]) {
-          addTextChip(cliticAvailabilityMap[value].display, cliticAvailabilityMap[value].description)
-        }
-      } else if (attributeStableId === 'metaattr032') {
-        const countableMap = {
-          'countable': {
-            display: 'countable',
-            description: 'Countability: can normally be counted and pluralized'
-          },
-          'uncountable': {
-            display: 'uncountable',
-            description: 'Countability: mass/uncountable usage in this sense'
-          }
-        }
-        if (countableMap[value]) {
-          addTextChip(countableMap[value].display, countableMap[value].description)
-        }
-      } else if (attributeStableId === 'metaattr055') {
-        const governmentMap = {
-          'governs_a': {
-            display: 'gov. a',
-            description: 'Government: this sense typically governs preposition "a"'
-          },
-          'governs_di': {
-            display: 'gov. di',
-            description: 'Government: this sense typically governs preposition "di"'
-          },
-          'governs_da': {
-            display: 'gov. da',
-            description: 'Government: this sense typically governs preposition "da"'
-          },
-          'governs_in': {
-            display: 'gov. in',
-            description: 'Government: this sense typically governs preposition "in"'
-          },
-          'governs_con': {
-            display: 'gov. con',
-            description: 'Government: this sense typically governs preposition "con"'
-          },
-          'governs_su': {
-            display: 'gov. su',
-            description: 'Government: this sense typically governs preposition "su"'
-          },
-          'governs_per': {
-            display: 'gov. per',
-            description: 'Government: this sense typically governs preposition "per"'
-          },
-          'invariable': {
-            display: 'gov. invar',
-            description: 'Government: no single fixed governing preposition'
-          }
-        }
-        if (governmentMap[value]) {
-          addTextChip(governmentMap[value].display, governmentMap[value].description)
-        }
-      } else if (attributeStableId === 'metaattr009') {
-        const gradableMap = {
-          'analytical-gradability': {
-            display: 'analytical',
-            description: 'Gradability: comparative/superlative usually formed analytically (più/meno)'
-          },
-          'full-gradability': {
-            display: 'full grad.',
-            description: 'Gradability: supports full gradation behavior'
-          },
-          'non-gradable': {
-            display: 'non-grad.',
-            description: 'Gradability: not normally gradable in this sense'
-          }
-        }
-        if (gradableMap[value]) {
-          addTextChip(gradableMap[value].display, gradableMap[value].description)
-        }
-      } else if (attributeStableId === 'metaattr050') {
-        const interjectionTypeMap = {
-          'acknowledgment': {
-            display: 'acknowledgment',
-            description: 'Interjection type: acknowledgment response'
-          },
-          'cognitive': {
-            display: 'cognitive',
-            description: 'Interjection type: expresses thought/realization'
-          },
-          'greeting': {
-            display: 'greeting',
-            description: 'Interjection type: greeting/farewell expression'
-          },
-          'exclamation': {
-            display: 'exclamation',
-            description: 'Interjection type: exclamatory reaction'
-          },
-          'cultural-phrase': {
-            display: 'cultural phrase',
-            description: 'Interjection type: fixed cultural expression'
-          }
-        }
-        if (interjectionTypeMap[value]) {
-          addTextChip(interjectionTypeMap[value].display, interjectionTypeMap[value].description)
-        }
-      } else if (attributeStableId === 'metaattr063') {
-        const logicalRelationshipMap = {
-          'addition': {
-            display: 'addition',
-            description: 'Logical relationship: adds information to the previous idea (e.g. and/also)'
-          },
-          'contrast': {
-            display: 'contrast',
-            description: 'Logical relationship: marks contrast or concession between ideas'
-          },
-          'disjunction': {
-            display: 'disjunction',
-            description: 'Logical relationship: presents alternatives or choices'
-          },
-          'causal': {
-            display: 'causal',
-            description: 'Logical relationship: introduces cause/reason'
-          },
-          'conditional': {
-            display: 'conditional',
-            description: 'Logical relationship: introduces a condition'
-          },
-          'temporal': {
-            display: 'temporal',
-            description: 'Logical relationship: links events by time/sequence'
-          },
-          'purpose': {
-            display: 'purpose',
-            description: 'Logical relationship: indicates goal or purpose'
-          },
-          'relative': {
-            display: 'relative (logic)',
-            description: 'Logical relationship: relative-linking function in discourse structure'
-          }
-        }
-        if (logicalRelationshipMap[value]) {
-          addTextChip(logicalRelationshipMap[value].display, logicalRelationshipMap[value].description)
-        }
-      } else if (attributeStableId === 'metaattr021') {
-        const verbTypeMap = {
-          'defective-verb': {
-            display: 'defective',
-            description: 'Verb type: some standard forms are missing from the paradigm'
-          },
-          'impersonal-verb': {
-            display: 'impersonal',
-            description: 'Verb type: used mainly in impersonal constructions, often third person'
-          },
-          'meteorological-verb': {
-            display: 'meteorological',
-            description: 'Verb type: weather/meteorological usage (e.g. rain/snow patterns)'
-          },
-          'modal-verb': {
-            display: 'modal',
-            description: 'Verb type: modal verb, typically combining with an infinitive'
-          },
-          'direct-reflexive': {
-            display: 'direct reflexive',
-            description: 'Verb type: direct reflexive meaning is central for this sense'
-          },
-          'reciprocal': {
-            display: 'reciprocal',
-            description: 'Verb type: reciprocal sense where participants act on each other'
-          },
-          'pronominal-variant': {
-            display: 'pronominal',
-            description: 'Verb type: pronominal variant with fixed clitic/particle behavior'
-          },
-          'transitive-verb': {
-            display: 'transitive',
-            description: 'Verb type: transitive class'
-          },
-          'intransitive-verb': {
-            display: 'intransitive',
-            description: 'Verb type: intransitive class'
-          }
-        }
-        if (verbTypeMap[value]) {
-          addTextChip(verbTypeMap[value].display, verbTypeMap[value].description)
-        }
-      } else if (attributeStableId === 'metaattr013') {
-        const wordRestrictionMap = {
-          'invariable': {
-            display: 'invariable',
-            description: 'Word restriction: this sense behaves as invariable in context'
-          },
-          'plural-only': {
-            display: 'plural only',
-            description: 'Word restriction: used only in plural forms'
-          },
-          'only-plural': {
-            display: 'plural only',
-            description: 'Word restriction: used only in plural forms'
-          },
-          'singular-only': {
-            display: 'singular only',
-            description: 'Word restriction: used only in singular forms'
-          },
-          'third-person-only': {
-            display: '3rd person only',
-            description: 'Word restriction: only third-person forms are used'
-          },
-          'third-singular-only': {
-            display: '3rd singular only',
-            description: 'Word restriction: only third-person singular is used'
-          },
-          'missing-first-second-person': {
-            display: 'no 1st/2nd person',
-            description: 'Word restriction: first and second person forms are not used'
-          },
-          'missing-imperative': {
-            display: 'no imperative',
-            description: 'Word restriction: imperative forms are not used'
-          }
-        }
-        if (wordRestrictionMap[value]) {
-          addTextChip(wordRestrictionMap[value].display, wordRestrictionMap[value].description)
-        }
+        addTextChip(registerLabelMap[value], `${registerLabelMap[value]} register. This sense is specifically marked for that usage context`)
       }
     })
 
@@ -1483,14 +1055,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         rpc_core: t.rpc_core || [],
         rpc_tags: t.rpc_tags || []
       })) || []
-
-  // Word-level transitivity analysis - similar to auxiliaries
-  const wordLevelTransitivities = new Set()
-  translations.forEach(translation => {
-    const transitivities = translation.rpc_core?.filter(tag => isAttribute(tag, ATTRIBUTES.TRANSITIVITY)) || []
-    transitivities.forEach(tag => wordLevelTransitivities.add(tag.value_id))
-  })
-  const hasMultipleWordLevelTransitivities = wordLevelTransitivities.size > 1
 
   const normalizedPronunciationGroups = pronunciationGroups.length > 0
     ? (() => {
@@ -1575,7 +1139,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       ? formatContextHint(translation?.usageNotes || item.note)
       : formatContextHint(item.note)
     const meaningChips = isTranslation
-      ? renderTranslationChips(translation, hasMultipleWordLevelTransitivities)
+      ? renderTranslationChips(translation)
       : []
 
     return (
@@ -1707,7 +1271,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                   className="rounded-xl border border-white/70 bg-white/75 px-3 py-2 shadow-sm"
                 >
                   <div className="mb-2 flex items-center gap-2 flex-wrap">
-                    <span className="text-lg font-semibold text-gray-900">
+                    <span className="text-sm italic font-medium text-gray-600">
                       {groupLabel}
                     </span>
                     <AudioButton
@@ -1716,12 +1280,12 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                       audioObjectKey={groupAudio?.object_key || null}
                       audioBucket={groupAudio?.storage_bucket || null}
                       size="chip"
+                      variant="inline-icon"
                       title={
                         groupAudio?.voice_name
                           ? `Play pronunciation variant (${groupAudio.voice_name})`
                           : 'Play pronunciation variant'
                       }
-                      colorClass="bg-emerald-600 hover:bg-emerald-700"
                     />
                   </div>
 
@@ -1753,13 +1317,44 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           </div>
         )}
 
-        {/* Key Tags - Under Translations */}
-        {orderedBottomTags.length > 0 && (
+        {primaryMetadataTags.length > 0 && (
           <div className="flex gap-1 flex-wrap pt-1">
-            {orderedBottomTags.map((tag, index) => (
+            {primaryMetadataTags.map((tag, index) => (
               <span
-                key={index}
+                key={`primary-${index}`}
                 className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${tag.class}`}
+                data-description={tag.description}
+                onClick={handleTagClick}
+                style={{ cursor: 'pointer' }}
+              >
+                {tag.display}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {lexicalMetadataTags.length > 0 && (
+          <div className="mt-2 flex gap-1 flex-wrap">
+            {lexicalMetadataTags.map((tag, index) => (
+              <span
+                key={`lexical-${index}`}
+                className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${tag.class}`}
+                data-description={tag.description}
+                onClick={handleTagClick}
+                style={{ cursor: 'pointer' }}
+              >
+                {tag.display}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {grammarMetadataTags.length > 0 && (
+          <div className="mt-2 flex gap-1 flex-wrap">
+            {grammarMetadataTags.map((tag, index) => (
+              <span
+                key={`grammar-${index}`}
+                className={`tag-detailed text-[11px] px-2 py-0.5 rounded-full font-medium ${themeOutlineChipClass}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
