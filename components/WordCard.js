@@ -169,7 +169,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             tag: `freq-rank-${normalizedValue}`,
             display: `⭐ ${freqMap[normalizedValue]}`,
             class: 'bg-yellow-500 text-white',
-            description: `Top ${normalizedValue.replace('top', '').replace('10000', '10,000')} most frequent words`
+            description: `Frequency rank: this lemma is in the top ${normalizedValue.replace('top', '').replace('10000', '10,000')} most frequent words in the corpus`
           })
         }
       }
@@ -186,9 +186,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         if (tierMap[normalizedValue]) {
           detailed.push({
             tag: `freq-tier-${normalizedValue}`,
-            display: tierMap[normalizedValue],
+            display: `freq ${tierMap[normalizedValue]}`,
             class: 'bg-yellow-500 text-white',
-            description: `Frequency tier: ${tierMap[normalizedValue]}`
+            description: `Frequency tier: pedagogical band derived from corpus rank (${tierMap[normalizedValue]})`
           })
         }
       }
@@ -482,168 +482,269 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       }
       else if (attributeStableId === 'metaattr030') {
         const adjectiveTypeMap = {
-          'qualitative': 'qualitative',
-          'fixed-comparative': 'fixed comp.',
-          'relational': 'relational'
+          'qualitative': {
+            display: 'qualitative',
+            description: 'Adjective type: expresses an inherent quality and is usually gradable'
+          },
+          'fixed-comparative': {
+            display: 'fixed comp.',
+            description: 'Adjective type: lexicalized comparative/superlative form, not regular gradation'
+          },
+          'relational': {
+            display: 'relational',
+            description: 'Adjective type: category/material/origin adjective, usually not gradable'
+          }
         }
         if (adjectiveTypeMap[normalizedValue]) {
           detailed.push({
             tag: `adjective-type-${normalizedValue}`,
-            display: adjectiveTypeMap[normalizedValue],
+            display: adjectiveTypeMap[normalizedValue].display,
             class: wordThemeClass,
-            description: `Adjective type: ${adjectiveTypeMap[normalizedValue]}`
+            description: adjectiveTypeMap[normalizedValue].description
           })
         }
       }
       else if (attributeStableId === 'metaattr_matrix5_abbreviation_type') {
         const abbreviationTypeMap = {
-          'initialism': 'initialism',
-          'acronym': 'acronym'
+          'initialism': {
+            display: 'initialism',
+            description: 'Abbreviation type: pronounced letter by letter (e.g. U.S.A.)'
+          },
+          'acronym': {
+            display: 'acronym',
+            description: 'Abbreviation type: pronounced like a word (e.g. NATO)'
+          }
         }
         if (abbreviationTypeMap[normalizedValue]) {
           detailed.push({
             tag: `abbreviation-type-${normalizedValue}`,
-            display: abbreviationTypeMap[normalizedValue],
+            display: abbreviationTypeMap[normalizedValue].display,
             class: wordThemeClass,
-            description: `Abbreviation type: ${abbreviationTypeMap[normalizedValue]}`
+            description: abbreviationTypeMap[normalizedValue].description
           })
         }
       }
       else if (attributeStableId === 'metaattr_matrix5_affix_type') {
         const affixTypeMap = {
-          'prefix': 'prefix'
+          'prefix': {
+            display: 'prefix',
+            description: 'Affix type: morpheme attached before a base word'
+          }
         }
         if (affixTypeMap[normalizedValue]) {
           detailed.push({
             tag: `affix-type-${normalizedValue}`,
-            display: affixTypeMap[normalizedValue],
+            display: affixTypeMap[normalizedValue].display,
             class: wordThemeClass,
-            description: `Affix type: ${affixTypeMap[normalizedValue]}`
+            description: affixTypeMap[normalizedValue].description
           })
         }
       }
       else if (attributeStableId === 'metaattr062') {
         const conjunctionTypeMap = {
-          'coordinating': 'coord.',
-          'subordinating': 'subord.',
-          'correlative': 'correl.'
+          'coordinating': {
+            display: 'coord.',
+            description: 'Conjunction type: links words/clauses of equal grammatical rank'
+          },
+          'subordinating': {
+            display: 'subord.',
+            description: 'Conjunction type: introduces a subordinate clause'
+          },
+          'correlative': {
+            display: 'correl.',
+            description: 'Conjunction type: paired construction (e.g. either...or)'
+          }
         }
         if (conjunctionTypeMap[normalizedValue]) {
           detailed.push({
             tag: `conjunction-type-${normalizedValue}`,
-            display: conjunctionTypeMap[normalizedValue],
+            display: conjunctionTypeMap[normalizedValue].display,
             class: wordThemeClass,
-            description: `Conjunction type: ${formatSlugLabel(normalizedValue)}`
+            description: conjunctionTypeMap[normalizedValue].description
           })
         }
       }
       else if (attributeStableId === 'metaattr061') {
         const determinerTypeMap = {
-          'article': 'article',
-          'demonstrative': 'demonstrative',
-          'indefinite-article': 'indef. article',
-          'interrogative': 'interrogative',
-          'possessive': 'possessive',
-          'quantifier': 'quantifier'
+          'article': {
+            display: 'det article',
+            description: 'Determiner type: article determiner'
+          },
+          'demonstrative': {
+            display: 'det demonstr.',
+            description: 'Determiner type: points to a specific referent (this/that)'
+          },
+          'indefinite-article': {
+            display: 'det indef.',
+            description: 'Determiner type: introduces a non-specific referent'
+          },
+          'interrogative': {
+            display: 'det interrog.',
+            description: 'Determiner type: used to ask which/what/how many'
+          },
+          'possessive': {
+            display: 'det possess.',
+            description: 'Determiner type: marks possession/association'
+          },
+          'quantifier': {
+            display: 'det quant.',
+            description: 'Determiner type: expresses quantity or amount'
+          }
         }
         if (determinerTypeMap[normalizedValue]) {
           detailed.push({
             tag: `determiner-type-${normalizedValue}`,
-            display: determinerTypeMap[normalizedValue],
+            display: determinerTypeMap[normalizedValue].display,
             class: wordThemeClass,
-            description: `Determiner type: ${determinerTypeMap[normalizedValue]}`
+            description: determinerTypeMap[normalizedValue].description
           })
         }
       }
       else if (attributeStableId === 'metaattr069') {
         const expressionTypeMap = {
-          'single-word': 'single word',
-          'multiword-expression': 'multiword'
+          'single-word': {
+            display: 'single word',
+            description: 'Expression type: one lexical word'
+          },
+          'multiword-expression': {
+            display: 'multiword',
+            description: 'Expression type: fixed or conventional multiword expression'
+          }
         }
         if (expressionTypeMap[normalizedValue]) {
           detailed.push({
             tag: `expression-type-${normalizedValue}`,
-            display: expressionTypeMap[normalizedValue],
+            display: expressionTypeMap[normalizedValue].display,
             class: wordThemeClass,
-            description: `Expression type: ${expressionTypeMap[normalizedValue]}`
+            description: expressionTypeMap[normalizedValue].description
           })
         }
       }
       else if (attributeStableId === 'metaattr060') {
         const prepositionTypeMap = {
-          'simple': 'simple prep.',
-          'complex': 'complex prep.',
-          'contracted': 'contracted prep.'
+          'simple': {
+            display: 'simple prep.',
+            description: 'Preposition type: single-word basic preposition'
+          },
+          'complex': {
+            display: 'complex prep.',
+            description: 'Preposition type: multiword prepositional expression'
+          },
+          'contracted': {
+            display: 'contracted prep.',
+            description: 'Preposition type: fused preposition+article form'
+          }
         }
         if (prepositionTypeMap[normalizedValue]) {
           detailed.push({
             tag: `preposition-type-${normalizedValue}`,
-            display: prepositionTypeMap[normalizedValue],
+            display: prepositionTypeMap[normalizedValue].display,
             class: wordThemeClass,
-            description: `Preposition type: ${formatSlugLabel(normalizedValue)}`
+            description: prepositionTypeMap[normalizedValue].description
           })
         }
       }
       else if (attributeStableId === 'metaattr041') {
         const pronounFormMap = {
-          'full': 'full pron.',
-          'clitic': 'clitic pron.',
-          'combined': 'combined pron.',
-          'elision': 'elided pron.'
+          'full': {
+            display: 'form full',
+            description: 'Pronoun form: full standalone pronoun form'
+          },
+          'clitic': {
+            display: 'form clitic',
+            description: 'Pronoun form: clitic form that attaches to a verb'
+          },
+          'combined': {
+            display: 'form combined',
+            description: 'Pronoun form: combined clitic cluster'
+          },
+          'elision': {
+            display: 'form elision',
+            description: 'Pronoun form: elided form with apostrophe'
+          }
         }
         if (pronounFormMap[normalizedValue]) {
           detailed.push({
             tag: `pronoun-form-${normalizedValue}`,
-            display: pronounFormMap[normalizedValue],
+            display: pronounFormMap[normalizedValue].display,
             class: wordThemeClass,
-            description: `Pronoun form: ${formatSlugLabel(normalizedValue)}`
+            description: pronounFormMap[normalizedValue].description
           })
         }
       }
       else if (attributeStableId === 'metaattr040') {
         const pronounTypeMap = {
-          'personal': 'personal pron.',
-          'clitic': 'clitic pron.',
-          'indefinite': 'indef. pron.',
-          'relative': 'relative pron.',
-          'demonstrative': 'demonstrative pron.'
+          'personal': {
+            display: 'pron personal',
+            description: 'Pronoun type: personal pronoun'
+          },
+          'clitic': {
+            display: 'pron clitic',
+            description: 'Pronoun type: clitic-pronoun category'
+          },
+          'indefinite': {
+            display: 'pron indef.',
+            description: 'Pronoun type: indefinite pronoun'
+          },
+          'relative': {
+            display: 'pron relative',
+            description: 'Pronoun type: relative pronoun introducing a relative clause'
+          },
+          'demonstrative': {
+            display: 'pron demonstr.',
+            description: 'Pronoun type: demonstrative pronoun'
+          }
         }
         if (pronounTypeMap[normalizedValue]) {
           detailed.push({
             tag: `pronoun-type-${normalizedValue}`,
-            display: pronounTypeMap[normalizedValue],
+            display: pronounTypeMap[normalizedValue].display,
             class: wordThemeClass,
-            description: `Pronoun type: ${formatSlugLabel(normalizedValue)}`
+            description: pronounTypeMap[normalizedValue].description
           })
         }
       }
       else if (attributeStableId === 'metaattr035') {
         const phonologyPositionMap = {
-          'after-noun': 'post-nom.',
-          'before-most-consonants': 'pre consonant',
-          'before-impure-consonant': 'pre impure',
-          'before-vowel-or-h': 'pre vowel/h'
+          'after-noun': {
+            display: 'post-nom.',
+            description: 'Phonology position: form used after the noun'
+          },
+          'before-most-consonants': {
+            display: 'pre consonant',
+            description: 'Phonology position: form used before most consonant onsets'
+          },
+          'before-impure-consonant': {
+            display: 'pre impure',
+            description: 'Phonology position: form used before impure consonants (s+consonant, z, gn, ps, x)'
+          },
+          'before-vowel-or-h': {
+            display: 'pre vowel/h',
+            description: 'Phonology position: form used before vowel or silent h'
+          }
         }
         if (phonologyPositionMap[normalizedValue]) {
           detailed.push({
             tag: `phonology-position-${normalizedValue}`,
-            display: phonologyPositionMap[normalizedValue],
+            display: phonologyPositionMap[normalizedValue].display,
             class: wordThemeClass,
-            description: `Phonology position: ${formatSlugLabel(normalizedValue)}`
+            description: phonologyPositionMap[normalizedValue].description
           })
         }
       }
       else if (attributeStableId === 'metaattr057' && wordType === 'NOUN') {
         const nounTypeMap = {
-          common: 'common',
-          proper: 'proper'
+          common: 'common noun',
+          proper: 'proper noun'
         }
         if (nounTypeMap[valueLabel]) {
           detailed.push({
             tag: `noun-type-${valueLabel}`,
             display: nounTypeMap[valueLabel],
             class: 'bg-cyan-500 text-white',
-            description: `Noun type: ${nounTypeMap[valueLabel]}`
+            description: valueLabel === 'common'
+              ? 'Noun type: common noun (not a unique name)'
+              : 'Noun type: proper noun (name of a specific person/place/entity)'
           })
         }
       }
@@ -880,11 +981,18 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
     const cefrLevelTags = bottomTags.filter((tag) => typeof tag?.tag === 'string' && tag.tag.startsWith('CEFR-'))
     const cefrTierTags = bottomTags.filter((tag) => typeof tag?.tag === 'string' && tag.tag.startsWith('cefr-tier-'))
+    const frequencyRankTags = bottomTags.filter((tag) => typeof tag?.tag === 'string' && tag.tag.startsWith('freq-rank-'))
+    const frequencyTierTags = bottomTags.filter((tag) => typeof tag?.tag === 'string' && tag.tag.startsWith('freq-tier-'))
     const otherTags = bottomTags.filter((tag) =>
-      !(typeof tag?.tag === 'string' && (tag.tag.startsWith('CEFR-') || tag.tag.startsWith('cefr-tier-')))
+      !(typeof tag?.tag === 'string' && (
+        tag.tag.startsWith('CEFR-') ||
+        tag.tag.startsWith('cefr-tier-') ||
+        tag.tag.startsWith('freq-rank-') ||
+        tag.tag.startsWith('freq-tier-')
+      ))
     )
 
-    return [...cefrLevelTags, ...cefrTierTags, ...otherTags]
+    return [...cefrLevelTags, ...cefrTierTags, ...frequencyRankTags, ...frequencyTierTags, ...otherTags]
   })()
 
   // Get translations - use processedTranslations from EnhancedDictionarySystem
@@ -1076,114 +1184,285 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
       if (attributeStableId === 'metaattr031') {
         const articlePatternMap = {
-          'definite-required': 'def. article',
-          'no-article': 'no article',
-          'flexible-article': 'flex article',
-          'definite-or-partitive': 'def/partitive',
-          'optional-article': 'opt article',
-          'fixed-no-article': 'fixed no article'
+          'definite-required': {
+            display: 'def. article',
+            description: 'Article pattern: this sense is normally used with a definite article'
+          },
+          'no-article': {
+            display: 'no article',
+            description: 'Article pattern: this sense is normally used without an article'
+          },
+          'flexible-article': {
+            display: 'flex article',
+            description: 'Article pattern: article choice varies by context'
+          },
+          'definite-or-partitive': {
+            display: 'def/partitive',
+            description: 'Article pattern: typically definite or partitive depending on meaning'
+          },
+          'optional-article': {
+            display: 'opt article',
+            description: 'Article pattern: article may be omitted in some standard contexts'
+          },
+          'fixed-no-article': {
+            display: 'fixed no article',
+            description: 'Article pattern: lexicalized fixed construction without article'
+          }
         }
         if (articlePatternMap[value]) {
-          addTextChip(articlePatternMap[value], `Article pattern: ${articlePatternMap[value]}`)
+          addTextChip(articlePatternMap[value].display, articlePatternMap[value].description)
         }
       } else if (attributeStableId === 'metaattr059') {
         const cliticAvailabilityMap = {
-          'core-clitic': 'core clitic',
-          'supports_clitics': 'supports clitics',
-          'no_clitics': 'no clitics',
-          'no-clitics': 'no clitics',
-          'reflexive-clitic': 'refl clitic',
-          'indirect-clitic': 'indirect clitic',
-          'optional-clitic': 'opt clitic',
-          'reciprocal-clitic': 'recip clitic'
+          'core-clitic': {
+            display: 'core clitic',
+            description: 'Clitic availability: clitic usage is core/expected for this entry'
+          },
+          'supports_clitics': {
+            display: 'supports clitics',
+            description: 'Clitic availability: clitic usage is supported'
+          },
+          'no_clitics': {
+            display: 'no clitics',
+            description: 'Clitic availability: clitic forms are not used'
+          },
+          'no-clitics': {
+            display: 'no clitics',
+            description: 'Clitic availability: clitic forms are not used'
+          },
+          'reflexive-clitic': {
+            display: 'refl clitic',
+            description: 'Clitic availability: reflexive clitic usage'
+          },
+          'indirect-clitic': {
+            display: 'indirect clitic',
+            description: 'Clitic availability: indirect-object clitic usage'
+          },
+          'optional-clitic': {
+            display: 'opt clitic',
+            description: 'Clitic availability: clitic usage is optional'
+          },
+          'reciprocal-clitic': {
+            display: 'recip clitic',
+            description: 'Clitic availability: reciprocal clitic usage'
+          }
         }
         if (cliticAvailabilityMap[value]) {
-          addTextChip(cliticAvailabilityMap[value], `Clitic availability: ${cliticAvailabilityMap[value]}`)
+          addTextChip(cliticAvailabilityMap[value].display, cliticAvailabilityMap[value].description)
         }
       } else if (attributeStableId === 'metaattr032') {
         const countableMap = {
-          'countable': 'countable',
-          'uncountable': 'uncountable'
+          'countable': {
+            display: 'countable',
+            description: 'Countability: can normally be counted and pluralized'
+          },
+          'uncountable': {
+            display: 'uncountable',
+            description: 'Countability: mass/uncountable usage in this sense'
+          }
         }
         if (countableMap[value]) {
-          addTextChip(countableMap[value], `Countability: ${countableMap[value]}`)
+          addTextChip(countableMap[value].display, countableMap[value].description)
         }
       } else if (attributeStableId === 'metaattr055') {
         const governmentMap = {
-          'governs_a': 'gov. a',
-          'governs_di': 'gov. di',
-          'governs_da': 'gov. da',
-          'governs_in': 'gov. in',
-          'governs_con': 'gov. con',
-          'governs_su': 'gov. su',
-          'governs_per': 'gov. per',
-          'invariable': 'gov. invar'
+          'governs_a': {
+            display: 'gov. a',
+            description: 'Government: this sense typically governs preposition "a"'
+          },
+          'governs_di': {
+            display: 'gov. di',
+            description: 'Government: this sense typically governs preposition "di"'
+          },
+          'governs_da': {
+            display: 'gov. da',
+            description: 'Government: this sense typically governs preposition "da"'
+          },
+          'governs_in': {
+            display: 'gov. in',
+            description: 'Government: this sense typically governs preposition "in"'
+          },
+          'governs_con': {
+            display: 'gov. con',
+            description: 'Government: this sense typically governs preposition "con"'
+          },
+          'governs_su': {
+            display: 'gov. su',
+            description: 'Government: this sense typically governs preposition "su"'
+          },
+          'governs_per': {
+            display: 'gov. per',
+            description: 'Government: this sense typically governs preposition "per"'
+          },
+          'invariable': {
+            display: 'gov. invar',
+            description: 'Government: no single fixed governing preposition'
+          }
         }
         if (governmentMap[value]) {
-          addTextChip(governmentMap[value], `Government: ${governmentMap[value]}`)
+          addTextChip(governmentMap[value].display, governmentMap[value].description)
         }
       } else if (attributeStableId === 'metaattr009') {
         const gradableMap = {
-          'analytical-gradability': 'analytical',
-          'full-gradability': 'full grad.',
-          'non-gradable': 'non-grad.'
+          'analytical-gradability': {
+            display: 'analytical',
+            description: 'Gradability: comparative/superlative usually formed analytically (più/meno)'
+          },
+          'full-gradability': {
+            display: 'full grad.',
+            description: 'Gradability: supports full gradation behavior'
+          },
+          'non-gradable': {
+            display: 'non-grad.',
+            description: 'Gradability: not normally gradable in this sense'
+          }
         }
         if (gradableMap[value]) {
-          addTextChip(gradableMap[value], `Gradability: ${gradableMap[value]}`)
+          addTextChip(gradableMap[value].display, gradableMap[value].description)
         }
       } else if (attributeStableId === 'metaattr050') {
         const interjectionTypeMap = {
-          'acknowledgment': 'acknowledgment',
-          'cognitive': 'cognitive',
-          'greeting': 'greeting',
-          'exclamation': 'exclamation',
-          'cultural-phrase': 'cultural phrase'
+          'acknowledgment': {
+            display: 'acknowledgment',
+            description: 'Interjection type: acknowledgment response'
+          },
+          'cognitive': {
+            display: 'cognitive',
+            description: 'Interjection type: expresses thought/realization'
+          },
+          'greeting': {
+            display: 'greeting',
+            description: 'Interjection type: greeting/farewell expression'
+          },
+          'exclamation': {
+            display: 'exclamation',
+            description: 'Interjection type: exclamatory reaction'
+          },
+          'cultural-phrase': {
+            display: 'cultural phrase',
+            description: 'Interjection type: fixed cultural expression'
+          }
         }
         if (interjectionTypeMap[value]) {
-          addTextChip(interjectionTypeMap[value], `Interjection type: ${interjectionTypeMap[value]}`)
+          addTextChip(interjectionTypeMap[value].display, interjectionTypeMap[value].description)
         }
       } else if (attributeStableId === 'metaattr063') {
         const logicalRelationshipMap = {
-          'addition': 'addition',
-          'contrast': 'contrast',
-          'disjunction': 'disjunction',
-          'causal': 'causal',
-          'conditional': 'conditional',
-          'temporal': 'temporal',
-          'purpose': 'purpose',
-          'relative': 'relative'
+          'addition': {
+            display: 'logic addition',
+            description: 'Logical relationship: adds information'
+          },
+          'contrast': {
+            display: 'logic contrast',
+            description: 'Logical relationship: marks contrast/concession'
+          },
+          'disjunction': {
+            display: 'logic disjunction',
+            description: 'Logical relationship: presents alternatives'
+          },
+          'causal': {
+            display: 'logic causal',
+            description: 'Logical relationship: gives a reason/cause'
+          },
+          'conditional': {
+            display: 'logic conditional',
+            description: 'Logical relationship: sets a condition'
+          },
+          'temporal': {
+            display: 'logic temporal',
+            description: 'Logical relationship: links events in time'
+          },
+          'purpose': {
+            display: 'logic purpose',
+            description: 'Logical relationship: indicates purpose'
+          },
+          'relative': {
+            display: 'logic relative',
+            description: 'Logical relationship: relative-linking function'
+          }
         }
         if (logicalRelationshipMap[value]) {
-          addTextChip(logicalRelationshipMap[value], `Logical relationship: ${logicalRelationshipMap[value]}`)
+          addTextChip(logicalRelationshipMap[value].display, logicalRelationshipMap[value].description)
         }
       } else if (attributeStableId === 'metaattr021') {
         const verbTypeMap = {
-          'defective-verb': 'defective',
-          'impersonal-verb': 'impersonal',
-          'meteorological-verb': 'meteorological',
-          'modal-verb': 'modal',
-          'direct-reflexive': 'direct reflexive',
-          'reciprocal': 'reciprocal',
-          'pronominal-variant': 'pronominal',
-          'transitive-verb': 'transitive',
-          'intransitive-verb': 'intransitive'
+          'defective-verb': {
+            display: 'verb defective',
+            description: 'Verb type: paradigm has missing standard forms'
+          },
+          'impersonal-verb': {
+            display: 'verb impersonal',
+            description: 'Verb type: used mainly in impersonal constructions'
+          },
+          'meteorological-verb': {
+            display: 'verb meteorol.',
+            description: 'Verb type: weather/meteorological usage'
+          },
+          'modal-verb': {
+            display: 'verb modal',
+            description: 'Verb type: modal verb used with infinitive complements'
+          },
+          'direct-reflexive': {
+            display: 'verb dir-refl',
+            description: 'Verb type: direct reflexive meaning is central'
+          },
+          'reciprocal': {
+            display: 'verb reciprocal',
+            description: 'Verb type: reciprocal (mutual action) sense'
+          },
+          'pronominal-variant': {
+            display: 'verb pronominal',
+            description: 'Verb type: pronominal variant with fixed particles/clitics'
+          },
+          'transitive-verb': {
+            display: 'verb transitive',
+            description: 'Verb type: transitive verb class'
+          },
+          'intransitive-verb': {
+            display: 'verb intransitive',
+            description: 'Verb type: intransitive verb class'
+          }
         }
         if (verbTypeMap[value]) {
-          addTextChip(verbTypeMap[value], `Verb type: ${verbTypeMap[value]}`)
+          addTextChip(verbTypeMap[value].display, verbTypeMap[value].description)
         }
       } else if (attributeStableId === 'metaattr013') {
         const wordRestrictionMap = {
-          'invariable': 'invariable',
-          'plural-only': 'plural only',
-          'only-plural': 'plural only',
-          'singular-only': 'singular only',
-          'third-person-only': '3rd person only',
-          'third-singular-only': '3sg only',
-          'missing-first-second-person': 'no 1st/2nd',
-          'missing-imperative': 'no imperative'
+          'invariable': {
+            display: 'restriction invar',
+            description: 'Word restriction: invariable usage in this sense/context'
+          },
+          'plural-only': {
+            display: 'restriction plural',
+            description: 'Word restriction: used only in plural'
+          },
+          'only-plural': {
+            display: 'restriction plural',
+            description: 'Word restriction: used only in plural'
+          },
+          'singular-only': {
+            display: 'restriction singular',
+            description: 'Word restriction: used only in singular'
+          },
+          'third-person-only': {
+            display: 'restriction 3rd',
+            description: 'Word restriction: only third-person forms are used'
+          },
+          'third-singular-only': {
+            display: 'restriction 3sg',
+            description: 'Word restriction: only third-person singular is used'
+          },
+          'missing-first-second-person': {
+            display: 'restriction no 1st/2nd',
+            description: 'Word restriction: first/second person forms are not used'
+          },
+          'missing-imperative': {
+            display: 'restriction no imp.',
+            description: 'Word restriction: imperative forms are not used'
+          }
         }
         if (wordRestrictionMap[value]) {
-          addTextChip(wordRestrictionMap[value], `Word restriction: ${wordRestrictionMap[value]}`)
+          addTextChip(wordRestrictionMap[value].display, wordRestrictionMap[value].description)
         }
       }
     })
