@@ -107,8 +107,23 @@ export default function AudioButton({
         </svg>
       ) : (
         <>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
-            <path d="M8 5v14l11-7z"/>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path
+              d="M3.5 8H6.2L10.8 4.6V15.4L6.2 12H3.5V8Z"
+              fill="currentColor"
+            />
+            <path
+              d="M13 8C13.9 8.65 14.35 9.35 14.35 10C14.35 10.65 13.9 11.35 13 12"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
+            <path
+              d="M15.1 6.3C16.45 7.35 17.15 8.55 17.15 10C17.15 11.45 16.45 12.65 15.1 13.7"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
           </svg>
         </>
       )}
