@@ -846,7 +846,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     // document-level listener: event.target may be a Text node; guard for closest support
     const target = event.target
     const element = target && target.nodeType === 1 ? target : target?.parentElement
-    if (!element?.closest || !element.closest('.tag-essential, .tag-detailed')) {
+    if (!element?.closest || !element.closest('.tag-essential, .tag-detailed, .wordcard-lexical-chip')) {
       setTooltip((prev) => ({ ...prev, show: false }))
     }
   }
@@ -1338,7 +1338,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {lexicalMetadataTags.map((tag, index) => (
               <span
                 key={`lexical-${index}`}
-                className={`tag-detailed text-[9px] px-1 py-px rounded-full font-medium ${tag.class}`}
+                className={`wordcard-lexical-chip inline-block text-[9px] px-1 py-px rounded-full font-medium leading-none ${tag.class}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
