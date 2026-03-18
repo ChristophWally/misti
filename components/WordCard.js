@@ -186,9 +186,9 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
         if (tierMap[normalizedValue]) {
           detailed.push({
             tag: `freq-tier-${normalizedValue}`,
-            display: `freq ${tierMap[normalizedValue]}`,
+            display: tierMap[normalizedValue],
             class: 'bg-yellow-500 text-white',
-            description: `Frequency tier: pedagogical band derived from corpus rank (${tierMap[normalizedValue]})`
+            description: `Frequency tier: ${tierMap[normalizedValue]}. This is a broad learning-priority band derived from corpus frequency`
           })
         }
       }
@@ -567,28 +567,28 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       else if (attributeStableId === 'metaattr061') {
         const determinerTypeMap = {
           'article': {
-            display: 'det article',
-            description: 'Determiner type: article determiner'
+            display: 'article det.',
+            description: 'Determiner type: article. It marks definiteness or indefiniteness of a noun phrase'
           },
           'demonstrative': {
-            display: 'det demonstr.',
-            description: 'Determiner type: points to a specific referent (this/that)'
+            display: 'demonstr. det.',
+            description: 'Determiner type: demonstrative. It points to a specific referent (this/that)'
           },
           'indefinite-article': {
-            display: 'det indef.',
-            description: 'Determiner type: introduces a non-specific referent'
+            display: 'indef. det.',
+            description: 'Determiner type: indefinite article. It introduces a non-specific referent'
           },
           'interrogative': {
-            display: 'det interrog.',
-            description: 'Determiner type: used to ask which/what/how many'
+            display: 'interrog. det.',
+            description: 'Determiner type: interrogative. It is used to ask which/what/how many'
           },
           'possessive': {
-            display: 'det possess.',
-            description: 'Determiner type: marks possession/association'
+            display: 'possess. det.',
+            description: 'Determiner type: possessive. It marks possession or association'
           },
           'quantifier': {
-            display: 'det quant.',
-            description: 'Determiner type: expresses quantity or amount'
+            display: 'quant. det.',
+            description: 'Determiner type: quantifier. It expresses amount or quantity'
           }
         }
         if (determinerTypeMap[normalizedValue]) {
@@ -647,20 +647,20 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       else if (attributeStableId === 'metaattr041') {
         const pronounFormMap = {
           'full': {
-            display: 'form full',
-            description: 'Pronoun form: full standalone pronoun form'
+            display: 'full form',
+            description: 'Pronoun form: full standalone form. It appears independently, not attached to a verb'
           },
           'clitic': {
-            display: 'form clitic',
-            description: 'Pronoun form: clitic form that attaches to a verb'
+            display: 'clitic form',
+            description: 'Pronoun form: clitic. It is a reduced form that attaches to a verb'
           },
           'combined': {
-            display: 'form combined',
-            description: 'Pronoun form: combined clitic cluster'
+            display: 'combined form',
+            description: 'Pronoun form: combined clitic cluster (two clitics fused into one sequence)'
           },
           'elision': {
-            display: 'form elision',
-            description: 'Pronoun form: elided form with apostrophe'
+            display: 'elided form',
+            description: 'Pronoun form: elided. The pronoun is shortened before a vowel, often with an apostrophe'
           }
         }
         if (pronounFormMap[normalizedValue]) {
@@ -675,24 +675,24 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       else if (attributeStableId === 'metaattr040') {
         const pronounTypeMap = {
           'personal': {
-            display: 'pron personal',
-            description: 'Pronoun type: personal pronoun'
+            display: 'personal pron.',
+            description: 'Pronoun type: personal pronoun, used for speaker/listener/third person reference'
           },
           'clitic': {
-            display: 'pron clitic',
-            description: 'Pronoun type: clitic-pronoun category'
+            display: 'clitic pron.',
+            description: 'Pronoun type: clitic pronoun category (object/reflexive clitic behavior)'
           },
           'indefinite': {
-            display: 'pron indef.',
-            description: 'Pronoun type: indefinite pronoun'
+            display: 'indef. pron.',
+            description: 'Pronoun type: indefinite pronoun, referring to non-specific people/things'
           },
           'relative': {
-            display: 'pron relative',
-            description: 'Pronoun type: relative pronoun introducing a relative clause'
+            display: 'relative pron.',
+            description: 'Pronoun type: relative pronoun that introduces a relative clause'
           },
           'demonstrative': {
-            display: 'pron demonstr.',
-            description: 'Pronoun type: demonstrative pronoun'
+            display: 'demonstr. pron.',
+            description: 'Pronoun type: demonstrative pronoun pointing to a specific referent'
           }
         }
         if (pronounTypeMap[normalizedValue]) {
@@ -1349,36 +1349,36 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       } else if (attributeStableId === 'metaattr063') {
         const logicalRelationshipMap = {
           'addition': {
-            display: 'logic addition',
-            description: 'Logical relationship: adds information'
+            display: 'addition',
+            description: 'Logical relationship: adds information to the previous idea (e.g. and/also)'
           },
           'contrast': {
-            display: 'logic contrast',
-            description: 'Logical relationship: marks contrast/concession'
+            display: 'contrast',
+            description: 'Logical relationship: marks contrast or concession between ideas'
           },
           'disjunction': {
-            display: 'logic disjunction',
-            description: 'Logical relationship: presents alternatives'
+            display: 'disjunction',
+            description: 'Logical relationship: presents alternatives or choices'
           },
           'causal': {
-            display: 'logic causal',
-            description: 'Logical relationship: gives a reason/cause'
+            display: 'causal',
+            description: 'Logical relationship: introduces cause/reason'
           },
           'conditional': {
-            display: 'logic conditional',
-            description: 'Logical relationship: sets a condition'
+            display: 'conditional',
+            description: 'Logical relationship: introduces a condition'
           },
           'temporal': {
-            display: 'logic temporal',
-            description: 'Logical relationship: links events in time'
+            display: 'temporal',
+            description: 'Logical relationship: links events by time/sequence'
           },
           'purpose': {
-            display: 'logic purpose',
-            description: 'Logical relationship: indicates purpose'
+            display: 'purpose',
+            description: 'Logical relationship: indicates goal or purpose'
           },
           'relative': {
-            display: 'logic relative',
-            description: 'Logical relationship: relative-linking function'
+            display: 'relative (logic)',
+            description: 'Logical relationship: relative-linking function in discourse structure'
           }
         }
         if (logicalRelationshipMap[value]) {
@@ -1387,40 +1387,40 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       } else if (attributeStableId === 'metaattr021') {
         const verbTypeMap = {
           'defective-verb': {
-            display: 'verb defective',
-            description: 'Verb type: paradigm has missing standard forms'
+            display: 'defective',
+            description: 'Verb type: some standard forms are missing from the paradigm'
           },
           'impersonal-verb': {
-            display: 'verb impersonal',
-            description: 'Verb type: used mainly in impersonal constructions'
+            display: 'impersonal',
+            description: 'Verb type: used mainly in impersonal constructions, often third person'
           },
           'meteorological-verb': {
-            display: 'verb meteorol.',
-            description: 'Verb type: weather/meteorological usage'
+            display: 'meteorological',
+            description: 'Verb type: weather/meteorological usage (e.g. rain/snow patterns)'
           },
           'modal-verb': {
-            display: 'verb modal',
-            description: 'Verb type: modal verb used with infinitive complements'
+            display: 'modal',
+            description: 'Verb type: modal verb, typically combining with an infinitive'
           },
           'direct-reflexive': {
-            display: 'verb dir-refl',
-            description: 'Verb type: direct reflexive meaning is central'
+            display: 'direct reflexive',
+            description: 'Verb type: direct reflexive meaning is central for this sense'
           },
           'reciprocal': {
-            display: 'verb reciprocal',
-            description: 'Verb type: reciprocal (mutual action) sense'
+            display: 'reciprocal',
+            description: 'Verb type: reciprocal sense where participants act on each other'
           },
           'pronominal-variant': {
-            display: 'verb pronominal',
-            description: 'Verb type: pronominal variant with fixed particles/clitics'
+            display: 'pronominal',
+            description: 'Verb type: pronominal variant with fixed clitic/particle behavior'
           },
           'transitive-verb': {
-            display: 'verb transitive',
-            description: 'Verb type: transitive verb class'
+            display: 'transitive',
+            description: 'Verb type: transitive class'
           },
           'intransitive-verb': {
-            display: 'verb intransitive',
-            description: 'Verb type: intransitive verb class'
+            display: 'intransitive',
+            description: 'Verb type: intransitive class'
           }
         }
         if (verbTypeMap[value]) {
@@ -1429,35 +1429,35 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       } else if (attributeStableId === 'metaattr013') {
         const wordRestrictionMap = {
           'invariable': {
-            display: 'restriction invar',
-            description: 'Word restriction: invariable usage in this sense/context'
+            display: 'invariable',
+            description: 'Word restriction: this sense behaves as invariable in context'
           },
           'plural-only': {
-            display: 'restriction plural',
-            description: 'Word restriction: used only in plural'
+            display: 'plural only',
+            description: 'Word restriction: used only in plural forms'
           },
           'only-plural': {
-            display: 'restriction plural',
-            description: 'Word restriction: used only in plural'
+            display: 'plural only',
+            description: 'Word restriction: used only in plural forms'
           },
           'singular-only': {
-            display: 'restriction singular',
-            description: 'Word restriction: used only in singular'
+            display: 'singular only',
+            description: 'Word restriction: used only in singular forms'
           },
           'third-person-only': {
-            display: 'restriction 3rd',
+            display: '3rd person only',
             description: 'Word restriction: only third-person forms are used'
           },
           'third-singular-only': {
-            display: 'restriction 3sg',
+            display: '3rd singular only',
             description: 'Word restriction: only third-person singular is used'
           },
           'missing-first-second-person': {
-            display: 'restriction no 1st/2nd',
-            description: 'Word restriction: first/second person forms are not used'
+            display: 'no 1st/2nd person',
+            description: 'Word restriction: first and second person forms are not used'
           },
           'missing-imperative': {
-            display: 'restriction no imp.',
+            display: 'no imperative',
             description: 'Word restriction: imperative forms are not used'
           }
         }
