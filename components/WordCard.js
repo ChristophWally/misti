@@ -1338,7 +1338,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {lexicalMetadataTags.map((tag, index) => (
               <span
                 key={`lexical-${index}`}
-                className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${tag.class}`}
+                className={`tag-detailed text-[11px] px-1.5 py-0.5 rounded-full font-medium ${tag.class}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
