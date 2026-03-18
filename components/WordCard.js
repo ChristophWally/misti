@@ -1271,7 +1271,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                   className="rounded-xl border border-white/70 bg-white/75 px-3 py-2 shadow-sm"
                 >
                   <div className="mb-2 flex items-center gap-2 flex-wrap">
-                    <span className="text-sm italic font-medium text-gray-600">
+                    <span className="text-base italic font-medium text-gray-600">
                       {groupLabel}
                     </span>
                     <AudioButton
@@ -1354,7 +1354,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {grammarMetadataTags.map((tag, index) => (
               <span
                 key={`grammar-${index}`}
-                className={`tag-detailed text-[11px] px-2 py-0.5 rounded-full font-medium ${themeOutlineChipClass}`}
+                className={`tag-detailed text-[10px] px-1.5 py-0.5 rounded-full font-medium ${themeOutlineChipClass}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
