@@ -986,8 +986,8 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     const chips = []
     const core = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
     const normalizeValue = (value) => String(value || '').trim().toLowerCase()
-    const standardRegisterChipClass = 'inline-block text-[13px] px-2.5 py-1 rounded-full font-semibold leading-none border bg-slate-700 text-white border-slate-700'
-    const highRiskRegisterChipClass = 'inline-block text-[13px] px-2.5 py-1 rounded-full font-semibold leading-none border bg-red-900 text-white border-red-900'
+    const standardRegisterChipClass = 'inline-block text-[12px] px-2 py-0.5 rounded-full font-semibold leading-none border bg-slate-700 text-white border-slate-700'
+    const highRiskRegisterChipClass = 'inline-block text-[12px] px-2 py-0.5 rounded-full font-semibold leading-none border bg-red-900 text-white border-red-900'
     const isHighRiskRegister = (value) => ['vulgar', 'offensive', 'archaic'].includes(value)
     const addTextChip = (symbol, title, registerValue = null) => {
       if (!symbol) return
@@ -1310,7 +1310,10 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                         className="ml-auto bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
                         title={`Study pronunciation group: ${groupLabel} (${groupTranslations.length} meaning${groupTranslations.length === 1 ? '' : 's'})`}
                       >
-                        +
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M12 5V19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                          <path d="M5 12H19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
                       </button>
                     )}
                   </div>
