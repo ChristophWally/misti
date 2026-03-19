@@ -846,7 +846,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     // document-level listener: event.target may be a Text node; guard for closest support
     const target = event.target
     const element = target && target.nodeType === 1 ? target : target?.parentElement
-    if (!element?.closest || !element.closest('.tag-essential, .tag-detailed, .wordcard-lexical-chip')) {
+    if (!element?.closest || !element.closest('.tag-essential, .tag-detailed, .wordcard-primary-chip, .wordcard-secondary-chip, .wordcard-grammar-chip')) {
       setTooltip((prev) => ({ ...prev, show: false }))
     }
   }
@@ -1322,7 +1322,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {primaryMetadataTags.map((tag, index) => (
               <span
                 key={`primary-${index}`}
-                className={`tag-detailed text-xs px-2 py-1 rounded-full font-semibold ${tag.class}`}
+                className={`wordcard-primary-chip inline-block text-xs px-2 py-1 rounded-full font-semibold leading-none ${tag.class}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
@@ -1338,7 +1338,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {lexicalMetadataTags.map((tag, index) => (
               <span
                 key={`lexical-${index}`}
-                className={`wordcard-lexical-chip inline-block text-[9px] px-1 py-px rounded-full font-medium leading-none ${tag.class}`}
+                className={`wordcard-secondary-chip inline-block text-[10px] px-1.5 py-0.5 rounded-full font-medium leading-none ${tag.class}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
@@ -1354,7 +1354,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {grammarMetadataTags.map((tag, index) => (
               <span
                 key={`grammar-${index}`}
-                className={`tag-detailed text-[10px] px-1.5 py-0.5 rounded-full font-medium ${themeOutlineChipClass}`}
+                className={`wordcard-grammar-chip inline-block text-[9px] px-1.5 py-px rounded-full font-medium leading-none ${themeOutlineChipClass}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
