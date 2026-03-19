@@ -1307,10 +1307,10 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                             translationIds: groupTranslationIds
                           })
                         }
-                        className="ml-auto bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
+                        className="ml-auto w-6 h-6 inline-flex items-center justify-center text-emerald-700 hover:text-emerald-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 rounded-sm transition-colors cursor-pointer"
                         title={`Study pronunciation group: ${groupLabel} (${groupTranslations.length} meaning${groupTranslations.length === 1 ? '' : 's'})`}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                           <path d="M12 5V19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                           <path d="M5 12H19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                         </svg>
