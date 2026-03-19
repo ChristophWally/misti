@@ -2,7 +2,7 @@
 
 // components/WordCard.js
 // Updated for Story 10: Multiple Translations Display
-// Shows top 2+ translations with individual "Study This Translation" buttons
+// Uses pronunciation-group-level study action and compact sense rows
 
 import { useState, useEffect } from 'react'
 import AudioButton from './AudioButton'
@@ -1152,17 +1152,17 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
 
     return (
       <div key={item.key || `${groupKey}-${index}`}>
-        <div className="flex items-start gap-2 py-1.5 min-h-[32px]">
-          <div className="w-5 flex-shrink-0 pt-0.5 text-sm font-bold text-gray-500">
+        <div className="flex items-start gap-1.5 py-0.5 min-h-[24px]">
+          <div className="w-5 flex-shrink-0 pt-0.5 text-sm font-bold text-gray-500 leading-tight">
             {index}.
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-base ${isTranslation ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={`text-base leading-tight ${isTranslation ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
                 {displayText}
               </span>
               {meaningChips.length > 0 && (
-                <span className="flex items-center gap-1 flex-wrap">
+                <span className="flex items-center gap-0.5 flex-wrap leading-tight">
                   {meaningChips.map((chip, chipIndex) => (
                     <span
                       key={`meaning-chip-${groupKey}-${index}-${chipIndex}`}
@@ -1178,22 +1178,11 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
               )}
             </div>
             {usageText && (
-              <div className="mt-0.5 text-xs italic text-gray-500">
+              <div className="mt-0 text-[11px] leading-tight italic text-gray-500">
                 {usageText}
               </div>
             )}
           </div>
-          {isTranslation && (
-            <div className="flex-shrink-0 pt-0.5">
-              <button
-                onClick={() => onAddToDeck && onAddToDeck(word, translation)}
-                className="bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
-                title={`Study: ${translation.translation}`}
-              >
-                +
-              </button>
-            </div>
-          )}
         </div>
       </div>
     )
@@ -1265,6 +1254,18 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             {normalizedPronunciationGroups.map((group) => {
               const groupLabel = formatPronunciationGroupLabel(group)
               const groupAudio = group?.primary_audio || null
+              const groupTranslations = []
+              const seenGroupTranslationIds = new Set()
+              group.meaningItems.forEach((item) => {
+                if (item.kind !== 'translation' || !item.translation) return
+                const dedupeKey = item.translation.id || item.translation.translation
+                if (seenGroupTranslationIds.has(dedupeKey)) return
+                seenGroupTranslationIds.add(dedupeKey)
+                groupTranslations.push(item.translation)
+              })
+              const groupTranslationIds = groupTranslations
+                .map((translation) => translation?.id)
+                .filter(Boolean)
               const visibleItems = group.meaningItems.slice(0, maxVisibleMeaningsPerGroup)
               const additionalItems = group.meaningItems.slice(maxVisibleMeaningsPerGroup)
               const isExpanded = !!expandedMeaningGroups[group.key]
@@ -1278,7 +1279,7 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                   key={group.key}
                   className="rounded-xl border border-white/70 bg-white/75 px-3 py-2 shadow-sm"
                 >
-                  <div className="mb-2 flex items-center gap-2 flex-wrap">
+                  <div className="mb-2 flex items-center gap-2">
                     <span className="text-base italic font-medium text-gray-600">
                       {groupLabel}
                     </span>
@@ -1295,6 +1296,23 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
                           : 'Play pronunciation variant'
                       }
                     />
+                    {onAddToDeck && groupTranslations.length > 0 && (
+                      <button
+                        onClick={() =>
+                          onAddToDeck(word, null, {
+                            mode: 'pronunciation-group',
+                            groupId: group.id || group.key,
+                            groupLabel,
+                            translations: groupTranslations,
+                            translationIds: groupTranslationIds
+                          })
+                        }
+                        className="ml-auto bg-emerald-600 text-white w-7 h-7 rounded flex items-center justify-center text-sm font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
+                        title={`Study pronunciation group: ${groupLabel} (${groupTranslations.length} meaning${groupTranslations.length === 1 ? '' : 's'})`}
+                      >
+                        +
+                      </button>
+                    )}
                   </div>
 
                   <div className="space-y-1">
