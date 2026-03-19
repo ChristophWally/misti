@@ -121,11 +121,18 @@ export default function DictionaryPanel({
   }
 
   // Handle add to deck
-  const handleAddToDeck = (word, translation = null) => {
-    console.log('handleAddToDeck called with:', { word, translation })
+  const handleAddToDeck = (word, translation = null, studyContext = null) => {
+    console.log('handleAddToDeck called with:', { word, translation, studyContext })
     
     // Provide immediate user feedback
-    const item = translation ? `${word.italian} - ${translation.translation}` : word.italian
+    let item = word.italian
+    if (studyContext?.mode === 'pronunciation-group') {
+      const groupLabel = studyContext.groupLabel || 'pronunciation group'
+      const meaningCount = Array.isArray(studyContext.translations) ? studyContext.translations.length : 0
+      item = `${word.italian} - ${groupLabel} (${meaningCount} meaning${meaningCount === 1 ? '' : 's'})`
+    } else if (translation) {
+      item = `${word.italian} - ${translation.translation}`
+    }
     
     // Show visual feedback (you can replace this with a proper toast/notification system)
     try {
@@ -136,7 +143,11 @@ export default function DictionaryPanel({
     }
     
     // TODO: Implement actual deck addition logic
-    console.log('Adding to deck:', { word: word.italian, translation: translation?.translation })
+    console.log('Adding to deck:', {
+      word: word.italian,
+      translation: translation?.translation,
+      studyContext
+    })
   }
 
   // Resize functionality
