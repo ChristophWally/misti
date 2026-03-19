@@ -986,13 +986,15 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     const chips = []
     const core = Array.isArray(translation.rpc_core) ? translation.rpc_core : []
     const normalizeValue = (value) => String(value || '').trim().toLowerCase()
-    const filledRegisterChipClass = 'inline-block text-[13px] px-2.5 py-1 rounded-full font-semibold leading-none border bg-slate-500 text-white border-slate-500'
-    const addTextChip = (symbol, title) => {
+    const standardRegisterChipClass = 'inline-block text-[13px] px-2.5 py-1 rounded-full font-semibold leading-none border bg-slate-700 text-white border-slate-700'
+    const highRiskRegisterChipClass = 'inline-block text-[13px] px-2.5 py-1 rounded-full font-semibold leading-none border bg-red-900 text-white border-red-900'
+    const isHighRiskRegister = (value) => ['vulgar', 'offensive', 'archaic'].includes(value)
+    const addTextChip = (symbol, title, registerValue = null) => {
       if (!symbol) return
       chips.push({
         symbol,
         title,
-        className: filledRegisterChipClass
+        className: isHighRiskRegister(normalizeValue(registerValue)) ? highRiskRegisterChipClass : standardRegisterChipClass
       })
     }
 
@@ -1003,19 +1005,19 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           chips.push({
             symbol: TAG_DISPLAYS[VALUES.REGISTER_FORMAL].display,
             title: 'Formal register - use in professional/elevated contexts',
-            className: filledRegisterChipClass
+            className: standardRegisterChipClass
           })
         } else if (isValue(tag, VALUES.REGISTER_CASUAL)) {
           chips.push({
             symbol: TAG_DISPLAYS[VALUES.REGISTER_CASUAL].display,
             title: 'Casual register - informal/everyday speech',
-            className: filledRegisterChipClass
+            className: standardRegisterChipClass
           })
         } else if (isValue(tag, VALUES.REGISTER_MIXED)) {
           chips.push({
             symbol: TAG_DISPLAYS[VALUES.REGISTER_MIXED].display,
             title: 'Mixed register - appropriate in both formal and casual contexts',
-            className: filledRegisterChipClass
+            className: standardRegisterChipClass
           })
         }
         // Note: REGISTER_NEUTRAL is intentionally excluded (not displayed)
@@ -1028,14 +1030,20 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       const value = normalizeValue(tag.value_label)
       const registerLabelMap = {
         'archaic': 'archaic',
+        'figurative': 'figurative',
         'informal': 'informal',
         'literary': 'literary',
+        'offensive': 'offensive',
         'regional': 'regional',
         'vulgar': 'vulgar'
       }
       if (value === 'neutral') return
       if (registerLabelMap[value]) {
-        addTextChip(registerLabelMap[value], `${registerLabelMap[value]} register. This sense is specifically marked for that usage context`)
+        addTextChip(
+          registerLabelMap[value],
+          `${registerLabelMap[value]} register. This sense is specifically marked for that usage context`,
+          value
+        )
       }
     })
 
@@ -1317,12 +1325,23 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
           </div>
         )}
 
-        {primaryMetadataTags.length > 0 && (
+        {(primaryMetadataTags.length > 0 || grammarMetadataTags.length > 0) && (
           <div className="flex gap-1 flex-wrap pt-1">
             {primaryMetadataTags.map((tag, index) => (
               <span
                 key={`primary-${index}`}
                 className={`wordcard-primary-chip inline-block text-[13px] px-2.5 py-1 rounded-full font-semibold leading-none ${tag.class}`}
+                data-description={tag.description}
+                onClick={handleTagClick}
+                style={{ cursor: 'pointer' }}
+              >
+                {tag.display}
+              </span>
+            ))}
+            {grammarMetadataTags.map((tag, index) => (
+              <span
+                key={`grammar-${index}`}
+                className={`wordcard-grammar-chip inline-block text-[12px] px-2.5 py-1 rounded-full font-semibold leading-none ${themeOutlineChipClass}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
@@ -1339,22 +1358,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
               <span
                 key={`lexical-${index}`}
                 className={`wordcard-secondary-chip inline-block text-[10px] px-1.5 py-0.5 rounded-full font-medium leading-none ${tag.class}`}
-                data-description={tag.description}
-                onClick={handleTagClick}
-                style={{ cursor: 'pointer' }}
-              >
-                {tag.display}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {grammarMetadataTags.length > 0 && (
-          <div className="mt-2 flex gap-1 flex-wrap">
-            {grammarMetadataTags.map((tag, index) => (
-              <span
-                key={`grammar-${index}`}
-                className={`wordcard-grammar-chip inline-block text-[12px] px-2.5 py-1 rounded-full font-semibold leading-none ${themeOutlineChipClass}`}
                 data-description={tag.description}
                 onClick={handleTagClick}
                 style={{ cursor: 'pointer' }}
