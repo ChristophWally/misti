@@ -875,7 +875,24 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     : []
   const maxVisibleMeaningsPerGroup = 2
 
-  const wordTypeLabel = word.word_type
+  const verbConjugationLabel = String(word.word_type || '').toUpperCase() === 'VERB'
+    ? (() => {
+        const coreTags = Array.isArray(word.word_core_tags) ? word.word_core_tags : []
+        const conjugationTag = coreTags.find((tag) => isAttribute(tag, ATTRIBUTES.CONJUGATION_TYPE))
+        const conjugationValue = String(conjugationTag?.value_label || '').trim().toLowerCase()
+        const conjugationMap = {
+          'are': 'ARE',
+          'ere': 'ERE',
+          'ire': 'IRE',
+          'ire-isc': 'IRE-ISC'
+        }
+        return conjugationMap[conjugationValue] || ''
+      })()
+    : ''
+  const wordTypeLabel =
+    String(word.word_type || '').toUpperCase() === 'VERB' && verbConjugationLabel
+      ? `VERB - ${verbConjugationLabel}`
+      : word.word_type
 
   // Convert filled tag classes to outlined style for less visual weight
   const outlinedClass = (cls) => {
