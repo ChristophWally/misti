@@ -974,10 +974,6 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
       tag.tag === 'form-invariable' ||
       tag.tag === 'reflexive' ||
       tag.tag === 'reflexive-verb' ||
-      tag.tag === 'are-conjugation' ||
-      tag.tag === 'ere-conjugation' ||
-      tag.tag === 'ire-conjugation' ||
-      tag.tag === 'ire-isc-conjugation' ||
       tag.tag.startsWith('plural-formation-') ||
       tag.tag.startsWith('noun-type-') ||
       tag.tag.startsWith('determiner-type-') ||
