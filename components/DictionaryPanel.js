@@ -724,8 +724,8 @@ export default function DictionaryPanel({
                 }
               </div>
             ) : (
-              <div className={isNarrow ? '' : 'space-y-3'}>
-                {words.map(word => isNarrow ? (
+              <div className={isNarrow || onSelectWord ? '' : 'space-y-3'}>
+                {words.map(word => (isNarrow || onSelectWord) ? (
                   <WordCompactRow
                     key={word.id}
                     word={word}
