@@ -916,11 +916,17 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
   const genderTag = processedTags.essential.find(tag =>
     tag.display === '♂' || tag.display === '♀' || tag.display === '⚥'
   )
+  const irregularTag = processedTags.essential.find(tag =>
+    typeof tag?.display === 'string' && tag.display.includes('IRREG')
+  )
 
   // All other tags go under translations
   const bottomTags = [
     ...processedTags.essential.filter(tag =>
-      tag.display !== '♂' && tag.display !== '♀' && tag.display !== '⚥'
+      tag.display !== '♂' &&
+      tag.display !== '♀' &&
+      tag.display !== '⚥' &&
+      !(typeof tag?.display === 'string' && tag.display.includes('IRREG'))
     ),
     ...processedTags.detailed
   ]
@@ -1002,13 +1008,53 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
     const standardRegisterChipClass = 'inline-block text-[12px] px-2 py-0.5 rounded-full font-semibold leading-none border bg-slate-700 text-white border-slate-700'
     const highRiskRegisterChipClass = 'inline-block text-[12px] px-2 py-0.5 rounded-full font-semibold leading-none border bg-red-900 text-white border-red-900'
     const isHighRiskRegister = (value) => ['vulgar', 'offensive', 'archaic'].includes(value)
-    const addTextChip = (symbol, title, registerValue = null) => {
+    const addTextChip = (symbol, title, registerValue = null, classNameOverride = null) => {
       if (!symbol) return
       chips.push({
         symbol,
         title,
-        className: isHighRiskRegister(normalizeValue(registerValue)) ? highRiskRegisterChipClass : standardRegisterChipClass
+        className: classNameOverride || (isHighRiskRegister(normalizeValue(registerValue)) ? highRiskRegisterChipClass : standardRegisterChipClass)
       })
+    }
+    const neutralSenseChipClass = 'inline-block text-[12px] px-2 py-0.5 rounded-full font-semibold leading-none border bg-slate-700 text-white border-slate-700'
+
+    // Conditional auxiliary/transitivity chips: show only when they disambiguate across this lemma.
+    const translationRows = Array.isArray(translations) ? translations : []
+    const uniqueAuxiliaries = new Set()
+    const uniqueTransitivities = new Set()
+    translationRows.forEach((row) => {
+      const rowCore = Array.isArray(row?.rpc_core) ? row.rpc_core : []
+      rowCore.forEach((tag) => {
+        if (isAttribute(tag, ATTRIBUTES.AUXILIARY_VERB)) {
+          uniqueAuxiliaries.add(normalizeValue(tag.value_label))
+        }
+        if (isAttribute(tag, ATTRIBUTES.TRANSITIVITY)) {
+          uniqueTransitivities.add(tag.value_id || normalizeValue(tag.value_label))
+        }
+      })
+    })
+
+    if (uniqueAuxiliaries.size > 1) {
+      const auxTag = core.find((tag) => isAttribute(tag, ATTRIBUTES.AUXILIARY_VERB))
+      const auxValue = normalizeValue(auxTag?.value_label)
+      if (auxValue === 'avere') {
+        addTextChip('av.', 'Auxiliary: avere', null, neutralSenseChipClass)
+      } else if (auxValue === 'essere') {
+        addTextChip('ess.', 'Auxiliary: essere', null, neutralSenseChipClass)
+      }
+    }
+
+    if (uniqueTransitivities.size > 1) {
+      const transitivityTag = core.find((tag) => isAttribute(tag, ATTRIBUTES.TRANSITIVITY))
+      if (transitivityTag) {
+        if (isValue(transitivityTag, VALUES.TRANSITIVITY_TRANSITIVE)) {
+          addTextChip('trans', 'Transitivity: transitive', null, neutralSenseChipClass)
+        } else if (isValue(transitivityTag, VALUES.TRANSITIVITY_INTRANSITIVE)) {
+          addTextChip('intrans', 'Transitivity: intransitive', null, neutralSenseChipClass)
+        } else if (isValue(transitivityTag, VALUES.TRANSITIVITY_AMBITRANSITIVE)) {
+          addTextChip('ambi', 'Transitivity: ambitransitive', null, neutralSenseChipClass)
+        }
+      }
     }
 
     // Register chips (translation-level, emoji-only display)
@@ -1256,6 +1302,18 @@ export default function WordCard({ word, onAddToDeck, className = '' }) {
             ) : (
               <span className={`px-3 py-1 rounded-full text-sm font-semibold border ${colors.tag}`}>
                 {wordTypeLabel}
+              </span>
+            )}
+
+            {/* Irregularity chip in header, after POS */}
+            {irregularTag && (
+              <span
+                className={`tag-essential text-xs px-2 py-1 rounded-full font-semibold ${irregularTag.class}`}
+                data-description={irregularTag.description}
+                onClick={handleTagClick}
+                style={{ cursor: 'pointer' }}
+              >
+                {irregularTag.display}
               </span>
             )}
           </div>
