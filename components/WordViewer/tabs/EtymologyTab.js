@@ -3,11 +3,19 @@
 // components/WordViewer/tabs/EtymologyTab.js
 
 export default function EtymologyTab({ word, fullBundle, isLoading }) {
-  const etymologyGroups = fullBundle?.word?.etymology_groups ||
-    (Array.isArray(word?.etymology_groups) ? word?.etymology_groups : [])
+  // Etymology records live at fullBundle.etymologies (set by hydrateCanonicalWordBundle)
+  const etymologyGroups = Array.isArray(fullBundle?.etymologies)
+    ? fullBundle.etymologies
+    : []
 
-  const relationships = fullBundle?.word?.relationships ||
-    (Array.isArray(word?.relationships) ? word?.relationships : [])
+  // Relationships may be spread onto the bundle or nested on the word
+  const relationships = Array.isArray(fullBundle?.relationships)
+    ? fullBundle.relationships
+    : Array.isArray(fullBundle?.word?.relationships)
+      ? fullBundle.word.relationships
+      : Array.isArray(word?.relationships)
+        ? word.relationships
+        : []
 
   const hasContent = etymologyGroups.length > 0 || relationships.length > 0
 

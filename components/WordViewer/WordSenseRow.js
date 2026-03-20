@@ -20,37 +20,54 @@ export default function WordSenseRow({ translation, index }) {
 
   const chips = []
 
-  // Register chip (skip 'neutral')
-  const registerTag = coreTags.find(t => {
-    const sid = t?.attribute_stable_id || ''
-    return sid === 'metaattr010' || sid.includes('register')
-  })
-  if (registerTag) {
-    const val = String(registerTag.value_label || '').toLowerCase()
-    if (val && val !== 'neutral') chips.push({ label: val, cls: 'bg-gray-200 text-gray-700' })
-  }
+  coreTags.forEach(tag => {
+    const sid = tag?.attribute_stable_id || ''
+    const val = String(tag?.value_label || '').toLowerCase()
+    if (!val) return
 
-  // Transitivity chip
-  const transitivityTag = coreTags.find(t => {
-    const sid = t?.attribute_stable_id || ''
-    return sid === 'metaattr020' || sid.includes('transitiv')
+    // Register (metaattr010) — skip neutral
+    if (sid === 'metaattr010') {
+      if (val !== 'neutral') chips.push({ label: val, cls: 'bg-gray-200 text-gray-700' })
+    }
+    // Transitivity (metaattr020)
+    else if (sid === 'metaattr020') {
+      const tMap = { transitive: 'tr.', intransitive: 'intr.', ambitransitive: 'ambitr.' }
+      const label = tMap[val]
+      if (label) chips.push({ label, cls: 'bg-teal-100 text-teal-700' })
+    }
+    // Auxiliary verb (metaattr002)
+    else if (sid === 'metaattr002') {
+      const auxMap = { avere: 'av.', essere: 'ess.' }
+      const label = auxMap[val]
+      if (label) chips.push({ label, cls: 'bg-teal-100 text-teal-700' })
+    }
+    // Reflexive (metaattr017 or metaattr021)
+    else if (sid === 'metaattr017' || sid === 'metaattr021') {
+      if (val === 'reflexive' || val.includes('reflexive')) {
+        chips.push({ label: 'refl.', cls: 'bg-teal-100 text-teal-700' })
+      }
+    }
+    // Verb type (metaattr018) — impersonal, modal, etc.
+    else if (sid === 'metaattr018') {
+      const vtMap = {
+        'impersonal-verb': 'impers.',
+        'modal-verb': 'modal',
+        'copular-verb': 'copular',
+        'causative-verb': 'causative',
+        'support-verb': 'support',
+      }
+      const label = vtMap[val] || val.replace(/-verb$/, '')
+      if (label) chips.push({ label, cls: 'bg-teal-100 text-teal-700' })
+    }
+    // Word restriction (metaattr022) — third-person-only, plural-only, etc.
+    else if (sid === 'metaattr022') {
+      chips.push({ label: val.replace(/-/g, '\u2011'), cls: 'bg-orange-100 text-orange-700' })
+    }
+    // Government / preposition governed (metaattr015)
+    else if (sid === 'metaattr015') {
+      chips.push({ label: `gov. ${val.replace('governs-', '')}`, cls: 'bg-indigo-100 text-indigo-700' })
+    }
   })
-  if (transitivityTag) {
-    const tMap = { transitive: 'tr.', intransitive: 'intr.', ambitransitive: 'ambitr.' }
-    const label = tMap[String(transitivityTag.value_label || '').toLowerCase()]
-    if (label) chips.push({ label, cls: 'bg-teal-100 text-teal-700' })
-  }
-
-  // Auxiliary chip (avere/essere)
-  const auxiliaryTag = coreTags.find(t => {
-    const sid = t?.attribute_stable_id || ''
-    return sid === 'metaattr002' || sid.includes('auxiliary')
-  })
-  if (auxiliaryTag) {
-    const auxMap = { avere: 'av.', essere: 'ess.' }
-    const label = auxMap[String(auxiliaryTag.value_label || '').toLowerCase()]
-    if (label) chips.push({ label, cls: 'bg-teal-100 text-teal-700' })
-  }
 
   return (
     <div className="py-2.5 border-b border-gray-100 last:border-0">
