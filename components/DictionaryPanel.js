@@ -5,11 +5,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import WordCard from './WordCard'
+import WordCompactRow from './WordCompactRow'
 import { EnhancedDictionarySystem } from '../lib/enhanced-dictionary-system'
 import { supabase } from '../lib/supabase'
-import { 
-  createInitialFilters, 
-  getApplicableGrammarFilters, 
+import {
+  createInitialFilters,
+  getApplicableGrammarFilters,
   handleFilterChipClick,
   wordTypeFilters,
   cefrLevels,
@@ -23,10 +24,12 @@ import {
   numberRestrictionFilters
 } from '../lib/filter-utils'
 
-export default function DictionaryPanel({ 
-  isOpen, 
-  onClose, 
-  className = '' 
+export default function DictionaryPanel({
+  isOpen,
+  onClose,
+  onSelectWord,
+  isNarrow = false,
+  className = ''
 }) {
   // State management
   const [searchTerm, setSearchTerm] = useState('')
@@ -206,36 +209,43 @@ export default function DictionaryPanel({
 
   return (
     <>
-      {/* FIXED: Overlay with proper fade animation timing */}
-      <div 
-        className={`
-          fixed inset-0 bg-black bg-opacity-50 z-40 
-          transition-opacity duration-300 ease-in-out
-          ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
-        `}
-        onClick={onClose}
-      />
-      
-      {/* FIXED: Panel with proper slide animation */}
-      <div 
-        className={`
-          fixed inset-y-0 right-0 bg-white shadow-xl z-50
-          transition-transform duration-300 ease-in-out
-          ${panelWidth ? '' : 'w-96 md:w-3/4 lg:w-2/3 xl:w-1/2'}
-          ${className}
-          ${isOpen ? 'transform translate-x-0' : 'transform translate-x-full'}
-        `}
-        style={{ 
+      {/* Overlay: only for non-narrow mode */}
+      {!isNarrow && (
+        <div
+          className={`
+            fixed inset-0 bg-black bg-opacity-50 z-40
+            transition-opacity duration-300 ease-in-out
+            ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}
+          `}
+          onClick={onClose}
+        />
+      )}
+
+      {/* Panel */}
+      <div
+        className={isNarrow
+          ? 'h-full flex flex-col bg-white'
+          : `
+            fixed inset-y-0 right-0 bg-white shadow-xl z-50
+            transition-transform duration-300 ease-in-out
+            ${panelWidth ? '' : 'w-96 md:w-3/4 lg:w-2/3 xl:w-1/2'}
+            ${className}
+            ${isOpen ? 'transform translate-x-0' : 'transform translate-x-full'}
+          `
+        }
+        style={isNarrow ? {} : {
           width: panelWidth ? `${panelWidth}px` : undefined,
-          minWidth: '384px', 
+          minWidth: '384px',
           maxWidth: '80vw'
         }}
       >
-        {/* Resize Handle */}
-        <div 
-          onMouseDown={startResize}
-          className="resize-handle"
-        />
+        {/* Resize Handle: only for non-narrow mode */}
+        {!isNarrow && (
+          <div
+            onMouseDown={startResize}
+            className="resize-handle"
+          />
+        )}
         
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -714,8 +724,14 @@ export default function DictionaryPanel({
                 }
               </div>
             ) : (
-              <div className="space-y-3">
-                {words.map(word => (
+              <div className={isNarrow ? '' : 'space-y-3'}>
+                {words.map(word => isNarrow ? (
+                  <WordCompactRow
+                    key={word.id}
+                    word={word}
+                    onClick={onSelectWord || (() => {})}
+                  />
+                ) : (
                   <WordCard
                     key={word.id}
                     word={word}
