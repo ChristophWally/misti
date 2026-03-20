@@ -724,19 +724,24 @@ export default function DictionaryPanel({
                 }
               </div>
             ) : (
-              <div className={isNarrow || onSelectWord ? '' : 'space-y-3'}>
-                {words.map(word => (isNarrow || onSelectWord) ? (
+              <div className={isNarrow ? '' : 'space-y-3'}>
+                {words.map(word => isNarrow ? (
                   <WordCompactRow
                     key={word.id}
                     word={word}
                     onClick={onSelectWord || (() => {})}
                   />
                 ) : (
-                  <WordCard
+                  <div
                     key={word.id}
-                    word={word}
-                    onAddToDeck={handleAddToDeck}
-                  />
+                    onClick={() => onSelectWord && onSelectWord(word)}
+                    className={onSelectWord ? 'cursor-pointer' : ''}
+                  >
+                    <WordCard
+                      word={word}
+                      onAddToDeck={handleAddToDeck}
+                    />
+                  </div>
                 ))}
               </div>
             )}
