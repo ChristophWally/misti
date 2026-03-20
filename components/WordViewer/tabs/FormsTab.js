@@ -6,6 +6,7 @@
 
 import AudioButton from '../../AudioButton'
 import ConjugationPanel from '../ConjugationPanel'
+import SentenceList from '../SentenceList'
 import { getWordTypeColors } from '../../../lib/word-type-utils'
 
 // Render simple chips from a form's core_tags array
@@ -43,12 +44,21 @@ function FormTagChips({ coreTags = [] }) {
   )
 }
 
-// A single FTG row: translation + linked sense + usage notes + usage label
-function FtgRow({ ftg, index, wordType }) {
+// A single FTG row: translation + linked sense + usage notes + usage label + sentences
+function FtgRow({ ftg, index, wordType, sentences = [] }) {
   const colors = getWordTypeColors(wordType)
   const usageNotes = ftg.usage_notes || ''
   const linkedSense = ftg.word_translation?.translation || null
   const usageLabel = ftg.usage_label || ftg.note || ''
+
+  // Filter sentences for this FTG (match by form_translation_group_link_id or form_translation_group_id)
+  const ftgSentences = sentences.filter(s => {
+    if (!Array.isArray(s.links)) return false
+    return s.links.some(link =>
+      (link.entity_type === 'form_translation_group' && link.entity_id === ftg.id) ||
+      (link.entity_type === 'form_translation_group_link' && link.entity_id === ftg.form_translation_group_link_id)
+    )
+  })
 
   return (
     <div className="py-2 border-b border-gray-100 last:border-0">
@@ -71,12 +81,17 @@ function FtgRow({ ftg, index, wordType }) {
           dangerouslySetInnerHTML={{ __html: usageNotes }}
         />
       )}
+      {ftgSentences.length > 0 && (
+        <div className="mt-1.5 ml-7">
+          <SentenceList sentences={ftgSentences} compact={true} />
+        </div>
+      )}
     </div>
   )
 }
 
 // A single form card: Italian form text + tags + audio + all FTGs
-function FormCard({ form, wordType }) {
+function FormCard({ form, wordType, sentences = [] }) {
   const colors = getWordTypeColors(wordType)
   const audioDesc = form.primary_audio || null
   const ipa = form.primary_ipa || null
@@ -86,6 +101,14 @@ function FormCard({ form, wordType }) {
     : []
 
   const formText = form.form_text || form.italian || ''
+
+  // Filter sentences for this form
+  const formSentences = sentences.filter(s => {
+    if (!Array.isArray(s.links)) return false
+    return s.links.some(link =>
+      link.entity_type === 'form' && link.entity_id === form.id
+    )
+  })
 
   return (
     <div className={`rounded-lg border ${colors.border} overflow-hidden`}>
@@ -105,11 +128,18 @@ function FormCard({ form, wordType }) {
       {ftgs.length > 0 ? (
         <div className="px-3">
           {ftgs.map((ftg, i) => (
-            <FtgRow key={ftg.id || i} ftg={ftg} index={i + 1} wordType={wordType} />
+            <FtgRow key={ftg.id || i} ftg={ftg} index={i + 1} wordType={wordType} sentences={sentences} />
           ))}
         </div>
       ) : (
         <div className="px-3 py-2 text-xs text-gray-400">No translations for this form.</div>
+      )}
+
+      {/* Inline sentences for this form (if not already shown in FTGs) */}
+      {formSentences.length > 0 && ftgs.length === 0 && (
+        <div className="px-3 py-2">
+          <SentenceList sentences={formSentences} compact={true} />
+        </div>
       )}
     </div>
   )
@@ -118,6 +148,7 @@ function FormCard({ form, wordType }) {
 export default function FormsTab({ word, fullBundle, isLoading }) {
   const wordType = String(word?.word_type || '').toUpperCase()
   const colors = getWordTypeColors(wordType)
+  const sentences = Array.isArray(fullBundle?.sentences) ? fullBundle.sentences : []
 
   if (isLoading && !fullBundle) {
     return <div className="p-4 text-sm text-gray-500">Loading forms...</div>
@@ -146,7 +177,7 @@ export default function FormsTab({ word, fullBundle, isLoading }) {
         {forms.length} form{forms.length !== 1 ? 's' : ''}
       </p>
       {forms.map((form, i) => (
-        <FormCard key={form.id || i} form={form} wordType={wordType} />
+        <FormCard key={form.id || i} form={form} wordType={wordType} sentences={sentences} />
       ))}
     </div>
   )

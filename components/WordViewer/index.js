@@ -7,27 +7,29 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { hydrateCanonicalWordBundle } from '../../lib/dictionary-bundle-compat'
 import WordViewerHeader from './WordViewerHeader'
-import OverviewTab from './tabs/OverviewTab'
+import SensesTab from './tabs/SensesTab'
 import FormsTab from './tabs/FormsTab'
-import EtymologyTab from './tabs/EtymologyTab'
+import SentencesTab from './tabs/SentencesTab'
 import GrammarTab from './tabs/GrammarTab'
+import EtymologyTab from './tabs/EtymologyTab'
 
 const TABS = [
-  { id: 'overview', label: 'Overview', icon: '📖' },
+  { id: 'senses', label: 'Senses', icon: '📖' },
   { id: 'forms', label: 'Forms', icon: '🔠' },
-  { id: 'etymology', label: 'Etymology', icon: '🌿' },
+  { id: 'sentences', label: 'Sentences', icon: '💬' },
   { id: 'grammar', label: 'Grammar', icon: '⚙️' },
+  { id: 'etymology', label: 'Etymology', icon: '🌿' },
 ]
 
 export default function WordViewer({ word, isOpen, onClose }) {
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('senses')
   const [fullBundle, setFullBundle] = useState(null)
   const [isLoadingBundle, setIsLoadingBundle] = useState(false)
 
   // Reset state when word changes
   useEffect(() => {
     if (word && isOpen) {
-      setActiveTab('overview')
+      setActiveTab('senses')
       setFullBundle(null)
       fetchBundle(word)
     }
@@ -81,17 +83,20 @@ export default function WordViewer({ word, isOpen, onClose }) {
 
       {/* Tab content: scrollable */}
       <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
-        {activeTab === 'overview' && (
-          <OverviewTab word={word} fullBundle={fullBundle} isLoading={isLoadingBundle} />
+        {activeTab === 'senses' && (
+          <SensesTab word={word} fullBundle={fullBundle} isLoading={isLoadingBundle} />
         )}
         {activeTab === 'forms' && (
           <FormsTab word={word} fullBundle={fullBundle} isLoading={isLoadingBundle} />
         )}
-        {activeTab === 'etymology' && (
-          <EtymologyTab word={word} fullBundle={fullBundle} isLoading={isLoadingBundle} />
+        {activeTab === 'sentences' && (
+          <SentencesTab word={word} fullBundle={fullBundle} isLoading={isLoadingBundle} />
         )}
         {activeTab === 'grammar' && (
           <GrammarTab word={word} fullBundle={fullBundle} isLoading={isLoadingBundle} />
+        )}
+        {activeTab === 'etymology' && (
+          <EtymologyTab word={word} fullBundle={fullBundle} isLoading={isLoadingBundle} />
         )}
       </div>
 

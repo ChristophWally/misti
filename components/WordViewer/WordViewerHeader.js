@@ -4,6 +4,7 @@
 
 import AudioButton from '../AudioButton'
 import { getWordTypeColors } from '../../lib/word-type-utils'
+import { processRpcTagsForDisplay } from '../../lib/tag-processing'
 
 const POS_COLOUR_BAR = {
   VERB: 'bg-teal-500',
@@ -40,6 +41,10 @@ export default function WordViewerHeader({ word, onClose }) {
   const conjLabel = conjTag ? conjMap[String(conjTag.value_label || '').toLowerCase()] : ''
   const wordTypeLabel = wordType === 'VERB' && conjLabel ? `VERB ${conjLabel}` : posLabel
 
+  // Process all word-level tags for display
+  const optionalTags = word?.word_display_optional_tags || word?.word_optional_tags || []
+  const { essential: essentialTags, detailed: detailedTags } = processRpcTagsForDisplay(coreTags, wordType, optionalTags)
+
   return (
     <div className={`${colors.bg} border-b ${colors.border} px-4 py-3`}>
       <div className="flex items-start gap-3">
@@ -64,22 +69,36 @@ export default function WordViewerHeader({ word, onClose }) {
             )}
           </div>
 
-          {/* Chips row */}
+          {/* Chips row: POS + essential tags */}
           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
             <span className={`text-xs px-2 py-0.5 rounded border ${colors.tag} font-medium`}>
               {wordTypeLabel}
             </span>
-            {cefrTag && (
-              <span className="text-xs px-2 py-0.5 rounded bg-orange-500 text-white font-medium">
-                {cefrTag.value_label}
+            {essentialTags.map((tag, i) => (
+              <span
+                key={i}
+                className={`text-xs px-2 py-0.5 rounded ${tag.class} font-medium`}
+                title={tag.description}
+              >
+                {tag.display}
               </span>
-            )}
-            {freqDisplay && (
-              <span className="text-xs px-2 py-0.5 rounded bg-yellow-500 text-white font-medium">
-                ⭐ {freqDisplay}
-              </span>
-            )}
+            ))}
           </div>
+
+          {/* Detailed tags row (optional) */}
+          {detailedTags.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              {detailedTags.map((tag, i) => (
+                <span
+                  key={i}
+                  className={`text-xs px-2 py-0.5 rounded ${tag.class} font-medium`}
+                  title={tag.description}
+                >
+                  {tag.display}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Close button */}
