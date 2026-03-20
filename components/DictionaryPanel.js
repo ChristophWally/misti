@@ -734,7 +734,11 @@ export default function DictionaryPanel({
                 ) : (
                   <div
                     key={word.id}
-                    onClick={() => onSelectWord && onSelectWord(word)}
+                    onClick={(e) => {
+                      if (!onSelectWord) return
+                      if (e.target.closest('button, a, [role="button"], input, select')) return
+                      onSelectWord(word)
+                    }}
                     className={onSelectWord ? 'cursor-pointer' : ''}
                   >
                     <WordCard
