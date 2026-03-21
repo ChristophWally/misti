@@ -1,16 +1,17 @@
 'use client'
 
 // components/WordViewer/tabs/FormsTab.js
-// Two layout modes:
-//   Form-centric: each form card lists its FTGs (nouns, adjectives with distinct form meanings)
-//   FTG-centric:  each FTG card lists the forms it applies to (contracted prepositions, shared FTGs)
-// Auto-detects based on whether any FTG links to 2+ forms.
+// Layout:
+//   1. Forms table — grouped by form type (Contracted Forms, Plural Forms, etc.)
+//      Each row: symbol · form + audio · composition · accent/IPA/phonetic · tag chips · notes
+//   2. FTG translation cards — each with small form pills (symbol + text only, no tags)
+//
+// For verbs: delegates to ConjugationPanel.
 
 import { useState } from 'react'
 import AudioButton from '../../AudioButton'
 import ConjugationPanel from '../ConjugationPanel'
 import SentenceList from '../SentenceList'
-import PronunciationDisplay from '../PronunciationDisplay'
 import WordImage from '../WordImage'
 import { getWordTypeColors } from '../../../lib/word-type-utils'
 import { processRpcTagsForDisplay } from '../../../lib/tag-processing'
@@ -23,7 +24,7 @@ const POS_COLOUR_BAR = {
   PREPOSITION: 'bg-gray-500',
 }
 
-// ─── Helpers ──────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function extractFirstParagraph(html) {
   if (!html) return { first: '', hasMore: false }
@@ -47,32 +48,297 @@ function buildImageMap(mediaLinks = [], mediaAssets = []) {
     if (!map[key]) map[key] = []
     map[key].push({ ...asset, link_order: link.link_order ?? 999 })
   }
-  for (const key of Object.keys(map)) {
-    map[key].sort((a, b) => a.link_order - b.link_order)
-  }
+  for (const key of Object.keys(map)) map[key].sort((a, b) => a.link_order - b.link_order)
   return map
 }
 
-/** Get all display chips for a form using processRpcTagsForDisplay. */
+/** Resolve audio descriptor from a pronunciation link (nested or flat RPC fields). */
+function resolvePronAudio(link) {
+  if (link?.media_asset?.object_key) return link.media_asset
+  if (link?.object_key) return { object_key: link.object_key, bucket: link.bucket || link.storage_bucket }
+  return null
+}
+
+/** Get all tag chips for a form using processRpcTagsForDisplay. */
 function getFormChips(coreTags = [], wordType = '') {
   const { essential, detailed } = processRpcTagsForDisplay(coreTags, wordType)
   return [...essential, ...detailed]
 }
 
-/** Render tag chips inline for a form. */
-function FormTagChips({ coreTags = [], wordType = '' }) {
-  const chips = getFormChips(coreTags, wordType)
-  if (chips.length === 0) return null
+/**
+ * Derive the gender/number symbol for a contracted form.
+ * Logic:
+ *   before-vowel-or-h → ⚤  (both genders, e.g. dell')
+ *   masculine + singolare → ♂   masculine + plurale → ⚤
+ *   feminine  + singolare → ♀   feminine  + plurale → ⚢
+ */
+function getFormSymbol(coreTags = []) {
+  const phonTag = coreTags.find(t => t.attribute_stable_id === 'metaattr035')
+  if (phonTag?.value_label === 'before-vowel-or-h') return '⚤'
+
+  const genderTag = coreTags.find(t => t.attribute_stable_id === 'metaattr011')
+  const numberTag = coreTags.find(t => t.attribute_stable_id === 'metaattr012')
+
+  const isMasc = genderTag?.value_label === 'masculine'
+  const isFem  = genderTag?.value_label === 'feminine'
+  const isPlur = numberTag?.value_label === 'plurale'
+
+  if (isMasc && isPlur)  return '⚤'
+  if (isMasc)            return '♂'
+  if (isFem  && isPlur)  return '⚢'
+  if (isFem)             return '♀'
+  return null
+}
+
+/**
+ * Group forms into labelled sections.
+ * Forms with phonology-position tags (metaattr035) OR a relationship entry → "Contracted Forms".
+ * Other forms grouped by form.form_type.
+ * Section order: contracted first, then remaining by key.
+ */
+function groupFormsByType(forms, relationships) {
+  const grouped = {}
+
+  for (const form of forms) {
+    const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
+    const hasPhonTag = coreTags.some(t => t.attribute_stable_id === 'metaattr035')
+    const hasRelationship = relationships.some(
+      r => r.contracted_form_id === form.id || r.target_form_id === form.id
+    )
+
+    let sectionKey, sectionLabel
+    if (hasPhonTag || hasRelationship) {
+      sectionKey   = 'contracted'
+      sectionLabel = 'Contracted Forms'
+    } else {
+      const ft = (form.form_type || 'other').toLowerCase().trim()
+      sectionKey   = ft
+      sectionLabel = ft === 'plural'    ? 'Plural Forms'
+                   : ft === 'irregular' ? 'Irregular Forms'
+                   : ft === 'other'     ? 'Forms'
+                   : ft.charAt(0).toUpperCase() + ft.slice(1).replace(/[-_]/g, ' ') + ' Forms'
+    }
+
+    if (!grouped[sectionKey]) grouped[sectionKey] = { label: sectionLabel, forms: [] }
+    grouped[sectionKey].forms.push(form)
+  }
+
+  const keys = Object.keys(grouped).sort((a, b) => {
+    if (a === 'contracted') return -1
+    if (b === 'contracted') return 1
+    return a.localeCompare(b)
+  })
+
+  return keys.map(k => grouped[k])
+}
+
+/**
+ * Sort contracted forms: regular consonant → impure consonant → vowel/h.
+ * Within each phonology group: masculine before feminine, singular before plural.
+ */
+function sortContractedForms(forms) {
+  const phonOrder = {
+    'before-most-consonants':  0,
+    'before-impure-consonant': 1,
+    'before-vowel-or-h':       2,
+  }
+
+  return [...forms].sort((a, b) => {
+    const aT = Array.isArray(a.core_tags) ? a.core_tags : []
+    const bT = Array.isArray(b.core_tags) ? b.core_tags : []
+
+    const aPhon = aT.find(t => t.attribute_stable_id === 'metaattr035')?.value_label || ''
+    const bPhon = bT.find(t => t.attribute_stable_id === 'metaattr035')?.value_label || ''
+    const diff = (phonOrder[aPhon] ?? 0) - (phonOrder[bPhon] ?? 0)
+    if (diff !== 0) return diff
+
+    const aGender = aT.find(t => t.attribute_stable_id === 'metaattr011')?.value_label || ''
+    const bGender = bT.find(t => t.attribute_stable_id === 'metaattr011')?.value_label || ''
+    if (aGender !== bGender) {
+      if (aGender === 'masculine') return -1
+      if (bGender === 'masculine') return 1
+    }
+
+    const aNum = aT.find(t => t.attribute_stable_id === 'metaattr012')?.value_label || ''
+    const bNum = bT.find(t => t.attribute_stable_id === 'metaattr012')?.value_label || ''
+    if (aNum !== bNum) {
+      if (aNum === 'singolare') return -1
+      if (bNum === 'singolare') return 1
+    }
+
+    return 0
+  })
+}
+
+// ─── Forms Table ──────────────────────────────────────────────────────────────
+
+/**
+ * Single row in the forms table.
+ * Columns (stacked within a 2-col grid: symbol | content):
+ *   symbol · form text + audio · composition · accent / IPA / phonetic (all variants) · chips · notes
+ */
+function FormTableRow({ form, word, wordType, relationships, isContracted = false }) {
+  const coreTags   = Array.isArray(form.core_tags) ? form.core_tags : []
+  const symbol     = getFormSymbol(coreTags)
+  const formText   = form.form_text || form.italian || ''
+  const chips      = getFormChips(coreTags, wordType)
+
+  // Pronunciation variants, sorted primary first
+  const pronunciationLinks = Array.isArray(form.pronunciation_links)
+    ? form.pronunciation_links.slice().sort((a, b) => (a.variant_order || 999) - (b.variant_order || 999))
+    : []
+
+  // Fallback audio when no pronunciation_links
+  const primaryAudio = form.primary_audio || null
+
+  // Relationship for composition line
+  const relationship = relationships.find(
+    r => r.contracted_form_id === form.id || r.target_form_id === form.id
+  )
+  const notes = relationship?.description || relationship?.systematic_rule || ''
+
   return (
-    <span className="inline-flex flex-wrap gap-0.5">
-      {chips.map((c, i) => (
-        <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${c.class}`} title={c.description}>{c.display}</span>
-      ))}
-    </span>
+    <div className="grid grid-cols-[2rem_1fr] gap-x-2 py-2.5 border-b border-gray-100 last:border-0 items-start">
+      {/* Symbol */}
+      <div className="text-base font-bold text-gray-500 text-center pt-0.5 select-none">
+        {symbol || '—'}
+      </div>
+
+      {/* Content */}
+      <div className="min-w-0">
+        {/* Form text + audio */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-base font-bold text-gray-900">{formText}</span>
+
+          {/* Audio from pronunciation_links (first variant) */}
+          {pronunciationLinks.length > 0 && (() => {
+            const media = resolvePronAudio(pronunciationLinks[0])
+            return media?.object_key ? (
+              <AudioButton
+                wordId={word?.id}
+                italianText={formText}
+                audioObjectKey={media.object_key}
+                audioBucket={media.storage_bucket || media.bucket}
+                size="chip"
+                variant="inline-icon"
+              />
+            ) : null
+          })()}
+
+          {/* Fallback audio when no pronunciation_links */}
+          {pronunciationLinks.length === 0 && primaryAudio?.object_key && (
+            <AudioButton
+              wordId={word?.id}
+              italianText={formText}
+              audioObjectKey={primaryAudio.object_key}
+              audioBucket={primaryAudio.bucket || primaryAudio.storage_bucket}
+              size="chip"
+              variant="inline-icon"
+            />
+          )}
+        </div>
+
+        {/* Composition: di + il → del */}
+        {relationship?.source_italian && relationship?.target_italian && (
+          <div className="text-xs font-mono text-gray-400 mt-0.5">
+            {relationship.source_italian} + {relationship.target_italian} → {formText}
+          </div>
+        )}
+
+        {/* Pronunciation variants: accent / IPA / phonetic */}
+        {pronunciationLinks.length > 0 && (
+          <div className="mt-1 space-y-0.5">
+            {pronunciationLinks.map((link, i) => {
+              const accent   = link.accent || ''
+              const ipa      = link.ipa_pronunciation || ''
+              const phonetic = link.phonetic_pronunciation || ''
+              const dialect  = link.voice_name || link.dialect || ''
+              if (!accent && !ipa && !phonetic) return null
+              return (
+                <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+                  {dialect && i > 0 && (
+                    <span className="text-[10px] text-gray-400 italic">{dialect}</span>
+                  )}
+                  {accent   && <span className="text-xs font-semibold text-gray-700">{accent}</span>}
+                  {ipa      && <span className="text-xs font-mono text-gray-500">[{ipa}]</span>}
+                  {phonetic && <span className="text-xs italic text-gray-400">{phonetic}</span>}
+                  {/* Additional variant audio */}
+                  {i > 0 && (() => {
+                    const media = resolvePronAudio(link)
+                    return media?.object_key ? (
+                      <AudioButton
+                        wordId={word?.id}
+                        italianText={formText}
+                        audioObjectKey={media.object_key}
+                        audioBucket={media.storage_bucket || media.bucket}
+                        size="chip"
+                        variant="inline-icon"
+                      />
+                    ) : null
+                  })()}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Tag chips */}
+        {chips.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {chips.map((chip, i) => (
+              <span
+                key={i}
+                className={`text-[10px] px-1.5 py-0.5 rounded ${chip.class}`}
+                title={chip.description}
+              >
+                {chip.display}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Relationship notes */}
+        {notes && (
+          <p className="text-xs text-gray-400 italic mt-1">{notes}</p>
+        )}
+      </div>
+    </div>
   )
 }
 
-// ─── FTG-centric layout (shared FTGs across forms) ──────
+/** Section card containing the forms table for one form type. */
+function FormsSectionCard({ section, word, wordType, relationships, barClass, isContracted }) {
+  const forms = isContracted
+    ? sortContractedForms(section.forms)
+    : section.forms
+
+  return (
+    <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-white">
+      <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
+      <div className="flex-1 min-w-0">
+        <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            {section.label}
+          </h3>
+        </div>
+        <div className="px-3">
+          {forms.map((form, i) => (
+            <FormTableRow
+              key={form.id || i}
+              form={form}
+              word={word}
+              wordType={wordType}
+              relationships={relationships}
+              isContracted={isContracted}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── FTG translation cards ────────────────────────────────────────────────────
 
 /**
  * Build a deduplicated FTG map from all forms.
@@ -85,9 +351,7 @@ function buildFtgMap(forms) {
     const ftgs = Array.isArray(form.resolved_translation_groups) ? form.resolved_translation_groups : []
     for (const ftg of ftgs) {
       const ftgId = ftg.form_translation_group_id || ftg.id
-      if (!ftgMap.has(ftgId)) {
-        ftgMap.set(ftgId, { ftg, formEntries: [] })
-      }
+      if (!ftgMap.has(ftgId)) ftgMap.set(ftgId, { ftg, formEntries: [] })
       ftgMap.get(ftgId).formEntries.push({
         form,
         usageLabel: ftg.usage_label || ftg.note || '',
@@ -98,103 +362,16 @@ function buildFtgMap(forms) {
 
   let hasShared = false
   for (const entry of ftgMap.values()) {
-    if (entry.formEntries.length > 1) {
-      hasShared = true
-      break
-    }
+    if (entry.formEntries.length > 1) { hasShared = true; break }
   }
 
   return { ftgMap, hasShared }
 }
 
-/** Expanded form detail block: form_text + ALL tags + audio + pronunciation + composition. */
-function FormDetailBlock({ form, word, wordType, relationships = [] }) {
-  const colors = getWordTypeColors(wordType)
-  const formText = form.form_text || form.italian || ''
-  const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
-  const chips = getFormChips(coreTags, wordType)
-  const pronunciationLinks = Array.isArray(form.pronunciation_links) ? form.pronunciation_links : []
-  const primaryAudio = form.primary_audio || null
-
-  // Find composition relationship for this form (via contracted_form_id)
-  const composition = relationships.find(rel =>
-    rel.contracted_form_id === form.id || rel.target_form_id === form.id
-  )
-
-  // Extract phonology-position tags for learner context
-  const phonologyChips = chips.filter(c => {
-    const tag = c.tag || ''
-    return tag.startsWith('phonology-position-') || tag.startsWith('before-') || tag.startsWith('after-')
-  })
-
-  return (
-    <div className={`rounded-lg border ${colors.border} p-3 ${colors.bg}`}>
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className={`text-lg font-bold ${colors.text}`}>{formText}</span>
-        {primaryAudio && pronunciationLinks.length === 0 && (
-          <AudioButton
-            wordId={word?.id}
-            italianText={formText}
-            audioObjectKey={primaryAudio?.object_key}
-            audioBucket={primaryAudio?.bucket || primaryAudio?.storage_bucket}
-            size="chip"
-            variant="inline-icon"
-          />
-        )}
-      </div>
-
-      {/* Pronunciation variants */}
-      {pronunciationLinks.length > 0 && (
-        <div className="mt-1">
-          <PronunciationDisplay
-            pronunciationLinks={pronunciationLinks}
-            wordId={word?.id}
-            italianText={formText}
-            compact
-          />
-        </div>
-      )}
-
-      {/* All tag chips */}
-      {chips.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {chips.map((chip, i) => (
-            <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${chip.class}`} title={chip.description}>
-              {chip.display}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Composition from relationships */}
-      {composition && (
-        <div className="mt-2 text-xs text-gray-600">
-          {composition.source_italian && composition.target_italian && (
-            <span className="font-mono">
-              {composition.source_italian} + {composition.target_italian} → {formText}
-            </span>
-          )}
-          {composition.description && (
-            <p className="mt-0.5 text-gray-500">{composition.description}</p>
-          )}
-        </div>
-      )}
-
-      {/* Phonology usage context */}
-      {phonologyChips.length > 0 && !composition && (
-        <div className="mt-1.5 text-xs text-gray-500 italic">
-          {phonologyChips.map(c => c.description).filter(Boolean).join('; ')}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/** FTG-centric card: one card per unique FTG, with form detail blocks. */
-function SharedFtgCard({ ftgEntry, word, wordType, sentences, imageMap, relationships }) {
+/** FTG translation card: header + small form pills + usage notes + sentences. */
+function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass }) {
   const [expanded, setExpanded] = useState(false)
   const colors = getWordTypeColors(wordType)
-  const barClass = POS_COLOUR_BAR[wordType] || 'bg-gray-400'
   const { ftg, formEntries } = ftgEntry
 
   const usageNotesRaw = ftg.usage_notes || ''
@@ -202,7 +379,7 @@ function SharedFtgCard({ ftgEntry, word, wordType, sentences, imageMap, relation
   const linkedSense = ftg.word_translation?.translation || null
   const ftgId = ftg.form_translation_group_id || ftg.id
 
-  const seenSentenceIds = new Set()
+  const seenIds = new Set()
   const ftgSentences = sentences.filter(s => {
     if (!Array.isArray(s.links)) return false
     const matches = s.links.some(link =>
@@ -211,94 +388,86 @@ function SharedFtgCard({ ftgEntry, word, wordType, sentences, imageMap, relation
         link.entity_type === 'form_translation_group_link' && link.entity_id === fe.linkId
       )
     )
-    if (matches && !seenSentenceIds.has(s.id)) {
-      seenSentenceIds.add(s.id)
-      return true
-    }
+    if (matches && !seenIds.has(s.id)) { seenIds.add(s.id); return true }
     return false
   })
 
   const ftgImages = imageMap[`form_translation_group:${ftgId}`] || []
-  const hasUsageLabels = formEntries.some(fe => fe.usageLabel)
 
   return (
     <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-white">
-      {/* Left colour bar */}
       <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
+      <div className="flex-1 min-w-0 px-3 py-2.5 space-y-2">
 
-      <div className="flex-1 min-w-0">
-        {/* FTG header: translation + linked sense */}
-        <div className={`px-3 py-2.5 border-b border-gray-100`}>
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-gray-900">{ftg.translation}</span>
-            {linkedSense && (
-              <>
-                <span className="text-xs text-gray-400">→</span>
-                <span className="text-xs text-gray-500">{linkedSense}</span>
-              </>
+        {/* FTG translation + linked sense */}
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-sm font-semibold text-gray-900">{ftg.translation}</span>
+          {linkedSense && (
+            <>
+              <span className="text-xs text-gray-400">→</span>
+              <span className={`text-xs ${colors.text}`}>{linkedSense}</span>
+            </>
+          )}
+        </div>
+
+        {/* Form pills: symbol + form text only */}
+        {formEntries.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {formEntries.map((fe, i) => {
+              const coreTags = Array.isArray(fe.form.core_tags) ? fe.form.core_tags : []
+              const symbol = getFormSymbol(coreTags)
+              const formText = fe.form.form_text || ''
+              return (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 font-medium"
+                  title={fe.usageLabel || undefined}
+                >
+                  {symbol && <span>{symbol}</span>}
+                  <span>{formText}</span>
+                </span>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Usage notes */}
+        {firstParagraph && (
+          <div>
+            <div
+              className="text-xs text-gray-600 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: expanded ? usageNotesRaw : firstParagraph }}
+            />
+            {hasMore && (
+              <button
+                onClick={() => setExpanded(e => !e)}
+                className="text-xs text-teal-600 hover:text-teal-800 mt-0.5 underline"
+              >
+                {expanded ? 'Show less' : 'Show more'}
+              </button>
             )}
           </div>
-        </div>
+        )}
 
-        <div className="px-3 py-2.5 space-y-3">
-          {/* Form detail blocks */}
-          <div>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-2">Forms</p>
-            <div className="space-y-2">
-              {formEntries.map((fe, i) => (
-                <div key={i}>
-                  <FormDetailBlock
-                    form={fe.form}
-                    word={word}
-                    wordType={wordType}
-                    relationships={relationships}
-                  />
-                  {fe.usageLabel && (
-                    <p className="text-xs text-gray-400 italic mt-1 ml-1">{fe.usageLabel}</p>
-                  )}
-                </div>
-              ))}
-            </div>
+        {/* Images */}
+        {ftgImages.length > 0 && (
+          <div className="flex gap-2 flex-wrap">
+            {ftgImages.map((asset, i) => (
+              <WordImage key={asset.id || i} mediaAsset={asset} alt={ftg.translation || ''} className="w-full max-w-xs max-h-40" />
+            ))}
           </div>
+        )}
 
-          {/* Usage notes */}
-          {firstParagraph && (
-            <div>
-              <div
-                className="text-xs text-gray-600 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: expanded ? usageNotesRaw : firstParagraph }}
-              />
-              {hasMore && (
-                <button
-                  onClick={() => setExpanded(e => !e)}
-                  className="text-xs text-teal-600 hover:text-teal-800 mt-0.5 underline"
-                >
-                  {expanded ? 'Show less' : 'Show more'}
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Images */}
-          {ftgImages.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {ftgImages.map((asset, i) => (
-                <WordImage key={asset.id || i} mediaAsset={asset} alt={ftg.translation || ''} className="w-full max-w-xs max-h-40" />
-              ))}
-            </div>
-          )}
-
-          {/* Sentences */}
-          {ftgSentences.length > 0 && (
-            <SentenceList sentences={ftgSentences} compact={false} />
-          )}
-        </div>
+        {/* Sentences */}
+        {ftgSentences.length > 0 && (
+          <SentenceList sentences={ftgSentences} compact={false} colorBarClass={barClass} />
+        )}
       </div>
     </div>
   )
 }
 
-// ─── Form-centric layout (unique FTGs per form) ──────
+// ─── Form-centric layout (unique FTGs per form, e.g. nouns) ──────────────────
 
 function FtgRow({ ftg, index, wordType, sentences = [], imageMap = {} }) {
   const [expanded, setExpanded] = useState(false)
@@ -323,9 +492,7 @@ function FtgRow({ ftg, index, wordType, sentences = [], imageMap = {} }) {
       <div className="flex items-baseline gap-2 flex-wrap">
         <span className="text-xs text-gray-400 font-mono w-5 text-right flex-shrink-0">{index}.</span>
         <span className="text-sm font-medium text-gray-900 flex-1">{ftg.translation}</span>
-        {usageLabel && (
-          <span className="text-xs text-gray-400 italic flex-shrink-0">{usageLabel}</span>
-        )}
+        {usageLabel && <span className="text-xs text-gray-400 italic flex-shrink-0">{usageLabel}</span>}
       </div>
       {linkedSense && (
         <div className="mt-0.5 ml-7">
@@ -340,10 +507,7 @@ function FtgRow({ ftg, index, wordType, sentences = [], imageMap = {} }) {
             dangerouslySetInnerHTML={{ __html: expanded ? usageNotesRaw : firstParagraph }}
           />
           {hasMore && (
-            <button
-              onClick={() => setExpanded(e => !e)}
-              className="text-xs text-teal-600 hover:text-teal-800 mt-0.5 underline"
-            >
+            <button onClick={() => setExpanded(e => !e)} className="text-xs text-teal-600 hover:text-teal-800 mt-0.5 underline">
               {expanded ? 'Show less' : 'Show more'}
             </button>
           )}
@@ -365,39 +529,40 @@ function FtgRow({ ftg, index, wordType, sentences = [], imageMap = {} }) {
   )
 }
 
-function FormCard({ form, word, wordType, sentences = [], imageMap = {} }) {
-  const colors = getWordTypeColors(wordType)
-  const barClass = POS_COLOUR_BAR[wordType] || 'bg-gray-400'
+function FormCard({ form, word, wordType, sentences = [], imageMap = {}, barClass }) {
   const primaryAudio = form.primary_audio || null
   const pronunciationLinks = Array.isArray(form.pronunciation_links) ? form.pronunciation_links : []
   const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
+  const chips = getFormChips(coreTags, wordType)
   const ftgs = Array.isArray(form.resolved_translation_groups) ? form.resolved_translation_groups : []
   const formText = form.form_text || form.italian || ''
 
   const formSentences = sentences.filter(s => {
     if (!Array.isArray(s.links)) return false
-    return s.links.some(link =>
-      link.entity_type === 'form' && link.entity_id === form.id
-    )
+    return s.links.some(link => link.entity_type === 'form' && link.entity_id === form.id)
   })
 
   return (
     <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-white">
-      {/* Left colour bar */}
       <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
-
       <div className="flex-1 min-w-0">
-        <div className={`px-3 py-2.5 border-b border-gray-100`}>
+        <div className="px-3 py-2.5 border-b border-gray-100">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-lg font-bold text-gray-900">{formText}</span>
-            <FormTagChips coreTags={coreTags} wordType={wordType} />
-            {primaryAudio && pronunciationLinks.length === 0 && (
+            {chips.length > 0 && (
+              <span className="inline-flex flex-wrap gap-0.5">
+                {chips.map((c, i) => (
+                  <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${c.class}`} title={c.description}>{c.display}</span>
+                ))}
+              </span>
+            )}
+            {primaryAudio?.object_key && pronunciationLinks.length === 0 && (
               <span className="ml-auto">
                 <AudioButton
                   wordId={word?.id}
                   italianText={formText}
-                  audioObjectKey={primaryAudio?.object_key}
-                  audioBucket={primaryAudio?.bucket || primaryAudio?.storage_bucket}
+                  audioObjectKey={primaryAudio.object_key}
+                  audioBucket={primaryAudio.bucket || primaryAudio.storage_bucket}
                   size="chip"
                   variant="inline-icon"
                 />
@@ -405,12 +570,34 @@ function FormCard({ form, word, wordType, sentences = [], imageMap = {} }) {
             )}
           </div>
           {pronunciationLinks.length > 0 && (
-            <div className="mt-1.5">
-              <PronunciationDisplay
-                pronunciationLinks={pronunciationLinks}
-                wordId={word?.id}
-                italianText={formText}
-              />
+            <div className="mt-1.5 space-y-0.5">
+              {pronunciationLinks
+                .slice()
+                .sort((a, b) => (a.variant_order || 999) - (b.variant_order || 999))
+                .map((link, i) => {
+                  const accent = link.accent || ''
+                  const ipa = link.ipa_pronunciation || ''
+                  const phonetic = link.phonetic_pronunciation || ''
+                  const media = resolvePronAudio(link)
+                  if (!accent && !ipa && !phonetic) return null
+                  return (
+                    <div key={i} className="flex flex-wrap items-baseline gap-x-2">
+                      {accent   && <span className="text-xs font-semibold text-gray-700">{accent}</span>}
+                      {ipa      && <span className="text-xs font-mono text-gray-500">[{ipa}]</span>}
+                      {phonetic && <span className="text-xs italic text-gray-400">{phonetic}</span>}
+                      {media?.object_key && (
+                        <AudioButton
+                          wordId={word?.id}
+                          italianText={formText}
+                          audioObjectKey={media.object_key}
+                          audioBucket={media.storage_bucket || media.bucket}
+                          size="chip"
+                          variant="inline-icon"
+                        />
+                      )}
+                    </div>
+                  )
+                })}
             </div>
           )}
         </div>
@@ -435,11 +622,12 @@ function FormCard({ form, word, wordType, sentences = [], imageMap = {} }) {
   )
 }
 
-// ─── Main component ──────────────────────────────────
+// ─── Main component ──────────────────────────────────────────────────────────
 
 export default function FormsTab({ word, fullBundle, isLoading }) {
-  const wordType = String(word?.word_type || '').toUpperCase()
-  const sentences = Array.isArray(fullBundle?.sentences) ? fullBundle.sentences : []
+  const wordType     = String(word?.word_type || '').toUpperCase()
+  const barClass     = POS_COLOUR_BAR[wordType] || 'bg-gray-400'
+  const sentences    = Array.isArray(fullBundle?.sentences) ? fullBundle.sentences : []
   const relationships = Array.isArray(fullBundle?.word_relationships) ? fullBundle.word_relationships : []
 
   const imageMap = buildImageMap(
@@ -462,49 +650,70 @@ export default function FormsTab({ word, fullBundle, isLoading }) {
   if (forms.length === 0) {
     return (
       <div className="p-4 text-sm text-gray-500">
-        {fullBundle ? 'No inflected forms recorded for this word.' : 'Loading\u2026'}
+        {fullBundle ? 'No inflected forms recorded for this word.' : 'Loading…'}
       </div>
     )
   }
 
   const { ftgMap, hasShared } = buildFtgMap(forms)
 
-  const standaloneForms = forms.filter(f =>
-    !Array.isArray(f.resolved_translation_groups) || f.resolved_translation_groups.length === 0
-  )
-
+  // ── FTG-centric layout (prepositions, shared FTGs) ────────────────────────
   if (hasShared) {
+    const formSections = groupFormsByType(forms, relationships)
+
     const sortedFtgEntries = Array.from(ftgMap.values()).sort((a, b) => {
       const aIdx = forms.indexOf(a.formEntries[0]?.form)
       const bIdx = forms.indexOf(b.formEntries[0]?.form)
       return aIdx - bIdx
     })
 
+    const standaloneForms = forms.filter(
+      f => !Array.isArray(f.resolved_translation_groups) || f.resolved_translation_groups.length === 0
+    )
+
     return (
       <div className="p-4 space-y-3">
-        <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">
-          {forms.length} form{forms.length !== 1 ? 's' : ''} · {ftgMap.size} translation{ftgMap.size !== 1 ? 's' : ''}
-        </p>
-
-        {sortedFtgEntries.map((entry, i) => (
-          <SharedFtgCard
-            key={entry.ftg.form_translation_group_id || entry.ftg.id || i}
-            ftgEntry={entry}
+        {/* ── Forms table section(s) ── */}
+        {formSections.map((section, i) => (
+          <FormsSectionCard
+            key={i}
+            section={section}
             word={word}
             wordType={wordType}
-            sentences={sentences}
-            imageMap={imageMap}
             relationships={relationships}
+            barClass={barClass}
+            isContracted={section.label === 'Contracted Forms'}
           />
         ))}
 
+        {/* ── FTG translation cards ── */}
+        {sortedFtgEntries.length > 0 && (
+          <>
+            <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold pt-1">
+              Translations
+            </p>
+            {sortedFtgEntries.map((entry, i) => (
+              <FtgCard
+                key={entry.ftg.form_translation_group_id || entry.ftg.id || i}
+                ftgEntry={entry}
+                word={word}
+                wordType={wordType}
+                sentences={sentences}
+                imageMap={imageMap}
+                barClass={barClass}
+              />
+            ))}
+          </>
+        )}
+
+        {/* ── Standalone forms (no FTG) ── */}
         {standaloneForms.length > 0 && (
           <>
             <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mt-4">
               Additional forms
             </p>
             {standaloneForms.map((form, i) => (
-              <FormCard key={form.id || i} form={form} word={word} wordType={wordType} sentences={sentences} imageMap={imageMap} />
+              <FormCard key={form.id || i} form={form} word={word} wordType={wordType} sentences={sentences} imageMap={imageMap} barClass={barClass} />
             ))}
           </>
         )}
@@ -512,13 +721,14 @@ export default function FormsTab({ word, fullBundle, isLoading }) {
     )
   }
 
+  // ── Form-centric layout (nouns, adjectives) ───────────────────────────────
   return (
     <div className="p-4 space-y-3">
       <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">
         {forms.length} form{forms.length !== 1 ? 's' : ''}
       </p>
       {forms.map((form, i) => (
-        <FormCard key={form.id || i} form={form} word={word} wordType={wordType} sentences={sentences} imageMap={imageMap} />
+        <FormCard key={form.id || i} form={form} word={word} wordType={wordType} sentences={sentences} imageMap={imageMap} barClass={barClass} />
       ))}
     </div>
   )
