@@ -66,19 +66,47 @@ function getFormChips(coreTags = [], wordType = '') {
 }
 
 /**
- * Derive the gender/number symbol for a contracted form.
- * Logic:
- *   before-vowel-or-h → ⚤  (both genders, e.g. dell')
- *   masculine + singolare → ♂   masculine + plurale → ⚤
- *   feminine  + singolare → ♀   feminine  + plurale → ⚢
+ * Derive the gender/number symbol for a form.
+ *
+ * Primary: the contracted article from the word_relationship entry tells us
+ * exactly which gender/number the form represents:
+ *   il → ♂   lo → ♂   la → ♀   i → ⚤   gli → ⚤   le → ⚢   l' → ⚤ (both)
+ *
+ * Fallback: phonology-position tag (before-vowel-or-h → ⚤), then WORD_GENDER +
+ * NUMBER tags for non-contracted forms (nouns / adjectives).
  */
-function getFormSymbol(coreTags = []) {
+const ARTICLE_TO_SYMBOL = {
+  'il': '♂', 'lo': '♂',
+  'la': '♀',
+  'i':  '⚤', 'gli': '⚤', "l'": '⚤',
+  'le': '⚢',
+}
+
+// Sort order for contracted forms (del→dei→della→delle→dello→degli→dell')
+const ARTICLE_SORT_ORDER = { 'il': 0, 'i': 1, 'la': 2, 'le': 3, 'lo': 4, 'gli': 5, "l'": 6 }
+
+function normaliseArticle(str) {
+  return (str || '').toLowerCase().replace(/\u2019/g, "'").trim()
+}
+
+function getFormSymbol(form, relationships = []) {
+  // Primary: derive from contracted article in relationship
+  const rel = relationships.find(
+    r => r.contracted_form_id === form.id || r.target_form_id === form.id
+  )
+  if (rel?.target_italian) {
+    const article = normaliseArticle(rel.target_italian)
+    if (ARTICLE_TO_SYMBOL[article]) return ARTICLE_TO_SYMBOL[article]
+  }
+
+  // Fallback: phonology-position tag
+  const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
   const phonTag = coreTags.find(t => t.attribute_stable_id === 'metaattr035')
   if (phonTag?.value_label === 'before-vowel-or-h') return '⚤'
 
+  // Fallback: explicit WORD_GENDER + NUMBER tags (nouns, adjectives)
   const genderTag = coreTags.find(t => t.attribute_stable_id === 'metaattr011')
   const numberTag = coreTags.find(t => t.attribute_stable_id === 'metaattr012')
-
   const isMasc = genderTag?.value_label === 'masculine'
   const isFem  = genderTag?.value_label === 'feminine'
   const isPlur = numberTag?.value_label === 'plurale'
@@ -133,40 +161,29 @@ function groupFormsByType(forms, relationships) {
 }
 
 /**
- * Sort contracted forms: regular consonant → impure consonant → vowel/h.
- * Within each phonology group: masculine before feminine, singular before plural.
+ * Sort contracted forms by their contracted article:
+ * il(del) → i(dei) → la(della) → le(delle) → lo(dello) → gli(degli) → l'(dell')
+ * Falls back to phonology-position order if no relationship found.
  */
-function sortContractedForms(forms) {
-  const phonOrder = {
-    'before-most-consonants':  0,
-    'before-impure-consonant': 1,
-    'before-vowel-or-h':       2,
-  }
+function sortContractedForms(forms, relationships) {
+  const phonOrder = { 'before-most-consonants': 0, 'before-impure-consonant': 1, 'before-vowel-or-h': 2 }
 
   return [...forms].sort((a, b) => {
-    const aT = Array.isArray(a.core_tags) ? a.core_tags : []
-    const bT = Array.isArray(b.core_tags) ? b.core_tags : []
+    // Primary: article sort order from relationship
+    const aRel = relationships.find(r => r.contracted_form_id === a.id || r.target_form_id === a.id)
+    const bRel = relationships.find(r => r.contracted_form_id === b.id || r.target_form_id === b.id)
+    const aArticle = normaliseArticle(aRel?.target_italian || '')
+    const bArticle = normaliseArticle(bRel?.target_italian || '')
+    const aArticleOrder = ARTICLE_SORT_ORDER[aArticle] ?? 99
+    const bArticleOrder = ARTICLE_SORT_ORDER[bArticle] ?? 99
+    if (aArticleOrder !== bArticleOrder) return aArticleOrder - bArticleOrder
 
-    const aPhon = aT.find(t => t.attribute_stable_id === 'metaattr035')?.value_label || ''
-    const bPhon = bT.find(t => t.attribute_stable_id === 'metaattr035')?.value_label || ''
-    const diff = (phonOrder[aPhon] ?? 0) - (phonOrder[bPhon] ?? 0)
-    if (diff !== 0) return diff
-
-    const aGender = aT.find(t => t.attribute_stable_id === 'metaattr011')?.value_label || ''
-    const bGender = bT.find(t => t.attribute_stable_id === 'metaattr011')?.value_label || ''
-    if (aGender !== bGender) {
-      if (aGender === 'masculine') return -1
-      if (bGender === 'masculine') return 1
-    }
-
-    const aNum = aT.find(t => t.attribute_stable_id === 'metaattr012')?.value_label || ''
-    const bNum = bT.find(t => t.attribute_stable_id === 'metaattr012')?.value_label || ''
-    if (aNum !== bNum) {
-      if (aNum === 'singolare') return -1
-      if (bNum === 'singolare') return 1
-    }
-
-    return 0
+    // Fallback: phonology-position tag order
+    const aPhon = (Array.isArray(a.core_tags) ? a.core_tags : [])
+      .find(t => t.attribute_stable_id === 'metaattr035')?.value_label || ''
+    const bPhon = (Array.isArray(b.core_tags) ? b.core_tags : [])
+      .find(t => t.attribute_stable_id === 'metaattr035')?.value_label || ''
+    return (phonOrder[aPhon] ?? 0) - (phonOrder[bPhon] ?? 0)
   })
 }
 
@@ -179,7 +196,7 @@ function sortContractedForms(forms) {
  */
 function FormTableRow({ form, word, wordType, relationships, isContracted = false }) {
   const coreTags   = Array.isArray(form.core_tags) ? form.core_tags : []
-  const symbol     = getFormSymbol(coreTags)
+  const symbol     = getFormSymbol(form, relationships)
   const formText   = form.form_text || form.italian || ''
   const chips      = getFormChips(coreTags, wordType)
 
@@ -309,7 +326,7 @@ function FormTableRow({ form, word, wordType, relationships, isContracted = fals
 /** Section card containing the forms table for one form type. */
 function FormsSectionCard({ section, word, wordType, relationships, barClass, isContracted }) {
   const forms = isContracted
-    ? sortContractedForms(section.forms)
+    ? sortContractedForms(section.forms, relationships)
     : section.forms
 
   return (
@@ -369,7 +386,7 @@ function buildFtgMap(forms) {
 }
 
 /** FTG translation card: header + small form pills + usage notes + sentences. */
-function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass }) {
+function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, relationships }) {
   const [expanded, setExpanded] = useState(false)
   const colors = getWordTypeColors(wordType)
   const { ftg, formEntries } = ftgEntry
@@ -414,8 +431,7 @@ function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass }) {
         {formEntries.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {formEntries.map((fe, i) => {
-              const coreTags = Array.isArray(fe.form.core_tags) ? fe.form.core_tags : []
-              const symbol = getFormSymbol(coreTags)
+              const symbol = getFormSymbol(fe.form, relationships)
               const formText = fe.form.form_text || ''
               return (
                 <span
@@ -701,6 +717,7 @@ export default function FormsTab({ word, fullBundle, isLoading }) {
                 sentences={sentences}
                 imageMap={imageMap}
                 barClass={barClass}
+                relationships={relationships}
               />
             ))}
           </>
