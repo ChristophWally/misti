@@ -91,31 +91,39 @@ const ARTICLE_CHIP_MAP = {
 
 function getGenderNumberChip(form, relationships = []) {
   const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
+  const formText = (form.form_text || '').replace(/\u2019/g, "'").trim()
 
-  // 1. before-vowel-or-h → both genders (purple ⚤)
+  // 1. Form text ends with l' → both genders (vowel elision: l' = il/la/lo before vowels)
+  if (formText.endsWith("l'")) {
+    return { display: '⚤', class: 'bg-purple-500 text-white', description: "Both genders — l' contracts il, la, lo before vowels" }
+  }
+
+  // 2. before-vowel-or-h phonology tag → both genders
   const phonTag = coreTags.find(t => t.attribute_stable_id === 'metaattr035')
   if (phonTag?.value_label === 'before-vowel-or-h') {
     return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders — used before vowels and silent h' }
   }
 
-  // 2. Article from relationship
+  // 3. Article from relationship
   const rel = relationships.find(r => r.contracted_form_id === form.id || r.target_form_id === form.id)
   if (rel?.target_italian) {
     const chip = ARTICLE_CHIP_MAP[normaliseArticle(rel.target_italian)]
     if (chip) return chip
   }
 
-  // 3. WORD_GENDER + NUMBER tags fallback
-  const genderTag = coreTags.find(t => t.attribute_stable_id === 'metaattr011')
-  const numberTag = coreTags.find(t => t.attribute_stable_id === 'metaattr012')
-  const isMasc = genderTag?.value_label === 'masculine'
-  const isFem  = genderTag?.value_label === 'feminine'
-  const isPlur = numberTag?.value_label === 'plurale'
+  // 4. WORD_GENDER + NUMBER tags
+  // Collect all gender tags (dell' has both masc + fem → both genders)
+  const genderTags = coreTags.filter(t => t.attribute_stable_id === 'metaattr011')
+  const numberTag  = coreTags.find(t => t.attribute_stable_id === 'metaattr012')
+  const hasMasc = genderTags.some(t => t.value_label === 'masculine')
+  const hasFem  = genderTags.some(t => t.value_label === 'feminine')
+  const isPlur  = numberTag?.value_label === 'plurale'
 
-  if (isMasc && isPlur)  return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Masculine plural' }
-  if (isMasc)            return { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular' }
-  if (isFem  && isPlur)  return { display: '⚢', class: 'bg-purple-500 text-white', description: 'Feminine plural' }
-  if (isFem)             return { display: '♀',  class: 'bg-pink-500 text-white',   description: 'Feminine singular' }
+  if (hasMasc && hasFem)     return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders' }
+  if (hasMasc && isPlur)     return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Masculine plural' }
+  if (hasMasc)               return { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular' }
+  if (hasFem  && isPlur)     return { display: '⚢', class: 'bg-purple-500 text-white', description: 'Feminine plural' }
+  if (hasFem)                return { display: '♀',  class: 'bg-pink-500 text-white',   description: 'Feminine singular' }
 
   return null
 }
@@ -214,8 +222,10 @@ function groupFormsByType(forms, relationships) {
       r => r.contracted_form_id === form.id || r.target_form_id === form.id
     )
 
+    const isContraction = hasPhonTag || hasRelationship || form.form_type === 'contraction'
+
     let sectionKey, sectionLabel
-    if (hasPhonTag || hasRelationship) {
+    if (isContraction) {
       sectionKey   = 'contracted'
       sectionLabel = 'Contracted Forms'
     } else {
@@ -264,7 +274,8 @@ function FormTableRow({ form, word, wordType, relationships }) {
   const relationship = relationships.find(
     r => r.contracted_form_id === form.id || r.target_form_id === form.id
   )
-  const notes = relationship?.description || relationship?.systematic_rule || ''
+  const rawNotes = relationship?.description || relationship?.systematic_rule || ''
+  const notes = rawNotes.replace(/^contracts[_-]?with\s*[:·|]?\s*/i, '').replace(/^word[_-]?level\s*[:·|]?\s*/i, '').trim()
 
   return (
     <div className="py-2.5 border-b border-gray-100 last:border-0">
