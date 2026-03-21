@@ -78,20 +78,21 @@ function normaliseArticle(str) {
  *   2. relationship target_italian article (il/lo/la/le/i/gli/l')
  *   3. WORD_GENDER (metaattr011) + NUMBER (metaattr012) tags
  */
+// Colour system: ♂ blue, ♀ pink, ⚤/⚢ purple (multi-gender symbols are always purple)
 const ARTICLE_CHIP_MAP = {
-  'il':  { display: '♂',  class: 'bg-blue-600 text-white',   description: 'Masculine singular' },
-  'lo':  { display: '♂',  class: 'bg-blue-600 text-white',   description: 'Masculine singular (before impure consonant)' },
-  'la':  { display: '♀',  class: 'bg-pink-400 text-white',   description: 'Feminine singular' },
-  'i':   { display: '⚤', class: 'bg-blue-400 text-white',   description: 'Masculine plural' },
-  'gli': { display: '⚤', class: 'bg-blue-400 text-white',   description: 'Masculine plural (before impure consonant)' },
-  'le':  { display: '⚢', class: 'bg-pink-700 text-white',   description: 'Feminine plural' },
+  'il':  { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular' },
+  'lo':  { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular (before impure consonant)' },
+  'la':  { display: '♀',  class: 'bg-pink-500 text-white',   description: 'Feminine singular' },
+  'i':   { display: '⚤', class: 'bg-purple-500 text-white', description: 'Masculine plural' },
+  'gli': { display: '⚤', class: 'bg-purple-500 text-white', description: 'Masculine plural (before impure consonant)' },
+  'le':  { display: '⚢', class: 'bg-purple-500 text-white', description: 'Feminine plural' },
   "l'":  { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders — used before vowels and silent h' },
 }
 
 function getGenderNumberChip(form, relationships = []) {
   const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
 
-  // 1. before-vowel-or-h → both genders
+  // 1. before-vowel-or-h → both genders (purple ⚤)
   const phonTag = coreTags.find(t => t.attribute_stable_id === 'metaattr035')
   if (phonTag?.value_label === 'before-vowel-or-h') {
     return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders — used before vowels and silent h' }
@@ -111,10 +112,10 @@ function getGenderNumberChip(form, relationships = []) {
   const isFem  = genderTag?.value_label === 'feminine'
   const isPlur = numberTag?.value_label === 'plurale'
 
-  if (isMasc && isPlur)  return { display: '⚤', class: 'bg-blue-400 text-white',   description: 'Masculine plural' }
-  if (isMasc)            return { display: '♂',  class: 'bg-blue-600 text-white',   description: 'Masculine singular' }
-  if (isFem  && isPlur)  return { display: '⚢', class: 'bg-pink-700 text-white',   description: 'Feminine plural' }
-  if (isFem)             return { display: '♀',  class: 'bg-pink-400 text-white',   description: 'Feminine singular' }
+  if (isMasc && isPlur)  return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Masculine plural' }
+  if (isMasc)            return { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular' }
+  if (isFem  && isPlur)  return { display: '⚢', class: 'bg-purple-500 text-white', description: 'Feminine plural' }
+  if (isFem)             return { display: '♀',  class: 'bg-pink-500 text-white',   description: 'Feminine singular' }
 
   return null
 }
