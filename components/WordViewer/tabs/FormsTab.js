@@ -139,30 +139,53 @@ function getFormChips(coreTags = [], wordType = '', form = null, relationships =
 }
 
 /**
- * Sort contracted forms: phonology position first, then gender+number within group.
- * Order: del(♂sg+consonant) → dei(⚤pl+consonant) → della(♀sg) → delle(⚢pl) →
- *        dello(♂sg+impure) → degli(⚤pl+impure) → dell'(both+vowel)
+ * Known sort order for Italian contracted preposition forms.
+ * Covers di/a/da/in/su/con contractions. Index = position in the display order.
+ * Priority: masc-sg → masc-pl → fem-sg → fem-pl → special-masc-sg → special-masc-pl → vowel
+ */
+const KNOWN_CONTRACTED_ORDER = {
+  // di
+  'del': 0, 'dei': 1, 'della': 2, 'delle': 3, 'dello': 4, 'degli': 5, "dell'": 6,
+  // a
+  'al': 0, 'ai': 1, 'alla': 2, 'alle': 3, 'allo': 4, 'agli': 5, "all'": 6,
+  // da
+  'dal': 0, 'dai': 1, 'dalla': 2, 'dalle': 3, 'dallo': 4, 'dagli': 5, "dall'": 6,
+  // in
+  'nel': 0, 'nei': 1, 'nella': 2, 'nelle': 3, 'nello': 4, 'negli': 5, "nell'": 6,
+  // su
+  'sul': 0, 'sui': 1, 'sulla': 2, 'sulle': 3, 'sullo': 4, 'sugli': 5, "sull'": 6,
+  // con
+  'col': 0, 'coi': 1, 'colla': 2, 'colle': 3, 'collo': 4, 'cogli': 5, "coll'": 6,
+}
+
+/**
+ * Sort contracted forms: del→dei→della→delle→dello→degli→dell'
+ * Priority: known form-text lookup → phonology+relationship → phonology+gender+number tags
  */
 function sortContractedForms(forms, relationships) {
   const PHON_ORDER = { 'before-most-consonants': 0, 'before-impure-consonant': 1, 'before-vowel-or-h': 2 }
 
   const getSortKey = (form) => {
+    const formText = (form.form_text || '').toLowerCase().replace(/\u2019/g, "'").trim()
     const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
-    const phonTag  = coreTags.find(t => t.attribute_stable_id === 'metaattr035')
-    const phonKey  = PHON_ORDER[phonTag?.value_label] ?? 0
 
-    // before-vowel-or-h always last within its group
-    if (phonTag?.value_label === 'before-vowel-or-h') return phonKey * 10 + 4
-
-    // Try article from relationship first
-    const rel = relationships.find(r => r.contracted_form_id === form.id || r.target_form_id === form.id)
-    if (rel?.target_italian) {
-      const ARTICLE_GN = { 'il': 0, 'lo': 0, 'i': 1, 'gli': 1, 'la': 2, 'le': 3, "l'": 4 }
-      const gnKey = ARTICLE_GN[normaliseArticle(rel.target_italian)] ?? 4
-      return phonKey * 10 + gnKey
+    // 1. Known form text lookup — most reliable
+    if (KNOWN_CONTRACTED_ORDER[formText] !== undefined) {
+      return KNOWN_CONTRACTED_ORDER[formText]
     }
 
-    // Fallback: gender+number tags (masc-sg=0, masc-pl=1, fem-sg=2, fem-pl=3)
+    // 2. Phonology tag + relationship article
+    const phonTag = coreTags.find(t => t.attribute_stable_id === 'metaattr035')
+    const phonKey = PHON_ORDER[phonTag?.value_label] ?? 0
+    if (phonTag?.value_label === 'before-vowel-or-h') return 20 + phonKey
+
+    const rel = relationships.find(r => r.contracted_form_id === form.id || r.target_form_id === form.id)
+    if (rel?.target_italian) {
+      const ARTICLE_GN = { 'il': 0, 'i': 1, 'la': 2, 'le': 3, 'lo': 4, 'gli': 5, "l'": 6 }
+      return phonKey * 10 + (ARTICLE_GN[normaliseArticle(rel.target_italian)] ?? 6)
+    }
+
+    // 3. Phonology + gender+number tags
     const genderTag = coreTags.find(t => t.attribute_stable_id === 'metaattr011')
     const numberTag = coreTags.find(t => t.attribute_stable_id === 'metaattr012')
     const isMasc = genderTag?.value_label === 'masculine'
