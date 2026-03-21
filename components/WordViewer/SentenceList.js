@@ -25,8 +25,8 @@ export default function SentenceList({ sentences = [], compact = false }) {
     return (
       <div className="mt-2 space-y-1.5">
         {sentences.slice(0, 2).map((sentence, i) => (
-          <div key={i} className="text-xs text-gray-600 italic">
-            <span className="font-medium text-gray-700">
+          <div key={i} className="text-xs text-gray-600 italic border-l-2 border-gray-200 pl-2.5">
+            <span className="font-medium text-gray-700 not-italic">
               {sentence.sentence_text_html ? (
                 <span dangerouslySetInnerHTML={{ __html: sentence.sentence_text_html }} />
               ) : (

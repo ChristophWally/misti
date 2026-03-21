@@ -14,11 +14,11 @@ import GrammarTab from './tabs/GrammarTab'
 import EtymologyTab from './tabs/EtymologyTab'
 
 const TABS = [
-  { id: 'senses', label: 'Senses', icon: '📖' },
-  { id: 'forms', label: 'Forms', icon: '🔠' },
-  { id: 'sentences', label: 'Sentences', icon: '💬' },
-  { id: 'grammar', label: 'Grammar', icon: '⚙️' },
-  { id: 'etymology', label: 'Etymology', icon: '🌿' },
+  { id: 'senses', label: 'Senses' },
+  { id: 'forms', label: 'Forms' },
+  { id: 'sentences', label: 'Sentences' },
+  { id: 'grammar', label: 'Grammar' },
+  { id: 'etymology', label: 'Etymology' },
 ]
 
 export default function WordViewer({ word, isOpen, onClose }) {
@@ -64,7 +64,7 @@ export default function WordViewer({ word, isOpen, onClose }) {
     >
       {/* Header: sticky on mobile */}
       <div className="sticky top-0 z-10 flex-shrink-0">
-        <WordViewerHeader word={word} onClose={onClose} />
+        <WordViewerHeader word={word} fullBundle={fullBundle} onClose={onClose} />
 
         {/* Desktop tab pill row */}
         <div className="hidden md:flex gap-1 px-4 py-2 border-b bg-white">
@@ -74,7 +74,6 @@ export default function WordViewer({ word, isOpen, onClose }) {
               onClick={() => setActiveTab(tab.id)}
               className={`word-viewer-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
             >
-              <span className="mr-1">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
@@ -84,7 +83,7 @@ export default function WordViewer({ word, isOpen, onClose }) {
       {/* Tab content: scrollable */}
       <div className="flex-1 overflow-y-auto pb-16 md:pb-0">
         {activeTab === 'senses' && (
-          <SensesTab word={word} fullBundle={fullBundle} isLoading={isLoadingBundle} />
+          <SensesTab word={word} fullBundle={fullBundle} isLoading={isLoadingBundle} onNavigateTab={setActiveTab} />
         )}
         {activeTab === 'forms' && (
           <FormsTab word={word} fullBundle={fullBundle} isLoading={isLoadingBundle} />
@@ -108,8 +107,7 @@ export default function WordViewer({ word, isOpen, onClose }) {
             onClick={() => setActiveTab(tab.id)}
             className={`word-viewer-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
           >
-            <span className="text-lg">{tab.icon}</span>
-            <span className="text-xs mt-0.5">{tab.label}</span>
+            <span className="text-xs font-medium">{tab.label}</span>
           </button>
         ))}
       </div>

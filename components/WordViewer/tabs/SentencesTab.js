@@ -2,6 +2,7 @@
 
 // components/WordViewer/tabs/SentencesTab.js
 // Aggregated view of all example sentences linked to the word, grouped by entity type.
+// Card per group with sentence count badge and sticky group headers.
 
 import SentenceList from '../SentenceList'
 
@@ -29,7 +30,6 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
 
   sentences.forEach(sentence => {
     if (!Array.isArray(sentence.links) || sentence.links.length === 0) {
-      // Sentence with no specific link goes to "General"
       if (!groups['general']) {
         groups['general'] = { label: 'General', sentences: [] }
       }
@@ -37,7 +37,6 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
       return
     }
 
-    // Process each link
     sentence.links.forEach(link => {
       const entityType = link?.entity_type
       const entityId = link?.entity_id
@@ -45,14 +44,12 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
       let groupLabel = null
 
       if (entityType === 'word_translation' && entityId) {
-        // Find the matching translation
         const translation = translations.find(t => t.id === entityId)
         if (translation) {
           groupKey = `sense-${entityId}`
           groupLabel = translation.translation || `Sense ${entityId}`
         }
       } else if (entityType === 'form_translation_group' && entityId) {
-        // Find the matching FTG
         const ftg = formTranslationGroups.find(f => f.id === entityId)
         if (ftg) {
           groupKey = `ftg-${entityId}`
@@ -64,12 +61,10 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
         if (!groups[groupKey]) {
           groups[groupKey] = { label: groupLabel, sentences: [] }
         }
-        // Avoid duplicate sentences in the same group
         if (!groups[groupKey].sentences.some(s => s.id === sentence.id)) {
           groups[groupKey].sentences.push(sentence)
         }
       } else if (!groupKey) {
-        // If we couldn't determine a specific group, add to general
         if (!groups['general']) {
           groups['general'] = { label: 'General', sentences: [] }
         }
@@ -80,8 +75,6 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
     })
   })
 
-  // Sort groups: sense translations first, then FTGs, then general
-  const groupOrder = ['sense', 'ftg', 'general']
   const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
     const getOrder = (key) => {
       if (key.startsWith('sense-')) return 0
@@ -93,15 +86,24 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
   })
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-4">
       {sortedGroupKeys.map(groupKey => {
         const group = groups[groupKey]
+        const count = group.sentences.length
         return (
-          <div key={groupKey}>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-200">
-              {group.label}
-            </h3>
-            <SentenceList sentences={group.sentences} compact={false} />
+          <div key={groupKey} className="rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {/* Sticky group header */}
+            <div className="sticky top-0 z-[5] flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200">
+              <h3 className="text-sm font-semibold text-gray-700">
+                {group.label}
+              </h3>
+              <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-600 font-medium">
+                {count}
+              </span>
+            </div>
+            <div className="p-3">
+              <SentenceList sentences={group.sentences} compact={false} />
+            </div>
           </div>
         )
       })}

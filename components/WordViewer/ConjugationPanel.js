@@ -172,7 +172,13 @@ export default function ConjugationPanel({ word, resolvedBundle }) {
                   </td>
                   <td className="py-2 px-3 w-8">
                     {audioDesc && (
-                      <AudioButton audioDescriptor={audioDesc} size="sm" wordType={word?.word_type} />
+                      <AudioButton
+                        wordId={word?.id}
+                        italianText={form.form_text || form.italian || ''}
+                        audioObjectKey={audioDesc?.object_key}
+                        audioBucket={audioDesc?.bucket || audioDesc?.storage_bucket}
+                        size="sm"
+                      />
                     )}
                   </td>
                 </tr>
