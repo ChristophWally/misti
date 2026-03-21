@@ -59,63 +59,119 @@ function resolvePronAudio(link) {
   return null
 }
 
-/** Get all tag chips for a form using processRpcTagsForDisplay. */
-function getFormChips(coreTags = [], wordType = '') {
-  const { essential, detailed } = processRpcTagsForDisplay(coreTags, wordType)
-  return [...essential, ...detailed]
-}
-
-/**
- * Derive the gender/number symbol for a form.
- *
- * Primary: the contracted article from the word_relationship entry tells us
- * exactly which gender/number the form represents:
- *   il → ♂   lo → ♂   la → ♀   i → ⚤   gli → ⚤   le → ⚢   l' → ⚤ (both)
- *
- * Fallback: phonology-position tag (before-vowel-or-h → ⚤), then WORD_GENDER +
- * NUMBER tags for non-contracted forms (nouns / adjectives).
- */
-const ARTICLE_TO_SYMBOL = {
-  'il': '♂', 'lo': '♂',
-  'la': '♀',
-  'i':  '⚤', 'gli': '⚤', "l'": '⚤',
-  'le': '⚢',
-}
-
-// Sort order for contracted forms (del→dei→della→delle→dello→degli→dell')
-const ARTICLE_SORT_ORDER = { 'il': 0, 'i': 1, 'la': 2, 'le': 3, 'lo': 4, 'gli': 5, "l'": 6 }
-
 function normaliseArticle(str) {
   return (str || '').toLowerCase().replace(/\u2019/g, "'").trim()
 }
 
-function getFormSymbol(form, relationships = []) {
-  // Primary: derive from contracted article in relationship
-  const rel = relationships.find(
-    r => r.contracted_form_id === form.id || r.target_form_id === form.id
-  )
-  if (rel?.target_italian) {
-    const article = normaliseArticle(rel.target_italian)
-    if (ARTICLE_TO_SYMBOL[article]) return ARTICLE_TO_SYMBOL[article]
+/**
+ * Compute the combined gender+number chip for a form.
+ *
+ * Produces a single coloured chip that correctly distinguishes:
+ *   ♂  masc. sing.  (blue-600)
+ *   ⚤  masc. pl.   (blue-400)
+ *   ♀  fem. sing.  (pink-400)
+ *   ⚢  fem. pl.    (pink-700 — darker)
+ *   ⚤  both genders / before vowel (purple-500)
+ *
+ * Priority:
+ *   1. before-vowel-or-h phonology tag → ⚤ both genders
+ *   2. relationship target_italian article (il/lo/la/le/i/gli/l')
+ *   3. WORD_GENDER (metaattr011) + NUMBER (metaattr012) tags
+ */
+const ARTICLE_CHIP_MAP = {
+  'il':  { display: '♂',  class: 'bg-blue-600 text-white',   description: 'Masculine singular' },
+  'lo':  { display: '♂',  class: 'bg-blue-600 text-white',   description: 'Masculine singular (before impure consonant)' },
+  'la':  { display: '♀',  class: 'bg-pink-400 text-white',   description: 'Feminine singular' },
+  'i':   { display: '⚤', class: 'bg-blue-400 text-white',   description: 'Masculine plural' },
+  'gli': { display: '⚤', class: 'bg-blue-400 text-white',   description: 'Masculine plural (before impure consonant)' },
+  'le':  { display: '⚢', class: 'bg-pink-700 text-white',   description: 'Feminine plural' },
+  "l'":  { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders — used before vowels and silent h' },
+}
+
+function getGenderNumberChip(form, relationships = []) {
+  const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
+
+  // 1. before-vowel-or-h → both genders
+  const phonTag = coreTags.find(t => t.attribute_stable_id === 'metaattr035')
+  if (phonTag?.value_label === 'before-vowel-or-h') {
+    return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders — used before vowels and silent h' }
   }
 
-  // Fallback: phonology-position tag
-  const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
-  const phonTag = coreTags.find(t => t.attribute_stable_id === 'metaattr035')
-  if (phonTag?.value_label === 'before-vowel-or-h') return '⚤'
+  // 2. Article from relationship
+  const rel = relationships.find(r => r.contracted_form_id === form.id || r.target_form_id === form.id)
+  if (rel?.target_italian) {
+    const chip = ARTICLE_CHIP_MAP[normaliseArticle(rel.target_italian)]
+    if (chip) return chip
+  }
 
-  // Fallback: explicit WORD_GENDER + NUMBER tags (nouns, adjectives)
+  // 3. WORD_GENDER + NUMBER tags fallback
   const genderTag = coreTags.find(t => t.attribute_stable_id === 'metaattr011')
   const numberTag = coreTags.find(t => t.attribute_stable_id === 'metaattr012')
   const isMasc = genderTag?.value_label === 'masculine'
   const isFem  = genderTag?.value_label === 'feminine'
   const isPlur = numberTag?.value_label === 'plurale'
 
-  if (isMasc && isPlur)  return '⚤'
-  if (isMasc)            return '♂'
-  if (isFem  && isPlur)  return '⚢'
-  if (isFem)             return '♀'
+  if (isMasc && isPlur)  return { display: '⚤', class: 'bg-blue-400 text-white',   description: 'Masculine plural' }
+  if (isMasc)            return { display: '♂',  class: 'bg-blue-600 text-white',   description: 'Masculine singular' }
+  if (isFem  && isPlur)  return { display: '⚢', class: 'bg-pink-700 text-white',   description: 'Feminine plural' }
+  if (isFem)             return { display: '♀',  class: 'bg-pink-400 text-white',   description: 'Feminine singular' }
+
   return null
+}
+
+/**
+ * Get tag chips for a form.
+ * Prepends the combined gender+number chip, and strips any raw ♂/♀/sing./pl.
+ * chips that processRpcTagsForDisplay would produce (avoid duplication).
+ */
+const SUPPRESS_CHIP_DISPLAYS = new Set(['♂', '♀', 'sing.', 'pl.'])
+
+function getFormChips(coreTags = [], wordType = '', form = null, relationships = []) {
+  const { essential, detailed } = processRpcTagsForDisplay(coreTags, wordType)
+  const filtered = [...essential, ...detailed].filter(c => !SUPPRESS_CHIP_DISPLAYS.has(c.display))
+
+  if (form) {
+    const gnChip = getGenderNumberChip(form, relationships)
+    if (gnChip) return [gnChip, ...filtered]
+  }
+  return filtered
+}
+
+/**
+ * Sort contracted forms: phonology position first, then gender+number within group.
+ * Order: del(♂sg+consonant) → dei(⚤pl+consonant) → della(♀sg) → delle(⚢pl) →
+ *        dello(♂sg+impure) → degli(⚤pl+impure) → dell'(both+vowel)
+ */
+function sortContractedForms(forms, relationships) {
+  const PHON_ORDER = { 'before-most-consonants': 0, 'before-impure-consonant': 1, 'before-vowel-or-h': 2 }
+
+  const getSortKey = (form) => {
+    const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
+    const phonTag  = coreTags.find(t => t.attribute_stable_id === 'metaattr035')
+    const phonKey  = PHON_ORDER[phonTag?.value_label] ?? 0
+
+    // before-vowel-or-h always last within its group
+    if (phonTag?.value_label === 'before-vowel-or-h') return phonKey * 10 + 4
+
+    // Try article from relationship first
+    const rel = relationships.find(r => r.contracted_form_id === form.id || r.target_form_id === form.id)
+    if (rel?.target_italian) {
+      const ARTICLE_GN = { 'il': 0, 'lo': 0, 'i': 1, 'gli': 1, 'la': 2, 'le': 3, "l'": 4 }
+      const gnKey = ARTICLE_GN[normaliseArticle(rel.target_italian)] ?? 4
+      return phonKey * 10 + gnKey
+    }
+
+    // Fallback: gender+number tags (masc-sg=0, masc-pl=1, fem-sg=2, fem-pl=3)
+    const genderTag = coreTags.find(t => t.attribute_stable_id === 'metaattr011')
+    const numberTag = coreTags.find(t => t.attribute_stable_id === 'metaattr012')
+    const isMasc = genderTag?.value_label === 'masculine'
+    const isFem  = genderTag?.value_label === 'feminine'
+    const isPlur = numberTag?.value_label === 'plurale'
+    const gnKey  = isMasc && !isPlur ? 0 : isMasc && isPlur ? 1 : isFem && !isPlur ? 2 : isFem && isPlur ? 3 : 4
+    return phonKey * 10 + gnKey
+  }
+
+  return [...forms].sort((a, b) => getSortKey(a) - getSortKey(b))
 }
 
 /**
@@ -160,165 +216,120 @@ function groupFormsByType(forms, relationships) {
   return keys.map(k => grouped[k])
 }
 
-/**
- * Sort contracted forms by their contracted article:
- * il(del) → i(dei) → la(della) → le(delle) → lo(dello) → gli(degli) → l'(dell')
- * Falls back to phonology-position order if no relationship found.
- */
-function sortContractedForms(forms, relationships) {
-  const phonOrder = { 'before-most-consonants': 0, 'before-impure-consonant': 1, 'before-vowel-or-h': 2 }
-
-  return [...forms].sort((a, b) => {
-    // Primary: article sort order from relationship
-    const aRel = relationships.find(r => r.contracted_form_id === a.id || r.target_form_id === a.id)
-    const bRel = relationships.find(r => r.contracted_form_id === b.id || r.target_form_id === b.id)
-    const aArticle = normaliseArticle(aRel?.target_italian || '')
-    const bArticle = normaliseArticle(bRel?.target_italian || '')
-    const aArticleOrder = ARTICLE_SORT_ORDER[aArticle] ?? 99
-    const bArticleOrder = ARTICLE_SORT_ORDER[bArticle] ?? 99
-    if (aArticleOrder !== bArticleOrder) return aArticleOrder - bArticleOrder
-
-    // Fallback: phonology-position tag order
-    const aPhon = (Array.isArray(a.core_tags) ? a.core_tags : [])
-      .find(t => t.attribute_stable_id === 'metaattr035')?.value_label || ''
-    const bPhon = (Array.isArray(b.core_tags) ? b.core_tags : [])
-      .find(t => t.attribute_stable_id === 'metaattr035')?.value_label || ''
-    return (phonOrder[aPhon] ?? 0) - (phonOrder[bPhon] ?? 0)
-  })
-}
 
 // ─── Forms Table ──────────────────────────────────────────────────────────────
 
 /**
- * Single row in the forms table.
- * Columns (stacked within a 2-col grid: symbol | content):
- *   symbol · form text + audio · composition · accent / IPA / phonetic (all variants) · chips · notes
+ * Single row in the forms table. No separate symbol column — the gender/number
+ * chip IS the symbol (coloured, first in the chip row).
+ * Content: form text + audio · composition · accent/IPA/phonetic · chips · notes
  */
-function FormTableRow({ form, word, wordType, relationships, isContracted = false }) {
-  const coreTags   = Array.isArray(form.core_tags) ? form.core_tags : []
-  const symbol     = getFormSymbol(form, relationships)
-  const formText   = form.form_text || form.italian || ''
-  const chips      = getFormChips(coreTags, wordType)
+function FormTableRow({ form, word, wordType, relationships }) {
+  const coreTags  = Array.isArray(form.core_tags) ? form.core_tags : []
+  const formText  = form.form_text || form.italian || ''
+  const chips     = getFormChips(coreTags, wordType, form, relationships)
 
   // Pronunciation variants, sorted primary first
   const pronunciationLinks = Array.isArray(form.pronunciation_links)
     ? form.pronunciation_links.slice().sort((a, b) => (a.variant_order || 999) - (b.variant_order || 999))
     : []
 
-  // Fallback audio when no pronunciation_links
   const primaryAudio = form.primary_audio || null
 
-  // Relationship for composition line
+  // Relationship for composition line + notes
   const relationship = relationships.find(
     r => r.contracted_form_id === form.id || r.target_form_id === form.id
   )
   const notes = relationship?.description || relationship?.systematic_rule || ''
 
   return (
-    <div className="grid grid-cols-[2rem_1fr] gap-x-2 py-2.5 border-b border-gray-100 last:border-0 items-start">
-      {/* Symbol */}
-      <div className="text-base font-bold text-gray-500 text-center pt-0.5 select-none">
-        {symbol || '—'}
-      </div>
+    <div className="py-2.5 border-b border-gray-100 last:border-0">
+      {/* Form text + audio */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-base font-bold text-gray-900">{formText}</span>
 
-      {/* Content */}
-      <div className="min-w-0">
-        {/* Form text + audio */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-base font-bold text-gray-900">{formText}</span>
-
-          {/* Audio from pronunciation_links (first variant) */}
-          {pronunciationLinks.length > 0 && (() => {
-            const media = resolvePronAudio(pronunciationLinks[0])
-            return media?.object_key ? (
-              <AudioButton
-                wordId={word?.id}
-                italianText={formText}
-                audioObjectKey={media.object_key}
-                audioBucket={media.storage_bucket || media.bucket}
-                size="chip"
-                variant="inline-icon"
-              />
-            ) : null
-          })()}
-
-          {/* Fallback audio when no pronunciation_links */}
-          {pronunciationLinks.length === 0 && primaryAudio?.object_key && (
+        {/* Audio from first pronunciation_link */}
+        {pronunciationLinks.length > 0 && (() => {
+          const media = resolvePronAudio(pronunciationLinks[0])
+          return media?.object_key ? (
             <AudioButton
               wordId={word?.id}
               italianText={formText}
-              audioObjectKey={primaryAudio.object_key}
-              audioBucket={primaryAudio.bucket || primaryAudio.storage_bucket}
+              audioObjectKey={media.object_key}
+              audioBucket={media.storage_bucket || media.bucket}
               size="chip"
               variant="inline-icon"
             />
-          )}
-        </div>
+          ) : null
+        })()}
 
-        {/* Composition: di + il → del */}
-        {relationship?.source_italian && relationship?.target_italian && (
-          <div className="text-xs font-mono text-gray-400 mt-0.5">
-            {relationship.source_italian} + {relationship.target_italian} → {formText}
-          </div>
-        )}
-
-        {/* Pronunciation variants: accent / IPA / phonetic */}
-        {pronunciationLinks.length > 0 && (
-          <div className="mt-1 space-y-0.5">
-            {pronunciationLinks.map((link, i) => {
-              const accent   = link.accent || ''
-              const ipa      = link.ipa_pronunciation || ''
-              const phonetic = link.phonetic_pronunciation || ''
-              const dialect  = link.voice_name || link.dialect || ''
-              if (!accent && !ipa && !phonetic) return null
-              return (
-                <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-                  {dialect && i > 0 && (
-                    <span className="text-[10px] text-gray-400 italic">{dialect}</span>
-                  )}
-                  {accent   && <span className="text-xs font-semibold text-gray-700">{accent}</span>}
-                  {ipa      && <span className="text-xs font-mono text-gray-500">[{ipa}]</span>}
-                  {phonetic && <span className="text-xs italic text-gray-400">{phonetic}</span>}
-                  {/* Additional variant audio */}
-                  {i > 0 && (() => {
-                    const media = resolvePronAudio(link)
-                    return media?.object_key ? (
-                      <AudioButton
-                        wordId={word?.id}
-                        italianText={formText}
-                        audioObjectKey={media.object_key}
-                        audioBucket={media.storage_bucket || media.bucket}
-                        size="chip"
-                        variant="inline-icon"
-                      />
-                    ) : null
-                  })()}
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Tag chips */}
-        {chips.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1.5">
-            {chips.map((chip, i) => (
-              <span
-                key={i}
-                className={`text-[10px] px-1.5 py-0.5 rounded ${chip.class}`}
-                title={chip.description}
-              >
-                {chip.display}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Relationship notes */}
-        {notes && (
-          <p className="text-xs text-gray-400 italic mt-1">{notes}</p>
+        {/* Fallback audio */}
+        {pronunciationLinks.length === 0 && primaryAudio?.object_key && (
+          <AudioButton
+            wordId={word?.id}
+            italianText={formText}
+            audioObjectKey={primaryAudio.object_key}
+            audioBucket={primaryAudio.bucket || primaryAudio.storage_bucket}
+            size="chip"
+            variant="inline-icon"
+          />
         )}
       </div>
+
+      {/* Composition: di + il → del */}
+      {relationship?.source_italian && relationship?.target_italian && (
+        <div className="text-xs font-mono text-gray-400 mt-0.5">
+          {relationship.source_italian} + {relationship.target_italian} → {formText}
+        </div>
+      )}
+
+      {/* All pronunciation variants: accent / IPA / phonetic */}
+      {pronunciationLinks.length > 0 && (
+        <div className="mt-1 space-y-0.5">
+          {pronunciationLinks.map((link, i) => {
+            const accent   = link.accent || ''
+            const ipa      = link.ipa_pronunciation || ''
+            const phonetic = link.phonetic_pronunciation || ''
+            const dialect  = link.voice_name || link.dialect || ''
+            if (!accent && !ipa && !phonetic) return null
+            return (
+              <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
+                {dialect && i > 0 && <span className="text-[10px] text-gray-400 italic">{dialect}</span>}
+                {accent   && <span className="text-xs font-semibold text-gray-700">{accent}</span>}
+                {ipa      && <span className="text-xs font-mono text-gray-500">[{ipa}]</span>}
+                {phonetic && <span className="text-xs italic text-gray-400">{phonetic}</span>}
+                {i > 0 && (() => {
+                  const media = resolvePronAudio(link)
+                  return media?.object_key ? (
+                    <AudioButton
+                      wordId={word?.id}
+                      italianText={formText}
+                      audioObjectKey={media.object_key}
+                      audioBucket={media.storage_bucket || media.bucket}
+                      size="chip"
+                      variant="inline-icon"
+                    />
+                  ) : null
+                })()}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Tag chips — gender+number chip is first, then all other form tags */}
+      {chips.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {chips.map((chip, i) => (
+            <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${chip.class}`} title={chip.description}>
+              {chip.display}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Relationship notes */}
+      {notes && <p className="text-xs text-gray-400 italic mt-1">{notes}</p>}
     </div>
   )
 }
@@ -431,15 +442,15 @@ function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, rela
         {formEntries.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {formEntries.map((fe, i) => {
-              const symbol = getFormSymbol(fe.form, relationships)
+              const gnChip  = getGenderNumberChip(fe.form, relationships)
               const formText = fe.form.form_text || ''
               return (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 font-medium"
-                  title={fe.usageLabel || undefined}
+                  className={`inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full font-medium border ${gnChip ? `${gnChip.class} border-transparent` : 'bg-gray-100 text-gray-700 border-gray-200'}`}
+                  title={fe.usageLabel || gnChip?.description || undefined}
                 >
-                  {symbol && <span>{symbol}</span>}
+                  {gnChip && <span>{gnChip.display}</span>}
                   <span>{formText}</span>
                 </span>
               )
