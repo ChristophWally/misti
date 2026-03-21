@@ -4,7 +4,18 @@
 // Etymologies shown as self-contained cards; each card lists the senses it covers.
 // Related words as interactive pills at the bottom.
 
+const POS_COLOUR_BAR = {
+  VERB: 'bg-teal-500',
+  NOUN: 'bg-cyan-500',
+  ADJECTIVE: 'bg-blue-500',
+  ADVERB: 'bg-purple-500',
+  PREPOSITION: 'bg-gray-500',
+}
+
 export default function EtymologyTab({ word, fullBundle, isLoading }) {
+  const wordType = String(word?.word_type || '').toUpperCase()
+  const barClass = POS_COLOUR_BAR[wordType] || 'bg-gray-400'
+
   const etymologyGroups = Array.isArray(fullBundle?.etymologies)
     ? fullBundle.etymologies
     : []
@@ -53,7 +64,7 @@ export default function EtymologyTab({ word, fullBundle, isLoading }) {
   )
 
   // Deduplicate by etymology text: group entries with matching text together
-  const etymologyTextKey = (e) => e.etymology_text_raw || e.etymology_text || ''
+  const etymologyTextKey = (e) => e.body_text || e.etymology_text_raw || e.etymology_text || ''
   const senseEtymologyGroups = []
   const seenTexts = new Map() // text → index in senseEtymologyGroups
 
@@ -71,25 +82,28 @@ export default function EtymologyTab({ word, fullBundle, isLoading }) {
     <div className="p-4 space-y-4">
       {/* Word-level etymologies (no sense association) */}
       {wordLevelEtymologies.map((group, i) => (
-        <div key={i} className="rounded-xl shadow-sm border border-gray-200 bg-stone-50 p-4">
-          {group.etymology_text_raw ? (
-            <div
-              className="text-sm text-gray-700 prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: group.etymology_text_raw }}
-            />
-          ) : group.etymology_text ? (
-            <div
-              className="text-sm text-gray-700"
-              dangerouslySetInnerHTML={{ __html: group.etymology_text }}
-            />
-          ) : (
-            <p className="text-sm text-gray-400">No etymology text.</p>
-          )}
-          {group.source && (
-            <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-400">
-              Source: {group.source}
-            </div>
-          )}
+        <div key={i} className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-stone-50">
+          <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
+          <div className="flex-1 p-4">
+            {(group.body_text || group.etymology_text_raw) ? (
+              <div
+                className="text-sm text-gray-700 prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: group.body_text || group.etymology_text_raw }}
+              />
+            ) : group.etymology_text ? (
+              <div
+                className="text-sm text-gray-700"
+                dangerouslySetInnerHTML={{ __html: group.etymology_text }}
+              />
+            ) : (
+              <p className="text-sm text-gray-400">No etymology text.</p>
+            )}
+            {(group.etymology_source || group.source) && (
+              <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-400">
+                Source: {group.etymology_source || group.source}
+              </div>
+            )}
+          </div>
         </div>
       ))}
 
@@ -100,44 +114,47 @@ export default function EtymologyTab({ word, fullBundle, isLoading }) {
           .filter(Boolean)
 
         return (
-          <div key={i} className="rounded-xl shadow-sm border border-gray-200 bg-stone-50 p-4">
-            {/* Etymology text */}
-            {group.etymology_text_raw ? (
-              <div
-                className="text-sm text-gray-700 prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: group.etymology_text_raw }}
-              />
-            ) : group.etymology_text ? (
-              <div
-                className="text-sm text-gray-700"
-                dangerouslySetInnerHTML={{ __html: group.etymology_text }}
-              />
-            ) : (
-              <p className="text-sm text-gray-400">No etymology text.</p>
-            )}
+          <div key={i} className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-stone-50">
+            <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
+            <div className="flex-1 p-4">
+              {/* Etymology text */}
+              {(group.body_text || group.etymology_text_raw) ? (
+                <div
+                  className="text-sm text-gray-700 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: group.body_text || group.etymology_text_raw }}
+                />
+              ) : group.etymology_text ? (
+                <div
+                  className="text-sm text-gray-700"
+                  dangerouslySetInnerHTML={{ __html: group.etymology_text }}
+                />
+              ) : (
+                <p className="text-sm text-gray-400">No etymology text.</p>
+              )}
 
-            {/* Sense pills: which senses this etymology covers */}
-            {senseLabels.length > 0 && (
-              <div className="mt-3 pt-2 border-t border-gray-200">
-                <p className="text-xs text-gray-400 mb-1.5">Applies to:</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {senseLabels.map((label, j) => (
-                    <span
-                      key={j}
-                      className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200"
-                    >
-                      {label}
-                    </span>
-                  ))}
+              {/* Sense pills: which senses this etymology covers */}
+              {senseLabels.length > 0 && (
+                <div className="mt-3 pt-2 border-t border-gray-200">
+                  <p className="text-xs text-gray-400 mb-1.5">Applies to:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {senseLabels.map((label, j) => (
+                      <span
+                        key={j}
+                        className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200"
+                      >
+                        {label}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {group.source && (
-              <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-400">
-                Source: {group.source}
-              </div>
-            )}
+              {(group.etymology_source || group.source) && (
+                <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-400">
+                  Source: {group.etymology_source || group.source}
+                </div>
+              )}
+            </div>
           </div>
         )
       })}

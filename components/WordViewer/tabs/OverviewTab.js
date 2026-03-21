@@ -74,7 +74,7 @@ export default function OverviewTab({ word, fullBundle, isLoading }) {
               )}
               <div className="px-3">
                 {group.resolvedTranslations.map(t => (
-                  <WordSenseRow key={t.id} translation={t} index={senseIndex++} />
+                  <WordSenseRow key={t.id} translation={t} index={senseIndex++} wordType={word?.word_type} />
                 ))}
               </div>
             </div>
@@ -95,7 +95,7 @@ export default function OverviewTab({ word, fullBundle, isLoading }) {
       <div className="rounded-lg border border-gray-100 overflow-hidden">
         <div className="px-3">
           {sortedTranslations.map(t => (
-            <WordSenseRow key={t.id} translation={t} index={senseIndex++} />
+            <WordSenseRow key={t.id} translation={t} index={senseIndex++} wordType={word?.word_type} />
           ))}
         </div>
       </div>

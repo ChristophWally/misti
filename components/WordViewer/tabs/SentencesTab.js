@@ -5,8 +5,19 @@
 // Card per group with sentence count badge and sticky group headers.
 
 import SentenceList from '../SentenceList'
+import { getWordTypeColors } from '../../../lib/word-type-utils'
+
+const POS_COLOUR_BAR = {
+  VERB: 'bg-teal-500',
+  NOUN: 'bg-cyan-500',
+  ADJECTIVE: 'bg-blue-500',
+  ADVERB: 'bg-purple-500',
+  PREPOSITION: 'bg-gray-500',
+}
 
 export default function SentencesTab({ word, fullBundle, isLoading }) {
+  const wordType = String(word?.word_type || '').toUpperCase()
+  const barClass = POS_COLOUR_BAR[wordType] || 'bg-gray-400'
   const sentences = Array.isArray(fullBundle?.sentences) ? fullBundle.sentences : []
   const translations = Array.isArray(fullBundle?.translations) ? fullBundle.translations : []
   const formTranslationGroups = Array.isArray(fullBundle?.form_translation_groups)
@@ -91,7 +102,9 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
         const group = groups[groupKey]
         const count = group.sentences.length
         return (
-          <div key={groupKey} className="rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div key={groupKey} className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-white">
+            <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
+            <div className="flex-1 min-w-0">
             {/* Sticky group header */}
             <div className="sticky top-0 z-[5] flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200">
               <h3 className="text-sm font-semibold text-gray-700">
@@ -102,7 +115,8 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
               </span>
             </div>
             <div className="p-3">
-              <SentenceList sentences={group.sentences} compact={false} />
+              <SentenceList sentences={group.sentences} compact={false} colorBarClass={barClass} />
+            </div>
             </div>
           </div>
         )

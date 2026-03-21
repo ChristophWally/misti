@@ -146,7 +146,7 @@ export default function WordViewerHeader({ word, fullBundle, onClose }) {
                 italianText={word?.italian}
                 audioObjectKey={primaryAudio?.object_key}
                 audioBucket={primaryAudio?.bucket || primaryAudio?.storage_bucket}
-                size="sm"
+                size="chip"
                 variant="inline-icon"
               />
             )}

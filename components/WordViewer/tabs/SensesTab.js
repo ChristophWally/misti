@@ -8,6 +8,15 @@ import AudioButton from '../../AudioButton'
 import WordSenseRow from '../WordSenseRow'
 import SentenceList from '../SentenceList'
 import WordImage from '../WordImage'
+import { getWordTypeColors } from '../../../lib/word-type-utils'
+
+const POS_COLOUR_BAR = {
+  VERB: 'bg-teal-500',
+  NOUN: 'bg-cyan-500',
+  ADJECTIVE: 'bg-blue-500',
+  ADVERB: 'bg-purple-500',
+  PREPOSITION: 'bg-gray-500',
+}
 
 /**
  * Join translations to pronunciation groups, ordered by the display_priority
@@ -54,6 +63,8 @@ function buildImageMap(mediaLinks = [], mediaAssets = []) {
 }
 
 export default function SensesTab({ word, fullBundle, isLoading, onNavigateTab }) {
+  const wordType = String(word?.word_type || '').toUpperCase()
+  const barClass = POS_COLOUR_BAR[wordType] || 'bg-gray-400'
   const pronunciationGroups = Array.isArray(fullBundle?.word?.pronunciation_groups)
     ? fullBundle.word.pronunciation_groups
     : Array.isArray(word?.pronunciation_groups)
@@ -112,7 +123,9 @@ export default function SensesTab({ word, fullBundle, isLoading, onNavigateTab }
           const audioDesc = group.primary_audio_descriptor || group.primary_audio || null
 
           return (
-            <div key={group.key} className="rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div key={group.key} className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-white">
+              <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
+              <div className="flex-1 min-w-0">
               {/* Group header: IPA + audio */}
               {(ipa || audioDesc) && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100">
@@ -123,7 +136,7 @@ export default function SensesTab({ word, fullBundle, isLoading, onNavigateTab }
                       italianText={word?.italian}
                       audioObjectKey={audioDesc?.object_key}
                       audioBucket={audioDesc?.bucket || audioDesc?.storage_bucket}
-                      size="sm"
+                      size="chip"
                       variant="inline-icon"
                     />
                   )}
@@ -149,7 +162,7 @@ export default function SensesTab({ word, fullBundle, isLoading, onNavigateTab }
                           </button>
                         )}
                         <div className="flex-1">
-                          <WordSenseRow translation={t} index={senseIndex++} />
+                          <WordSenseRow translation={t} index={senseIndex++} wordType={word?.word_type} />
                         </div>
                       </div>
 
@@ -177,6 +190,7 @@ export default function SensesTab({ word, fullBundle, isLoading, onNavigateTab }
                   )
                 })}
               </div>
+              </div>
             </div>
           )
         })}
@@ -192,7 +206,9 @@ export default function SensesTab({ word, fullBundle, isLoading, onNavigateTab }
 
   return (
     <div className="p-4">
-      <div className="rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-white">
+        <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
+        <div className="flex-1 min-w-0">
         <div className="px-3">
           {sortedTranslations.map(t => {
             const senseSentences = getSentencesForSense(t.id)
@@ -212,7 +228,7 @@ export default function SensesTab({ word, fullBundle, isLoading, onNavigateTab }
                     </button>
                   )}
                   <div className="flex-1">
-                    <WordSenseRow translation={t} index={senseIndex++} />
+                    <WordSenseRow translation={t} index={senseIndex++} wordType={word?.word_type} />
                   </div>
                 </div>
 
@@ -237,6 +253,7 @@ export default function SensesTab({ word, fullBundle, isLoading, onNavigateTab }
               </div>
             )
           })}
+        </div>
         </div>
       </div>
     </div>

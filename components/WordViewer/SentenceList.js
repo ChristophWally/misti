@@ -6,7 +6,7 @@
 
 import { useState } from 'react'
 
-export default function SentenceList({ sentences = [], compact = false }) {
+export default function SentenceList({ sentences = [], compact = false, colorBarClass = '' }) {
   const [expandedSentences, setExpandedSentences] = useState({})
 
   if (!Array.isArray(sentences) || sentences.length === 0) {
@@ -57,7 +57,9 @@ export default function SentenceList({ sentences = [], compact = false }) {
         const shouldCollapse = (sentence.notes || '').length > 150
 
         return (
-          <div key={i} className="rounded-lg border border-gray-100 p-3 bg-gray-50">
+          <div key={i} className={`flex rounded-lg border border-gray-100 overflow-hidden bg-gray-50`}>
+            {colorBarClass && <div className={`w-1 flex-shrink-0 ${colorBarClass}`} />}
+            <div className="flex-1 p-3">
             {/* Italian sentence */}
             <div className="text-sm font-medium text-gray-900 mb-1.5">
               {sentence.sentence_text_html ? (
@@ -109,6 +111,7 @@ export default function SentenceList({ sentences = [], compact = false }) {
                 )}
               </div>
             )}
+            </div>
           </div>
         )
       })}

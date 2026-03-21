@@ -13,6 +13,15 @@ import SentenceList from '../SentenceList'
 import PronunciationDisplay from '../PronunciationDisplay'
 import WordImage from '../WordImage'
 import { getWordTypeColors } from '../../../lib/word-type-utils'
+import { processRpcTagsForDisplay } from '../../../lib/tag-processing'
+
+const POS_COLOUR_BAR = {
+  VERB: 'bg-teal-500',
+  NOUN: 'bg-cyan-500',
+  ADJECTIVE: 'bg-blue-500',
+  ADVERB: 'bg-purple-500',
+  PREPOSITION: 'bg-gray-500',
+}
 
 // ─── Helpers ──────────────────────────────────────────
 
@@ -44,34 +53,20 @@ function buildImageMap(mediaLinks = [], mediaAssets = []) {
   return map
 }
 
-/** Extract tag chips from a form's core_tags array. Returns array of { label, cls, tip }. */
-function getFormTagChips(coreTags = []) {
-  const chips = []
-  coreTags.forEach(tag => {
-    const sid = tag?.attribute_stable_id || ''
-    const val = String(tag?.value_label || '').toLowerCase()
-    if (!val) return
-    if (sid === 'metaattr003') {
-      if (val === 'masculine') chips.push({ label: '♂', cls: 'bg-blue-100 text-blue-700', tip: 'Masculine gender' })
-      else if (val === 'feminine') chips.push({ label: '♀', cls: 'bg-pink-100 text-pink-700', tip: 'Feminine gender' })
-    } else if (sid === 'metaattr008') {
-      if (val === 'singolare' || val === 'singular') chips.push({ label: 'sing.', cls: 'bg-cyan-100 text-cyan-700', tip: 'Singular form' })
-      else if (val === 'plurale' || val === 'plural') chips.push({ label: 'pl.', cls: 'bg-cyan-100 text-cyan-700', tip: 'Plural form' })
-    } else if (sid === 'metaattr005' && val === 'irregular') {
-      chips.push({ label: '⚠ irreg.', cls: 'bg-red-100 text-red-700', tip: 'Irregular form' })
-    }
-  })
-  return chips
+/** Get all display chips for a form using processRpcTagsForDisplay. */
+function getFormChips(coreTags = [], wordType = '') {
+  const { essential, detailed } = processRpcTagsForDisplay(coreTags, wordType)
+  return [...essential, ...detailed]
 }
 
-/** Render tag chips inline. */
-function FormTagChips({ coreTags = [] }) {
-  const chips = getFormTagChips(coreTags)
+/** Render tag chips inline for a form. */
+function FormTagChips({ coreTags = [], wordType = '' }) {
+  const chips = getFormChips(coreTags, wordType)
   if (chips.length === 0) return null
   return (
     <span className="inline-flex flex-wrap gap-0.5">
       {chips.map((c, i) => (
-        <span key={i} className={`text-[10px] px-1 py-0 rounded ${c.cls}`} title={c.tip}>{c.label}</span>
+        <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${c.class}`} title={c.description}>{c.display}</span>
       ))}
     </span>
   )
@@ -84,7 +79,7 @@ function FormTagChips({ coreTags = [] }) {
  * Returns { ftgMap: Map<ftgId, { ftg, formEntries }>, hasShared: boolean }
  */
 function buildFtgMap(forms) {
-  const ftgMap = new Map() // ftgId → { ftg, formEntries: [{ form, usageLabel }] }
+  const ftgMap = new Map()
 
   for (const form of forms) {
     const ftgs = Array.isArray(form.resolved_translation_groups) ? form.resolved_translation_groups : []
@@ -101,7 +96,6 @@ function buildFtgMap(forms) {
     }
   }
 
-  // Check if any FTG is shared across 2+ forms
   let hasShared = false
   for (const entry of ftgMap.values()) {
     if (entry.formEntries.length > 1) {
@@ -113,37 +107,94 @@ function buildFtgMap(forms) {
   return { ftgMap, hasShared }
 }
 
-/** A form pill: form_text + tag chips + audio, used inside FTG-centric cards. */
-function FormPill({ form, word, colors }) {
+/** Expanded form detail block: form_text + ALL tags + audio + pronunciation + composition. */
+function FormDetailBlock({ form, word, wordType, relationships = [] }) {
+  const colors = getWordTypeColors(wordType)
   const formText = form.form_text || form.italian || ''
   const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
-  const tagChips = getFormTagChips(coreTags)
+  const chips = getFormChips(coreTags, wordType)
+  const pronunciationLinks = Array.isArray(form.pronunciation_links) ? form.pronunciation_links : []
   const primaryAudio = form.primary_audio || null
 
+  // Find composition relationship for this form (via contracted_form_id)
+  const composition = relationships.find(rel =>
+    rel.contracted_form_id === form.id || rel.target_form_id === form.id
+  )
+
+  // Extract phonology-position tags for learner context
+  const phonologyChips = chips.filter(c => {
+    const tag = c.tag || ''
+    return tag.startsWith('phonology-position-') || tag.startsWith('before-') || tag.startsWith('after-')
+  })
+
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border ${colors.border} ${colors.bg} text-sm`}>
-      <span className={`font-bold ${colors.text}`}>{formText}</span>
-      {tagChips.map((c, i) => (
-        <span key={i} className={`text-[10px] px-1 rounded ${c.cls}`} title={c.tip}>{c.label}</span>
-      ))}
-      {primaryAudio && (
-        <AudioButton
-          wordId={word?.id}
-          italianText={formText}
-          audioObjectKey={primaryAudio?.object_key}
-          audioBucket={primaryAudio?.bucket || primaryAudio?.storage_bucket}
-          size="sm"
-          variant="inline-icon"
-        />
+    <div className={`rounded-lg border ${colors.border} p-3 ${colors.bg}`}>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className={`text-lg font-bold ${colors.text}`}>{formText}</span>
+        {primaryAudio && pronunciationLinks.length === 0 && (
+          <AudioButton
+            wordId={word?.id}
+            italianText={formText}
+            audioObjectKey={primaryAudio?.object_key}
+            audioBucket={primaryAudio?.bucket || primaryAudio?.storage_bucket}
+            size="chip"
+            variant="inline-icon"
+          />
+        )}
+      </div>
+
+      {/* Pronunciation variants */}
+      {pronunciationLinks.length > 0 && (
+        <div className="mt-1">
+          <PronunciationDisplay
+            pronunciationLinks={pronunciationLinks}
+            wordId={word?.id}
+            italianText={formText}
+            compact
+          />
+        </div>
       )}
-    </span>
+
+      {/* All tag chips */}
+      {chips.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {chips.map((chip, i) => (
+            <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${chip.class}`} title={chip.description}>
+              {chip.display}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Composition from relationships */}
+      {composition && (
+        <div className="mt-2 text-xs text-gray-600">
+          {composition.source_italian && composition.target_italian && (
+            <span className="font-mono">
+              {composition.source_italian} + {composition.target_italian} → {formText}
+            </span>
+          )}
+          {composition.description && (
+            <p className="mt-0.5 text-gray-500">{composition.description}</p>
+          )}
+        </div>
+      )}
+
+      {/* Phonology usage context */}
+      {phonologyChips.length > 0 && !composition && (
+        <div className="mt-1.5 text-xs text-gray-500 italic">
+          {phonologyChips.map(c => c.description).filter(Boolean).join('; ')}
+        </div>
+      )}
+    </div>
   )
 }
 
-/** FTG-centric card: one card per unique FTG, with form pills showing which forms it applies to. */
-function SharedFtgCard({ ftgEntry, word, wordType, sentences, imageMap }) {
+/** FTG-centric card: one card per unique FTG, with form detail blocks. */
+function SharedFtgCard({ ftgEntry, word, wordType, sentences, imageMap, relationships }) {
   const [expanded, setExpanded] = useState(false)
   const colors = getWordTypeColors(wordType)
+  const barClass = POS_COLOUR_BAR[wordType] || 'bg-gray-400'
   const { ftg, formEntries } = ftgEntry
 
   const usageNotesRaw = ftg.usage_notes || ''
@@ -151,7 +202,6 @@ function SharedFtgCard({ ftgEntry, word, wordType, sentences, imageMap }) {
   const linkedSense = ftg.word_translation?.translation || null
   const ftgId = ftg.form_translation_group_id || ftg.id
 
-  // Sentences linked to this FTG (deduplicate across links)
   const seenSentenceIds = new Set()
   const ftgSentences = sentences.filter(s => {
     if (!Array.isArray(s.links)) return false
@@ -169,82 +219,80 @@ function SharedFtgCard({ ftgEntry, word, wordType, sentences, imageMap }) {
   })
 
   const ftgImages = imageMap[`form_translation_group:${ftgId}`] || []
-
-  // Group forms by usage_label for cleaner display
   const hasUsageLabels = formEntries.some(fe => fe.usageLabel)
 
   return (
-    <div className={`rounded-xl shadow-sm border ${colors.border} overflow-hidden`}>
-      {/* FTG header: translation + linked sense */}
-      <div className={`px-3 py-2.5 ${colors.bg} border-b ${colors.border}`}>
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className={`text-sm font-semibold ${colors.text}`}>{ftg.translation}</span>
-          {linkedSense && (
-            <>
-              <span className="text-xs text-gray-400">→</span>
-              <span className="text-xs text-gray-500">{linkedSense}</span>
-            </>
-          )}
-        </div>
-      </div>
+    <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-white">
+      {/* Left colour bar */}
+      <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
 
-      <div className="px-3 py-2.5 space-y-2.5">
-        {/* Form pills: which forms use this FTG */}
-        <div>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-1.5">Forms</p>
-          {hasUsageLabels ? (
-            // When usage labels exist, show each form with its label
-            <div className="space-y-1.5">
+      <div className="flex-1 min-w-0">
+        {/* FTG header: translation + linked sense */}
+        <div className={`px-3 py-2.5 border-b border-gray-100`}>
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-gray-900">{ftg.translation}</span>
+            {linkedSense && (
+              <>
+                <span className="text-xs text-gray-400">→</span>
+                <span className="text-xs text-gray-500">{linkedSense}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="px-3 py-2.5 space-y-3">
+          {/* Form detail blocks */}
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-2">Forms</p>
+            <div className="space-y-2">
               {formEntries.map((fe, i) => (
-                <div key={i} className="flex items-center gap-2 flex-wrap">
-                  <FormPill form={fe.form} word={word} colors={colors} />
+                <div key={i}>
+                  <FormDetailBlock
+                    form={fe.form}
+                    word={word}
+                    wordType={wordType}
+                    relationships={relationships}
+                  />
                   {fe.usageLabel && (
-                    <span className="text-xs text-gray-400 italic">{fe.usageLabel}</span>
+                    <p className="text-xs text-gray-400 italic mt-1 ml-1">{fe.usageLabel}</p>
                   )}
                 </div>
               ))}
             </div>
-          ) : (
-            // No usage labels: compact row of form pills
-            <div className="flex flex-wrap gap-1.5">
-              {formEntries.map((fe, i) => (
-                <FormPill key={i} form={fe.form} word={word} colors={colors} />
+          </div>
+
+          {/* Usage notes */}
+          {firstParagraph && (
+            <div>
+              <div
+                className="text-xs text-gray-600 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: expanded ? usageNotesRaw : firstParagraph }}
+              />
+              {hasMore && (
+                <button
+                  onClick={() => setExpanded(e => !e)}
+                  className="text-xs text-teal-600 hover:text-teal-800 mt-0.5 underline"
+                >
+                  {expanded ? 'Show less' : 'Show more'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Images */}
+          {ftgImages.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {ftgImages.map((asset, i) => (
+                <WordImage key={asset.id || i} mediaAsset={asset} alt={ftg.translation || ''} className="w-full max-w-xs max-h-40" />
               ))}
             </div>
           )}
+
+          {/* Sentences */}
+          {ftgSentences.length > 0 && (
+            <SentenceList sentences={ftgSentences} compact={false} />
+          )}
         </div>
-
-        {/* Usage notes */}
-        {firstParagraph && (
-          <div>
-            <div
-              className="text-xs text-gray-600 leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: expanded ? usageNotesRaw : firstParagraph }}
-            />
-            {hasMore && (
-              <button
-                onClick={() => setExpanded(e => !e)}
-                className="text-xs text-teal-600 hover:text-teal-800 mt-0.5 underline"
-              >
-                {expanded ? 'Show less' : 'Show more'}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Images */}
-        {ftgImages.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {ftgImages.map((asset, i) => (
-              <WordImage key={asset.id || i} mediaAsset={asset} alt={ftg.translation || ''} className="w-full max-w-xs max-h-40" />
-            ))}
-          </div>
-        )}
-
-        {/* Sentences */}
-        {ftgSentences.length > 0 && (
-          <SentenceList sentences={ftgSentences} compact={false} />
-        )}
       </div>
     </div>
   )
@@ -319,6 +367,7 @@ function FtgRow({ ftg, index, wordType, sentences = [], imageMap = {} }) {
 
 function FormCard({ form, word, wordType, sentences = [], imageMap = {} }) {
   const colors = getWordTypeColors(wordType)
+  const barClass = POS_COLOUR_BAR[wordType] || 'bg-gray-400'
   const primaryAudio = form.primary_audio || null
   const pronunciationLinks = Array.isArray(form.pronunciation_links) ? form.pronunciation_links : []
   const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
@@ -333,49 +382,55 @@ function FormCard({ form, word, wordType, sentences = [], imageMap = {} }) {
   })
 
   return (
-    <div className={`rounded-xl shadow-sm border ${colors.border} overflow-hidden`}>
-      <div className={`px-3 py-2.5 ${colors.bg} border-b ${colors.border}`}>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-base font-bold ${colors.text}`}>{formText}</span>
-          <FormTagChips coreTags={coreTags} />
-          {primaryAudio && pronunciationLinks.length === 0 && (
-            <span className="ml-auto">
-              <AudioButton
+    <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-white">
+      {/* Left colour bar */}
+      <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
+
+      <div className="flex-1 min-w-0">
+        <div className={`px-3 py-2.5 border-b border-gray-100`}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-lg font-bold text-gray-900">{formText}</span>
+            <FormTagChips coreTags={coreTags} wordType={wordType} />
+            {primaryAudio && pronunciationLinks.length === 0 && (
+              <span className="ml-auto">
+                <AudioButton
+                  wordId={word?.id}
+                  italianText={formText}
+                  audioObjectKey={primaryAudio?.object_key}
+                  audioBucket={primaryAudio?.bucket || primaryAudio?.storage_bucket}
+                  size="chip"
+                  variant="inline-icon"
+                />
+              </span>
+            )}
+          </div>
+          {pronunciationLinks.length > 0 && (
+            <div className="mt-1.5">
+              <PronunciationDisplay
+                pronunciationLinks={pronunciationLinks}
                 wordId={word?.id}
                 italianText={formText}
-                audioObjectKey={primaryAudio?.object_key}
-                audioBucket={primaryAudio?.bucket || primaryAudio?.storage_bucket}
-                size="sm"
               />
-            </span>
+            </div>
           )}
         </div>
-        {pronunciationLinks.length > 0 && (
-          <div className="mt-1.5">
-            <PronunciationDisplay
-              pronunciationLinks={pronunciationLinks}
-              wordId={word?.id}
-              italianText={formText}
-            />
+
+        {ftgs.length > 0 ? (
+          <div className="px-3">
+            {ftgs.map((ftg, i) => (
+              <FtgRow key={ftg.id || i} ftg={ftg} index={i + 1} wordType={wordType} sentences={sentences} imageMap={imageMap} />
+            ))}
+          </div>
+        ) : (
+          <div className="px-3 py-2 text-xs text-gray-400">No translations for this form.</div>
+        )}
+
+        {formSentences.length > 0 && ftgs.length === 0 && (
+          <div className="px-3 py-2">
+            <SentenceList sentences={formSentences} compact={false} />
           </div>
         )}
       </div>
-
-      {ftgs.length > 0 ? (
-        <div className="px-3">
-          {ftgs.map((ftg, i) => (
-            <FtgRow key={ftg.id || i} ftg={ftg} index={i + 1} wordType={wordType} sentences={sentences} imageMap={imageMap} />
-          ))}
-        </div>
-      ) : (
-        <div className="px-3 py-2 text-xs text-gray-400">No translations for this form.</div>
-      )}
-
-      {formSentences.length > 0 && ftgs.length === 0 && (
-        <div className="px-3 py-2">
-          <SentenceList sentences={formSentences} compact={false} />
-        </div>
-      )}
     </div>
   )
 }
@@ -385,6 +440,7 @@ function FormCard({ form, word, wordType, sentences = [], imageMap = {} }) {
 export default function FormsTab({ word, fullBundle, isLoading }) {
   const wordType = String(word?.word_type || '').toUpperCase()
   const sentences = Array.isArray(fullBundle?.sentences) ? fullBundle.sentences : []
+  const relationships = Array.isArray(fullBundle?.word_relationships) ? fullBundle.word_relationships : []
 
   const imageMap = buildImageMap(
     fullBundle?.media_links || [],
@@ -406,22 +462,18 @@ export default function FormsTab({ word, fullBundle, isLoading }) {
   if (forms.length === 0) {
     return (
       <div className="p-4 text-sm text-gray-500">
-        {fullBundle ? 'No inflected forms recorded for this word.' : 'Loading…'}
+        {fullBundle ? 'No inflected forms recorded for this word.' : 'Loading\u2026'}
       </div>
     )
   }
 
-  // Detect layout mode: FTG-centric (shared) vs form-centric (unique)
   const { ftgMap, hasShared } = buildFtgMap(forms)
 
-  // Forms with zero FTGs (standalone) — show separately in either mode
   const standaloneForms = forms.filter(f =>
     !Array.isArray(f.resolved_translation_groups) || f.resolved_translation_groups.length === 0
   )
 
   if (hasShared) {
-    // ─── FTG-centric layout ─────
-    // Sort FTG entries by the display priority of their first form entry
     const sortedFtgEntries = Array.from(ftgMap.values()).sort((a, b) => {
       const aIdx = forms.indexOf(a.formEntries[0]?.form)
       const bIdx = forms.indexOf(b.formEntries[0]?.form)
@@ -442,10 +494,10 @@ export default function FormsTab({ word, fullBundle, isLoading }) {
             wordType={wordType}
             sentences={sentences}
             imageMap={imageMap}
+            relationships={relationships}
           />
         ))}
 
-        {/* Standalone forms (no FTGs) */}
         {standaloneForms.length > 0 && (
           <>
             <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mt-4">
@@ -460,7 +512,6 @@ export default function FormsTab({ word, fullBundle, isLoading }) {
     )
   }
 
-  // ─── Form-centric layout ─────
   return (
     <div className="p-4 space-y-3">
       <p className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-1">
