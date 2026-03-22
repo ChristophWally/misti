@@ -67,9 +67,9 @@ function normaliseArticle(str) {
  * Compute the combined gender+number chip for a form.
  *
  * Produces a single coloured chip that correctly distinguishes:
- *   ♂  masc. sing.  (blue-600)
- *   ⚤  masc. pl.   (blue-400)
- *   ♀  fem. sing.  (pink-400)
+ *   ♂  masc. sing.  (blue-500)
+ *   ⚣  masc. pl.   (blue-700 — darker)
+ *   ♀  fem. sing.  (pink-500)
  *   ⚢  fem. pl.    (pink-700 — darker)
  *   ⚤  both genders / before vowel (purple-500)
  *
@@ -78,14 +78,15 @@ function normaliseArticle(str) {
  *   2. relationship target_italian article (il/lo/la/le/i/gli/l')
  *   3. WORD_GENDER (metaattr011) + NUMBER (metaattr012) tags
  */
-// Colour system: ♂ blue, ♀ pink, ⚤/⚢ purple (multi-gender symbols are always purple)
+// Colour system: ♂/⚣ blue (masc), ♀/⚢ pink (fem), ⚤ purple (both genders only)
+// Singular = mid-shade, plural = darker shade within same colour family.
 const ARTICLE_CHIP_MAP = {
   'il':  { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular' },
   'lo':  { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular (before impure consonant)' },
   'la':  { display: '♀',  class: 'bg-pink-500 text-white',   description: 'Feminine singular' },
-  'i':   { display: '⚤', class: 'bg-purple-500 text-white', description: 'Masculine plural' },
-  'gli': { display: '⚤', class: 'bg-purple-500 text-white', description: 'Masculine plural (before impure consonant)' },
-  'le':  { display: '⚢', class: 'bg-purple-500 text-white', description: 'Feminine plural' },
+  'i':   { display: '⚣', class: 'bg-blue-700 text-white',   description: 'Masculine plural (also used for mixed groups in Italian)' },
+  'gli': { display: '⚣', class: 'bg-blue-700 text-white',   description: 'Masculine plural (also used for mixed groups in Italian)' },
+  'le':  { display: '⚢', class: 'bg-pink-700 text-white',   description: 'Feminine plural' },
   "l'":  { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders — used before vowels and silent h' },
 }
 
@@ -120,9 +121,9 @@ function getGenderNumberChip(form, relationships = []) {
   const isPlur  = numberTag?.value_label === 'plurale'
 
   if (hasMasc && hasFem)     return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders' }
-  if (hasMasc && isPlur)     return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Masculine plural' }
+  if (hasMasc && isPlur)     return { display: '⚣', class: 'bg-blue-700 text-white',   description: 'Masculine plural (also used for mixed groups in Italian)' }
   if (hasMasc)               return { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular' }
-  if (hasFem  && isPlur)     return { display: '⚢', class: 'bg-purple-500 text-white', description: 'Feminine plural' }
+  if (hasFem  && isPlur)     return { display: '⚢', class: 'bg-pink-700 text-white',   description: 'Feminine plural' }
   if (hasFem)                return { display: '♀',  class: 'bg-pink-500 text-white',   description: 'Feminine singular' }
 
   return null
