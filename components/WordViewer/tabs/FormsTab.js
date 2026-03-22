@@ -132,22 +132,27 @@ function getGenderNumberChip(form, relationships = []) {
 }
 
 /**
- * Get tag chips for a form.
- * Prepends the combined gender+number chip, and strips any raw ♂/♀/sing./pl.
- * chips that processRpcTagsForDisplay would produce (avoid duplication).
+ * Get tag chips for a form, split into two groups:
+ *   primaryChips — gender+number chip + form type chips (inline, right of word text)
+ *   detailChips  — all other tags (rendered below the notes)
  */
 // Suppress chips that getGenderNumberChip already handles, including ⚥ (common-gender from tag-processing)
 const SUPPRESS_CHIP_DISPLAYS = new Set(['♂', '♀', 'sing.', 'pl.', '⚥'])
+// Form type chips sit inline with the word heading
+const INLINE_CHIP_DISPLAYS = new Set(['contracted prep.', 'simple prep.', 'complex prep.'])
 
 function getFormChips(coreTags = [], wordType = '', form = null, relationships = []) {
   const { essential, detailed } = processRpcTagsForDisplay(coreTags, wordType)
   const filtered = [...essential, ...detailed].filter(c => !SUPPRESS_CHIP_DISPLAYS.has(c.display))
 
-  if (form) {
-    const gnChip = getGenderNumberChip(form, relationships)
-    if (gnChip) return [gnChip, ...filtered]
-  }
-  return filtered
+  const gnChip = form ? getGenderNumberChip(form, relationships) : null
+  const primaryChips = [
+    ...(gnChip ? [gnChip] : []),
+    ...filtered.filter(c => INLINE_CHIP_DISPLAYS.has(c.display))
+  ]
+  const detailChips = filtered.filter(c => !INLINE_CHIP_DISPLAYS.has(c.display))
+
+  return { primaryChips, detailChips }
 }
 
 /**
@@ -242,7 +247,7 @@ function groupFormsByType(forms, relationships) {
 function FormTableRow({ form, word, wordType, relationships }) {
   const coreTags  = Array.isArray(form.core_tags) ? form.core_tags : []
   const formText  = form.form_text || form.italian || ''
-  const chips     = getFormChips(coreTags, wordType, form, relationships)
+  const { primaryChips, detailChips } = getFormChips(coreTags, wordType, form, relationships)
 
   // Pronunciation variants, sorted primary first
   const pronunciationLinks = Array.isArray(form.pronunciation_links)
@@ -269,9 +274,14 @@ function FormTableRow({ form, word, wordType, relationships }) {
 
   return (
     <div className="py-2.5 border-b border-gray-100 last:border-0">
-      {/* Form text + audio */}
+      {/* Form text + primary chips (gender + form type) + audio */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-base font-bold text-gray-900">{formText}</span>
+        {primaryChips.map((chip, i) => (
+          <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${chip.class}`} title={chip.description}>
+            {chip.display}
+          </span>
+        ))}
 
         {/* Audio from first pronunciation_link */}
         {pronunciationLinks.length > 0 && (() => {
@@ -342,17 +352,6 @@ function FormTableRow({ form, word, wordType, relationships }) {
         </div>
       )}
 
-      {/* Tag chips — gender+number chip is first, then all other form tags */}
-      {chips.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-1.5">
-          {chips.map((chip, i) => (
-            <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${chip.class}`} title={chip.description}>
-              {chip.display}
-            </span>
-          ))}
-        </div>
-      )}
-
       {/* Relationship notes — numbered if multiple unique notes (e.g. dell' has 3 relationships) */}
       {noteLines.length === 1 && (
         <p className="text-xs text-gray-400 italic mt-1">{noteLines[0]}</p>
@@ -361,6 +360,17 @@ function FormTableRow({ form, word, wordType, relationships }) {
         <div className="text-xs text-gray-400 italic mt-1 space-y-0.5">
           {noteLines.map((line, i) => (
             <p key={i}>{['i.', 'ii.', 'iii.', 'iv.', 'v.'][i] ?? `${i + 1}.`} {line}</p>
+          ))}
+        </div>
+      )}
+
+      {/* Detail chips — phonology, irregularity, etc. — below the notes */}
+      {detailChips.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {detailChips.map((chip, i) => (
+            <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${chip.class}`} title={chip.description}>
+              {chip.display}
+            </span>
           ))}
         </div>
       )}
