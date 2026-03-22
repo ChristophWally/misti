@@ -69,8 +69,8 @@ function normaliseArticle(str) {
  * Produces a single coloured chip that correctly distinguishes:
  *   ♂  masc. sing.  (blue-500)
  *   ⚣  masc. pl.   (blue-700 — darker)
- *   ♀  fem. sing.  (pink-500)
- *   ⚢  fem. pl.    (pink-700 — darker)
+ *   ♀  fem. sing.  (pink-400)
+ *   ⚢  fem. pl.    (pink-600 — darker)
  *   ⚤  both genders / before vowel (purple-500)
  *
  * Priority:
@@ -83,10 +83,10 @@ function normaliseArticle(str) {
 const ARTICLE_CHIP_MAP = {
   'il':  { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular' },
   'lo':  { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular (before impure consonant)' },
-  'la':  { display: '♀',  class: 'bg-pink-500 text-white',   description: 'Feminine singular' },
+  'la':  { display: '♀',  class: 'bg-pink-400 text-white',   description: 'Feminine singular' },
   'i':   { display: '⚣', class: 'bg-blue-700 text-white',   description: 'Masculine plural (also used for mixed groups in Italian)' },
   'gli': { display: '⚣', class: 'bg-blue-700 text-white',   description: 'Masculine plural (also used for mixed groups in Italian)' },
-  'le':  { display: '⚢', class: 'bg-pink-700 text-white',   description: 'Feminine plural' },
+  'le':  { display: '⚢', class: 'bg-pink-600 text-white',   description: 'Feminine plural' },
   "l'":  { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders — used before vowels and silent h' },
 }
 
@@ -125,8 +125,8 @@ function getGenderNumberChip(form, relationships = []) {
   if (hasMasc && hasFem)     return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders' }
   if (hasMasc && isPlur)     return { display: '⚣', class: 'bg-blue-700 text-white',   description: 'Masculine plural (also used for mixed groups in Italian)' }
   if (hasMasc)               return { display: '♂',  class: 'bg-blue-500 text-white',   description: 'Masculine singular' }
-  if (hasFem  && isPlur)     return { display: '⚢', class: 'bg-pink-700 text-white',   description: 'Feminine plural' }
-  if (hasFem)                return { display: '♀',  class: 'bg-pink-500 text-white',   description: 'Feminine singular' }
+  if (hasFem  && isPlur)     return { display: '⚢', class: 'bg-pink-600 text-white',   description: 'Feminine plural' }
+  if (hasFem)                return { display: '♀',  class: 'bg-pink-400 text-white',   description: 'Feminine singular' }
 
   return null
 }
