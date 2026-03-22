@@ -264,7 +264,11 @@ function FormTableRow({ form, word, wordType, relationships }) {
   const relationship = formRelationships[0] ?? null
 
   // Collect notes from all relationships, strip boilerplate prefixes, deduplicate by text
-  const stripPrefix = (s) => (s || '').replace(/^contracts[_-]?with\s*[:·|]?\s*/i, '').replace(/^word[_-]?level\s*[:·|]?\s*/i, '').trim()
+  const stripPrefix = (s) => (s || '')
+    .replace(/^contracts[_-]?with\s*[:·|]?\s*/i, '')
+    .replace(/^word[_-]?level\s*[:·|]?\s*/i, '')
+    .replace(/^form[_-]?level\s*[:·|]?\s*/i, '')
+    .trim()
   const noteLines = [...new Set(
     formRelationships
       .flatMap(r => [r.description, r.systematic_rule])
