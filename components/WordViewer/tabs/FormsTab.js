@@ -75,7 +75,7 @@ function normaliseArticle(str) {
  *
  * Priority:
  *   1. before-vowel-or-h phonology tag → ⚤ both genders
- *   2. relationship target_italian article (il/lo/la/le/i/gli/l')
+ *   2. relationship target_form_text (gli/i/le/l') then target_italian fallback
  *   3. WORD_GENDER (metaattr011) + NUMBER (metaattr012) tags
  */
 // Colour system: ♂/⚣ blue (masc), ♀/⚢ pink (fem), ⚤ purple (both genders only)
@@ -105,10 +105,12 @@ function getGenderNumberChip(form, relationships = []) {
     return { display: '⚤', class: 'bg-purple-500 text-white', description: 'Both genders — used before vowels and silent h' }
   }
 
-  // 3. Article from relationship
+  // 3. Article from relationship — prefer target_form_text (actual allomorph: gli, i, le)
+  //    over target_italian (dictionary lemma: lo, il, la) which may be the singular word
   const rel = relationships.find(r => r.contracted_form_id === form.id || r.target_form_id === form.id)
-  if (rel?.target_italian) {
-    const chip = ARTICLE_CHIP_MAP[normaliseArticle(rel.target_italian)]
+  if (rel) {
+    const articleKey = normaliseArticle(rel.target_form_text || rel.target_italian)
+    const chip = ARTICLE_CHIP_MAP[articleKey]
     if (chip) return chip
   }
 
@@ -189,9 +191,10 @@ function sortContractedForms(forms, relationships) {
     if (phonTag?.value_label === 'before-vowel-or-h') return 20 + phonKey
 
     const rel = relationships.find(r => r.contracted_form_id === form.id || r.target_form_id === form.id)
-    if (rel?.target_italian) {
+    if (rel) {
       const ARTICLE_GN = { 'il': 0, 'i': 1, 'la': 2, 'le': 3, 'lo': 4, 'gli': 5, "l'": 6 }
-      return phonKey * 10 + (ARTICLE_GN[normaliseArticle(rel.target_italian)] ?? 6)
+      const articleKey = normaliseArticle(rel.target_form_text || rel.target_italian)
+      return phonKey * 10 + (ARTICLE_GN[articleKey] ?? 6)
     }
 
     // 3. Phonology + gender+number tags
@@ -312,10 +315,10 @@ function FormTableRow({ form, word, wordType, relationships }) {
         )}
       </div>
 
-      {/* Composition: di + il → del */}
-      {relationship?.source_italian && relationship?.target_italian && (
+      {/* Composition: di + gli → degli (prefer target_form_text over target_italian lemma) */}
+      {relationship?.source_italian && (relationship.target_form_text || relationship.target_italian) && (
         <div className="text-xs font-mono text-gray-400 mt-0.5">
-          {relationship.source_italian} + {relationship.target_italian} → {formText}
+          {relationship.source_italian} + {relationship.target_form_text || relationship.target_italian} → {formText}
         </div>
       )}
 
