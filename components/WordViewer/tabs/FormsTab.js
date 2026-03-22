@@ -337,7 +337,7 @@ function FormTableRow({ form, word, wordType, relationships }) {
       {/* Composition: di + gli */}
       {relationship?.source_italian && (relationship.target_form_text || relationship.target_italian) && (
         <div className="text-xs font-mono text-gray-400 mt-0.5">
-          {relationship.source_italian} + {relationship.target_form_text || relationship.target_italian} → {formText}
+          {relationship.source_italian} + {relationship.target_form_text || relationship.target_italian}
         </div>
       )}
 
