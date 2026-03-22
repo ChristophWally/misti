@@ -274,12 +274,21 @@ function FormTableRow({ form, word, wordType, relationships }) {
 
   const primaryAudio = form.primary_audio || null
 
-  // Relationship for composition line + notes
-  const relationship = relationships.find(
+  // Relationships for composition line + notes
+  // Use filter (not find) so forms like dell' with multiple relationships get all notes
+  const formRelationships = relationships.filter(
     r => r.contracted_form_id === form.id || r.target_form_id === form.id
   )
-  const rawNotes = relationship?.description || relationship?.systematic_rule || ''
-  const notes = rawNotes.replace(/^contracts[_-]?with\s*[:·|]?\s*/i, '').replace(/^word[_-]?level\s*[:·|]?\s*/i, '').trim()
+  const relationship = formRelationships[0] ?? null
+
+  // Collect notes from all relationships, strip boilerplate prefixes, deduplicate by text
+  const stripPrefix = (s) => (s || '').replace(/^contracts[_-]?with\s*[:·|]?\s*/i, '').replace(/^word[_-]?level\s*[:·|]?\s*/i, '').trim()
+  const notes = [...new Set(
+    formRelationships
+      .flatMap(r => [r.description, r.systematic_rule])
+      .map(stripPrefix)
+      .filter(Boolean)
+  )].join(' · ')
 
   return (
     <div className="py-2.5 border-b border-gray-100 last:border-0">
