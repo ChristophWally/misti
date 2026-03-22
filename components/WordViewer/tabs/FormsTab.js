@@ -274,7 +274,7 @@ function FormTableRow({ form, word, wordType, relationships }) {
 
   return (
     <div className="py-2.5 border-b border-gray-100 last:border-0">
-      {/* Form text + primary chips (gender + form type) + audio */}
+      {/* Form text + primary chips (gender + form type) */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-base font-bold text-gray-900">{formText}</span>
         {primaryChips.map((chip, i) => (
@@ -282,24 +282,43 @@ function FormTableRow({ form, word, wordType, relationships }) {
             {chip.display}
           </span>
         ))}
+      </div>
 
-        {/* Audio from first pronunciation_link */}
-        {pronunciationLinks.length > 0 && (() => {
-          const media = resolvePronAudio(pronunciationLinks[0])
-          return media?.object_key ? (
-            <AudioButton
-              wordId={word?.id}
-              italianText={formText}
-              audioObjectKey={media.object_key}
-              audioBucket={media.storage_bucket || media.bucket}
-              size="chip"
-              variant="inline-icon"
-            />
-          ) : null
-        })()}
+      {/* Audio + pronunciation — directly below form text */}
+      {pronunciationLinks.length > 0 && (
+        <div className="mt-0.5 space-y-0.5">
+          {pronunciationLinks.map((link, i) => {
+            const accent   = link.accent || ''
+            const ipa      = link.ipa_pronunciation || ''
+            const phonetic = link.phonetic_pronunciation || ''
+            const dialect  = link.voice_name || link.dialect || ''
+            const media    = resolvePronAudio(link)
+            if (!accent && !ipa && !phonetic && !media?.object_key) return null
+            return (
+              <div key={i} className="flex flex-wrap items-center gap-x-2 gap-y-0">
+                {media?.object_key && (
+                  <AudioButton
+                    wordId={word?.id}
+                    italianText={formText}
+                    audioObjectKey={media.object_key}
+                    audioBucket={media.storage_bucket || media.bucket}
+                    size="chip"
+                    variant="inline-icon"
+                  />
+                )}
+                {dialect && i > 0 && <span className="text-[10px] text-gray-400 italic">{dialect}</span>}
+                {accent   && <span className="text-xs font-semibold text-gray-700">{accent}</span>}
+                {ipa      && <span className="text-xs font-mono text-gray-500">[{ipa}]</span>}
+                {phonetic && <span className="text-xs italic text-gray-400">{phonetic}</span>}
+              </div>
+            )
+          })}
+        </div>
+      )}
 
-        {/* Fallback audio */}
-        {pronunciationLinks.length === 0 && primaryAudio?.object_key && (
+      {/* Fallback audio when no pronunciation_links */}
+      {pronunciationLinks.length === 0 && primaryAudio?.object_key && (
+        <div className="mt-0.5">
           <AudioButton
             wordId={word?.id}
             italianText={formText}
@@ -308,47 +327,13 @@ function FormTableRow({ form, word, wordType, relationships }) {
             size="chip"
             variant="inline-icon"
           />
-        )}
-      </div>
-
-      {/* Composition: di + gli → degli (prefer target_form_text over target_italian lemma) */}
-      {relationship?.source_italian && (relationship.target_form_text || relationship.target_italian) && (
-        <div className="text-xs font-mono text-gray-400 mt-0.5">
-          {relationship.source_italian} + {relationship.target_form_text || relationship.target_italian} → {formText}
         </div>
       )}
 
-      {/* All pronunciation variants: accent / IPA / phonetic */}
-      {pronunciationLinks.length > 0 && (
-        <div className="mt-1 space-y-0.5">
-          {pronunciationLinks.map((link, i) => {
-            const accent   = link.accent || ''
-            const ipa      = link.ipa_pronunciation || ''
-            const phonetic = link.phonetic_pronunciation || ''
-            const dialect  = link.voice_name || link.dialect || ''
-            if (!accent && !ipa && !phonetic) return null
-            return (
-              <div key={i} className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-                {dialect && i > 0 && <span className="text-[10px] text-gray-400 italic">{dialect}</span>}
-                {accent   && <span className="text-xs font-semibold text-gray-700">{accent}</span>}
-                {ipa      && <span className="text-xs font-mono text-gray-500">[{ipa}]</span>}
-                {phonetic && <span className="text-xs italic text-gray-400">{phonetic}</span>}
-                {i > 0 && (() => {
-                  const media = resolvePronAudio(link)
-                  return media?.object_key ? (
-                    <AudioButton
-                      wordId={word?.id}
-                      italianText={formText}
-                      audioObjectKey={media.object_key}
-                      audioBucket={media.storage_bucket || media.bucket}
-                      size="chip"
-                      variant="inline-icon"
-                    />
-                  ) : null
-                })()}
-              </div>
-            )
-          })}
+      {/* Composition: di + gli */}
+      {relationship?.source_italian && (relationship.target_form_text || relationship.target_italian) && (
+        <div className="text-xs font-mono text-gray-400 mt-0.5">
+          {relationship.source_italian} + {relationship.target_form_text || relationship.target_italian} → {formText}
         </div>
       )}
 
