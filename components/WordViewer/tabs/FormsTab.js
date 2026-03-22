@@ -136,7 +136,8 @@ function getGenderNumberChip(form, relationships = []) {
  * Prepends the combined gender+number chip, and strips any raw ♂/♀/sing./pl.
  * chips that processRpcTagsForDisplay would produce (avoid duplication).
  */
-const SUPPRESS_CHIP_DISPLAYS = new Set(['♂', '♀', 'sing.', 'pl.'])
+// Suppress chips that getGenderNumberChip already handles, including ⚥ (common-gender from tag-processing)
+const SUPPRESS_CHIP_DISPLAYS = new Set(['♂', '♀', 'sing.', 'pl.', '⚥'])
 
 function getFormChips(coreTags = [], wordType = '', form = null, relationships = []) {
   const { essential, detailed } = processRpcTagsForDisplay(coreTags, wordType)
@@ -152,21 +153,21 @@ function getFormChips(coreTags = [], wordType = '', form = null, relationships =
 /**
  * Known sort order for Italian contracted preposition forms.
  * Covers di/a/da/in/su/con contractions. Index = position in the display order.
- * Priority: masc-sg → masc-pl → fem-sg → fem-pl → special-masc-sg → special-masc-pl → vowel
+ * Priority: masc-sg → fem-sg → masc-special-sg → masc-pl → fem-pl → masc-special-pl → vowel
  */
 const KNOWN_CONTRACTED_ORDER = {
   // di
-  'del': 0, 'dei': 1, 'della': 2, 'delle': 3, 'dello': 4, 'degli': 5, "dell'": 6,
+  'del': 0, 'della': 1, 'dello': 2, 'dei': 3, 'delle': 4, 'degli': 5, "dell'": 6,
   // a
-  'al': 0, 'ai': 1, 'alla': 2, 'alle': 3, 'allo': 4, 'agli': 5, "all'": 6,
+  'al': 0, 'alla': 1, 'allo': 2, 'ai': 3, 'alle': 4, 'agli': 5, "all'": 6,
   // da
-  'dal': 0, 'dai': 1, 'dalla': 2, 'dalle': 3, 'dallo': 4, 'dagli': 5, "dall'": 6,
+  'dal': 0, 'dalla': 1, 'dallo': 2, 'dai': 3, 'dalle': 4, 'dagli': 5, "dall'": 6,
   // in
-  'nel': 0, 'nei': 1, 'nella': 2, 'nelle': 3, 'nello': 4, 'negli': 5, "nell'": 6,
+  'nel': 0, 'nella': 1, 'nello': 2, 'nei': 3, 'nelle': 4, 'negli': 5, "nell'": 6,
   // su
-  'sul': 0, 'sui': 1, 'sulla': 2, 'sulle': 3, 'sullo': 4, 'sugli': 5, "sull'": 6,
+  'sul': 0, 'sulla': 1, 'sullo': 2, 'sui': 3, 'sulle': 4, 'sugli': 5, "sull'": 6,
   // con
-  'col': 0, 'coi': 1, 'colla': 2, 'colle': 3, 'collo': 4, 'cogli': 5, "coll'": 6,
+  'col': 0, 'colla': 1, 'collo': 2, 'coi': 3, 'colle': 4, 'cogli': 5, "coll'": 6,
 }
 
 /**
@@ -283,12 +284,12 @@ function FormTableRow({ form, word, wordType, relationships }) {
 
   // Collect notes from all relationships, strip boilerplate prefixes, deduplicate by text
   const stripPrefix = (s) => (s || '').replace(/^contracts[_-]?with\s*[:·|]?\s*/i, '').replace(/^word[_-]?level\s*[:·|]?\s*/i, '').trim()
-  const notes = [...new Set(
+  const noteLines = [...new Set(
     formRelationships
       .flatMap(r => [r.description, r.systematic_rule])
       .map(stripPrefix)
       .filter(Boolean)
-  )].join(' · ')
+  )]
 
   return (
     <div className="py-2.5 border-b border-gray-100 last:border-0">
@@ -376,8 +377,17 @@ function FormTableRow({ form, word, wordType, relationships }) {
         </div>
       )}
 
-      {/* Relationship notes */}
-      {notes && <p className="text-xs text-gray-400 italic mt-1">{notes}</p>}
+      {/* Relationship notes — numbered if multiple unique notes (e.g. dell' has 3 relationships) */}
+      {noteLines.length === 1 && (
+        <p className="text-xs text-gray-400 italic mt-1">{noteLines[0]}</p>
+      )}
+      {noteLines.length > 1 && (
+        <div className="text-xs text-gray-400 italic mt-1 space-y-0.5">
+          {noteLines.map((line, i) => (
+            <p key={i}>{['i.', 'ii.', 'iii.', 'iv.', 'v.'][i] ?? `${i + 1}.`} {line}</p>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
