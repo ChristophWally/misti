@@ -318,7 +318,7 @@ function FormTableRow({ form, word, wordType, relationships }) {
                 {dialect && i > 0 && <span className="text-[10px] text-gray-400 italic">{dialect}</span>}
                 {pronFields.map((field, j) => (
                   <span key={j} className="flex items-center gap-x-1.5">
-                    {j > 0 && <span className="text-gray-300 text-[10px]">◇</span>}
+                    {j > 0 && <span className="text-gray-300 text-[10px]">·</span>}
                     <span className="text-xs text-gray-600">{field}</span>
                   </span>
                 ))}
@@ -342,23 +342,23 @@ function FormTableRow({ form, word, wordType, relationships }) {
         </div>
       )}
 
-      {/* Composition: di + gli */}
-      {relationship?.source_italian && (relationship.target_form_text || relationship.target_italian) && (
-        <div className="text-xs font-mono text-gray-400 mt-0.5">
-          {relationship.source_italian} + {relationship.target_form_text || relationship.target_italian}
-        </div>
-      )}
-
-      {/* Relationship notes — numbered if multiple unique notes (e.g. dell' has 3 relationships) */}
-      {noteLines.length === 1 && (
-        <p className="text-xs text-gray-400 italic mt-1">{noteLines[0]}</p>
-      )}
-      {noteLines.length > 1 && (
-        <div className="text-xs text-gray-400 italic mt-1 space-y-0.5">
-          {noteLines.map((line, i) => (
-            <p key={i}>{['i.', 'ii.', 'iii.', 'iv.', 'v.'][i] ?? `${i + 1}.`} {line}</p>
+      {/* Composition bold prefix + notes inline: "di + il. Mandatory contraction..." */}
+      {(relationship?.source_italian || noteLines.length > 0) && (
+        <p className="text-xs text-gray-500 mt-1">
+          {relationship?.source_italian && (relationship.target_form_text || relationship.target_italian) && (
+            <strong className="font-semibold text-gray-700">
+              {relationship.source_italian} + {relationship.target_form_text || relationship.target_italian}.{' '}
+            </strong>
+          )}
+          {noteLines.length === 1 && (
+            <span className="italic">{noteLines[0]}</span>
+          )}
+          {noteLines.length > 1 && noteLines.map((line, i) => (
+            <span key={i} className="italic">
+              {['i.', 'ii.', 'iii.', 'iv.', 'v.'][i] ?? `${i + 1}.`} {line}{i < noteLines.length - 1 ? ' ' : ''}
+            </span>
           ))}
-        </div>
+        </p>
       )}
 
       {/* Detail chips — phonology, irregularity, etc. — below the notes */}
