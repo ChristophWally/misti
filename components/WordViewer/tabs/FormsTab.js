@@ -342,23 +342,23 @@ function FormTableRow({ form, word, wordType, relationships }) {
         </div>
       )}
 
-      {/* Composition bold prefix + notes inline: "di + il. Mandatory contraction..." */}
+      {/* Composition + notes: composition bold on own line, each note on its own line below */}
       {(relationship?.source_italian || noteLines.length > 0) && (
-        <p className="text-xs text-gray-500 mt-1">
+        <div className="text-xs text-gray-500 mt-1 space-y-0.5">
           {relationship?.source_italian && (relationship.target_form_text || relationship.target_italian) && (
-            <strong className="font-semibold text-gray-700">
-              {relationship.source_italian} + {relationship.target_form_text || relationship.target_italian}.{' '}
-            </strong>
+            <p className="font-semibold text-gray-700">
+              {relationship.source_italian} + {relationship.target_form_text || relationship.target_italian}
+            </p>
           )}
           {noteLines.length === 1 && (
-            <span className="italic">{noteLines[0]}</span>
+            <p className="italic">{noteLines[0]}</p>
           )}
           {noteLines.length > 1 && noteLines.map((line, i) => (
-            <span key={i} className="italic">
-              {['i.', 'ii.', 'iii.', 'iv.', 'v.'][i] ?? `${i + 1}.`} {line}{i < noteLines.length - 1 ? ' ' : ''}
-            </span>
+            <p key={i} className="italic">
+              {['i.', 'ii.', 'iii.', 'iv.', 'v.'][i] ?? `${i + 1}.`} {line}
+            </p>
           ))}
-        </p>
+        </div>
       )}
 
       {/* Detail chips — phonology, irregularity, etc. — below the notes */}
