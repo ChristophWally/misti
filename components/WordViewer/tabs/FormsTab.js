@@ -513,7 +513,7 @@ function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, rela
         {firstParagraph && (
           <div>
             <div
-              className="text-xs text-gray-600 leading-relaxed [&_p]:mb-0"
+              className="text-xs text-gray-600 leading-relaxed [&_p]:!mb-0 [&_p]:!mt-0"
               dangerouslySetInnerHTML={{ __html: expanded ? usageNotesRaw : firstParagraph }}
             />
             {hasMore && (
@@ -591,7 +591,7 @@ function FtgRow({ ftg, index, wordType, sentences = [], imageMap = {} }) {
       {firstParagraph && (
         <div className="mt-1 ml-7">
           <div
-            className="text-xs text-gray-600 leading-relaxed"
+            className="text-xs text-gray-600 leading-relaxed [&_p]:!mb-0 [&_p]:!mt-0"
             dangerouslySetInnerHTML={{ __html: expanded ? usageNotesRaw : firstParagraph }}
           />
           {hasMore && (
