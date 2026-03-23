@@ -43,7 +43,6 @@ export default function SentenceTable({
             <tr>
               <th className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Italian</th>
               <th className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">English</th>
-              <th className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Source</th>
             </tr>
           </thead>
           <tbody>
@@ -51,18 +50,20 @@ export default function SentenceTable({
               const sourceText = showSource ? formatSourceText(sentence) : ''
               return (
                 <tr key={sentence?.id || sentence?.external_id || index} className="border-t border-slate-200/80">
-                  <td className="px-3 py-1.5 align-top text-[15px] font-medium leading-tight text-teal-700">
-                    {renderItalianSentence(sentence)}
-                  </td>
-                  <td className="px-3 py-1.5 align-top text-[15px] leading-tight text-slate-700">
-                    {sentence?.translation_en || '—'}
+                  <td className="px-3 py-1.5 align-top">
+                    <div className="text-[15px] font-medium leading-tight text-teal-700">
+                      {renderItalianSentence(sentence)}
+                    </div>
+                    {sourceText && (
+                      <div className="mt-0.5 text-[10px] leading-none italic text-slate-500">
+                        {sourceText}
+                      </div>
+                    )}
                   </td>
                   <td className="px-3 py-1.5 align-top">
-                    {sourceText ? (
-                      <div className="text-[11px] leading-snug italic text-slate-500">{sourceText}</div>
-                    ) : (
-                      <div className="text-[11px] leading-snug text-slate-400">&mdash;</div>
-                    )}
+                    <div className="text-[15px] leading-tight text-slate-700">
+                      {sentence?.translation_en || '—'}
+                    </div>
                     {showNotes && sentence?.notes && (
                       <div className="mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] leading-snug text-slate-500">
                         {sentence.notes}
