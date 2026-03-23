@@ -42,7 +42,6 @@ export default function SentenceCard({
   if (!sentence) return null
 
   const isCompact = variant === 'compact'
-  const hasEnglish = !!sentence.translation_en
   const showCollapsedNotes = shouldCollapseNotes && !isNotesExpanded
   const sourceNode = showSource ? renderSource(sentence) : null
 
@@ -54,34 +53,24 @@ export default function SentenceCard({
   return (
     <div
       className={`
-        rounded-lg border border-teal-100 bg-white shadow-sm
-        ${isCompact ? 'p-2 space-y-1.5' : 'p-2.5 space-y-2'}
+        rounded-lg border border-slate-200 border-l-4 border-l-teal-500 bg-slate-50 shadow-sm
+        ${isCompact ? 'px-2.5 py-2 space-y-1' : 'px-3 py-2.5 space-y-1.5'}
         ${className}
       `}
     >
       {headerNode && <div>{headerNode}</div>}
 
-      <div className={`grid gap-2 ${hasEnglish ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
-        <div className={`rounded-md border border-teal-200 bg-teal-50 ${isCompact ? 'p-2' : 'p-2.5'}`}>
-          <div className={`${isCompact ? 'text-xs' : 'text-sm'} font-medium leading-snug text-teal-800`}>
-            {renderItalianSentence(sentence)}
-          </div>
-        </div>
-
-        {hasEnglish && (
-          <div className={`rounded-md border border-slate-200 bg-slate-50 ${isCompact ? 'p-2' : 'p-2.5'}`}>
-            <div className={`${isCompact ? 'text-xs' : 'text-sm'} leading-snug text-slate-700`}>
-              {sentence.translation_en}
-            </div>
-          </div>
-        )}
+      <div className={`${isCompact ? 'text-sm' : 'text-[15px]'} font-medium leading-snug text-teal-700`}>
+        {renderItalianSentence(sentence)}
       </div>
 
-      {sourceNode && (
-        <div className="text-[11px] leading-snug text-slate-500">
-          {sourceNode}
+      {sentence.translation_en && (
+        <div className={`${isCompact ? 'text-sm' : 'text-[15px]'} leading-snug text-slate-700`}>
+          {sentence.translation_en}
         </div>
       )}
+
+      {sourceNode && <div className="text-[11px] leading-snug italic text-slate-500">{sourceNode}</div>}
 
       {showNotes && sentence.notes && (
         <div className={`sense-usage-notes-collapsible ${isCompact ? 'mt-1' : 'mt-1.5'}`}>
