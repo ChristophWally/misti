@@ -1,11 +1,11 @@
 'use client'
 
 // components/WordViewer/SentenceList.js
-// Reusable component to render a list of example sentences with translations and attribution.
-// Props: sentences (array), compact (boolean for inline display)
+// Reusable sentence list controller with card/table layout orchestration.
 
 import { useState } from 'react'
 import SentenceCard from './SentenceCard'
+import SentenceTable from './SentenceTable'
 
 function getSentenceStateKey(sentence, index) {
   if (sentence?.id) return `id:${sentence.id}`
@@ -16,6 +16,8 @@ function getSentenceStateKey(sentence, index) {
 export default function SentenceList({
   sentences = [],
   compact = false,
+  layoutMode = 'auto',
+  tableMinRows = 2,
   showSource,
   showNotes,
   showMeta = true,
@@ -33,9 +35,9 @@ export default function SentenceList({
   }
 
   const toggleExpanded = (key) => {
-    setExpandedSentences(prev => ({
+    setExpandedSentences((prev) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key],
     }))
   }
 
@@ -43,45 +45,8 @@ export default function SentenceList({
   const effectiveShowNotes = typeof showNotes === 'boolean' ? showNotes : !compact
   const visibleSentences = compact ? sentences.slice(0, maxCompactItems) : sentences
 
-  if (compact) {
-    // Compact mode: minimal display suitable for inline use in sense/form cards
-    return (
-      <div className={`mt-1.5 space-y-1.5 ${className}`}>
-        {visibleSentences.map((sentence, i) => {
-          const stateKey = getSentenceStateKey(sentence, i)
-          const shouldCollapse = (sentence.notes || '').length > 150
-          const isExpanded = !!expandedSentences[stateKey]
-
-          return (
-            <SentenceCard
-              key={`${stateKey}:${i}`}
-              sentence={sentence}
-              variant="compact"
-              showSource={effectiveShowSource}
-              showNotes={effectiveShowNotes}
-              showMeta={showMeta}
-              shouldCollapseNotes={shouldCollapse}
-              isNotesExpanded={isExpanded}
-              onToggleNotes={() => toggleExpanded(stateKey)}
-              className={cardClassName}
-              renderHeader={renderHeader}
-              renderMeta={renderMeta}
-              renderFooter={renderFooter}
-            />
-          )
-        })}
-        {sentences.length > maxCompactItems && (
-          <div className="pl-1 text-[11px] italic text-slate-500">
-            +{sentences.length - maxCompactItems} more example{sentences.length - maxCompactItems === 1 ? '' : 's'}
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // Full mode: complete display with source attribution
-  return (
-    <div className={`space-y-2 ${className}`}>
+  const renderCards = (variant, extraClassName = '') => (
+    <div className={`${variant === 'compact' ? 'mt-1.5 space-y-1.5' : 'space-y-2'} ${className} ${extraClassName}`.trim()}>
       {visibleSentences.map((sentence, i) => {
         const stateKey = getSentenceStateKey(sentence, i)
         const shouldCollapse = (sentence.notes || '').length > 150
@@ -91,7 +56,7 @@ export default function SentenceList({
           <SentenceCard
             key={`${stateKey}:${i}`}
             sentence={sentence}
-            variant="full"
+            variant={variant}
             showSource={effectiveShowSource}
             showNotes={effectiveShowNotes}
             showMeta={showMeta}
@@ -105,6 +70,49 @@ export default function SentenceList({
           />
         )
       })}
+      {variant === 'compact' && sentences.length > maxCompactItems && (
+        <div className="pl-1 text-[11px] italic text-slate-500">
+          +{sentences.length - maxCompactItems} more example{sentences.length - maxCompactItems === 1 ? '' : 's'}
+        </div>
+      )}
     </div>
+  )
+
+  // Compact mode stays card-based.
+  if (compact) {
+    return renderCards('compact')
+  }
+
+  const normalizedLayoutMode = ['auto', 'cards', 'table'].includes(layoutMode) ? layoutMode : 'auto'
+  const qualifiesForTable = visibleSentences.length >= tableMinRows
+
+  if (normalizedLayoutMode === 'cards' || !qualifiesForTable) {
+    return renderCards('full')
+  }
+
+  if (normalizedLayoutMode === 'table') {
+    return (
+      <SentenceTable
+        sentences={visibleSentences}
+        showSource={effectiveShowSource}
+        showNotes={effectiveShowNotes}
+        className={className}
+      />
+    )
+  }
+
+  // Auto: cards on mobile, table on desktop for multi-row groups.
+  return (
+    <>
+      <div className="md:hidden">{renderCards('full')}</div>
+      <div className="hidden md:block">
+        <SentenceTable
+          sentences={visibleSentences}
+          showSource={effectiveShowSource}
+          showNotes={effectiveShowNotes}
+          className={className}
+        />
+      </div>
+    </>
   )
 }
