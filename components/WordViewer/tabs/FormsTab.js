@@ -487,10 +487,12 @@ function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, rela
           )}
         </div>
 
-        {/* Form pills: symbol + form text only */}
+        {/* Form pills: sorted by article order, symbol + form text only */}
         {formEntries.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
-            {formEntries.map((fe, i) => {
+            {[...formEntries].sort((a, b) =>
+              getContractedSortKey(a.form, relationships) - getContractedSortKey(b.form, relationships)
+            ).map((fe, i) => {
               const gnChip  = getGenderNumberChip(fe.form, relationships)
               const formText = fe.form.form_text || ''
               return (
@@ -511,7 +513,7 @@ function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, rela
         {firstParagraph && (
           <div>
             <div
-              className="text-xs text-gray-600 leading-relaxed"
+              className="text-xs text-gray-600 leading-relaxed [&_p]:mb-0"
               dangerouslySetInnerHTML={{ __html: expanded ? usageNotesRaw : firstParagraph }}
             />
             {hasMore && (
