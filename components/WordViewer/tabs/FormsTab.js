@@ -528,7 +528,7 @@ function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, rela
 
         {/* Sentences */}
         {ftgSentences.length > 0 && (
-          <SentenceList sentences={ftgSentences} compact={false} colorBarClass={barClass} />
+          <SentenceList sentences={ftgSentences} compact={false} />
         )}
       </div>
     </div>

@@ -115,7 +115,7 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
               </span>
             </div>
             <div className="p-3">
-              <SentenceList sentences={group.sentences} compact={false} colorBarClass={barClass} />
+              <SentenceList sentences={group.sentences} compact={false} />
             </div>
             </div>
           </div>
