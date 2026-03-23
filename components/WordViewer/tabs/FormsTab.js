@@ -161,33 +161,35 @@ function getFormChips(coreTags = [], wordType = '', form = null, relationships =
  */
 const ARTICLE_ORDER = { 'il': 0, 'i': 1, 'la': 2, 'le': 3, 'lo': 4, 'gli': 5, "l'": 6 }
 
+/** Shared sort key for a single contracted form — used by both form table and FTG card ordering. */
+function getContractedSortKey(form, relationships) {
+  const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
+
+  // 1. Article from relationship (target_form_text preferred over target_italian lemma)
+  const rel = relationships.find(r => r.contracted_form_id === form.id || r.target_form_id === form.id)
+  if (rel) {
+    const articleKey = normaliseArticle(rel.target_form_text || rel.target_italian)
+    if (ARTICLE_ORDER[articleKey] !== undefined) return ARTICLE_ORDER[articleKey]
+  }
+
+  // 2. Gender + number tags as fallback
+  const genderTag = coreTags.find(t => t.attribute_stable_id === 'metaattr011')
+  const numberTag = coreTags.find(t => t.attribute_stable_id === 'metaattr012')
+  const isMasc = genderTag?.value_label === 'masculine'
+  const isFem  = genderTag?.value_label === 'feminine'
+  const isPlur = numberTag?.value_label === 'plurale'
+  if (isMasc && !isPlur) return 0
+  if (isMasc &&  isPlur) return 1
+  if (isFem  && !isPlur) return 2
+  if (isFem  &&  isPlur) return 3
+  return 6
+}
+
 /**
  * Sort contracted forms by the article they contract with.
- * Priority: relationship target_form_text → target_italian → gender+number tags
  */
 function sortContractedForms(forms, relationships) {
-  const getSortKey = (form) => {
-    const coreTags = Array.isArray(form.core_tags) ? form.core_tags : []
-
-    // 1. Article from relationship (target_form_text preferred over target_italian lemma)
-    const rel = relationships.find(r => r.contracted_form_id === form.id || r.target_form_id === form.id)
-    if (rel) {
-      const articleKey = normaliseArticle(rel.target_form_text || rel.target_italian)
-      if (ARTICLE_ORDER[articleKey] !== undefined) return ARTICLE_ORDER[articleKey]
-    }
-
-    // 2. Gender + number tags as fallback
-    const genderTag = coreTags.find(t => t.attribute_stable_id === 'metaattr011')
-    const numberTag = coreTags.find(t => t.attribute_stable_id === 'metaattr012')
-    const isMasc = genderTag?.value_label === 'masculine'
-    const isFem  = genderTag?.value_label === 'feminine'
-    const isPlur = numberTag?.value_label === 'plurale'
-    if (isMasc && !isPlur) return 0
-    if (isMasc &&  isPlur) return 1
-    if (isFem  && !isPlur) return 2
-    if (isFem  &&  isPlur) return 3
-    return 6 // before-vowel or unknown — push to end
-  }
+  const getSortKey = (form) => getContractedSortKey(form, relationships)
 
   return [...forms].sort((a, b) => getSortKey(a) - getSortKey(b))
 }
@@ -277,7 +279,7 @@ function FormTableRow({ form, word, wordType, relationships }) {
   )]
 
   return (
-    <div className="py-2.5 border-b border-gray-100 last:border-0">
+    <div className="py-1.5 border-b border-gray-100 last:border-0">
       {/* Form text + primary chips (gender + form type) */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-base font-bold text-gray-900">{formText}</span>
@@ -515,9 +517,9 @@ function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, rela
             {hasMore && (
               <button
                 onClick={() => setExpanded(e => !e)}
-                className="text-xs text-teal-600 hover:text-teal-800 mt-0.5 underline"
+                className="text-xs text-teal-600 hover:text-teal-800 underline"
               >
-                {expanded ? 'Show less' : 'Show more'}
+                {expanded ? 'show less' : '...see more'}
               </button>
             )}
           </div>
@@ -591,8 +593,8 @@ function FtgRow({ ftg, index, wordType, sentences = [], imageMap = {} }) {
             dangerouslySetInnerHTML={{ __html: expanded ? usageNotesRaw : firstParagraph }}
           />
           {hasMore && (
-            <button onClick={() => setExpanded(e => !e)} className="text-xs text-teal-600 hover:text-teal-800 mt-0.5 underline">
-              {expanded ? 'Show less' : 'Show more'}
+            <button onClick={() => setExpanded(e => !e)} className="text-xs text-teal-600 hover:text-teal-800 underline">
+              {expanded ? 'show less' : '...see more'}
             </button>
           )}
         </div>
@@ -753,7 +755,12 @@ export default function FormsTab({ word, fullBundle, isLoading }) {
   if (hasShared) {
     const formSections = groupFormsByType(forms, relationships)
 
+    const isContractedLayout = formSections.some(s => s.key === 'contracted')
     const sortedFtgEntries = Array.from(ftgMap.values()).sort((a, b) => {
+      if (isContractedLayout) {
+        return getContractedSortKey(a.formEntries[0]?.form, relationships)
+             - getContractedSortKey(b.formEntries[0]?.form, relationships)
+      }
       const aIdx = forms.indexOf(a.formEntries[0]?.form)
       const bIdx = forms.indexOf(b.formEntries[0]?.form)
       return aIdx - bIdx
