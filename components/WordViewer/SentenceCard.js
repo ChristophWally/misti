@@ -54,28 +54,33 @@ export default function SentenceCard({
     <div
       className={`
         rounded-lg border border-slate-200 border-l-4 border-l-teal-500 bg-slate-50 shadow-sm
-        ${isCompact ? 'px-2.5 py-2 space-y-1' : 'px-3 py-2.5 space-y-1.5'}
+        ${isCompact ? 'px-2.5 py-1.5 space-y-0.5' : 'px-3 py-2 space-y-1'}
         ${className}
       `}
     >
       {headerNode && <div>{headerNode}</div>}
 
-      <div className={`${isCompact ? 'text-sm' : 'text-[15px]'} font-medium leading-snug text-teal-700`}>
-        {renderItalianSentence(sentence)}
-      </div>
-
-      {sentence.translation_en && (
-        <div className={`${isCompact ? 'text-sm' : 'text-[15px]'} leading-snug text-slate-700`}>
-          {sentence.translation_en}
+      {sentence.translation_en ? (
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0">
+          <div className={`${isCompact ? 'text-sm' : 'text-[15px]'} font-medium leading-tight text-teal-700`}>
+            {renderItalianSentence(sentence)}
+          </div>
+          <div className={`${isCompact ? 'text-sm' : 'text-[15px]'} leading-tight text-slate-700`}>
+            {sentence.translation_en}
+          </div>
+        </div>
+      ) : (
+        <div className={`${isCompact ? 'text-sm' : 'text-[15px]'} font-medium leading-tight text-teal-700`}>
+          {renderItalianSentence(sentence)}
         </div>
       )}
 
       {sourceNode && <div className="text-[11px] leading-snug italic text-slate-500">{sourceNode}</div>}
 
       {showNotes && sentence.notes && (
-        <div className={`sense-usage-notes-collapsible ${isCompact ? 'mt-1' : 'mt-1.5'}`}>
+        <div className={`sense-usage-notes-collapsible ${isCompact ? 'mt-0.5' : 'mt-1'}`}>
           <div
-            className={`text-xs leading-relaxed text-slate-600 ${showCollapsedNotes ? 'line-clamp-2' : ''}`}
+            className={`text-xs leading-snug text-slate-600 ${showCollapsedNotes ? 'line-clamp-2' : ''}`}
           >
             {sentence.notes}
           </div>
