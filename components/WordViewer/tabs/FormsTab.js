@@ -298,8 +298,13 @@ function FormTableRow({ form, word, wordType, relationships }) {
             const dialect  = link.voice_name || link.dialect || ''
             const media    = resolvePronAudio(link)
             if (!accent && !ipa && !phonetic && !media?.object_key) return null
+            const pronFields = [
+              accent ? accent : null,
+              ipa    ? `[${ipa}]` : null,
+              phonetic || null,
+            ].filter(Boolean)
             return (
-              <div key={i} className="flex flex-wrap items-center gap-x-2 gap-y-0">
+              <div key={i} className="flex flex-wrap items-center gap-x-1.5 gap-y-0">
                 {media?.object_key && (
                   <AudioButton
                     wordId={word?.id}
@@ -311,9 +316,12 @@ function FormTableRow({ form, word, wordType, relationships }) {
                   />
                 )}
                 {dialect && i > 0 && <span className="text-[10px] text-gray-400 italic">{dialect}</span>}
-                {accent   && <span className="text-xs font-semibold text-gray-700">{accent}</span>}
-                {ipa      && <span className="text-xs font-mono text-gray-500">[{ipa}]</span>}
-                {phonetic && <span className="text-xs italic text-gray-400">{phonetic}</span>}
+                {pronFields.map((field, j) => (
+                  <span key={j} className="flex items-center gap-x-1.5">
+                    {j > 0 && <span className="text-gray-300 text-[10px]">◇</span>}
+                    <span className="text-xs text-gray-600">{field}</span>
+                  </span>
+                ))}
               </div>
             )
           })}
