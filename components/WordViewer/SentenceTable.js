@@ -38,11 +38,11 @@ export default function SentenceTable({
       `}
     >
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
+        <table className="w-full table-fixed border-collapse text-left">
           <thead className="bg-slate-100/80">
             <tr>
-              <th className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Italian</th>
-              <th className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">English</th>
+              <th className="w-[48%] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Italian</th>
+              <th className="w-[52%] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">English</th>
             </tr>
           </thead>
           <tbody>
@@ -66,7 +66,7 @@ export default function SentenceTable({
                       {sentence?.translation_en || '—'}
                     </div>
                     {showNotes && displayNotes && (
-                      <div className="mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] leading-snug text-slate-500">
+                      <div className="mt-0.5 line-clamp-2 break-words text-[10px] leading-snug text-slate-500">
                         {displayNotes}
                       </div>
                     )}
