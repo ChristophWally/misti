@@ -183,7 +183,11 @@ export default function SensesTab({ word, fullBundle, isLoading, onNavigateTab }
                       {/* All sentences for this sense */}
                       {senseSentences.length > 0 && (
                         <div className="ml-7 pb-2">
-                          <SentenceList sentences={senseSentences} compact={false} />
+                          <SentenceList
+                            sentences={senseSentences}
+                            compact={false}
+                            linkContext={{ entityType: 'word_translation', entityId: t.id }}
+                          />
                         </div>
                       )}
                     </div>
@@ -247,7 +251,11 @@ export default function SensesTab({ word, fullBundle, isLoading, onNavigateTab }
 
                 {senseSentences.length > 0 && (
                   <div className="ml-7 pb-2">
-                    <SentenceList sentences={senseSentences} compact={false} />
+                    <SentenceList
+                      sentences={senseSentences}
+                      compact={false}
+                      linkContext={{ entityType: 'word_translation', entityId: t.id }}
+                    />
                   </div>
                 )}
               </div>

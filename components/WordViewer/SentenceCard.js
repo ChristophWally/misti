@@ -30,6 +30,7 @@ export default function SentenceCard({
   variant = 'full',
   showSource = true,
   showNotes = true,
+  notesText = '',
   showMeta = true,
   isNotesExpanded = false,
   shouldCollapseNotes = false,
@@ -42,6 +43,7 @@ export default function SentenceCard({
   if (!sentence) return null
 
   const isCompact = variant === 'compact'
+  const displayNotes = String(notesText || sentence?.notes || '').trim()
   const showCollapsedNotes = shouldCollapseNotes && !isNotesExpanded
   const sourceNode = showSource ? renderSource(sentence) : null
 
@@ -77,12 +79,12 @@ export default function SentenceCard({
 
       {sourceNode && <div className="text-[11px] leading-snug italic text-slate-500">{sourceNode}</div>}
 
-      {showNotes && sentence.notes && (
+      {showNotes && displayNotes && (
         <div className={`sense-usage-notes-collapsible ${isCompact ? 'mt-0.5' : 'mt-1'}`}>
           <div
             className={`text-xs leading-snug text-slate-600 ${showCollapsedNotes ? 'line-clamp-2' : ''}`}
           >
-            {sentence.notes}
+            {displayNotes}
           </div>
           {shouldCollapseNotes && (
             <button

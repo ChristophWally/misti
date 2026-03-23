@@ -48,6 +48,7 @@ export default function SentenceTable({
           <tbody>
             {sentences.map((sentence, index) => {
               const sourceText = showSource ? formatSourceText(sentence) : ''
+              const displayNotes = String(sentence?.__display_notes || sentence?.notes || '').trim()
               return (
                 <tr key={sentence?.id || sentence?.external_id || index} className="border-t border-slate-200/80">
                   <td className="px-3 py-1.5 align-top">
@@ -64,9 +65,9 @@ export default function SentenceTable({
                     <div className="text-[15px] leading-tight text-slate-700">
                       {sentence?.translation_en || '—'}
                     </div>
-                    {showNotes && sentence?.notes && (
+                    {showNotes && displayNotes && (
                       <div className="mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] leading-snug text-slate-500">
-                        {sentence.notes}
+                        {displayNotes}
                       </div>
                     )}
                   </td>

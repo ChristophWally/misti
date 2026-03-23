@@ -13,11 +13,45 @@ function getSentenceStateKey(sentence, index) {
   return `index:${index}`
 }
 
+function normalizeNoteText(value) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function getLinkedUsageNote(sentence, linkContext = null) {
+  const links = Array.isArray(sentence?.links) ? sentence.links : []
+  if (links.length === 0) return ''
+
+  const contexts = Array.isArray(linkContext)
+    ? linkContext.filter(Boolean)
+    : linkContext
+      ? [linkContext]
+      : []
+
+  const matchesContext = (link, context) => {
+    if (!context) return true
+    const typeMatches = !context.entityType || link?.entity_type === context.entityType
+    const idMatches = !context.entityId || link?.entity_id === context.entityId
+    return typeMatches && idMatches
+  }
+
+  if (contexts.length > 0) {
+    for (const context of contexts) {
+      const match = links.find((link) => matchesContext(link, context) && normalizeNoteText(link?.usage_note))
+      if (match) return normalizeNoteText(match.usage_note)
+    }
+  }
+
+  const fallback = links.find((link) => normalizeNoteText(link?.usage_note))
+  return fallback ? normalizeNoteText(fallback.usage_note) : ''
+}
+
 export default function SentenceList({
   sentences = [],
   compact = false,
   layoutMode = 'auto',
   tableMinRows = 2,
+  linkContext = null,
+  resolveNotes,
   showSource,
   showNotes,
   showMeta = true,
@@ -45,11 +79,24 @@ export default function SentenceList({
   const effectiveShowNotes = typeof showNotes === 'boolean' ? showNotes : !compact
   const visibleSentences = compact ? sentences.slice(0, maxCompactItems) : sentences
 
+  const preparedSentences = visibleSentences.map((sentence) => {
+    const customNotes = typeof resolveNotes === 'function' ? normalizeNoteText(resolveNotes(sentence)) : ''
+    const displayNotes =
+      customNotes ||
+      normalizeNoteText(sentence?.notes) ||
+      getLinkedUsageNote(sentence, linkContext)
+
+    return {
+      ...sentence,
+      __display_notes: displayNotes,
+    }
+  })
+
   const renderCards = (variant, extraClassName = '') => (
     <div className={`${variant === 'compact' ? 'mt-1.5 space-y-1.5' : 'space-y-2'} ${className} ${extraClassName}`.trim()}>
-      {visibleSentences.map((sentence, i) => {
+      {preparedSentences.map((sentence, i) => {
         const stateKey = getSentenceStateKey(sentence, i)
-        const shouldCollapse = (sentence.notes || '').length > 150
+        const shouldCollapse = (sentence.__display_notes || '').length > 150
         const isExpanded = !!expandedSentences[stateKey]
 
         return (
@@ -59,6 +106,7 @@ export default function SentenceList({
             variant={variant}
             showSource={effectiveShowSource}
             showNotes={effectiveShowNotes}
+            notesText={sentence.__display_notes || ''}
             showMeta={showMeta}
             shouldCollapseNotes={shouldCollapse}
             isNotesExpanded={isExpanded}
@@ -84,7 +132,7 @@ export default function SentenceList({
   }
 
   const normalizedLayoutMode = ['auto', 'cards', 'table'].includes(layoutMode) ? layoutMode : 'auto'
-  const qualifiesForTable = visibleSentences.length >= tableMinRows
+  const qualifiesForTable = preparedSentences.length >= tableMinRows
 
   if (normalizedLayoutMode === 'cards' || !qualifiesForTable) {
     return renderCards('full')
@@ -93,7 +141,7 @@ export default function SentenceList({
   if (normalizedLayoutMode === 'table') {
     return (
       <SentenceTable
-        sentences={visibleSentences}
+        sentences={preparedSentences}
         showSource={effectiveShowSource}
         showNotes={effectiveShowNotes}
         className={className}
@@ -107,7 +155,7 @@ export default function SentenceList({
       <div className="md:hidden">{renderCards('full')}</div>
       <div className="hidden md:block">
         <SentenceTable
-          sentences={visibleSentences}
+          sentences={preparedSentences}
           showSource={effectiveShowSource}
           showNotes={effectiveShowNotes}
           className={className}

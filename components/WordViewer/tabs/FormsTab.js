@@ -462,6 +462,12 @@ function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, rela
   })
 
   const ftgImages = imageMap[`form_translation_group:${ftgId}`] || []
+  const noteLinkContext = [
+    { entityType: 'form_translation_group', entityId: ftgId },
+    ...formEntries
+      .filter((fe) => fe.linkId)
+      .map((fe) => ({ entityType: 'form_translation_group_link', entityId: fe.linkId }))
+  ]
 
   return (
     <div className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-white">
@@ -528,7 +534,11 @@ function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, rela
 
         {/* Sentences */}
         {ftgSentences.length > 0 && (
-          <SentenceList sentences={ftgSentences} compact={false} />
+          <SentenceList
+            sentences={ftgSentences}
+            compact={false}
+            linkContext={noteLinkContext}
+          />
         )}
       </div>
     </div>
@@ -554,6 +564,12 @@ function FtgRow({ ftg, index, wordType, sentences = [], imageMap = {} }) {
   })
 
   const ftgImages = imageMap[`form_translation_group:${ftg.id}`] || []
+  const noteLinkContext = [
+    { entityType: 'form_translation_group', entityId: ftg.id },
+    ...(ftg.form_translation_group_link_id
+      ? [{ entityType: 'form_translation_group_link', entityId: ftg.form_translation_group_link_id }]
+      : [])
+  ]
 
   return (
     <div className="py-2 border-b border-gray-100 last:border-0">
@@ -590,7 +606,11 @@ function FtgRow({ ftg, index, wordType, sentences = [], imageMap = {} }) {
       )}
       {ftgSentences.length > 0 && (
         <div className="mt-1.5 ml-7">
-          <SentenceList sentences={ftgSentences} compact={false} />
+          <SentenceList
+            sentences={ftgSentences}
+            compact={false}
+            linkContext={noteLinkContext}
+          />
         </div>
       )}
     </div>
@@ -682,7 +702,11 @@ function FormCard({ form, word, wordType, sentences = [], imageMap = {}, barClas
 
         {formSentences.length > 0 && ftgs.length === 0 && (
           <div className="px-3 py-2">
-            <SentenceList sentences={formSentences} compact={false} />
+            <SentenceList
+              sentences={formSentences}
+              compact={false}
+              linkContext={{ entityType: 'form', entityId: form.id }}
+            />
           </div>
         )}
       </div>

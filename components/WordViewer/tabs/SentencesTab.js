@@ -101,6 +101,11 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
       {sortedGroupKeys.map(groupKey => {
         const group = groups[groupKey]
         const count = group.sentences.length
+        const linkContext = groupKey.startsWith('sense-')
+          ? { entityType: 'word_translation', entityId: groupKey.slice('sense-'.length) }
+          : groupKey.startsWith('ftg-')
+            ? { entityType: 'form_translation_group', entityId: groupKey.slice('ftg-'.length) }
+            : null
         return (
           <div key={groupKey} className="flex rounded-xl shadow-sm border border-gray-200 overflow-hidden bg-white">
             <div className={`w-1.5 flex-shrink-0 ${barClass}`} />
@@ -115,7 +120,11 @@ export default function SentencesTab({ word, fullBundle, isLoading }) {
               </span>
             </div>
             <div className="p-3">
-              <SentenceList sentences={group.sentences} compact={false} />
+              <SentenceList
+                sentences={group.sentences}
+                compact={false}
+                linkContext={linkContext}
+              />
             </div>
             </div>
           </div>
