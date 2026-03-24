@@ -26,6 +26,7 @@ export default function SentenceTable({
   sentences = [],
   showSource = true,
   showNotes = true,
+  showHeaders = false,
   className = '',
 }) {
   if (!Array.isArray(sentences) || sentences.length === 0) return null
@@ -39,12 +40,14 @@ export default function SentenceTable({
     >
       <div className="overflow-x-auto">
         <table className="w-full table-fixed border-collapse text-left">
-          <thead className="bg-slate-100/80">
-            <tr>
-              <th className="w-[48%] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Italian</th>
-              <th className="w-[52%] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">English</th>
-            </tr>
-          </thead>
+          {showHeaders && (
+            <thead className="bg-slate-100/80">
+              <tr>
+                <th className="w-[48%] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Italian</th>
+                <th className="w-[52%] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">English</th>
+              </tr>
+            </thead>
+          )}
           <tbody>
             {sentences.map((sentence, index) => {
               const sourceText = showSource ? formatSourceText(sentence) : ''

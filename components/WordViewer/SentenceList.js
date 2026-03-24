@@ -50,6 +50,7 @@ export default function SentenceList({
   compact = false,
   layoutMode = 'auto',
   tableMinRows = 2,
+  tableShowHeaders = false,
   linkContext = null,
   resolveNotes,
   showSource,
@@ -144,6 +145,7 @@ export default function SentenceList({
         sentences={preparedSentences}
         showSource={effectiveShowSource}
         showNotes={effectiveShowNotes}
+        showHeaders={tableShowHeaders}
         className={className}
       />
     )
@@ -158,6 +160,7 @@ export default function SentenceList({
           sentences={preparedSentences}
           showSource={effectiveShowSource}
           showNotes={effectiveShowNotes}
+          showHeaders={tableShowHeaders}
           className={className}
         />
       </div>
