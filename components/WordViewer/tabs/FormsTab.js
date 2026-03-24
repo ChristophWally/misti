@@ -449,7 +449,7 @@ function buildFtgMap(forms) {
 }
 
 /** FTG translation card: header + small form pills + usage notes + sentences. */
-function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, relationships }) {
+function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, relationships, index }) {
   const [expanded, setExpanded] = useState(false)
   const colors = getWordTypeColors(wordType)
   const { ftg, formEntries } = ftgEntry
@@ -487,6 +487,7 @@ function FtgCard({ ftgEntry, word, wordType, sentences, imageMap, barClass, rela
 
         {/* FTG translation + linked sense */}
         <div className="flex items-baseline gap-2 flex-wrap">
+          {index != null && <span className="text-xs text-gray-400 font-mono flex-shrink-0">{index}.</span>}
           <span className="text-sm font-semibold text-gray-900">{ftg.translation}</span>
           {linkedSense && (
             <>
@@ -766,15 +767,10 @@ export default function FormsTab({ word, fullBundle, isLoading }) {
   if (hasShared) {
     const formSections = groupFormsByType(forms, relationships)
 
-    const isContractedLayout = formSections.some(s => s.key === 'contracted')
     const sortedFtgEntries = Array.from(ftgMap.values()).sort((a, b) => {
-      if (isContractedLayout) {
-        return getContractedSortKey(a.formEntries[0]?.form, relationships)
-             - getContractedSortKey(b.formEntries[0]?.form, relationships)
-      }
-      const aIdx = forms.indexOf(a.formEntries[0]?.form)
-      const bIdx = forms.indexOf(b.formEntries[0]?.form)
-      return aIdx - bIdx
+      const aPriority = a.ftg.word_translation?.display_priority ?? 999
+      const bPriority = b.ftg.word_translation?.display_priority ?? 999
+      return aPriority - bPriority
     })
 
     const standaloneForms = forms.filter(
@@ -806,6 +802,7 @@ export default function FormsTab({ word, fullBundle, isLoading }) {
               <FtgCard
                 key={entry.ftg.form_translation_group_id || entry.ftg.id || i}
                 ftgEntry={entry}
+                index={i + 1}
                 word={word}
                 wordType={wordType}
                 sentences={sentences}
