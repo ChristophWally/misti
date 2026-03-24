@@ -344,24 +344,33 @@ function FormTableRow({ form, word, wordType, relationships }) {
         </div>
       )}
 
-      {/* Composition + notes: composition bold on own line, each note on its own line below */}
-      {(relationship?.source_italian || noteLines.length > 0) && (
-        <div className="text-xs text-gray-500 mt-1 space-y-0.5">
-          {relationship?.source_italian && (relationship.target_form_text || relationship.target_italian) && (
-            <p className="font-semibold text-gray-700">
-              {relationship.source_italian} + {relationship.target_form_text || relationship.target_italian}
-            </p>
-          )}
-          {noteLines.length === 1 && (
-            <p className="italic">{noteLines[0]}</p>
-          )}
-          {noteLines.length > 1 && noteLines.map((line, i) => (
-            <p key={i} className="italic">
-              {['i.', 'ii.', 'iii.', 'iv.', 'v.'][i] ?? `${i + 1}.`} {line}
-            </p>
-          ))}
-        </div>
-      )}
+      {/* Composition + notes:
+          - Single note  → inline: "di + gli. Mandatory contraction..."
+          - Multiple notes → composition on own line, then i. ii. iii. on separate lines */}
+      {(relationship?.source_italian || noteLines.length > 0) && (() => {
+        const composition = relationship?.source_italian && (relationship.target_form_text || relationship.target_italian)
+          ? `${relationship.source_italian} + ${relationship.target_form_text || relationship.target_italian}`
+          : null
+        return (
+          <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+            {noteLines.length <= 1 ? (
+              <p>
+                {composition && <strong className="font-semibold text-gray-700">{composition}.{' '}</strong>}
+                {noteLines[0] && <span className="italic">{noteLines[0]}</span>}
+              </p>
+            ) : (
+              <>
+                {composition && <p className="font-semibold text-gray-700">{composition}</p>}
+                {noteLines.map((line, i) => (
+                  <p key={i} className="italic">
+                    {['i.', 'ii.', 'iii.', 'iv.', 'v.'][i] ?? `${i + 1}.`} {line}
+                  </p>
+                ))}
+              </>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Detail chips — phonology, irregularity, etc. — below the notes */}
       {detailChips.length > 0 && (
